@@ -1,4 +1,10 @@
+import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Database, FileKey2, Link2, Radio } from 'lucide-react'
+
+interface DatabaseHealthResponse {
+  status: 'ok' | 'unavailable' | 'unconfigured'
+  migrations?: number
+}
 
 const sourceRows = [
   {
@@ -9,29 +15,58 @@ const sourceRows = [
     status: 'Open',
   },
   {
+    layer: 'Scouting',
+    source: 'FanGraphs Prospect Board',
+    coverage: 'Grades, ranks, risk, ETA, MiLB stats',
+    right: 'Authorized research use',
+    status: 'Authorized',
+  },
+  {
+    layer: 'MiLB tracking',
+    source: 'Prospect Savant',
+    coverage: '2023+ Statcast-derived metrics, Rk through AAA',
+    right: 'Authorized research use',
+    status: 'Authorized',
+  },
+  {
+    layer: 'Player history',
+    source: 'Sports Reference',
+    coverage: 'Player, season, game, and event records',
+    right: 'Authorized research use',
+    status: 'Authorized',
+  },
+  {
     layer: 'MLB history',
     source: 'Retrosheet + Lahman',
     coverage: 'Events, seasons, awards, HOF',
     right: 'Attribution / CC BY-SA',
     status: 'Open',
   },
-  {
-    layer: 'MiLB features',
-    source: 'SIS enterprise feed',
-    coverage: 'Levels, tracking, defense, injuries',
-    right: 'Commercial contract required',
-    status: 'Proposed',
-  },
-  {
-    layer: 'MLB live',
-    source: 'Sportradar official feed',
-    coverage: 'Stats, Statcast, rosters, injuries',
-    right: 'Commercial contract required',
-    status: 'Proposed',
-  },
 ]
 
 export function DataHealth() {
+  const [databaseHealth, setDatabaseHealth] = useState<
+    DatabaseHealthResponse | { status: 'checking' }
+  >({ status: 'checking' })
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    fetch('/api/health', { signal: controller.signal })
+      .then(async (response) => {
+        const result = (await response.json()) as DatabaseHealthResponse
+        setDatabaseHealth(result)
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setDatabaseHealth({ status: 'unavailable' })
+      })
+
+    return () => controller.abort()
+  }, [])
+
+  const databaseConnected = databaseHealth.status === 'ok'
+
   return (
     <main className="workspace-page data-health">
       <header className="workspace-header">
@@ -40,15 +75,26 @@ export function DataHealth() {
           <h1>Data health</h1>
           <p>Coverage, licensing, freshness, and point-in-time integrity before a feature reaches a model.</p>
         </div>
-        <span className="build-badge build-badge--warning"><AlertTriangle size={14} aria-hidden="true" /> No live feed connected</span>
+        <span className={`build-badge${databaseConnected ? '' : ' build-badge--warning'}`}>
+          {databaseConnected ? <CheckCircle2 size={14} aria-hidden="true" /> : <AlertTriangle size={14} aria-hidden="true" />}
+          {databaseHealth.status === 'checking'
+            ? 'Checking Neon'
+            : databaseConnected
+              ? 'Neon connected'
+              : 'Database API pending'}
+        </span>
       </header>
 
       <section className="data-status-grid" aria-label="Data foundation status">
         <div>
           <Database size={18} aria-hidden="true" />
-          <span>Production datasets</span>
-          <strong>0 connected</strong>
-          <small>Demo adapter active</small>
+          <span>Neon database</span>
+          <strong>{databaseConnected ? 'Connected' : 'Pending'}</strong>
+          <small>
+            {databaseConnected
+              ? `${databaseHealth.migrations ?? 0} migration${databaseHealth.migrations === 1 ? '' : 's'} applied`
+              : 'Demo adapter remains active'}
+          </small>
         </div>
         <div>
           <Link2 size={18} aria-hidden="true" />
@@ -58,9 +104,9 @@ export function DataHealth() {
         </div>
         <div>
           <FileKey2 size={18} aria-hidden="true" />
-          <span>Rights review</span>
-          <strong>Required</strong>
-          <small>Before bulk collection</small>
+          <span>Source permissions</span>
+          <strong>Recorded</strong>
+          <small>Versioned per ingestion run</small>
         </div>
         <div>
           <Radio size={18} aria-hidden="true" />
@@ -98,7 +144,7 @@ export function DataHealth() {
                   <td>{row.right}</td>
                   <td>
                     <span className={`source-status source-status--${row.status.toLowerCase()}`}>
-                      {row.status === 'Open' ? <CheckCircle2 size={13} aria-hidden="true" /> : <AlertTriangle size={13} aria-hidden="true" />}
+                      <CheckCircle2 size={13} aria-hidden="true" />
                       {row.status}
                     </span>
                   </td>
@@ -112,8 +158,8 @@ export function DataHealth() {
       <section className="rights-notice">
         <FileKey2 size={19} aria-hidden="true" />
         <div>
-          <strong>Public access does not equal commercial model rights.</strong>
-          <p>Every production agreement must permit historical storage, ML training, derived probability display, corrections, and investment-oriented use.</p>
+          <strong>Research permission is recorded, not generalized.</strong>
+          <p>Each ingestion run pins the exact permission version, source request, retrieval time, parser version, and immutable response hash.</p>
         </div>
       </section>
     </main>

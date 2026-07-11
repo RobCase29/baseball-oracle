@@ -22,6 +22,20 @@ and display in a paid investment-oriented product.
 | [Retrosheet](https://www.retrosheet.org/) | MLB play-by-play, game logs, rosters, and biographical records. AL and NL play-by-play is complete from 1910 through 2025. | Commercial products are expressly permitted, subject to the prominent attribution required in the [Retrosheet data-use notice](https://www.retrosheet.org/notice.txt). Retrosheet disclaims accuracy guarantees. Its historical transaction database stopped updating in 2021. | Historical event store, career reconstruction, and reproducible feature engineering. |
 | [SABR Lahman Database](https://sabr.org/lahman-database/) | Annual MLB batting, pitching, fielding, postseason, biographical, award, award-voting, Hall of Fame-voting, and All-Star data from 1871 through 2025. | CC BY-SA 3.0 according to the official database README. Preserve attribution and isolate these tables so share-alike obligations can be reviewed. Salary data ends in 2016 and college tables end in 2014. | Historical outcomes, award and Hall of Fame labels, and long-horizon backtesting. |
 
+### Project-Authorized Research Sources
+
+The user has attested that this research project has permission to automate
+retrieval, store source data, train internal models, and display derived research
+outputs from the following sources. Each ingestion run pins that attestation as a
+versioned permission record. Raw redistribution and commercial-product rights are
+not inferred from the research permission.
+
+| Source | Coverage and access | Project use | Important boundary |
+| --- | --- | --- | --- |
+| [FanGraphs](https://www.fangraphs.com/) | Prospect Board scouting grades, ranks, reports, and linked MiLB statistics, plus broader MLB/MiLB statistics. | Historical scouting priors, player evaluation context, and provider benchmarks. | Keep provider metrics and prose source-attributed; a historical season parameter on a live endpoint is not evidence of historical publication time. |
+| [Sports Reference](https://www.baseball-reference.com/) | MLB and MiLB player histories, statistics, transactions, awards, and WAR. | Historical performance, career outcomes, reconciliation, and provider-specific value measures. | Preserve upstream/provider definitions and do not assume raw redistribution or commercial rights. |
+| [Prospect Savant](https://prospectsavant.com/) | MiLB leader tables beginning in 2023 with Statcast-derived measurements, percentiles, expected statistics, and Prospect Savant composites. | A structured MiLB feature layer for available season/level/role partitions. | Namespace proprietary composites, preserve their formula/version uncertainty, and separately test their incremental value over component statistics. |
+
 ### Contract-First Sources
 
 | Source | Coverage and access | Licensing and risk | Recommended use |
@@ -50,8 +64,6 @@ written authorization.
 
 | Source | Coverage and access | Licensing and risk | Recommended use |
 | --- | --- | --- | --- |
-| [Baseball-Reference and Stathead](https://www.sports-reference.com/data_use.html) | Extensive MLB and MiLB history, transactions, awards, WAR, and register data. | Sports Reference explicitly prohibits using site content to train ML or support predictive, classification, labeling, or scoring methods without permission. It has no public API, and some upstream licenses prevent redistribution. | Human quality assurance only, unless a bespoke license expressly permits this product. |
-| [FanGraphs](https://blogs.fangraphs.com/contact/) | MLB and MiLB statistics, WAR, projections, RosterResource, and The Board/Future Value scouting grades. | FanGraphs states that it does not support scraping, API endpoints, or automatic imports. Its terms prohibit commercial exploitation and resale. | Manual benchmark for projections and scouting priors. |
 | [Spotrac](https://www.spotrac.com/service) | MLB contract, salary, and transaction context. | Terms prohibit systematic extraction, database compilation, automated gathering, and revenue-generating use without written permission. | Manual contract audit or a separately negotiated license. |
 | [National Baseball Hall of Fame](https://baseballhall.org/hall-of-fame/hall-of-famers-by-election-method) and [BBWAA voter database](https://bbwaa.com/voter-database/) | Official inductees, election methods, annual Hall of Fame totals, and public award ballots. BBWAA's voter database includes annual award ballots since 2012 and Hall of Fame ballots since 2010. | No public bulk API or commercial data license was identified. | Authoritative validation for the newest labels; use Lahman for bulk historical ingestion. |
 | MLB Health and Injury Tracking System, described in this [2026 review](https://journals.sagepub.com/doi/10.1177/23259671261419846) | Central professional-baseball electronic medical and injury records. | No public API or ordinary commercial license was identified. Any de-identified research access would require an MLB and medical-research partnership. Player re-identification must never be attempted. | Long-term research partnership, not an MVP data source. |
@@ -79,6 +91,12 @@ The largest unresolved coverage gap is full pitch- and batted-ball tracking for
 Double-A, High-A, most Single-A, complex, and Dominican Summer League games. SIS,
 direct TrackMan and club partnerships, or an MLB agreement are the realistic paths
 to closing that gap.
+
+## Evaluated Mirrors
+
+| Mirror | Finding | Decision |
+| --- | --- | --- |
+| [Kaggle Baseball Databank](https://www.kaggle.com/datasets/open-source-sports/baseball-databank) | Historical MLB data through 2015, last updated about six years ago, with several source tables omitted. It identifies the upstream Lahman, Chadwick, and Retrosheet provenance. | Do not create a parallel ingestion path. Use the current official SABR Lahman release through 2025 and retain the Kaggle page only as discovery evidence. |
 
 ## Contract Requirements
 

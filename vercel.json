@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run db:deploy && npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/admin/*.ts": {
+      "maxDuration": 300
+    }
+  }
+}

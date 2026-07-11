@@ -1615,7 +1615,8 @@
   border-radius: 3px;
 }
 
-.source-status--open {
+.source-status--open,
+.source-status--authorized {
   color: var(--green-dark);
   background: var(--green-soft);
 }

@@ -5,17 +5,31 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:vercel": "npx vercel dev",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate.ts",
+    "db:seed:sources": "node --env-file=.env.local --import tsx scripts/seed-sources.ts",
+    "db:setup": "npm run db:migrate && npm run db:seed:sources",
+    "db:migrate:remote": "tsx scripts/migrate.ts",
+    "db:seed:sources:remote": "tsx scripts/seed-sources.ts",
+    "db:deploy": "npm run db:migrate:remote && npm run db:seed:sources:remote",
+    "ingest:fangraphs": "node --env-file=.env.local --import tsx scripts/ingest/fangraphs-prospects.ts",
+    "ingest:prospect-savant": "node --env-file=.env.local --import tsx scripts/ingest/prospect-savant-leaders.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.24.0",
+    "postgres": "^3.4.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "recharts": "^3.9.2"
+    "recharts": "^3.9.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -26,6 +40,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "jsdom": "^27.0.1",
     "oxlint": "^1.71.0",
+    "tsx": "^4.23.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^3.2.7"
