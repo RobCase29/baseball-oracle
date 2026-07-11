@@ -97,6 +97,7 @@ to closing that gap.
 | Mirror | Finding | Decision |
 | --- | --- | --- |
 | [Kaggle Baseball Databank](https://www.kaggle.com/datasets/open-source-sports/baseball-databank) | Historical MLB data through 2015, last updated about six years ago, with several source tables omitted. It identifies the upstream Lahman, Chadwick, and Retrosheet provenance. | Do not create a parallel ingestion path. Use the current official SABR Lahman release through 2025 and retain the Kaggle page only as discovery evidence. |
+| [Trouble With The Curve](https://github.com/jacobdanovitch/Trouble-With-The-Curve) | Research mirror with 9,175 MLB.com/FanGraphs scouting profiles from 2013-2019. Its random row split overlaps players across train/test, its outcome labels are stale, and the repository has no project-wide license. | Do not ingest the mirror. Independently reacquire the permitted FanGraphs signal, rebuild identities and censored outcomes, and retain the repository only as methodological prior art. |
 
 ## Contract Requirements
 

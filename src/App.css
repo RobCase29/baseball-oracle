@@ -1604,7 +1604,7 @@
   color: var(--green);
 }
 
-.validation-list > div:not(:first-child) svg {
+.validation-list > div:not(.is-complete) svg {
   color: #9ca5a2;
 }
 
@@ -1674,6 +1674,11 @@
 .model-roadmap li.is-current {
   background: #f0f7f5;
   border-top-color: var(--green);
+}
+
+.model-roadmap li.is-complete {
+  background: #f5f8f6;
+  border-top-color: #83bcae;
 }
 
 .model-roadmap li > span {

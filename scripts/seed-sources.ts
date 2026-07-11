@@ -10,6 +10,8 @@ interface ResearchSourceSeed {
   grain: string
   basis: string
   evidenceUri: string
+  evidenceSha256?: string
+  permissionVersion?: number
   rawRedistribution: boolean
   commercialUse: boolean
   notes: string
@@ -24,7 +26,9 @@ const sources: ResearchSourceSeed[] = [
     description: 'Prospect scouting snapshots and linked minor-league statistics.',
     grain: 'One scouting or statistical row per player, level, team, and requested board snapshot.',
     basis: 'User-attested research authorization',
-    evidenceUri: 'urn:baseball-oracle:permission:user-attestation:fangraphs:2026-07-11',
+    evidenceUri: 'https://github.com/RobCase29/baseball-oracle/blob/main/docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md',
+    evidenceSha256: '259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34',
+    permissionVersion: 2,
     rawRedistribution: false,
     commercialUse: false,
     notes: 'User attested authorization for automated retrieval, research storage, internal modeling, and derived research output. Raw redistribution and commercial use are not assumed.',
@@ -37,7 +41,9 @@ const sources: ResearchSourceSeed[] = [
     description: 'Season-level MiLB leader tables with Statcast-derived measurements, percentiles, and Prospect Savant composite metrics.',
     grain: 'One player, role, season, and level row per requested leaderboard slice.',
     basis: 'User-attested research authorization',
-    evidenceUri: 'urn:baseball-oracle:permission:user-attestation:prospect-savant:2026-07-11',
+    evidenceUri: 'https://github.com/RobCase29/baseball-oracle/blob/main/docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md',
+    evidenceSha256: '259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34',
+    permissionVersion: 2,
     rawRedistribution: false,
     commercialUse: false,
     notes: 'User attested authorization for automated retrieval, research storage, internal modeling, and derived research output. Preserve Prospect Savant provenance for provider-derived metrics. Raw redistribution and commercial use are not assumed.',
@@ -50,7 +56,9 @@ const sources: ResearchSourceSeed[] = [
     description: 'Historical professional baseball player records authorized for this research project.',
     grain: 'Source-defined player, season, game, or event record.',
     basis: 'User-attested research authorization',
-    evidenceUri: 'urn:baseball-oracle:permission:user-attestation:sports-reference:2026-07-11',
+    evidenceUri: 'https://github.com/RobCase29/baseball-oracle/blob/main/docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md',
+    evidenceSha256: '259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34',
+    permissionVersion: 2,
     rawRedistribution: false,
     commercialUse: false,
     notes: 'User attested authorization for automated retrieval, research storage, internal modeling, and derived research output. Raw redistribution and commercial use are not assumed.',
@@ -63,7 +71,7 @@ const sources: ResearchSourceSeed[] = [
     description: 'Professional baseball person identities and cross-source identifier mappings.',
     grain: 'One registered person with zero or more external identifier assertions.',
     basis: 'Open Data Commons Attribution License 1.0',
-    evidenceUri: 'https://github.com/chadwickbureau/register/blob/master/LICENSE',
+    evidenceUri: 'https://github.com/chadwickbureau/register/blob/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/README.md#license',
     rawRedistribution: true,
     commercialUse: true,
     notes: 'Use requires attribution. Identity mappings are versioned assertions and may be corrected, merged, or split in later releases.',
@@ -146,10 +154,11 @@ async function seedSources() {
             valid_from,
             approved_at,
             evidence_uri,
+            evidence_sha256,
             notes
           ) VALUES (
             ${dataset.id},
-            1,
+            ${sourceSeed.permissionVersion ?? 1},
             ${sourceSeed.basis},
             true,
             true,
@@ -160,6 +169,7 @@ async function seedSources() {
             '2026-07-11T00:00:00Z'::timestamptz,
             '2026-07-11T00:00:00Z'::timestamptz,
             ${sourceSeed.evidenceUri},
+            ${sourceSeed.evidenceSha256 ?? null},
             ${sourceSeed.notes}
           )
           ON CONFLICT (dataset_id, version) DO NOTHING

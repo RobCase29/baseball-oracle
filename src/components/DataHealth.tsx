@@ -99,8 +99,8 @@ export function DataHealth() {
         <div>
           <Link2 size={18} aria-hidden="true" />
           <span>Identity strategy</span>
-          <strong>Defined</strong>
-          <small>Crosswalk-first canonical IDs</small>
+          <strong>Active</strong>
+          <small>9,672 board rows resolved</small>
         </div>
         <div>
           <FileKey2 size={18} aria-hidden="true" />
@@ -110,16 +110,16 @@ export function DataHealth() {
         </div>
         <div>
           <Radio size={18} aria-hidden="true" />
-          <span>Freshness SLA</span>
-          <strong>Not started</strong>
-          <small>Set after vendor selection</small>
+          <span>Research archive</span>
+          <strong>44 files</strong>
+          <small>162 MB pinned and hashed</small>
         </div>
       </section>
 
       <section className="source-plan" aria-labelledby="source-plan-title">
         <div className="section-heading-row">
           <div>
-            <span className="eyebrow">RECOMMENDED STACK</span>
+            <span className="eyebrow">RESEARCH STACK</span>
             <h2 id="source-plan-title">Source plan</h2>
           </div>
           <span className="record-count">Researched Jul 11, 2026</span>

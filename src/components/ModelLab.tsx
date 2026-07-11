@@ -10,29 +10,44 @@ const targets: Record<
     question: string
     target: string
     model: string
-    evaluation: string[]
+    evaluation: Array<{ label: string; status: string; measured: boolean }>
   }
 > = {
   arrival: {
     label: 'MLB arrival',
     question: 'Will this player record an MLB appearance within a specified horizon?',
-    target: 'Competing-risk, discrete-time event probability at 12, 24, 36, and 60 months.',
-    model: 'Hitter and pitcher hazard ensembles with cohort priors, calibrated after temporal holdout.',
-    evaluation: ['Brier score by horizon', 'Calibration slope and intercept', 'Time-dependent AUC', 'Cohort fairness slices'],
+    target: 'Discrete-time event probability at 12, 24, 36, and 60 months.',
+    model: 'Current baseline: one regularized annual hazard curve. Role ensembles and calibration remain gated.',
+    evaluation: [
+      { label: 'Brier score by horizon', status: '4 of 5 mature 12-month folds beat the frozen base rate', measured: true },
+      { label: 'Calibration slope and intercept', status: 'Required before publication', measured: false },
+      { label: 'Out-of-time discrimination', status: '12m AUC 0.74-0.81 outside 2021; 0.55 in 2021', measured: true },
+      { label: 'Era stress tests', status: '2021 pandemic/reorganization failure retained', measured: true },
+    ],
   },
   career: {
     label: 'Career arc',
     question: 'What distribution of MLB value remains from this point forward?',
     target: 'Joint distribution of playing time and value by age, including zero and early-exit outcomes.',
     model: 'State-transition simulator with role, health, aging, and performance submodels.',
-    evaluation: ['CRPS by age', 'Interval coverage', 'WAR and playing-time error', 'Trajectory shape error'],
+    evaluation: [
+      { label: 'Season landmarks', status: '118,184 feature and label rows built', measured: true },
+      { label: 'Censoring states', status: 'Recent careers remain right-censored', measured: true },
+      { label: 'WAR and playing-time error', status: 'Provider-versioned WAR backfill required', measured: false },
+      { label: 'Trajectory shape error', status: 'Awaiting joint career simulator', measured: false },
+    ],
   },
   hall: {
     label: 'HOF-caliber tail',
     question: 'How often does the simulated career reach a historically elite performance shape?',
     target: 'Performance-defined career tail, intentionally separate from eventual induction voting.',
     model: 'Career simulation tail probability with era, position, and role normalization.',
-    evaluation: ['Tail calibration', 'Era and position stability', 'Precision at fixed review budget', 'Decade backtests'],
+    evaluation: [
+      { label: 'Historical outcomes', status: 'Inductions observed; every non-inducted career remains censored', measured: true },
+      { label: 'Tail calibration', status: 'Awaiting career simulation paths', measured: false },
+      { label: 'Era and position stability', status: 'Required before release', measured: false },
+      { label: 'Decade backtests', status: 'Required before release', measured: false },
+    ],
   },
 }
 
@@ -48,7 +63,7 @@ export function ModelLab() {
           <h1>Model lab</h1>
           <p>Targets, validation gates, and release readiness for every prediction surface.</p>
         </div>
-        <span className="build-badge"><CircleDashed size={14} aria-hidden="true" /> Foundation phase</span>
+        <span className="build-badge"><CircleDashed size={14} aria-hidden="true" /> Research baseline</span>
       </header>
 
       <div className="target-tabs" role="tablist" aria-label="Prediction target">
@@ -94,12 +109,12 @@ export function ModelLab() {
             <ShieldCheck size={19} aria-hidden="true" />
           </div>
           <div className="validation-list">
-            {target.evaluation.map((item, index) => (
-              <div key={item}>
-                {index === 0 ? <CheckCircle2 size={17} aria-hidden="true" /> : <CircleDashed size={17} aria-hidden="true" />}
+            {target.evaluation.map((item) => (
+              <div key={item.label} className={item.measured ? 'is-complete' : undefined}>
+                {item.measured ? <CheckCircle2 size={17} aria-hidden="true" /> : <CircleDashed size={17} aria-hidden="true" />}
                 <span>
-                  <strong>{item}</strong>
-                  <small>{index === 0 ? 'Metric contract drafted' : 'Awaiting historical backfill'}</small>
+                  <strong>{item.label}</strong>
+                  <small>{item.status}</small>
                 </span>
               </div>
             ))}
@@ -132,8 +147,8 @@ export function ModelLab() {
           <FlaskConical size={19} aria-hidden="true" />
         </div>
         <ol>
-          <li className="is-current"><span>01</span><div><strong>Historical baseline</strong><small>Identity spine, outcomes, cohort priors</small></div></li>
-          <li><span>02</span><div><strong>Arrival ensemble</strong><small>Rolling-origin validation and calibration</small></div></li>
+          <li className="is-complete"><span>01</span><div><strong>Historical baseline</strong><small>Built and retained as the frozen benchmark</small></div></li>
+          <li className="is-current"><span>02</span><div><strong>Arrival ensemble</strong><small>Full risk set, monthly hazards, and calibration</small></div></li>
           <li><span>03</span><div><strong>Career simulator</strong><small>Role, aging, attrition, and value paths</small></div></li>
           <li><span>04</span><div><strong>Decision layer</strong><small>Watch triggers and forecast revisions</small></div></li>
         </ol>

@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-11T22:48:51.000Z",
+  "sources": {
+    "chadwick-register": {
+      "version": "7e23e7dfaff51b3ae72c16393703eda7e5ecad27",
+      "license": "Open Data Commons Attribution 1.0",
+      "licenseUrl": "https://github.com/chadwickbureau/register/blob/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/README.md#license",
+      "resources": {
+        "data/people-0.csv": {
+          "bytes": 4182333,
+          "sha256": "023b54577b7906e5c631633619b8c56b892f5f7704434229321eceeb156b3dcd",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-0.csv"
+        },
+        "data/people-1.csv": {
+          "bytes": 4192594,
+          "sha256": "5bd3a1f694bb1e04abe8f86e64df491e08e049adc0f33bc4c062cd49a203782b",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-1.csv"
+        },
+        "data/people-2.csv": {
+          "bytes": 4152180,
+          "sha256": "faae89dc7f6da9ef0bb86259f303560ed99e24a4d1374de9d9e07f6eb2123864",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-2.csv"
+        },
+        "data/people-3.csv": {
+          "bytes": 4188651,
+          "sha256": "95ba2cec3b53c6767c2c6bb28ab4f607def78896afd9f8face8cdadd90890e3e",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-3.csv"
+        },
+        "data/people-4.csv": {
+          "bytes": 4170900,
+          "sha256": "b745618c23a0e29fcae453c32853aeef76d063359e25648765b5a7c89e37620a",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-4.csv"
+        },
+        "data/people-5.csv": {
+          "bytes": 4182795,
+          "sha256": "f191c732aa6b60b0672038a50cb62bf8f27a8a29673c3d97324f26c364325a39",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-5.csv"
+        },
+        "data/people-6.csv": {
+          "bytes": 4151361,
+          "sha256": "b9afda11070423674a574823e4b1e5704b77eb45471be2a8e1c35b2a6ba8a93c",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-6.csv"
+        },
+        "data/people-7.csv": {
+          "bytes": 4188687,
+          "sha256": "ca0dcf6f0305d33cc718ab1c542f2b36619977abb50a9075e2eb21c75c49c118",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-7.csv"
+        },
+        "data/people-8.csv": {
+          "bytes": 4145683,
+          "sha256": "ddf6b369d6d8734385f967c80527f53d8a908772106773413287563b7f9dc675",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-8.csv"
+        },
+        "data/people-9.csv": {
+          "bytes": 4169059,
+          "sha256": "35d2f23e1ac1cecf69f0553732594391e48057614e21676b70380d099106aeff",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-9.csv"
+        },
+        "data/people-a.csv": {
+          "bytes": 4233714,
+          "sha256": "d4915e1ed53cfed5d5e23b182e67b62264f874e4314514c73b667d686b5cb4a8",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-a.csv"
+        },
+        "data/people-b.csv": {
+          "bytes": 4190924,
+          "sha256": "84de1a659a9fd43af9fc3cfb4c9c8f61e79610392712311554906bea3644b34f",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-b.csv"
+        },
+        "data/people-c.csv": {
+          "bytes": 4179336,
+          "sha256": "58e191eb4ed994f70f19cd972926c0bf49415d20c585fd9eeb0a906d0931699e",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-c.csv"
+        },
+        "data/people-d.csv": {
+          "bytes": 4201484,
+          "sha256": "c0289f7d1ca59969b0c4aec7482f22f2a5980934ed6149a8c2d021ccb7923ac3",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-d.csv"
+        },
+        "data/people-e.csv": {
+          "bytes": 4174399,
+          "sha256": "0603f1bfc2286637dd5f6da3efae79b77504f0dac6c7b5bbdc7128046ec84325",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-e.csv"
+        },
+        "data/people-f.csv": {
+          "bytes": 4242333,
+          "sha256": "9b224aa9b1e0cc68254b0b9be1a4ba9f3932d18aeb528b1714044c5748c986c3",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/data/people-f.csv"
+        },
+        "README.md": {
+          "bytes": 8058,
+          "sha256": "74bbe60a72b17ea709ef97fc7f191e717f4d28174cdeccbb9f429e133fb8c434",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/register/7e23e7dfaff51b3ae72c16393703eda7e5ecad27/README.md"
+        }
+      }
+    },
+    "sabr-lahman": {
+      "version": "2025",
+      "license": "Creative Commons Attribution-ShareAlike 3.0",
+      "licenseUrl": "https://sabr.org/lahman-database/",
+      "resources": {
+        "People.csv": {
+          "bytes": 3223128,
+          "sha256": "9ee97110fc88b2c4ad72684577d696875035049e74a45cb93238458df8563c58",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084263017537"
+        },
+        "Batting.csv": {
+          "bytes": 7999073,
+          "sha256": "007551e2fe3072aff396a8573de61dceabe14dbf8de20038c8b60e2abe16978f",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084272468053"
+        },
+        "Pitching.csv": {
+          "bytes": 5112472,
+          "sha256": "dbbe1baeb0a0fd81c1843a19eb4967e3d86c073fbe51bf96581bfd9faae35951",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084261668691"
+        },
+        "HallOfFame.csv": {
+          "bytes": 314822,
+          "sha256": "0d0c8ddecbe789254651a8cad379dd949d343eba5e15cc17e6234ca0e4fcf456",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084268925644"
+        },
+        "Fielding.csv": {
+          "bytes": 8767478,
+          "sha256": "0b4dc11fab05f59fd281ea716c9b1f9ead3fe6b838a33914998d1727d31e0135",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084272585201"
+        },
+        "readme2025.txt": {
+          "bytes": 47976,
+          "sha256": "b5e8251deebce363d583cd94bddd6fd134c6589ecfc64e13f11f8ba0dcd09e3a",
+          "url": "https://sabr.app.box.com/index.php?rm=box_download_shared_file&shared_name=y1prhc795jk8zvmelfd3jq7tl389y6cd&file_id=f_2084259918153"
+        }
+      }
+    },
+    "retrosheet": {
+      "version": "bf5af7d40e1f0c33026074705cda8ed1c5177f95",
+      "license": "Retrosheet data-use notice",
+      "licenseUrl": "https://www.retrosheet.org/notice.txt",
+      "resources": {
+        "biofile0.csv": {
+          "bytes": 4077362,
+          "sha256": "69e7525c43f0605cd0002151f88975cbfee86b9d78f86f391cce5454083347a3",
+          "url": "https://raw.githubusercontent.com/chadwickbureau/retrosheet/bf5af7d40e1f0c33026074705cda8ed1c5177f95/reference/biofile0.csv"
+        }
+      }
+    },
+    "fangraphs-prospect-board": {
+      "version": "2017-2026-editions",
+      "license": "User-attested research authorization",
+      "licenseUrl": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+      "evidenceSha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34",
+      "resources": {
+        "2017-bat.json": {
+          "bytes": 1417221,
+          "sha256": "ec9fa29c21e50ffec84c374b5ee2f53bef9cf50f3b6238fc25a9ae3eddc347a9",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2016&seasonend=2016&draft=2017prospect&valueheader=prospect-new&quickleaderboard=2017all"
+        },
+        "2017-pit.json": {
+          "bytes": 1373440,
+          "sha256": "a84bdb5887952c404eb3c04f3e75e63efa1b658fc35bd67851b2371ce5c05297",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2016&seasonend=2016&draft=2017prospect&valueheader=prospect-new&quickleaderboard=2017all"
+        },
+        "2018-bat.json": {
+          "bytes": 1588312,
+          "sha256": "ea0bbd71d83eacb4ffa7a47f0331484cc5638fc3f6650a9d45963633f3cfba2d",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2017&seasonend=2017&draft=2018prospect&valueheader=prospect-new&quickleaderboard=2018all"
+        },
+        "2018-pit.json": {
+          "bytes": 1568937,
+          "sha256": "158cb1569b0b6325f87aa25e77a96a512b8ab97164b45cc526495661890aa53a",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2017&seasonend=2017&draft=2018prospect&valueheader=prospect-new&quickleaderboard=2018all"
+        },
+        "2019-bat.json": {
+          "bytes": 3099934,
+          "sha256": "cd88265f2ede031b0ae094875a423ffc926b977db35712524029942a75f66fe2",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2018&seasonend=2018&draft=2019prospect&valueheader=prospect-new&quickleaderboard=2019all"
+        },
+        "2019-pit.json": {
+          "bytes": 2669439,
+          "sha256": "b2f99874b2c0247bf21faaeee3001b1952e4cbd4d89c626ef98c6b5aadd714bf",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2018&seasonend=2018&draft=2019prospect&valueheader=prospect-new&quickleaderboard=2019all"
+        },
+        "2020-bat.json": {
+          "bytes": 3615600,
+          "sha256": "911e6bad6027e03dcc755838ad1b08a401291c50191631ef71625d7b963d91eb",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2019&seasonend=2019&draft=2020prospect&valueheader=prospect-new&quickleaderboard=2020all"
+        },
+        "2020-pit.json": {
+          "bytes": 3383639,
+          "sha256": "6ea8d98bd895af3913db2bee04019c9a8f0536e6dcb451ef58275cab6a9857a1",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2019&seasonend=2019&draft=2020prospect&valueheader=prospect-new&quickleaderboard=2020all"
+        },
+        "2021-bat.json": {
+          "bytes": 3994425,
+          "sha256": "b82a534854b5b145a41334afebbd14d4eb8b49da2f5b56bec88ca8ce285b9177",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2020&seasonend=2020&draft=2021prospect&valueheader=prospect-new&quickleaderboard=2021all"
+        },
+        "2021-pit.json": {
+          "bytes": 3334976,
+          "sha256": "accc6b9742571c0dc56371139a257c7223b2fb6b8797d920a4210992a6576f97",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2020&seasonend=2020&draft=2021prospect&valueheader=prospect-new&quickleaderboard=2021all"
+        },
+        "2022-bat.json": {
+          "bytes": 4119528,
+          "sha256": "13ec564b63e22dd30531ae3ce452df623c553bcb52abbf8baa3c40a28906197d",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2021&seasonend=2021&draft=2022prospect&valueheader=prospect-new&quickleaderboard=2022all"
+        },
+        "2022-pit.json": {
+          "bytes": 4168983,
+          "sha256": "98d3d0383616ed99752c724c1ee3b7daff31db0848ef5d48d23328678aacff2c",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2021&seasonend=2021&draft=2022prospect&valueheader=prospect-new&quickleaderboard=2022all"
+        },
+        "2023-bat.json": {
+          "bytes": 3617699,
+          "sha256": "3fb3d01506231769ddaca477728f870aea11abe1b31c917848648dae6656b949",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2022&seasonend=2022&draft=2023prospect&valueheader=prospect-new&quickleaderboard=2023all"
+        },
+        "2023-pit.json": {
+          "bytes": 3806993,
+          "sha256": "e24b95cda46742107213a446a25e0cd8c7b864a479f128a7e321b7d9f68db5ae",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2022&seasonend=2022&draft=2023prospect&valueheader=prospect-new&quickleaderboard=2023all"
+        },
+        "2024-bat.json": {
+          "bytes": 3417012,
+          "sha256": "869d415d7fc0b51138d32e73c8013dfd8fff3e22fca265b8207ed3a80a930444",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2023&seasonend=2023&draft=2024prospect&valueheader=prospect-new&quickleaderboard=2024all"
+        },
+        "2024-pit.json": {
+          "bytes": 3734228,
+          "sha256": "ef6f7a0edcfa4f43f6479e7ee27da39629823a7de3ca34ed3af7f0e84e4084ed",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2023&seasonend=2023&draft=2024prospect&valueheader=prospect-new&quickleaderboard=2024all"
+        },
+        "2025-bat.json": {
+          "bytes": 3877158,
+          "sha256": "875354d0117d5c646df472277fdafedf67713a7c7d1efcb866a40e0da93a7dc1",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2024&seasonend=2024&draft=2025prospect&valueheader=prospect-new&quickleaderboard=2025all"
+        },
+        "2025-pit.json": {
+          "bytes": 4274107,
+          "sha256": "7d4e8288f5af1622427f6bf9141dd15666a83d7b41c287c0f79e2082ad682f09",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2024&seasonend=2024&draft=2025prospect&valueheader=prospect-new&quickleaderboard=2025all"
+        },
+        "2026-bat.json": {
+          "bytes": 4170645,
+          "sha256": "0053540e097f355e113d9a1733ac25bbf7faae3f4761660a83a821bf616fbbb0",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=bat&qual=0&type=0&team=&season=2025&seasonend=2025&draft=2026prospect&valueheader=prospect-new&quickleaderboard=2026all"
+        },
+        "2026-pit.json": {
+          "bytes": 4239012,
+          "sha256": "88890ba8c075b686dc651057e3ca36580e9ed1e7906e2f21bc9cec5b396966ac",
+          "url": "https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C14%2C12%2C13%2C15%2C16%2C17%2C18%2C30%2C32%2C33&stats=pit&qual=0&type=0&team=&season=2025&seasonend=2025&draft=2026prospect&valueheader=prospect-new&quickleaderboard=2026all"
+        }
+      }
+    }
+  }
+}

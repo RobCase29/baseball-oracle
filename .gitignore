@@ -25,3 +25,15 @@ dist-ssr
 .vercel
 .env*
 !.env.example
+
+# Local research data and model artifacts. Recreate them from the pinned source lock.
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+data/raw/
+data/processed/
+data/manifests/runs/
+artifacts/
+*.duckdb
+*.duckdb.wal

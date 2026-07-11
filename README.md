@@ -23,6 +23,28 @@ npm run build
 npm run preview
 ```
 
+## Reproduce the research baseline
+
+The offline model workspace is deliberately separate from Vercel request handling.
+It downloads pinned source files, verifies their hashes, builds feature and label
+tables in separate Parquet files, and runs expanding-window backtests without a
+random row split. The locked environment requires Python 3.13:
+
+```bash
+npm run data:acquire
+npm run model:setup
+npm run model:all
+```
+
+Raw data, derived Parquet files, and model artifacts stay local and are ignored by
+Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the code,
+environment lock, and database lineage schema are versioned. Preparation verifies
+every raw byte against a matching acquisition manifest, then archives each table,
+build manifest, validation report, and model under a content digest.
+The current model is a research baseline and is not served by the application.
+See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
+results, and the gates that remain before forecasts can be published.
+
 Local Vite development proxies the public `/api/health` and `/api/players`
 routes to the production Vercel deployment, keeping Neon credentials server-only.
 Set `API_PROXY_TARGET` to point at another public deployment when needed.
@@ -41,6 +63,9 @@ npm run db:setup
 Neon integration credentials may be configured as write-only Vercel secrets. In that case, the local pull contains empty placeholders; the Vercel build runs the same idempotent migrations with the real server-side values. For local ingestion, copy the pooled and direct connection strings from the Neon dashboard into `.env.local` without committing that file.
 
 The database uses separate `catalog`, `raw`, `core`, `ml`, and `app` schemas. Raw source responses and parsed records are append-only; normalized observations retain both effective time and the earliest evidenced `known_at` time.
+
+Required open-data credits, including Retrosheet's specified attribution statement,
+are preserved in [NOTICE.md](NOTICE.md).
 
 The authorized research connectors land immutable FanGraphs prospect-board and
 Prospect Savant snapshots:
@@ -100,6 +125,7 @@ Every returned player has `forecast: null` until a validated model release is pu
 - [Point-in-time data contract](docs/DATA_CONTRACT.md)
 - [Data sources and licensing](docs/DATA_SOURCES.md)
 - [Historical backfill strategy](docs/HISTORICAL_BACKFILL.md)
+- [Model readiness and baseline](docs/MODEL_READINESS.md)
 
 ## Core principle
 

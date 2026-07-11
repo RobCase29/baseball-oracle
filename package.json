@@ -19,7 +19,14 @@
     "db:seed:sources:remote": "tsx scripts/seed-sources.ts",
     "db:deploy": "npm run db:migrate:remote && npm run db:seed:sources:remote",
     "ingest:fangraphs": "node --env-file=.env.local --import tsx scripts/ingest/fangraphs-prospects.ts",
-    "ingest:prospect-savant": "node --env-file=.env.local --import tsx scripts/ingest/prospect-savant-leaders.ts"
+    "ingest:prospect-savant": "node --env-file=.env.local --import tsx scripts/ingest/prospect-savant-leaders.ts",
+    "data:acquire": "tsx scripts/data/acquire-model-data.ts",
+    "audit:twtc": ".venv/bin/python scripts/audits/audit_trouble_with_curve.py",
+    "model:setup": "python3 modeling/bootstrap.py",
+    "model:prepare": ".venv/bin/python modeling/prepare_dataset.py",
+    "model:train": ".venv/bin/python modeling/train_arrival_baseline.py",
+    "model:test": ".venv/bin/python -m pytest modeling",
+    "model:all": "npm run model:test && npm run model:prepare && npm run model:train"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
