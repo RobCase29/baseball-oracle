@@ -165,6 +165,10 @@ export const rawRecords = raw.table(
     index('record_source_key_idx').on(table.recordType, table.sourceRecordKey),
     index('record_ingested_brin_idx').using('brin', table.ingestedAt),
     check('record_ordinal_chk', sql`${table.ordinal} >= 0`),
+    check(
+      'record_source_key_length_chk',
+      sql`octet_length(${table.sourceRecordKey}) <= 512`,
+    ),
   ],
 )
 

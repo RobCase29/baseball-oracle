@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
 export type SourceRecord = Record<string, unknown>
+export const SOURCE_RECORD_KEY_MAX_BYTES = 512
 
 export interface RetryOptions {
   attempts?: number
@@ -32,18 +33,26 @@ export function stableStringify(value: unknown): string {
   return JSON.stringify(canonicalize(value))
 }
 
+export function boundedSourceRecordKey(value: string): string {
+  if (new TextEncoder().encode(value).byteLength <= SOURCE_RECORD_KEY_MAX_BYTES) {
+    return value
+  }
+  return `sha256:${sha256(value)}`
+}
+
 export function disambiguateSourceRecordKeys(
   records: SourceRecord[],
   sourceKey: (record: SourceRecord) => string,
 ): string[] {
   const seen = new Map<string, number>()
   return records.map((record) => {
-    const base = sourceKey(record)
+    const base = boundedSourceRecordKey(sourceKey(record))
     const priorCount = seen.get(base) ?? 0
     seen.set(base, priorCount + 1)
-    return priorCount === 0
+    const candidate = priorCount === 0
       ? base
       : `${base}|duplicate:${priorCount + 1}:${sha256(stableStringify(record)).slice(0, 12)}`
+    return boundedSourceRecordKey(candidate)
   })
 }
 
