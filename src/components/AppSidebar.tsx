@@ -66,7 +66,7 @@ export function AppSidebar({
         <span className="status-dot" aria-hidden="true" />
         <div>
           <strong>Research build</strong>
-          <span>Simulated forecasts</span>
+          <span>Real data · Model pending</span>
         </div>
       </div>
 

@@ -1,57 +1,116 @@
 import { describe, expect, it } from 'vitest'
-import { demoPlayers } from '../data/demoPlayers'
-import type { BoardFilters } from '../domain/forecast'
-import { formatOrdinal, formatSigned, oracleScore, rankPlayers } from './forecast'
+import type { BoardFilters, PlayerRecord, PublishedForecast } from '../domain/forecast'
+import {
+  filterAndSortPlayers,
+  formatOrdinal,
+  formatScore,
+  formatSigned,
+  oracleScore,
+} from './forecast'
 
 const baseFilters: BoardFilters = {
   query: '',
   playerType: 'All',
   level: 'All',
-  sort: 'oracle',
-  watchlistOnly: false,
+  sort: 'psScore',
 }
 
-describe('forecast ranking', () => {
-  it('produces a bounded decision score', () => {
-    for (const player of demoPlayers) {
-      expect(oracleScore(player)).toBeGreaterThanOrEqual(0)
-      expect(oracleScore(player)).toBeLessThanOrEqual(100)
+function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
+  return {
+    id: 'ps-1-hitter',
+    name: 'Real Player',
+    initials: 'RP',
+    organization: 'Test Organization',
+    organizationCode: 'TST',
+    position: 'SS',
+    playerType: 'Hitter',
+    age: 21,
+    level: 'AA',
+    batsThrows: 'R/R',
+    psScore: 70,
+    psPercentile: 85,
+    opportunity: { label: 'PA', value: '240' },
+    metrics: [],
+    coverage: {
+      hasStatcast: true,
+      hasTraditional: true,
+      hasComplementaryRows: false,
+      levelsObserved: ['AA'],
+      organizationConflict: false,
+      label: 'Tracking + traditional',
+    },
+    provenance: {
+      source: 'Prospect Savant',
+      dataset: 'leaders',
+      season: 2026,
+      retrievedAt: '2026-07-11T00:00:00.000Z',
+      cohort: { pitchQualifier: 1, minAge: 16, maxAge: 40 },
+      externalIds: { prospectSavant: '1' },
+    },
+    forecast: null,
+    ...overrides,
+  }
+}
+
+describe('real-player board utilities', () => {
+  it('filters observed records by player type and source identity', () => {
+    const players = [
+      makePlayer({ id: 'one', name: 'Jackson Miller' }),
+      makePlayer({ id: 'two', name: 'Andre Lewis', playerType: 'Pitcher', position: 'RHP' }),
+    ]
+
+    const results = filterAndSortPlayers(
+      players,
+      { ...baseFilters, query: 'miller', playerType: 'Hitter' },
+    )
+
+    expect(results.map((player) => player.id)).toEqual(['one'])
+    expect(results[0]?.forecast).toBeNull()
+  })
+
+  it('sorts real source scores while keeping missing values last', () => {
+    const players = [
+      makePlayer({ id: 'missing', psScore: null }),
+      makePlayer({ id: 'low', psScore: 42 }),
+      makePlayer({ id: 'high', psScore: 91 }),
+    ]
+
+    expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
+      'high',
+      'low',
+      'missing',
+    ])
+  })
+
+  it('bounds the decision score for a future published forecast', () => {
+    const forecast: PublishedForecast = {
+      modelVersion: 'arrival-v1',
+      publishedAt: '2027-01-01T00:00:00.000Z',
+      rank: 1,
+      arrivalProbability: 84,
+      arrivalDelta: null,
+      eta: '2028',
+      expectedCareerWar: 28,
+      starProbability: 35,
+      hofProbability: 5,
+      floorWar: 0,
+      ceilingWar: 55,
+      risk: 'Moderate',
+      confidence: 79,
+      summary: 'Validated forecast fixture.',
+      drivers: [],
+      careerArc: [],
     }
+
+    expect(oracleScore(forecast)).toBeGreaterThanOrEqual(0)
+    expect(oracleScore(forecast)).toBeLessThanOrEqual(100)
   })
 
-  it('filters by player type and search query', () => {
-    const results = rankPlayers(
-      demoPlayers,
-      { ...baseFilters, query: 'marin', playerType: 'Hitter' },
-      new Set(),
-    )
-
-    expect(results.map((player) => player.id)).toEqual(['eli-marin'])
-  })
-
-  it('returns only saved players when watchlist mode is active', () => {
-    const results = rankPlayers(
-      demoPlayers,
-      { ...baseFilters, watchlistOnly: true },
-      new Set(['eli-marin', 'marcus-hall']),
-    )
-
-    expect(results).toHaveLength(2)
-    expect(results.map((player) => player.id)).toEqual(
-      expect.arrayContaining(['eli-marin', 'marcus-hall']),
-    )
-  })
-
-  it('formats positive, negative, and neutral movement', () => {
+  it('formats source values without inventing missing values', () => {
     expect(formatSigned(3.2, ' pts')).toBe('+3.2 pts')
     expect(formatSigned(-1.5, ' pts')).toBe('-1.5 pts')
-    expect(formatSigned(0, ' pts')).toBe('0.0 pts')
-  })
-
-  it('formats percentile ordinals', () => {
-    expect(formatOrdinal(1)).toBe('1st')
-    expect(formatOrdinal(12)).toBe('12th')
-    expect(formatOrdinal(23)).toBe('23rd')
-    expect(formatOrdinal(91)).toBe('91st')
+    expect(formatOrdinal(91.4)).toBe('91st')
+    expect(formatScore(72.25)).toBe('72.3')
+    expect(formatScore(null)).toBe('—')
   })
 })

@@ -19,27 +19,13 @@ export interface ModelDriver {
   detail: string
 }
 
-export interface PlayerMetric {
-  label: string
-  value: string
-  percentile: number
-}
-
-export interface PlayerForecast {
-  id: string
-  name: string
-  initials: string
-  organization: string
-  organizationCode: string
-  position: string
-  playerType: PlayerType
-  age: number
-  level: string
-  batsThrows: string
-  rank: number
+export interface PublishedForecast {
+  modelVersion: string
+  publishedAt: string
+  rank: number | null
   arrivalProbability: number
-  arrivalDelta: number
-  eta: string
+  arrivalDelta: number | null
+  eta: string | null
   expectedCareerWar: number
   starProbability: number
   hofProbability: number
@@ -47,22 +33,97 @@ export interface PlayerForecast {
   ceilingWar: number
   risk: RiskBand
   confidence: number
-  dataCompleteness: number
-  trend: TrendDirection
-  tags: string[]
   summary: string
-  metrics: PlayerMetric[]
   drivers: ModelDriver[]
   careerArc: CareerArcPoint[]
-  updatedAt: string
 }
 
-export type SortKey = 'oracle' | 'arrival' | 'ceiling' | 'momentum'
+export interface ObservedMetric {
+  key: string
+  label: string
+  value: string
+  percentile: number | null
+  source: string
+}
+
+export interface PlayerOpportunity {
+  label: string
+  value: string
+}
+
+export interface PlayerCoverage {
+  hasStatcast: boolean
+  hasTraditional: boolean
+  hasComplementaryRows: boolean
+  levelsObserved: string[]
+  organizationConflict: boolean
+  label: string
+  sourceVariants?: string[]
+  cohortMismatch?: boolean
+}
+
+export interface PlayerProvenance {
+  source: string
+  dataset: string
+  datasetKey?: string
+  season: number | null
+  retrievedAt: string | null
+  cohort: {
+    pitchQualifier: number
+    minAge: number
+    maxAge: number
+  }
+  externalIds: Record<string, string | number | null>
+}
+
+export interface PlayerRecord {
+  id: string
+  name: string
+  initials: string
+  organization: string | null
+  organizationCode: string | null
+  position: string | null
+  playerType: PlayerType
+  age: number | null
+  level: string
+  batsThrows: string | null
+  psScore: number | null
+  psPercentile: number | null
+  agePercentile?: number | null
+  opportunity: PlayerOpportunity | null
+  metrics: ObservedMetric[]
+  coverage: PlayerCoverage
+  provenance: PlayerProvenance
+  forecast: PublishedForecast | null
+}
+
+export type SortKey = 'psScore' | 'psPercentile' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
   playerType: 'All' | PlayerType
   level: string
   sort: SortKey
-  watchlistOnly: boolean
+}
+
+export interface PlayersPage {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface PlayersResponseMeta {
+  dataAsOf: string | null
+  season: number | null
+  coverage: string
+  forecastStatus: 'not_published' | 'published'
+  source: string
+}
+
+export interface PlayersResponse {
+  schemaVersion: 'players.v1'
+  items: PlayerRecord[]
+  page: PlayersPage
+  meta: PlayersResponseMeta
 }

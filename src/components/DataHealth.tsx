@@ -93,7 +93,7 @@ export function DataHealth() {
           <small>
             {databaseConnected
               ? `${databaseHealth.migrations ?? 0} migration${databaseHealth.migrations === 1 ? '' : 's'} applied`
-              : 'Demo adapter remains active'}
+              : 'Live database endpoint unavailable'}
           </small>
         </div>
         <div>

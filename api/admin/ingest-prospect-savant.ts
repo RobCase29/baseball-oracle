@@ -5,6 +5,7 @@ import {
   prospectSavantRoles,
 } from '../../scripts/ingest/prospect-savant.js'
 import { ingestProspectSavantSlice } from '../../scripts/ingest/prospect-savant-leaders.js'
+import { refreshPlayerDirectorySnapshot } from '../../scripts/ingest/player-directory.js'
 import {
   readJsonBody,
   requirePostAndAuthorization,
@@ -34,6 +35,7 @@ export default async function handler(
     }
 
     const result = await ingestProspectSavantSlice(input)
+    if (result.status === 'stored') await refreshPlayerDirectorySnapshot()
     sendJson(response, 200, result)
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof SyntaxError) {

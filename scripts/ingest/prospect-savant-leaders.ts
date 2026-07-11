@@ -19,6 +19,7 @@ import {
   type ProspectSavantSlice,
 } from './prospect-savant.js'
 import { persistRawLanding } from './raw-landing.js'
+import { refreshPlayerDirectorySnapshot } from './player-directory.js'
 import {
   disambiguateSourceRecordKeys,
   idempotencyKey,
@@ -258,6 +259,10 @@ async function runCli(): Promise<void> {
       )
     },
   })
+
+  if (result.stored > 0 && result.failures.length === 0) {
+    await refreshPlayerDirectorySnapshot()
+  }
 
   process.stdout.write(
     `Prospect Savant backfill: ${result.stored} stored, ` +

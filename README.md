@@ -5,7 +5,7 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 1. The probability that a professional minor-league player reaches MLB.
 2. The distribution of that player's remaining career outcomes, updated as new minor- and major-league evidence arrives.
 
-The current repository is the product foundation. It ships a working React decision cockpit backed by typed, fictional demo forecasts. It does **not** contain trained models or licensed production baseball data yet.
+The current repository is the product and data foundation. It ships a working React decision cockpit backed by authorized Prospect Savant observations stored in Neon. The player directory is real; Baseball Oracle forecasts remain unpublished until the historical backfill, temporal validation, and calibration gates pass.
 
 ## Run locally
 
@@ -22,6 +22,10 @@ npm test
 npm run build
 npm run preview
 ```
+
+Local Vite development proxies the public `/api/health` and `/api/players`
+routes to the production Vercel deployment, keeping Neon credentials server-only.
+Set `API_PROXY_TARGET` to point at another public deployment when needed.
 
 ## Neon and Vercel
 
@@ -64,14 +68,29 @@ and will recompute training percentiles inside each historical fold from the raw
 component statistics. Current age and organization fields returned on historical
 rows are not treated as historical facts.
 
+The latest complete Prospect Savant season is merged into
+`app.player_directory`, then materialized as the indexed
+`app.player_directory_snapshot` read model. A newly stored admin slice refreshes
+the snapshot automatically; the CLI backfill refreshes once after a successful
+run.
+
+The allowlisted public endpoint supports server-side search, role and level
+filters, source-score sorting, and pagination:
+
+```text
+GET /api/players?q=jenkins&playerType=Hitter&level=AAA&sort=psScore&page=1&limit=50
+```
+
+Raw provider JSON and scouting prose are never returned by the public API.
+
 ## Current surfaces
 
-- **Prospect board:** search, cohort filtering, decision-oriented ranking, movement, and watchlist actions.
-- **Player dossier:** MLB arrival probability, career WAR distribution, HOF-caliber tail, career arc, evidence drivers, and data/model confidence.
+- **Prospect board:** real-player search, role and level filtering, Prospect Savant score/percentile sorting, pagination, and a browser-local watchlist.
+- **Player dossier:** observed metrics, source coverage, identity provenance, and an explicit unpublished-model state.
 - **Model lab:** explicit targets, release gates, point-in-time rules, and model sequence.
 - **Data health:** proposed source stack, rights posture, and production-readiness state.
 
-All player records and forecasts in the UI are simulated. The demo adapter lives in `src/data/demoPlayers.ts`; domain contracts live in `src/domain/forecast.ts`.
+Every returned player has `forecast: null` until a validated model release is published. Provider scores and percentiles are labeled as source evidence and never presented as Baseball Oracle predictions. The domain contracts live in `src/domain/forecast.ts`.
 
 ## Design documents
 
