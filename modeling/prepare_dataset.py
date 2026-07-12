@@ -591,7 +591,15 @@ def build_labels(
                 event_observed if observed else pd.NA
             )
         labels.append(label)
-    return pd.DataFrame(labels), quality
+    label_frame = pd.DataFrame(labels)
+    for months in SURVIVAL_HORIZON_MONTHS:
+        label_frame[f"observed_{months}m"] = label_frame[
+            f"observed_{months}m"
+        ].astype("boolean")
+        label_frame[f"debut_within_{months}m"] = label_frame[
+            f"debut_within_{months}m"
+        ].astype("boolean")
+    return label_frame, quality
 
 
 def lahman_player_ids(register: pd.DataFrame, people: pd.DataFrame) -> dict[str, str]:

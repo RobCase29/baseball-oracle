@@ -161,6 +161,9 @@ def test_horizon_event_after_data_cutoff_remains_censored() -> None:
     assert labels.iloc[0]["censor_state"] == "right_censored"
     assert not labels.iloc[0]["observed_24m"]
     assert pd.isna(labels.iloc[0]["debut_within_24m"])
+    for months in (12, 24, 36, 48, 60):
+        assert str(labels[f"observed_{months}m"].dtype) == "boolean"
+        assert str(labels[f"debut_within_{months}m"].dtype) == "boolean"
 
 
 def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
