@@ -18,14 +18,20 @@ from modeling.arrival_hazard_baseline import (
     fit_hazard_baseline,
 )
 from modeling.arrival_holdout import (
+    AMENDED_LOCK_SCHEMA_VERSION,
+    AMENDED_RUNTIME_DEPENDENCY_PATHS,
+    AMENDED_STUDY_STATUS,
     BOOTSTRAP_REPETITIONS,
     DATA_CUTOFF,
     EVALUATOR_PRODUCER_PATHS,
+    FAILED_ATTEMPT_PRODUCER_PATHS,
     MIN_BOOTSTRAP_REPETITIONS,
     OFFICIAL_PROTOCOL_PATH,
     STUDY_STATUS,
     ArrivalHoldoutError,
+    build_amended_holdout_lock,
     content_addressed_lock_path,
+    create_amended_holdout_lock,
     create_holdout_lock,
     evaluation_protocol,
     verify_holdout_lock,
@@ -624,3 +630,468 @@ def test_creation_rejects_calibration_linked_to_different_model(tmp_path: Path) 
     archive.write_bytes(manifest_path.read_bytes())
     with pytest.raises(ArrivalHoldoutError, match="Calibration input differs"):
         _create(fixture, tmp_path / "holdout.json", root=tmp_path)
+
+
+def _failed_attempt_fixture(
+    root: Path, parent: dict, *, extra_evaluator_change: bool = False
+) -> tuple[Path, Path]:
+    for relative in AMENDED_RUNTIME_DEPENDENCY_PATHS:
+        path = root / relative
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f"# runtime dependency: {relative}\n")
+    external_path = root / "data/processed/arrival-external-v1/corpus_manifest.json"
+    external = {
+        "schema_version": CORPUS_SCHEMA_VERSION,
+        "data_cutoff": DATA_CUTOFF,
+        "corpus_content_sha256": "d" * 64,
+    }
+    external["manifest_sha256"] = json_sha256(external)
+    _write_json(external_path, external)
+    external_archive = (
+        external_path.parent / "manifests" / f"{external['manifest_sha256']}.json"
+    )
+    external_archive.parent.mkdir(parents=True)
+    external_archive.write_bytes(external_path.read_bytes())
+
+    _git(root, "add", ".")
+    _git(root, "commit", "-q", "-m", "prepare failed prediction evidence")
+    producer_commit = _git(root, "rev-parse", "HEAD")
+
+    admission_path = root / "artifacts/arrival-external-v1/admission.json"
+    coverage_seasons = [
+        {
+            "season": season,
+            "declared_team_pages": 1,
+            "observed_team_pages": 1,
+            "appearance_data_team_pages": 1,
+            "declared_no_record_team_pages": 0,
+            "failed_team_pages": 0,
+            "reconciled": True,
+            "immutable_lineage_complete": True,
+        }
+        for season in range(2021, 2026)
+    ]
+    admission = {
+        "schema_version": "arrival-external-admission/v1",
+        "status": "admission_pass_distribution_shift_promotion_blocked",
+        "outcomes_read": False,
+        "prediction_allowed": True,
+        "score_allowed": True,
+        "promotion_eligible": False,
+        "source_coverage": {
+            "seasons": coverage_seasons,
+            "all_team_pages_reconciled": True,
+            "all_lineage_content_addressed": True,
+        },
+        "population": {
+            "snapshots": 5,
+            "players": 5,
+            "seasons": list(range(2021, 2026)),
+            "identity_resolution_rate": 1.0,
+            "effective_time_safe_rate": 1.0,
+        },
+        "shift_summary": {
+            "maximum_selected_feature_missing_fraction": 0.0,
+            "maximum_absolute_missingness_jump": 0.0,
+            "maximum_unseen_categorical_fraction": 0.03,
+            "maximum_population_stability_index": 0.3,
+            "thresholds": {
+                "maximum_selected_feature_missing_fraction": 0.05,
+                "maximum_absolute_missingness_jump": 0.05,
+                "maximum_unseen_categorical_fraction": 0.02,
+                "maximum_population_stability_index": 0.2,
+                "population_stability_index_smoothing": 0.000001,
+            },
+        },
+        "feature_cells": [{"season": 2021, "role": "hitter", "feature": "age"}],
+        "gates": {
+            "all_team_pages_reconciled": True,
+            "all_lineage_content_addressed": True,
+            "identity_resolution_rate_is_one": True,
+            "effective_time_safe_rate_is_one": True,
+            "duplicate_snapshot_ids_are_zero": True,
+            "maximum_selected_feature_missing_fraction": True,
+            "maximum_missingness_jump": True,
+            "maximum_unseen_categorical_fraction": False,
+            "maximum_population_stability_index": False,
+        },
+        "integrity_failures": [],
+        "failed_gates": [
+            "maximum_unseen_categorical_fraction",
+            "maximum_population_stability_index",
+        ],
+        "distribution_shift_failures": [
+            "maximum_unseen_categorical_fraction",
+            "maximum_population_stability_index",
+        ],
+        "created_at": "2026-07-12T12:23:12-04:00",
+        "inputs": {
+            "holdout_lock_sha256": parent["lock_sha256"],
+            "external_corpus_manifest_sha256": external["manifest_sha256"],
+            "external_corpus_content_sha256": external["corpus_content_sha256"],
+        },
+        "producer": {
+            "files": {
+                relative: file_sha256(root / relative)
+                for relative in FAILED_ATTEMPT_PRODUCER_PATHS
+            },
+            "git": {
+                "commit": producer_commit,
+                "dirty": False,
+                "status_sha256": EMPTY_STATUS_SHA256,
+            },
+            "environment": {},
+            "arguments": {
+                "command": "predict",
+                "holdout_lock": "data/model-locks/arrival-post-pandemic-v1.json",
+                "external_corpus_manifest": (
+                    "data/processed/arrival-external-v1/corpus_manifest.json"
+                ),
+                "artifact_dir": "artifacts/arrival-external-v1",
+            },
+        },
+    }
+    admission["admission_sha256"] = json_sha256(admission)
+    _write_json(admission_path, admission)
+    admission_archive = (
+        admission_path.parent
+        / "admissions"
+        / f"{admission['admission_sha256']}.json"
+    )
+    admission_archive.parent.mkdir(parents=True)
+    admission_archive.write_bytes(admission_path.read_bytes())
+
+    _git(root, "add", ".")
+    _git(root, "commit", "-q", "-m", "seal failed prediction attempt")
+    changed = ["modeling/arrival_holdout.py", "modeling/arrival_external.py"]
+    if extra_evaluator_change:
+        changed.append("modeling/arrival_validation.py")
+    for relative in changed:
+        path = root / relative
+        path.write_text(path.read_text() + "# successor evaluator change\n")
+    _git(root, "add", "modeling")
+    _git(root, "commit", "-q", "-m", "prepare successor evaluator")
+    return admission_path, external_path
+
+
+def _amendment_fixture(
+    root: Path, *, extra_evaluator_change: bool = False
+) -> tuple[dict, Path, Path, Path]:
+    fixture = _fixture(root)
+    parent_path = root / "data/model-locks/arrival-post-pandemic-v1.json"
+    parent = _create(fixture, parent_path, root=root)
+    admission_path, external_path = _failed_attempt_fixture(
+        root, parent, extra_evaluator_change=extra_evaluator_change
+    )
+    return parent, parent_path, admission_path, external_path
+
+
+def _allow_synthetic_external_corpus(
+    monkeypatch: pytest.MonkeyPatch, root: Path
+) -> None:
+    def load(path: Path, *, root: Path) -> tuple[pd.DataFrame, dict]:
+        del root
+        return pd.DataFrame([{"snapshot_id": "synthetic"}]), json.loads(
+            path.read_text()
+        )
+
+    monkeypatch.setattr("modeling.arrival_holdout.load_external_corpus_features", load)
+    monkeypatch.setattr(
+        "modeling.arrival_holdout._load_frozen_components",
+        lambda parent, *, root: ({}, None, None, pd.DataFrame([{"player_id": "p"}])),
+    )
+
+    def audit(*args, **kwargs) -> dict:
+        del args, kwargs
+        admission = json.loads(
+            (root / "artifacts/arrival-external-v1/admission.json").read_text()
+        )
+        for key in ("created_at", "inputs", "producer", "admission_sha256"):
+            admission.pop(key)
+        return admission
+
+    monkeypatch.setattr("modeling.arrival_holdout.audit_external_admission", audit)
+
+
+def _rewrite_addressed_lock(path: Path, lock: dict) -> None:
+    canonical = dict(lock)
+    canonical.pop("lock_sha256", None)
+    lock["lock_sha256"] = json_sha256(canonical)
+    _write_json(path, lock)
+    archive = content_addressed_lock_path(path, lock["lock_sha256"])
+    _write_json(archive, lock)
+
+
+def test_create_amended_lock_binds_parent_failure_and_only_two_evaluator_deltas(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    parent, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    parent_bytes = parent_path.read_bytes()
+    output = tmp_path / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+
+    lock = create_amended_holdout_lock(
+        parent_path, admission_path, external_path, output, root=tmp_path
+    )
+
+    assert lock["schema_version"] == AMENDED_LOCK_SCHEMA_VERSION
+    assert lock["status"] == AMENDED_STUDY_STATUS
+    assert lock["parent_lock"]["lock_sha256"] == parent["lock_sha256"]
+    assert lock["failed_attempt"]["failed_execution_semantic_outcome_decode"] is False
+    assert lock["failed_attempt"]["researcher_outcome_blind"] is False
+    assert lock["failed_attempt"][
+        "researcher_previously_observed_aggregate_outcome_qa"
+    ] is True
+    assert lock["failed_attempt"]["study_retrospective"] is True
+    assert lock["amendment"]["model_refit"] is False
+    assert lock["amendment"]["recalibration_refit"] is False
+    assert lock["amendment"]["threshold_tuning"] is False
+    assert {
+        value["path"] for value in lock["amendment"]["permitted_evaluator_changes"]
+    } == {"modeling/arrival_holdout.py", "modeling/arrival_external.py"}
+    assert set(lock["evaluator"]["files"]) == set(AMENDED_RUNTIME_DEPENDENCY_PATHS)
+    assert {
+        value["path"] for value in lock["amendment"]["added_runtime_dependencies"]
+    } == set(AMENDED_RUNTIME_DEPENDENCY_PATHS) - set(EVALUATOR_PRODUCER_PATHS)
+    assert lock["benchmark"] == parent["benchmark"]
+    assert lock["calibration"] == parent["calibration"]
+    assert lock["evaluation"] == parent["evaluation"]
+    assert parent_path.read_bytes() == parent_bytes
+    assert verify_holdout_lock(output, root=tmp_path) == lock
+
+
+def test_amended_lock_rejects_frozen_model_evidence_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    output = tmp_path / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+    lock = create_amended_holdout_lock(
+        parent_path, admission_path, external_path, output, root=tmp_path
+    )
+    lock["benchmark"] = {**lock["benchmark"], "tampered": True}
+    _rewrite_addressed_lock(output, lock)
+
+    with pytest.raises(ArrivalHoldoutError, match="changed frozen field: benchmark"):
+        verify_holdout_lock(output, root=tmp_path)
+
+
+def test_amendment_creation_rejects_any_third_evaluator_delta(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(
+        tmp_path, extra_evaluator_change=True
+    )
+
+    with pytest.raises(ArrivalHoldoutError, match="limited exactly"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amendment_creation_requires_clean_committed_evaluator(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    (tmp_path / "untracked.txt").write_text("not committed\n")
+
+    with pytest.raises(ArrivalHoldoutError, match="clean committed worktree"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amendment_creation_rejects_failed_directory_evaluation_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    evaluation_report = tmp_path / "artifacts/arrival-external-v1/evaluation_report.json"
+    evaluation_report.write_text("{}\n")
+    _git(tmp_path, "add", str(evaluation_report.relative_to(tmp_path)))
+    _git(tmp_path, "commit", "-q", "-m", "unexpected evaluation output")
+
+    with pytest.raises(ArrivalHoldoutError, match="evaluation_report.json"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amendment_creation_rejects_recursively_incomplete_external_corpus(
+    tmp_path: Path,
+) -> None:
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+
+    with pytest.raises(ArrivalHoldoutError, match="recursive feature validation"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amendment_creation_rejects_incomplete_admission_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    admission = json.loads(admission_path.read_text())
+    admission["feature_cells"] = []
+    admission.pop("admission_sha256")
+    admission["admission_sha256"] = json_sha256(admission)
+    _write_json(admission_path, admission)
+    admission_archive = (
+        admission_path.parent
+        / "admissions"
+        / f"{admission['admission_sha256']}.json"
+    )
+    _write_json(admission_archive, admission)
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "incomplete admission")
+
+    with pytest.raises(ArrivalHoldoutError, match="feature cells"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amended_parent_must_be_v2_without_recursive_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    output = tmp_path / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+    create_amended_holdout_lock(
+        parent_path, admission_path, external_path, output, root=tmp_path
+    )
+    parent_path.write_bytes(output.read_bytes())
+
+    with pytest.raises(ArrivalHoldoutError, match="not the original v2 lock"):
+        verify_holdout_lock(output, root=tmp_path)
+
+
+def test_amended_create_preflights_archive_conflict_before_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    lock = build_amended_holdout_lock(
+        parent_path, admission_path, external_path, root=tmp_path
+    )
+    output = tmp_path / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+    archive = content_addressed_lock_path(output, lock["lock_sha256"])
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    archive.write_text("conflict\n")
+    monkeypatch.setattr(
+        "modeling.arrival_holdout.build_amended_holdout_lock",
+        lambda *args, **kwargs: lock,
+    )
+
+    with pytest.raises(ArrivalHoldoutError, match="content-addressed amended"):
+        create_amended_holdout_lock(
+            parent_path, admission_path, external_path, output, root=tmp_path
+        )
+    assert not output.exists()
+
+
+def test_amended_verification_rejects_noncanonical_lock_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    output = tmp_path / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+    create_amended_holdout_lock(
+        parent_path, admission_path, external_path, output, root=tmp_path
+    )
+    copied = tmp_path / "data/model-locks/copied-amendment.json"
+    copied.write_bytes(output.read_bytes())
+
+    with pytest.raises(ArrivalHoldoutError, match="alias is not canonical"):
+        verify_holdout_lock(copied, root=tmp_path)
+
+
+def test_amendment_creation_rejects_added_runtime_dependency_delta(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    risk_set = tmp_path / "modeling/risk_set.py"
+    risk_set.write_text(risk_set.read_text() + "# unauthorized drift\n")
+    _git(tmp_path, "add", "modeling/risk_set.py")
+    _git(tmp_path, "commit", "-q", "-m", "unauthorized runtime drift")
+
+    with pytest.raises(ArrivalHoldoutError, match="limited exactly"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )
+
+
+def test_amendment_recomputes_and_rejects_readressed_admission_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _allow_synthetic_external_corpus(monkeypatch, tmp_path)
+    _, parent_path, admission_path, external_path = _amendment_fixture(tmp_path)
+    original = json.loads(admission_path.read_text())
+    recomputed = dict(original)
+    for key in ("created_at", "inputs", "producer", "admission_sha256"):
+        recomputed.pop(key)
+    monkeypatch.setattr(
+        "modeling.arrival_holdout.audit_external_admission",
+        lambda *args, **kwargs: recomputed,
+    )
+    changed = dict(original)
+    changed["population"] = {**changed["population"], "snapshots": 6}
+    changed.pop("admission_sha256")
+    changed["admission_sha256"] = json_sha256(changed)
+    _write_json(admission_path, changed)
+    changed_archive = (
+        admission_path.parent
+        / "admissions"
+        / f"{changed['admission_sha256']}.json"
+    )
+    _write_json(changed_archive, changed)
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "readressed admission change")
+
+    with pytest.raises(ArrivalHoldoutError, match="outcome-free recomputation"):
+        create_amended_holdout_lock(
+            parent_path,
+            admission_path,
+            external_path,
+            tmp_path
+            / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json",
+            root=tmp_path,
+        )

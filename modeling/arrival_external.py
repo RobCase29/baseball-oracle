@@ -4,6 +4,7 @@ import argparse
 import io
 import json
 import math
+import subprocess
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +17,14 @@ import pandas as pd
 try:
     from modeling.arrival_calibration import ArrivalCalibrationModel, apply_calibration
     from modeling.arrival_calibration import deserialize_calibration_model
-    from modeling.arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
+    from modeling.arrival_corpus import (
+        CORPUS_SCHEMA_VERSION,
+        LABEL_OUTPUT,
+        SNAPSHOT_OUTPUT,
+        corpus_stable_content,
+        load_verified_dataset_manifest,
+        verify_season_archive_lineage,
+    )
     from modeling.arrival_hazard_baseline import ArrivalHazardBaselineModel
     from modeling.contracts import DATA_CUTOFF, SURVIVAL_HORIZON_MONTHS
     from modeling.provenance import file_sha256, json_sha256, producer_metadata
@@ -27,7 +35,14 @@ try:
 except ModuleNotFoundError:
     from arrival_calibration import ArrivalCalibrationModel, apply_calibration
     from arrival_calibration import deserialize_calibration_model
-    from arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
+    from arrival_corpus import (
+        CORPUS_SCHEMA_VERSION,
+        LABEL_OUTPUT,
+        SNAPSHOT_OUTPUT,
+        corpus_stable_content,
+        load_verified_dataset_manifest,
+        verify_season_archive_lineage,
+    )
     from arrival_hazard_baseline import ArrivalHazardBaselineModel
     from contracts import DATA_CUTOFF, SURVIVAL_HORIZON_MONTHS
     from provenance import file_sha256, json_sha256, producer_metadata
@@ -38,6 +53,7 @@ PREDICTION_SCHEMA_VERSION = "arrival-external-predictions/v1"
 PREDICTION_MANIFEST_SCHEMA_VERSION = "arrival-external-prediction-run/v1"
 EVALUATION_MANIFEST_SCHEMA_VERSION = "arrival-external-evaluation-run/v1"
 ADMISSION_SCHEMA_VERSION = "arrival-external-admission/v1"
+AMENDED_LOCK_SCHEMA_VERSION = "arrival-external-holdout-lock/v3"
 ROOT = Path(__file__).resolve().parents[1]
 EVALUATION_SEASONS = (2021, 2022, 2023, 2024, 2025)
 MAX_SELECTED_FEATURE_MISSING_FRACTION = 0.05
@@ -45,6 +61,26 @@ MAX_MISSINGNESS_JUMP = 0.05
 MAX_UNSEEN_CATEGORICAL_FRACTION = 0.02
 MAX_POPULATION_STABILITY_INDEX = 0.20
 PSI_SMOOTHING = 1e-6
+EXTERNAL_RUNTIME_PRODUCER_PATHS = (
+    "modeling/__init__.py",
+    "modeling/arrival_holdout.py",
+    "modeling/arrival_external.py",
+    "modeling/arrival_validation.py",
+    "modeling/arrival_calibration.py",
+    "modeling/arrival_hazard_baseline.py",
+    "modeling/contracts.py",
+    "modeling/config/arrival-validation-v2.json",
+    "modeling/arrival_corpus.py",
+    "modeling/train_arrival_population.py",
+    "modeling/provenance.py",
+    "modeling/risk_set.py",
+    "modeling/requirements.lock",
+)
+AMENDED_LOCK_PATH = "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+AMENDED_EXTERNAL_CORPUS_PATH = (
+    "data/processed/arrival-external-v1/corpus_manifest.json"
+)
+AMENDED_ARTIFACT_DIR = "artifacts/arrival-external-v1-amendment-001"
 EXPECTED_SCHEDULE: tuple[dict[str, Any], ...] = (
     {
         "season": 2021,
@@ -322,6 +358,83 @@ def _sha256_string(value: Any) -> bool:
     )
 
 
+def _verify_external_input_lineage(
+    manifest: Mapping[str, Any], *, root: Path
+) -> None:
+    inputs = manifest.get("inputs")
+    if not isinstance(inputs, list) or len(inputs) != len(EVALUATION_SEASONS):
+        raise ArrivalExternalError("External corpus input lineage is incomplete")
+    for item in inputs:
+        if not isinstance(item, Mapping):
+            raise ArrivalExternalError("External corpus input record is invalid")
+        try:
+            season = int(item["season"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ArrivalExternalError("External corpus input season is invalid") from error
+        value = item.get("dataset_manifest_path")
+        if not isinstance(value, str):
+            raise ArrivalExternalError(
+                f"External season {season} dataset manifest path is missing"
+            )
+        dataset_path = _resolve_path(value, root)
+        if dataset_path.is_symlink() or _portable_path(dataset_path, root) != value:
+            raise ArrivalExternalError(
+                f"External season {season} dataset manifest path is not canonical"
+            )
+        try:
+            dataset, manifest_address, dataset_address = (
+                load_verified_dataset_manifest(dataset_path, root=root)
+            )
+            archive = verify_season_archive_lineage(dataset, season, root=root)
+        except (OSError, TypeError, ValueError) as error:
+            raise ArrivalExternalError(
+                f"External season {season} lineage validation failed"
+            ) from error
+        output_hashes: dict[str, str] = {}
+        for output_name, field in (
+            (SNAPSHOT_OUTPUT, "snapshots_sha256"),
+            (LABEL_OUTPUT, "labels_sha256"),
+        ):
+            output = dataset.get("outputs", {}).get(output_name)
+            if not isinstance(output, Mapping):
+                raise ArrivalExternalError(
+                    f"External season {season} dataset output is missing: {output_name}"
+                )
+            output_path_value = output.get("content_addressed_path")
+            output_hash = output.get("sha256")
+            if not isinstance(output_path_value, str):
+                raise ArrivalExternalError(
+                    f"External season {season} dataset output path is missing"
+                )
+            output_path = _resolve_path(output_path_value, root)
+            _require_file(
+                output_path,
+                output_hash,
+                f"External season {season} dataset output {output_name}",
+            )
+            if (
+                output_path.parent.name != dataset_address
+                or output_path.parent.parent.name != "datasets"
+            ):
+                raise ArrivalExternalError(
+                    f"External season {season} dataset output is not content-addressed"
+                )
+            output_hashes[field] = str(output_hash)
+        expected = {
+            "season": season,
+            "dataset_manifest_path": value,
+            "dataset_manifest_sha256": file_sha256(dataset_path),
+            "dataset_manifest_content_address": manifest_address,
+            "dataset_content_sha256": dataset_address,
+            **output_hashes,
+            "archive": archive,
+        }
+        if dict(item) != expected:
+            raise ArrivalExternalError(
+                f"External season {season} corpus input evidence differs"
+            )
+
+
 def load_external_corpus_features(
     manifest_path: Path, *, root: Path = ROOT
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
@@ -358,6 +471,7 @@ def load_external_corpus_features(
     )
     if json_sha256(stable) != corpus_address:
         raise ArrivalExternalError("External corpus content address is invalid")
+    _verify_external_input_lineage(manifest, root=root)
     _source_coverage(manifest)
 
     outputs = manifest.get("outputs")
@@ -692,8 +806,16 @@ def _global_cumulative_predictions(
     return predictions
 
 
-def _assert_probability_vectors(rows: pd.DataFrame, columns: Sequence[str]) -> None:
-    for column in columns:
+def _assert_probability_vectors(
+    rows: pd.DataFrame,
+    bounded_columns: Sequence[str],
+    cumulative_columns: Sequence[str],
+) -> None:
+    if unknown := sorted(set(cumulative_columns) - set(bounded_columns)):
+        raise ArrivalExternalError(
+            f"External cumulative probability columns are not bounded: {unknown}"
+        )
+    for column in bounded_columns:
         values = pd.to_numeric(rows[column], errors="coerce").to_numpy(dtype=float)
         if not np.isfinite(values).all() or ((values < 0.0) | (values > 1.0)).any():
             raise ArrivalExternalError(f"External {column} values are outside [0, 1]")
@@ -701,7 +823,7 @@ def _assert_probability_vectors(rows: pd.DataFrame, columns: Sequence[str]) -> N
         ordered = group.sort_values("horizon_months", kind="mergesort")
         if tuple(ordered["horizon_months"]) != tuple(SURVIVAL_HORIZON_MONTHS):
             raise ArrivalExternalError("External prediction horizon vectors are incomplete")
-        for column in columns:
+        for column in cumulative_columns:
             if (np.diff(ordered[column].to_numpy(dtype=float)) < -1e-15).any():
                 raise ArrivalExternalError(f"External {column} is not cumulative-monotone")
 
@@ -783,6 +905,12 @@ def build_external_prediction_rows(
         [
             "raw_candidate_probability",
             "calibrated_probability_unprojected",
+            "candidate_probability",
+            "hierarchical_baseline_probability",
+            "global_baseline_probability",
+        ],
+        [
+            "raw_candidate_probability",
             "candidate_probability",
             "hierarchical_baseline_probability",
             "global_baseline_probability",
@@ -889,20 +1017,180 @@ def _external_producer(
 ) -> dict[str, Any]:
     return producer_metadata(
         root,
-        [
-            Path(__file__),
-            root / "modeling/arrival_holdout.py",
-            root / "modeling/arrival_validation.py",
-            root / "modeling/arrival_calibration.py",
-            root / "modeling/arrival_hazard_baseline.py",
-            root / "modeling/train_arrival_population.py",
-            root / "modeling/contracts.py",
-            root / "modeling/provenance.py",
-            root / "modeling/requirements.lock",
-            root / "modeling/config/arrival-validation-v2.json",
-        ],
+        [root / relative for relative in EXTERNAL_RUNTIME_PRODUCER_PATHS],
         dict(arguments),
     )
+
+
+def _require_runtime_evaluator_bytes(
+    lock: Mapping[str, Any], producer: Mapping[str, Any], *, root: Path
+) -> None:
+    if lock.get("schema_version") != AMENDED_LOCK_SCHEMA_VERSION:
+        raise ArrivalExternalError(
+            "Current external evaluator is authorized only by the v3 successor lock"
+        )
+    evaluator = lock.get("evaluator")
+    expected = evaluator.get("files") if isinstance(evaluator, Mapping) else None
+    if not isinstance(expected, Mapping) or set(expected) != set(
+        EXTERNAL_RUNTIME_PRODUCER_PATHS
+    ):
+        raise ArrivalExternalError(
+            "Holdout lock runtime dependency set differs from the executable path"
+        )
+    actual: dict[str, str] = {}
+    for relative in EXTERNAL_RUNTIME_PRODUCER_PATHS:
+        path = root / relative
+        current = root
+        for part in Path(relative).parts:
+            current /= part
+            if current.is_symlink():
+                raise ArrivalExternalError(
+                    f"Runtime evaluator dependency traverses a symlink: {relative}"
+                )
+        if not path.is_file():
+            raise ArrivalExternalError(
+                f"Runtime evaluator dependency is missing or unsafe: {relative}"
+            )
+        actual[relative] = file_sha256(path)
+    if actual != dict(expected):
+        raise ArrivalExternalError("Runtime evaluator live bytes differ from the holdout lock")
+    producer_files = producer.get("files")
+    if not isinstance(producer_files, Mapping) or dict(producer_files) != actual:
+        raise ArrivalExternalError(
+            "External run producer files differ from the locked runtime dependency set"
+        )
+    producer_git = producer.get("git")
+    if (
+        not isinstance(producer_git, Mapping)
+        or producer_git.get("dirty") is not False
+        or producer_git.get("status_sha256")
+        != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ):
+        raise ArrivalExternalError("External run producer Git state is not clean")
+    try:
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True
+        ).strip()
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=root,
+            text=True,
+        )
+        ancestry = subprocess.run(
+            [
+                "git",
+                "merge-base",
+                "--is-ancestor",
+                str(evaluator.get("git_commit")),
+                head,
+            ],
+            cwd=root,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise ArrivalExternalError("Cannot verify external run Git state") from error
+    if producer_git.get("commit") != head or status or ancestry.returncode != 0:
+        raise ArrivalExternalError(
+            "External run commit is not a clean descendant of the locked evaluator"
+        )
+
+
+def _require_amended_runtime_paths(
+    lock: Mapping[str, Any],
+    lock_path: Path,
+    external_corpus_manifest_path: Path,
+    artifact_dir: Path,
+    *,
+    root: Path,
+    external_manifest: Mapping[str, Any] | None = None,
+    prediction_manifest_path: Path | None = None,
+) -> None:
+    if lock.get("schema_version") != AMENDED_LOCK_SCHEMA_VERSION:
+        return
+    def require(path: Path, expected: str, label: str) -> None:
+        candidate = path if path.is_absolute() else root / path
+        candidate = candidate.absolute()
+        try:
+            relative = candidate.relative_to(root).as_posix()
+        except ValueError as error:
+            raise ArrivalExternalError(f"{label} escapes the repository") from error
+        current = root
+        for part in Path(relative).parts:
+            current /= part
+            if current.is_symlink():
+                raise ArrivalExternalError(f"{label} traverses a symlink")
+        if relative != expected:
+            raise ArrivalExternalError(f"{label} is not the canonical alias")
+
+    require(lock_path, AMENDED_LOCK_PATH, "Amended holdout lock")
+    require(
+        external_corpus_manifest_path,
+        AMENDED_EXTERNAL_CORPUS_PATH,
+        "Amended external corpus manifest",
+    )
+    require(artifact_dir, AMENDED_ARTIFACT_DIR, "Amended artifact directory")
+    if prediction_manifest_path is not None:
+        require(
+            prediction_manifest_path,
+            f"{AMENDED_ARTIFACT_DIR}/prediction_manifest.json",
+            "Amended prediction manifest",
+        )
+    amendment = lock.get("amendment")
+    failed_attempt = lock.get("failed_attempt")
+    corpus_record = (
+        failed_attempt.get("external_corpus")
+        if isinstance(failed_attempt, Mapping)
+        else None
+    )
+    if (
+        not isinstance(amendment, Mapping)
+        or amendment.get("output_artifact_dir") != AMENDED_ARTIFACT_DIR
+        or not isinstance(corpus_record, Mapping)
+        or corpus_record.get("manifest_path") != AMENDED_EXTERNAL_CORPUS_PATH
+    ):
+        raise ArrivalExternalError("Amended lock execution path evidence differs")
+    if external_manifest is not None and (
+        external_manifest.get("manifest_sha256")
+        != corpus_record.get("manifest_sha256")
+        or external_manifest.get("corpus_content_sha256")
+        != corpus_record.get("corpus_content_sha256")
+    ):
+        raise ArrivalExternalError("Amended execution external corpus hashes differ")
+
+
+def _require_amended_prediction_manifest_evidence(
+    manifest: Mapping[str, Any], lock: Mapping[str, Any]
+) -> None:
+    if lock.get("schema_version") != AMENDED_LOCK_SCHEMA_VERSION:
+        return
+    lock_record = manifest.get("lock")
+    corpus_record = manifest.get("external_corpus")
+    admission_record = manifest.get("admission")
+    output_record = manifest.get("output")
+    if (
+        not isinstance(lock_record, Mapping)
+        or lock_record.get("path") != AMENDED_LOCK_PATH
+        or not isinstance(corpus_record, Mapping)
+        or corpus_record.get("manifest_path") != AMENDED_EXTERNAL_CORPUS_PATH
+        or not isinstance(admission_record, Mapping)
+        or admission_record.get("path") != f"{AMENDED_ARTIFACT_DIR}/admission.json"
+        or not isinstance(output_record, Mapping)
+        or output_record.get("path") != f"{AMENDED_ARTIFACT_DIR}/predictions.parquet"
+    ):
+        raise ArrivalExternalError("Amended prediction manifest aliases differ")
+    admission_address = admission_record.get("admission_sha256")
+    prediction_hash = output_record.get("sha256")
+    if (
+        admission_record.get("content_addressed_path")
+        != f"{AMENDED_ARTIFACT_DIR}/admissions/{admission_address}.json"
+        or output_record.get("content_addressed_path")
+        != f"{AMENDED_ARTIFACT_DIR}/predictions/{prediction_hash}.parquet"
+    ):
+        raise ArrivalExternalError(
+            "Amended prediction manifest content-addressed aliases differ"
+        )
 
 
 def _load_frozen_components(
@@ -962,15 +1250,22 @@ def run_external_prediction(
         from arrival_holdout import verify_holdout_lock
 
     root = root.resolve()
-    lock_path = lock_path.resolve()
-    external_corpus_manifest_path = external_corpus_manifest_path.resolve()
-    artifact_dir = artifact_dir.resolve()
+    lock_path = (lock_path if lock_path.is_absolute() else root / lock_path).absolute()
+    external_corpus_manifest_path = (
+        external_corpus_manifest_path
+        if external_corpus_manifest_path.is_absolute()
+        else root / external_corpus_manifest_path
+    ).absolute()
+    artifact_dir = (
+        artifact_dir if artifact_dir.is_absolute() else root / artifact_dir
+    ).absolute()
     lock = verify_holdout_lock(lock_path, root=root)
-    snapshots, external_manifest = load_external_corpus_features(
-        external_corpus_manifest_path, root=root
-    )
-    models, calibrator, comparator, training_snapshots = _load_frozen_components(
-        lock, root=root
+    _require_amended_runtime_paths(
+        lock,
+        lock_path,
+        external_corpus_manifest_path,
+        artifact_dir,
+        root=root,
     )
     producer = (
         dict(producer_override)
@@ -988,6 +1283,21 @@ def run_external_prediction(
         )
     )
     _require_clean_producer(producer, "External prediction")
+    _require_runtime_evaluator_bytes(lock, producer, root=root)
+    snapshots, external_manifest = load_external_corpus_features(
+        external_corpus_manifest_path, root=root
+    )
+    _require_amended_runtime_paths(
+        lock,
+        lock_path,
+        external_corpus_manifest_path,
+        artifact_dir,
+        root=root,
+        external_manifest=external_manifest,
+    )
+    models, calibrator, comparator, training_snapshots = _load_frozen_components(
+        lock, root=root
+    )
 
     admission = audit_external_admission(
         snapshots, training_snapshots, models, external_manifest
@@ -1113,6 +1423,7 @@ def load_verified_external_predictions(
     lock = verify_holdout_lock(lock_path.resolve(), root=root)
     if manifest.get("lock", {}).get("lock_sha256") != lock["lock_sha256"]:
         raise ArrivalExternalError("External predictions reference a different holdout lock")
+    _require_amended_prediction_manifest_evidence(manifest, lock)
     _, external_manifest = load_external_corpus_features(
         external_corpus_manifest_path.resolve(), root=root
     )
@@ -1184,23 +1495,35 @@ def run_external_evaluation(
         from modeling.arrival_validation import evaluate_external_predictions
     except ModuleNotFoundError:
         from arrival_validation import evaluate_external_predictions
+    try:
+        from modeling.arrival_holdout import verify_holdout_lock
+    except ModuleNotFoundError:
+        from arrival_holdout import verify_holdout_lock
 
     root = root.resolve()
-    lock_path = lock_path.resolve()
-    external_corpus_manifest_path = external_corpus_manifest_path.resolve()
-    prediction_manifest_path = prediction_manifest_path.resolve()
-    artifact_dir = artifact_dir.resolve()
-    predictions, prediction_manifest, lock = load_verified_external_predictions(
-        prediction_manifest_path,
+    lock_path = (lock_path if lock_path.is_absolute() else root / lock_path).absolute()
+    external_corpus_manifest_path = (
+        external_corpus_manifest_path
+        if external_corpus_manifest_path.is_absolute()
+        else root / external_corpus_manifest_path
+    ).absolute()
+    prediction_manifest_path = (
+        prediction_manifest_path
+        if prediction_manifest_path.is_absolute()
+        else root / prediction_manifest_path
+    ).absolute()
+    artifact_dir = (
+        artifact_dir if artifact_dir.is_absolute() else root / artifact_dir
+    ).absolute()
+    lock = verify_holdout_lock(lock_path, root=root)
+    _require_amended_runtime_paths(
+        lock,
         lock_path,
         external_corpus_manifest_path,
+        artifact_dir,
         root=root,
+        prediction_manifest_path=prediction_manifest_path,
     )
-    admission = _load_prediction_admission(prediction_manifest, root=root)
-    labels, external_manifest = load_external_corpus_labels(
-        external_corpus_manifest_path, root=root
-    )
-    evaluated_rows = attach_predeclared_outcomes(predictions, labels)
     producer = (
         dict(producer_override)
         if producer_override is not None
@@ -1218,6 +1541,40 @@ def run_external_evaluation(
         )
     )
     _require_clean_producer(producer, "External evaluation")
+    _require_runtime_evaluator_bytes(lock, producer, root=root)
+    predictions, prediction_manifest, lock = load_verified_external_predictions(
+        prediction_manifest_path,
+        lock_path,
+        external_corpus_manifest_path,
+        root=root,
+    )
+    prediction_producer = prediction_manifest.get("producer")
+    if not isinstance(prediction_producer, Mapping):
+        raise ArrivalExternalError("External prediction producer evidence is missing")
+    _require_runtime_evaluator_bytes(lock, prediction_producer, root=root)
+    _require_amended_runtime_paths(
+        lock,
+        lock_path,
+        external_corpus_manifest_path,
+        artifact_dir,
+        root=root,
+        external_manifest=prediction_manifest.get("external_corpus"),
+        prediction_manifest_path=prediction_manifest_path,
+    )
+    admission = _load_prediction_admission(prediction_manifest, root=root)
+    labels, external_manifest = load_external_corpus_labels(
+        external_corpus_manifest_path, root=root
+    )
+    _require_amended_runtime_paths(
+        lock,
+        lock_path,
+        external_corpus_manifest_path,
+        artifact_dir,
+        root=root,
+        external_manifest=external_manifest,
+        prediction_manifest_path=prediction_manifest_path,
+    )
+    evaluated_rows = attach_predeclared_outcomes(predictions, labels)
 
     inference = lock["evaluation"]["inference"]
     repetitions = int(inference["bootstrap_repetitions"])

@@ -17,12 +17,16 @@ try:
     )
     from modeling.arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
     from modeling.arrival_external import (
+        EXTERNAL_RUNTIME_PRODUCER_PATHS,
         MAX_MISSINGNESS_JUMP,
         MAX_POPULATION_STABILITY_INDEX,
         MAX_SELECTED_FEATURE_MISSING_FRACTION,
         MAX_UNSEEN_CATEGORICAL_FRACTION,
         PREDICTION_SCHEMA_VERSION,
         PSI_SMOOTHING,
+        _load_frozen_components,
+        audit_external_admission,
+        load_external_corpus_features,
     )
     from modeling.arrival_hazard_baseline import (
         HAZARD_BASELINE_SCHEMA_VERSION,
@@ -39,12 +43,16 @@ except ModuleNotFoundError:
     )
     from arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
     from arrival_external import (
+        EXTERNAL_RUNTIME_PRODUCER_PATHS,
         MAX_MISSINGNESS_JUMP,
         MAX_POPULATION_STABILITY_INDEX,
         MAX_SELECTED_FEATURE_MISSING_FRACTION,
         MAX_UNSEEN_CATEGORICAL_FRACTION,
         PREDICTION_SCHEMA_VERSION,
         PSI_SMOOTHING,
+        _load_frozen_components,
+        audit_external_admission,
+        load_external_corpus_features,
     )
     from arrival_hazard_baseline import (
         HAZARD_BASELINE_SCHEMA_VERSION,
@@ -57,10 +65,15 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_SCHEMA_VERSION = "arrival-external-holdout-lock/v2"
+AMENDED_LOCK_SCHEMA_VERSION = "arrival-external-holdout-lock/v3"
 PROTOCOL_SCHEMA_VERSION = "arrival-validation-protocol/v2"
 CALIBRATION_MANIFEST_SCHEMA = "arrival-calibration-run/v1"
 SUFFICIENCY_SCHEMA_VERSION = "arrival-data-sufficiency/v1"
 STUDY_STATUS = "retrospective_external_regime_test_not_prospective"
+AMENDED_STUDY_STATUS = (
+    "retrospective_external_regime_test_post_ingestion_pre_score_technical_"
+    "amendment_not_prospective"
+)
 DATA_CUTOFF = "2025-12-31"
 MIN_BOOTSTRAP_REPETITIONS = 2_000
 BOOTSTRAP_REPETITIONS = MIN_BOOTSTRAP_REPETITIONS
@@ -78,6 +91,42 @@ EVALUATOR_PRODUCER_PATHS = (
     "modeling/arrival_hazard_baseline.py",
     "modeling/contracts.py",
     OFFICIAL_PROTOCOL_PATH,
+)
+AMENDED_RUNTIME_DEPENDENCY_PATHS = tuple(EXTERNAL_RUNTIME_PRODUCER_PATHS)
+ADDED_AMENDED_RUNTIME_DEPENDENCY_PATHS = tuple(
+    path
+    for path in AMENDED_RUNTIME_DEPENDENCY_PATHS
+    if path not in EVALUATOR_PRODUCER_PATHS
+)
+AMENDED_EVALUATOR_PATHS = (
+    "modeling/arrival_holdout.py",
+    "modeling/arrival_external.py",
+)
+FAILED_ATTEMPT_PRODUCER_PATHS = (
+    "modeling/arrival_external.py",
+    "modeling/arrival_holdout.py",
+    "modeling/arrival_validation.py",
+    "modeling/arrival_calibration.py",
+    "modeling/arrival_hazard_baseline.py",
+    "modeling/train_arrival_population.py",
+    "modeling/contracts.py",
+    "modeling/provenance.py",
+    "modeling/requirements.lock",
+    OFFICIAL_PROTOCOL_PATH,
+)
+ORIGINAL_LOCK_PATH = "data/model-locks/arrival-post-pandemic-v1.json"
+AMENDED_LOCK_PATH = (
+    "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+)
+FAILED_PREDICTION_ARTIFACT_DIR = "artifacts/arrival-external-v1"
+AMENDED_PREDICTION_ARTIFACT_DIR = "artifacts/arrival-external-v1-amendment-001"
+EXTERNAL_CORPUS_MANIFEST_PATH = (
+    "data/processed/arrival-external-v1/corpus_manifest.json"
+)
+FAILED_ADMISSION_PATH = "artifacts/arrival-external-v1/admission.json"
+AMENDMENT_REASON_CODE = "pre_projection_diagnostic_monotonicity_assertion"
+AMENDMENT_RATIONALE_SOURCE = (
+    "prediction_stage_invariant_and_feature_calculations_only"
 )
 
 DEFAULT_EVALUATION_SCHEDULE: tuple[dict[str, Any], ...] = (
@@ -196,6 +245,23 @@ def _verify_git_commit_exists(root: Path, commit: str) -> None:
         )
 
 
+def _require_git_ancestor(root: Path, ancestor: str, descendant: str, label: str) -> None:
+    _verify_git_commit_exists(root, ancestor)
+    _verify_git_commit_exists(root, descendant)
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=root,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError as error:
+        raise ArrivalHoldoutError("Git is unavailable for ancestry verification") from error
+    if result.returncode != 0:
+        raise ArrivalHoldoutError(f"Git ancestry differs: {label}")
+
+
 def _git_relative_path(value: str) -> str:
     path = Path(value)
     if path.is_absolute() or ".." in path.parts or not path.parts:
@@ -290,10 +356,12 @@ def _git_head(root: Path) -> str:
     return commit
 
 
-def _bind_evaluator(root: Path) -> dict[str, Any]:
+def _bind_evaluator(
+    root: Path, paths: tuple[str, ...] = EVALUATOR_PRODUCER_PATHS
+) -> dict[str, Any]:
     commit = _git_head(root)
     files: dict[str, str] = {}
-    for relative in EVALUATOR_PRODUCER_PATHS:
+    for relative in paths:
         path = root / relative
         expected = _regular_file_sha256(path, f"Evaluator file {relative}")
         if _git_blob_sha256(root, commit, relative) != expected:
@@ -304,14 +372,19 @@ def _bind_evaluator(root: Path) -> dict[str, Any]:
     return {"git_commit": commit, "files": files}
 
 
-def _verify_evaluator(value: Any, *, root: Path) -> dict[str, Any]:
+def _verify_evaluator(
+    value: Any,
+    *,
+    root: Path,
+    paths: tuple[str, ...] = EVALUATOR_PRODUCER_PATHS,
+) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != {"git_commit", "files"}:
         raise ArrivalHoldoutError("Evaluator producer evidence is invalid")
     commit = value.get("git_commit")
     files = value.get("files")
     if not isinstance(commit, str) or not isinstance(files, dict):
         raise ArrivalHoldoutError("Evaluator producer evidence is incomplete")
-    if set(files) != set(EVALUATOR_PRODUCER_PATHS):
+    if set(files) != set(paths):
         raise ArrivalHoldoutError("Evaluator producer file set differs from the frozen contract")
     _verify_git_commit_exists(root, commit)
     verified: dict[str, str] = {}
@@ -1497,9 +1570,17 @@ def _write_create_only(path: Path, body: bytes, label: str) -> None:
             )
 
 
-def verify_holdout_lock(path: Path, *, root: Path = ROOT) -> dict[str, Any]:
-    path = path.resolve()
-    lock = _read_json_object(path, "external holdout lock")
+def _preflight_create_only(path: Path, body: bytes, label: str) -> None:
+    if path.exists() or path.is_symlink():
+        if not path.is_file() or path.is_symlink() or path.read_bytes() != body:
+            raise ArrivalHoldoutError(
+                f"Refusing to overwrite non-identical {label}: {path}"
+            )
+
+
+def _verify_v2_holdout_lock(
+    path: Path, lock: dict[str, Any], *, root: Path
+) -> dict[str, Any]:
     expected_keys = {
         "schema_version",
         "status",
@@ -1611,6 +1692,742 @@ def verify_holdout_lock(path: Path, *, root: Path = ROOT) -> dict[str, Any]:
         raise ArrivalHoldoutError("Content-addressed external holdout lock is missing")
     _require_identical_files(path, archive_path, "External holdout lock archive")
     return lock
+
+
+def _require_exact_keys(value: Any, expected: set[str], label: str) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ArrivalHoldoutError(f"{label} fields differ from the schema")
+    return value
+
+
+def _amended_evaluator_changes(
+    parent: dict[str, Any],
+    evaluator: dict[str, Any],
+    failed_producer_commit: str,
+    *,
+    root: Path,
+) -> list[dict[str, str]]:
+    parent_files = parent["evaluator"]["files"]
+    current_files = evaluator["files"]
+    if set(current_files) != set(AMENDED_RUNTIME_DEPENDENCY_PATHS):
+        raise ArrivalHoldoutError("Amended evaluator runtime dependency set differs")
+    baseline_files = {
+        path: _git_blob_sha256(root, failed_producer_commit, path)
+        for path in AMENDED_RUNTIME_DEPENDENCY_PATHS
+    }
+    for path in EVALUATOR_PRODUCER_PATHS:
+        if baseline_files[path] != parent_files[path]:
+            raise ArrivalHoldoutError(
+                "Failed-attempt evaluator baseline differs from the parent lock"
+            )
+    changed = {
+        path
+        for path in AMENDED_RUNTIME_DEPENDENCY_PATHS
+        if baseline_files[path] != current_files[path]
+    }
+    if changed != set(AMENDED_EVALUATOR_PATHS):
+        raise ArrivalHoldoutError(
+            "Amended evaluator changes must be limited exactly to arrival_external.py "
+            "and arrival_holdout.py"
+        )
+    purposes = {
+        "modeling/arrival_external.py": (
+            "range_check_the_preprojection_diagnostic_without_requiring_it_to_be_"
+            "cumulative_monotone_while_retaining_published_probability_checks"
+        ),
+        "modeling/arrival_holdout.py": (
+            "create_and_verify_the_content_addressed_v3_successor_lock"
+        ),
+    }
+    return [
+        {
+            "path": path,
+            "before_sha256": baseline_files[path],
+            "after_sha256": current_files[path],
+            "purpose": purposes[path],
+        }
+        for path in AMENDED_EVALUATOR_PATHS
+    ]
+
+
+def _parent_lock_record(
+    path: Path, lock: dict[str, Any], *, root: Path
+) -> dict[str, str]:
+    address = _require_sha256(lock.get("lock_sha256"), "Parent holdout lock address")
+    archive = content_addressed_lock_path(path, address)
+    digest = _regular_file_sha256(path, "Parent holdout lock")
+    _require_file_hash(archive, digest, "Parent holdout lock archive")
+    _require_identical_files(path, archive, "Parent holdout lock archive")
+    return {
+        "path": _portable_path(path, root),
+        "content_addressed_path": _portable_path(archive, root),
+        "lock_sha256": address,
+        "sha256": digest,
+    }
+
+
+def _external_corpus_record(path: Path, *, root: Path) -> dict[str, str]:
+    manifest = _read_json_object(path, "amendment external corpus manifest")
+    try:
+        snapshots, recursively_verified = load_external_corpus_features(path, root=root)
+    except (OSError, TypeError, ValueError) as error:
+        raise ArrivalHoldoutError(
+            "Amendment external corpus failed recursive feature validation"
+        ) from error
+    if snapshots.empty or recursively_verified != manifest:
+        raise ArrivalHoldoutError(
+            "Amendment external corpus recursive validation differs"
+        )
+    if manifest.get("schema_version") != CORPUS_SCHEMA_VERSION:
+        raise ArrivalHoldoutError("Amendment external corpus schema differs")
+    if manifest.get("data_cutoff") != DATA_CUTOFF:
+        raise ArrivalHoldoutError("Amendment external corpus cutoff differs")
+    address = _require_sha256(
+        manifest.get("manifest_sha256"), "Amendment external corpus manifest address"
+    )
+    canonical = dict(manifest)
+    canonical.pop("manifest_sha256", None)
+    if json_sha256(canonical) != address:
+        raise ArrivalHoldoutError("Amendment external corpus self-address is invalid")
+    content_address = _require_sha256(
+        manifest.get("corpus_content_sha256"),
+        "Amendment external corpus content address",
+    )
+    archive = path.parent / "manifests" / f"{address}.json"
+    digest = _regular_file_sha256(path, "Amendment external corpus manifest")
+    _require_file_hash(archive, digest, "Amendment external corpus manifest archive")
+    _require_identical_files(path, archive, "Amendment external corpus manifest archive")
+    return {
+        "manifest_path": _portable_path(path, root),
+        "content_addressed_path": _portable_path(archive, root),
+        "manifest_sha256": address,
+        "corpus_content_sha256": content_address,
+        "sha256": digest,
+    }
+
+
+def _failed_admission_record(
+    path: Path,
+    parent: dict[str, Any],
+    external_corpus: dict[str, str],
+    *,
+    root: Path,
+) -> dict[str, str]:
+    admission = _read_json_object(path, "failed prediction admission")
+    _require_exact_keys(
+        admission,
+        {
+            "schema_version",
+            "status",
+            "outcomes_read",
+            "prediction_allowed",
+            "score_allowed",
+            "promotion_eligible",
+            "source_coverage",
+            "population",
+            "shift_summary",
+            "feature_cells",
+            "gates",
+            "failed_gates",
+            "integrity_failures",
+            "distribution_shift_failures",
+            "created_at",
+            "inputs",
+            "producer",
+            "admission_sha256",
+        },
+        "Failed prediction admission",
+    )
+    address = _require_sha256(
+        admission.get("admission_sha256"), "Failed prediction admission address"
+    )
+    canonical = dict(admission)
+    canonical.pop("admission_sha256", None)
+    if json_sha256(canonical) != address:
+        raise ArrivalHoldoutError("Failed prediction admission self-address is invalid")
+    try:
+        external_snapshots, external_manifest = load_external_corpus_features(
+            _resolve_path(external_corpus["manifest_path"], root), root=root
+        )
+        models, _, _, training_snapshots = _load_frozen_components(parent, root=root)
+        recomputed = audit_external_admission(
+            external_snapshots,
+            training_snapshots,
+            models,
+            external_manifest,
+        )
+    except (OSError, TypeError, ValueError) as error:
+        raise ArrivalHoldoutError(
+            "Failed prediction admission could not be recomputed outcome-free"
+        ) from error
+    if any(admission.get(key) != value for key, value in recomputed.items()):
+        raise ArrivalHoldoutError(
+            "Failed prediction admission differs from outcome-free recomputation"
+        )
+    archive = path.parent / "admissions" / f"{address}.json"
+    digest = _regular_file_sha256(path, "Failed prediction admission")
+    _require_file_hash(archive, digest, "Failed prediction admission archive")
+    _require_identical_files(path, archive, "Failed prediction admission archive")
+    if admission.get("schema_version") != "arrival-external-admission/v1":
+        raise ArrivalHoldoutError("Failed prediction admission schema differs")
+    if admission.get("status") != (
+        "admission_pass_distribution_shift_promotion_blocked"
+    ):
+        raise ArrivalHoldoutError("Failed prediction admission status differs")
+    if admission.get("outcomes_read") is not False:
+        raise ArrivalHoldoutError("Failed prediction admission was not outcome-free")
+    if admission.get("prediction_allowed") is not True or admission.get(
+        "score_allowed"
+    ) is not True:
+        raise ArrivalHoldoutError("Failed prediction admission did not authorize prediction")
+    if admission.get("integrity_failures") != []:
+        raise ArrivalHoldoutError("Failed prediction admission contains integrity failures")
+    if admission.get("promotion_eligible") is not False:
+        raise ArrivalHoldoutError(
+            "Failed prediction admission must preserve distribution-shift ineligibility"
+        )
+    expected_shift_failures = [
+        "maximum_unseen_categorical_fraction",
+        "maximum_population_stability_index",
+    ]
+    if (
+        admission.get("failed_gates") != expected_shift_failures
+        or admission.get("distribution_shift_failures") != expected_shift_failures
+    ):
+        raise ArrivalHoldoutError("Failed prediction shift failures differ")
+    expected_gates = {
+        "all_team_pages_reconciled": True,
+        "all_lineage_content_addressed": True,
+        "identity_resolution_rate_is_one": True,
+        "effective_time_safe_rate_is_one": True,
+        "duplicate_snapshot_ids_are_zero": True,
+        "maximum_selected_feature_missing_fraction": True,
+        "maximum_missingness_jump": True,
+        "maximum_unseen_categorical_fraction": False,
+        "maximum_population_stability_index": False,
+    }
+    if admission.get("gates") != expected_gates:
+        raise ArrivalHoldoutError("Failed prediction admission gates differ")
+    population = admission.get("population")
+    if (
+        not isinstance(population, dict)
+        or population.get("seasons") != list(range(2021, 2026))
+        or population.get("identity_resolution_rate") != 1.0
+        or population.get("effective_time_safe_rate") != 1.0
+        or int(population.get("snapshots", 0)) <= 0
+        or int(population.get("players", 0)) <= 0
+    ):
+        raise ArrivalHoldoutError("Failed prediction admission population differs")
+    source_coverage = admission.get("source_coverage")
+    source_seasons = (
+        source_coverage.get("seasons")
+        if isinstance(source_coverage, dict)
+        else None
+    )
+    if (
+        not isinstance(source_coverage, dict)
+        or source_coverage.get("all_team_pages_reconciled") is not True
+        or source_coverage.get("all_lineage_content_addressed") is not True
+        or not isinstance(source_seasons, list)
+        or not all(isinstance(item, dict) for item in source_seasons)
+        or [item.get("season") for item in source_seasons]
+        != list(range(2021, 2026))
+    ):
+        raise ArrivalHoldoutError("Failed prediction admission source coverage differs")
+    shift_summary = admission.get("shift_summary")
+    thresholds = (
+        shift_summary.get("thresholds") if isinstance(shift_summary, dict) else None
+    )
+    if thresholds != {
+        "maximum_selected_feature_missing_fraction": (
+            MAX_SELECTED_FEATURE_MISSING_FRACTION
+        ),
+        "maximum_absolute_missingness_jump": MAX_MISSINGNESS_JUMP,
+        "maximum_unseen_categorical_fraction": MAX_UNSEEN_CATEGORICAL_FRACTION,
+        "maximum_population_stability_index": MAX_POPULATION_STABILITY_INDEX,
+        "population_stability_index_smoothing": PSI_SMOOTHING,
+    }:
+        raise ArrivalHoldoutError("Failed prediction admission thresholds differ")
+    if not isinstance(admission.get("feature_cells"), list) or not admission[
+        "feature_cells"
+    ]:
+        raise ArrivalHoldoutError("Failed prediction admission feature cells are missing")
+    inputs = admission.get("inputs")
+    expected_inputs = {
+        "holdout_lock_sha256": parent["lock_sha256"],
+        "external_corpus_manifest_sha256": external_corpus["manifest_sha256"],
+        "external_corpus_content_sha256": external_corpus["corpus_content_sha256"],
+    }
+    if inputs != expected_inputs:
+        raise ArrivalHoldoutError("Failed prediction admission inputs differ")
+    verified_producer = _verify_producer(
+        admission.get("producer"),
+        "Failed prediction admission",
+        root=root,
+        require_live_files=False,
+    )
+    producer_files = verified_producer["files"]
+    producer_value = admission.get("producer")
+    if not isinstance(producer_value, dict) or producer_value.get("arguments") != {
+        "command": "predict",
+        "holdout_lock": ORIGINAL_LOCK_PATH,
+        "external_corpus_manifest": EXTERNAL_CORPUS_MANIFEST_PATH,
+        "artifact_dir": FAILED_PREDICTION_ARTIFACT_DIR,
+    }:
+        raise ArrivalHoldoutError(
+            "Failed prediction admission producer arguments differ"
+        )
+    if set(producer_files) != set(FAILED_ATTEMPT_PRODUCER_PATHS):
+        raise ArrivalHoldoutError(
+            "Failed prediction admission producer file set differs"
+        )
+    for relative, expected in parent["evaluator"]["files"].items():
+        if producer_files.get(relative) != expected:
+            raise ArrivalHoldoutError(
+                "Failed prediction admission was not produced by the parent evaluator"
+            )
+    return {
+        "path": _portable_path(path, root),
+        "content_addressed_path": _portable_path(archive, root),
+        "admission_sha256": address,
+        "sha256": digest,
+        "producer_git_commit": verified_producer["git_commit"],
+    }
+
+
+def _require_failed_prediction_outputs_absent(root: Path) -> None:
+    artifact_dir = root / FAILED_PREDICTION_ARTIFACT_DIR
+    for relative in (
+        "prediction_manifest.json",
+        "predictions.parquet",
+        "manifests",
+        "predictions",
+        "evaluation_report.json",
+        "evaluated_rows.parquet",
+        "reports",
+        "evaluated_rows",
+    ):
+        if (artifact_dir / relative).exists() or (artifact_dir / relative).is_symlink():
+            raise ArrivalHoldoutError(
+                "Failed prediction artifact directory contains prediction output: "
+                f"{relative}"
+            )
+
+
+def _amendment_contract(
+    parent: dict[str, Any],
+    evaluator: dict[str, Any],
+    failed_producer_commit: str,
+    *,
+    root: Path,
+) -> dict[str, Any]:
+    return {
+        "sequence": 1,
+        "classification": (
+            "post_ingestion_pre_prediction_archive_assertion_correction"
+        ),
+        "reason_code": AMENDMENT_REASON_CODE,
+        "authorized_change": (
+            "range_check_calibrated_probability_unprojected_but_require_"
+            "cumulative_monotonicity_only_for_published_projected_candidate_"
+            "and_cumulative_baselines"
+        ),
+        "rationale_source": AMENDMENT_RATIONALE_SOURCE,
+        "model_refit": False,
+        "recalibration_refit": False,
+        "threshold_tuning": False,
+        "feature_selection_change": False,
+        "model_artifact_change": False,
+        "calibrator_artifact_change": False,
+        "comparator_artifact_change": False,
+        "protocol_change": False,
+        "external_corpus_change": False,
+        "output_artifact_dir": AMENDED_PREDICTION_ARTIFACT_DIR,
+        "permitted_evaluator_changes": _amended_evaluator_changes(
+            parent, evaluator, failed_producer_commit, root=root
+        ),
+        "added_runtime_dependencies": [
+            {
+                "path": path,
+                "baseline_sha256": _git_blob_sha256(
+                    root, failed_producer_commit, path
+                ),
+                "after_sha256": evaluator["files"][path],
+            }
+            for path in ADDED_AMENDED_RUNTIME_DEPENDENCY_PATHS
+        ],
+    }
+
+
+def _failed_attempt_contract(
+    parent_record: dict[str, str],
+    admission_record: dict[str, str],
+    external_corpus_record: dict[str, str],
+) -> dict[str, Any]:
+    return {
+        "command": "npm run model:evaluation:predict",
+        "artifact_dir": FAILED_PREDICTION_ARTIFACT_DIR,
+        "stage": "post_admission_pre_prediction_archive",
+        "exception": {
+            "type": "ArrivalExternalError",
+            "message": (
+                "External calibrated_probability_unprojected is not cumulative-monotone"
+            ),
+        },
+        "study_retrospective": True,
+        "researcher_outcome_blind": False,
+        "researcher_previously_observed_aggregate_outcome_qa": True,
+        "failed_execution_semantic_outcome_decode": False,
+        "label_archive_lineage_hashed_without_semantic_decode": True,
+        "features_and_admission_diagnostics_observed_before_amendment": True,
+        "amendment_rationale_source": AMENDMENT_RATIONALE_SOURCE,
+        "prediction_artifacts_written": False,
+        "attestation_basis": {
+            "command_stage_and_exception": "researcher_attestation",
+            "researcher_knowledge": "researcher_attestation",
+            "failed_execution_semantic_outcome_decode": (
+                "code_path_review_and_researcher_attestation"
+            ),
+            "artifact_absence": "machine_verified_at_lock_creation_and_verification",
+        },
+        "parent_lock": parent_record,
+        "external_corpus": external_corpus_record,
+        "admission": admission_record,
+    }
+
+
+def _verify_v3_holdout_lock(
+    path: Path, lock: dict[str, Any], *, root: Path
+) -> dict[str, Any]:
+    expected_keys = {
+        "schema_version",
+        "status",
+        "benchmark",
+        "protocol",
+        "calibration",
+        "sufficiency",
+        "evaluator",
+        "frozen_application",
+        "admission_failure_policy",
+        "evaluation",
+        "limitations",
+        "parent_lock",
+        "failed_attempt",
+        "amendment",
+        "lock_sha256",
+    }
+    _require_exact_keys(lock, expected_keys, "Amended external holdout lock")
+    if lock.get("status") != AMENDED_STUDY_STATUS:
+        raise ArrivalHoldoutError("Amended holdout study status is dishonest or unsupported")
+    lock_address = _require_sha256(lock.get("lock_sha256"), "Holdout lock address")
+    canonical = dict(lock)
+    canonical.pop("lock_sha256", None)
+    if json_sha256(canonical) != lock_address:
+        raise ArrivalHoldoutError("Amended external holdout lock self-address is invalid")
+
+    parent_record = _require_exact_keys(
+        lock.get("parent_lock"),
+        {"path", "content_addressed_path", "lock_sha256", "sha256"},
+        "Amended parent lock evidence",
+    )
+    if parent_record.get("path") != ORIGINAL_LOCK_PATH:
+        raise ArrivalHoldoutError("Amended parent lock path differs")
+    parent_path = _resolve_path(parent_record["path"], root)
+    parent_value = _read_json_object(parent_path, "amended parent holdout lock")
+    if parent_value.get("schema_version") != LOCK_SCHEMA_VERSION:
+        raise ArrivalHoldoutError("Amended parent is not the original v2 lock")
+    parent = _verify_v2_holdout_lock(parent_path, parent_value, root=root)
+    expected_parent_record = _parent_lock_record(parent_path, parent, root=root)
+    if parent_record != expected_parent_record:
+        raise ArrivalHoldoutError("Amended parent lock evidence differs")
+
+    for field in (
+        "benchmark",
+        "protocol",
+        "calibration",
+        "sufficiency",
+        "admission_failure_policy",
+        "evaluation",
+        "limitations",
+    ):
+        if lock.get(field) != parent.get(field):
+            raise ArrivalHoldoutError(f"Amended holdout changed frozen field: {field}")
+
+    evaluator = _verify_evaluator(
+        lock.get("evaluator"),
+        root=root,
+        paths=AMENDED_RUNTIME_DEPENDENCY_PATHS,
+    )
+    protocol = _verify_protocol(lock.get("protocol"), evaluator, root=root)
+    if lock.get("evaluation") != protocol:
+        raise ArrivalHoldoutError("Amended evaluation protocol differs from evaluator bytes")
+    expected_application = copy.deepcopy(parent["frozen_application"])
+    expected_application["scoring_code_git_commit"] = evaluator["git_commit"]
+    if lock.get("frozen_application") != expected_application:
+        raise ArrivalHoldoutError("Amended frozen application changed beyond evaluator commit")
+
+    failed_attempt = _require_exact_keys(
+        lock.get("failed_attempt"),
+        {
+            "command",
+            "artifact_dir",
+            "stage",
+            "exception",
+            "study_retrospective",
+            "researcher_outcome_blind",
+            "researcher_previously_observed_aggregate_outcome_qa",
+            "failed_execution_semantic_outcome_decode",
+            "label_archive_lineage_hashed_without_semantic_decode",
+            "features_and_admission_diagnostics_observed_before_amendment",
+            "amendment_rationale_source",
+            "prediction_artifacts_written",
+            "attestation_basis",
+            "parent_lock",
+            "external_corpus",
+            "admission",
+        },
+        "Failed prediction attempt evidence",
+    )
+    if failed_attempt.get("parent_lock") != parent_record:
+        raise ArrivalHoldoutError("Failed attempt parent lock evidence differs")
+    external_record = _require_exact_keys(
+        failed_attempt.get("external_corpus"),
+        {
+            "manifest_path",
+            "content_addressed_path",
+            "manifest_sha256",
+            "corpus_content_sha256",
+            "sha256",
+        },
+        "Failed attempt external corpus evidence",
+    )
+    if external_record.get("manifest_path") != EXTERNAL_CORPUS_MANIFEST_PATH:
+        raise ArrivalHoldoutError("Failed attempt external corpus path differs")
+    expected_external = _external_corpus_record(
+        _resolve_path(external_record["manifest_path"], root), root=root
+    )
+    if external_record != expected_external:
+        raise ArrivalHoldoutError("Failed attempt external corpus evidence differs")
+    admission_record = _require_exact_keys(
+        failed_attempt.get("admission"),
+        {
+            "path",
+            "content_addressed_path",
+            "admission_sha256",
+            "sha256",
+            "producer_git_commit",
+        },
+        "Failed attempt admission evidence",
+    )
+    if admission_record.get("path") != FAILED_ADMISSION_PATH:
+        raise ArrivalHoldoutError("Failed attempt admission path differs")
+    expected_admission = _failed_admission_record(
+        _resolve_path(admission_record["path"], root),
+        parent,
+        expected_external,
+        root=root,
+    )
+    if admission_record != expected_admission:
+        raise ArrivalHoldoutError("Failed attempt admission evidence differs")
+    failed_producer_commit = expected_admission["producer_git_commit"]
+    _require_git_ancestor(
+        root,
+        parent["evaluator"]["git_commit"],
+        failed_producer_commit,
+        "parent evaluator to failed prediction",
+    )
+    _require_git_ancestor(
+        root,
+        failed_producer_commit,
+        evaluator["git_commit"],
+        "failed prediction to amended evaluator",
+    )
+    amendment = lock.get("amendment")
+    expected_amendment = _amendment_contract(
+        parent,
+        evaluator,
+        failed_producer_commit,
+        root=root,
+    )
+    if amendment != expected_amendment:
+        raise ArrivalHoldoutError("Amended implementation contract differs")
+    expected_failed_attempt = _failed_attempt_contract(
+        expected_parent_record, expected_admission, expected_external
+    )
+    if failed_attempt != expected_failed_attempt:
+        raise ArrivalHoldoutError("Failed prediction attempt contract differs")
+    _require_failed_prediction_outputs_absent(root)
+
+    archive_path = content_addressed_lock_path(path, lock_address)
+    if not archive_path.is_file() or archive_path.is_symlink():
+        raise ArrivalHoldoutError("Content-addressed amended holdout lock is missing")
+    _require_identical_files(path, archive_path, "Amended holdout lock archive")
+    return lock
+
+
+def verify_holdout_lock(path: Path, *, root: Path = ROOT) -> dict[str, Any]:
+    root = root.resolve()
+    candidate = path if path.is_absolute() else root / path
+    candidate = candidate.absolute()
+    lock = _read_json_object(candidate, "external holdout lock")
+    if lock.get("schema_version") == AMENDED_LOCK_SCHEMA_VERSION:
+        try:
+            relative = candidate.relative_to(root).as_posix()
+        except ValueError as error:
+            raise ArrivalHoldoutError(
+                "Amended holdout lock alias escapes the repository"
+            ) from error
+        current = root
+        for part in Path(relative).parts:
+            current /= part
+            if current.is_symlink():
+                raise ArrivalHoldoutError(
+                    "Amended holdout lock alias traverses a symlink"
+                )
+        if relative != AMENDED_LOCK_PATH:
+            raise ArrivalHoldoutError("Amended holdout lock alias is not canonical")
+        return _verify_v3_holdout_lock(candidate.resolve(), lock, root=root)
+    return _verify_v2_holdout_lock(candidate.resolve(), lock, root=root)
+
+
+def _require_clean_worktree(root: Path) -> None:
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        raise ArrivalHoldoutError("Git is unavailable for amendment creation") from error
+    if result.returncode != 0:
+        raise ArrivalHoldoutError("Git status failed during amendment creation")
+    if result.stdout:
+        raise ArrivalHoldoutError(
+            "Amended holdout lock requires a clean committed worktree"
+        )
+
+
+def build_amended_holdout_lock(
+    parent_lock_path: Path,
+    failed_admission_path: Path,
+    external_corpus_manifest_path: Path,
+    *,
+    root: Path = ROOT,
+) -> dict[str, Any]:
+    root = root.resolve()
+    parent_lock_path = parent_lock_path.resolve()
+    failed_admission_path = failed_admission_path.resolve()
+    external_corpus_manifest_path = external_corpus_manifest_path.resolve()
+    expected_paths = (
+        (_portable_path(parent_lock_path, root), ORIGINAL_LOCK_PATH),
+        (_portable_path(failed_admission_path, root), FAILED_ADMISSION_PATH),
+        (
+            _portable_path(external_corpus_manifest_path, root),
+            EXTERNAL_CORPUS_MANIFEST_PATH,
+        ),
+    )
+    for actual, expected in expected_paths:
+        if actual != expected:
+            raise ArrivalHoldoutError(
+                f"Amended holdout evidence must use canonical path: {expected}"
+            )
+    _require_clean_worktree(root)
+    parent_value = _read_json_object(parent_lock_path, "amended parent holdout lock")
+    if parent_value.get("schema_version") != LOCK_SCHEMA_VERSION:
+        raise ArrivalHoldoutError("Amended holdout parent must be the original v2 lock")
+    parent = _verify_v2_holdout_lock(parent_lock_path, parent_value, root=root)
+    evaluator = _bind_evaluator(root, AMENDED_RUNTIME_DEPENDENCY_PATHS)
+    parent_record = _parent_lock_record(parent_lock_path, parent, root=root)
+    external_record = _external_corpus_record(
+        external_corpus_manifest_path, root=root
+    )
+    admission_record = _failed_admission_record(
+        failed_admission_path, parent, external_record, root=root
+    )
+    failed_producer_commit = admission_record["producer_git_commit"]
+    _require_git_ancestor(
+        root,
+        parent["evaluator"]["git_commit"],
+        failed_producer_commit,
+        "parent evaluator to failed prediction",
+    )
+    _require_git_ancestor(
+        root,
+        failed_producer_commit,
+        evaluator["git_commit"],
+        "failed prediction to amended evaluator",
+    )
+    _amended_evaluator_changes(
+        parent, evaluator, failed_producer_commit, root=root
+    )
+    _require_failed_prediction_outputs_absent(root)
+
+    frozen_application = copy.deepcopy(parent["frozen_application"])
+    frozen_application["scoring_code_git_commit"] = evaluator["git_commit"]
+    lock: dict[str, Any] = {
+        "schema_version": AMENDED_LOCK_SCHEMA_VERSION,
+        "status": AMENDED_STUDY_STATUS,
+        "benchmark": copy.deepcopy(parent["benchmark"]),
+        "protocol": copy.deepcopy(parent["protocol"]),
+        "calibration": copy.deepcopy(parent["calibration"]),
+        "sufficiency": copy.deepcopy(parent["sufficiency"]),
+        "evaluator": evaluator,
+        "frozen_application": frozen_application,
+        "admission_failure_policy": copy.deepcopy(
+            parent["admission_failure_policy"]
+        ),
+        "evaluation": copy.deepcopy(parent["evaluation"]),
+        "limitations": copy.deepcopy(parent["limitations"]),
+        "parent_lock": parent_record,
+        "failed_attempt": _failed_attempt_contract(
+            parent_record, admission_record, external_record
+        ),
+        "amendment": _amendment_contract(
+            parent,
+            evaluator,
+            failed_producer_commit,
+            root=root,
+        ),
+    }
+    lock["lock_sha256"] = json_sha256(lock)
+    return lock
+
+
+def create_amended_holdout_lock(
+    parent_lock_path: Path,
+    failed_admission_path: Path,
+    external_corpus_manifest_path: Path,
+    output_path: Path,
+    *,
+    root: Path = ROOT,
+) -> dict[str, Any]:
+    root = root.resolve()
+    output_path = output_path.resolve()
+    if _portable_path(output_path, root) != AMENDED_LOCK_PATH:
+        raise ArrivalHoldoutError(
+            f"Amended holdout output must use canonical path: {AMENDED_LOCK_PATH}"
+        )
+    lock = build_amended_holdout_lock(
+        parent_lock_path,
+        failed_admission_path,
+        external_corpus_manifest_path,
+        root=root,
+    )
+    body = _lock_body(lock)
+    archive_path = content_addressed_lock_path(output_path, lock["lock_sha256"])
+    if output_path == archive_path:
+        raise ArrivalHoldoutError("Amended holdout output cannot alias its archive")
+    _preflight_create_only(
+        archive_path, body, "content-addressed amended external holdout lock"
+    )
+    _preflight_create_only(output_path, body, "amended external holdout lock")
+    _write_create_only(
+        archive_path, body, "content-addressed amended external holdout lock"
+    )
+    _write_create_only(output_path, body, "amended external holdout lock")
+    return verify_holdout_lock(output_path, root=root)
 
 
 def create_holdout_lock(
