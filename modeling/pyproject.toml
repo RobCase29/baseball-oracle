@@ -8,6 +8,7 @@ dependencies = [
   "pandas>=2.2,<3",
   "pyarrow>=18,<22",
   "scikit-learn>=1.6,<2",
+  "scipy>=1.15,<2",
 ]
 
 [project.optional-dependencies]
@@ -19,10 +20,17 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 py-modules = [
+  "arrival_calibration",
   "arrival_corpus",
+  "arrival_external",
+  "arrival_hazard_baseline",
+  "arrival_holdout",
+  "arrival_sufficiency",
+  "arrival_validation",
   "contracts",
   "prepare_dataset",
   "train_arrival_baseline",
+  "train_arrival_calibration",
   "train_arrival_population",
 ]
 

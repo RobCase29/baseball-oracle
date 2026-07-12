@@ -1,0 +1,178 @@
+{
+  "schema_version": "arrival-validation-protocol/v2",
+  "status": "frozen_before_post_2020_ingestion",
+  "study_design": "retrospective_external_regime_test_not_prospective",
+  "frozen_benchmark": {
+    "training_seasons": [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019],
+    "corpus_content_sha256": "b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8",
+    "model_artifact_sha256": "f711fdd224424e9fca38bf7992249c5031b2e9d0934ffa21706187fac67dced0",
+    "model_configuration_sha256": "dec74bc09f17c7b5c0200596fd575eb8f1fb5101493b3a1eb2e5e90110a5c590",
+    "validation_configuration_sha256": "7ba7911d607a36453e72ff8c8b5102c592a06077d1f1f5bd39d63cd794756833",
+    "producer_git_commit": "5752256cc3fd8852c910efef2f9920b0b802bbe4"
+  },
+  "estimand": {
+    "population": "model_eligible_affiliated_season_appearance_snapshots",
+    "prediction_time": "season_end",
+    "outcome": "first_mlb_appearance_by_horizon",
+    "horizons_months": [12, 24, 36, 48, 60],
+    "unit": "player_season_snapshot",
+    "repeated_players": "retain_all_snapshots_cluster_inference_by_player"
+  },
+  "calibration": {
+    "fit_source": "raw_out_of_fold_predictions_only",
+    "common_oof_test_seasons": [2015, 2016, 2017, 2018, 2019],
+    "formula": "logit(q_h)=alpha_h+beta_h*logit(p_h)+gamma_h*cold_start",
+    "probability_clip": 0.000001,
+    "ridge_strength": 0.01,
+    "ridge_target": "identity(alpha=0,beta=1,gamma=0)",
+    "slope_constraint": "beta>=0",
+    "sample_weight": "inverse_player_snapshot_count_within_horizon",
+    "monotone_projection": "row-wise weighted PAVA",
+    "projection_weight": "horizon OOF sample-weight sum",
+    "candidate_selection_after_freeze": false
+  },
+  "comparators": {
+    "primary": "censoring_aware_hierarchical_empirical_bayes_annual_hazard",
+    "hierarchy": [
+      "interval_global",
+      "interval_role",
+      "interval_role_level",
+      "interval_role_level_age_band"
+    ],
+    "prior_strength": 50.0,
+    "weighting": "inverse_player_snapshot_count_per_at_risk_interval",
+    "secondary": "interval_global_annual_hazard",
+    "fit_data": "frozen_pre_2021_person_period_rows_only",
+    "evaluation_outcome_refit": false
+  },
+  "external_evaluation": {
+    "data_cutoff": "2025-12-31",
+    "application_order": [
+      "archive_complete_feature_census",
+      "apply_frozen_model_calibrator_and_comparators_to_all_five_horizons",
+      "content_lock_predictions_before_outcome_join",
+      "join_only_predeclared_mature_outcomes",
+      "score_and_publish_once"
+    ],
+    "prediction_schema_version": "arrival-external-predictions/v1",
+    "non_predeclared_outcome_policy": "mask_even_when_historically_available",
+    "schedule": [
+      {
+        "season": 2021,
+        "mode": "retrospective_scored",
+        "horizons_months": [12, 24, 36, 48]
+      },
+      {
+        "season": 2022,
+        "mode": "retrospective_scored",
+        "horizons_months": [12, 24, 36]
+      },
+      {
+        "season": 2023,
+        "mode": "retrospective_scored",
+        "horizons_months": [12, 24]
+      },
+      {
+        "season": 2024,
+        "mode": "retrospective_scored",
+        "horizons_months": [12]
+      },
+      {
+        "season": 2025,
+        "mode": "prediction_only",
+        "horizons_months": []
+      }
+    ],
+    "2021_reporting": "separate_pandemic_and_reorganization_stress_cohort",
+    "score_once": true,
+    "publish_failures": true,
+    "model_refit": false,
+    "recalibration_refit": false,
+    "threshold_tuning": false
+  },
+  "admission_gates": {
+    "integrity_failure_action": "quarantine_without_scoring_and_publish_failure",
+    "distribution_shift_failure_action": "score_full_predeclared_cohort_publish_results_and_fail_promotion",
+    "declared_team_page_reconciliation_fraction": 1.0,
+    "maximum_failed_team_pages": 0,
+    "maximum_duplicate_snapshot_ids": 0,
+    "minimum_identity_resolution_rate": 1.0,
+    "require_effective_time_safe": true,
+    "maximum_selected_feature_missing_fraction": 0.05,
+    "maximum_missingness_cohort_jump_percentage_points": 5.0,
+    "maximum_unseen_categorical_fraction": 0.02,
+    "maximum_population_stability_index": 0.2,
+    "distribution_shift_definition": {
+      "reference": "exact_frozen_2010_2019_training_snapshots_within_role",
+      "evaluation_cells": "each_external_season_role_selected_feature",
+      "missingness": "maximum_cell_fraction_and_absolute_training_reference_jump",
+      "unseen_categorical": "maximum_fraction_of_nonmissing_values_absent_from_role_training_values",
+      "population_stability_index_features": "selected_numeric_features",
+      "population_stability_index_bins": "training_deciles_with_unique_edges_and_explicit_missing_bin",
+      "population_stability_index_smoothing": 0.000001,
+      "population_stability_index_gate": "maximum_external_season_role_feature_value"
+    },
+    "require_immutable_source_and_corpus_hashes": true
+  },
+  "inference": {
+    "bootstrap_method": "paired_nonparametric_player_cluster",
+    "bootstrap_repetitions": 2000,
+    "bootstrap_seed": 29,
+    "confidence_level": 0.95,
+    "resampling_unit": "player_id",
+    "same_draw_for_candidate_and_all_baselines": true,
+    "pooling": "within_horizon_only_never_across_horizons"
+  },
+  "sufficiency": {
+    "promotion_role_horizon_pooled_cell": {
+      "minimum_snapshots": 2500,
+      "minimum_unique_event_players": 100,
+      "minimum_unique_non_event_players": 100
+    },
+    "cold_start": {
+      "release_gate_minimum_unique_event_players": 100,
+      "descriptive_minimum_unique_event_players": 30,
+      "suppress_inference_below_unique_event_players": 30
+    },
+    "subgroup": {
+      "minimum_snapshots": 500,
+      "minimum_unique_event_players": 50,
+      "minimum_unique_non_event_players": 50,
+      "calibration_slope_minimum_unique_event_players": 100
+    }
+  },
+  "metrics": {
+    "primary": "paired_brier_improvement_baseline_minus_candidate",
+    "proper_scoring_rules": ["brier", "log_loss"],
+    "calibration": [
+      "observed_to_expected_ratio",
+      "calibration_in_the_large",
+      "calibration_intercept",
+      "calibration_slope",
+      "expected_calibration_error"
+    ],
+    "descriptive_discrimination": ["roc_auc", "average_precision", "top_decile_lift"],
+    "fixed_reliability_edges": [0.0, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0]
+  },
+  "promotion_gates": {
+    "paired_brier_improvement_95pct_lower_bound_greater_than": 0.0,
+    "minimum_fraction_positive_pooled_role_horizon_cells": 0.75,
+    "calibration_in_the_large_absolute_maximum": 0.02,
+    "minimum_fraction_cells_with_absolute_calibration_in_the_large_at_most_0_03": 0.75,
+    "calibration_slope_interval_inclusive": [0.8, 1.2],
+    "minimum_fraction_cells_with_calibration_slope_in_interval": 0.75,
+    "observed_to_expected_interval_inclusive": [0.8, 1.25],
+    "minimum_fraction_cells_with_observed_to_expected_in_interval": 0.75,
+    "expected_calibration_error_maximum": 0.02,
+    "minimum_fraction_cells_with_expected_calibration_error_at_most_0_02": 0.75,
+    "maximum_major_cohort_brier_regression": 0.01,
+    "maximum_cumulative_horizon_violations": 0,
+    "promotion_requires_every_gate": true
+  },
+  "limitations": [
+    "The external test is retrospective because outcomes may already exist when the lock is created.",
+    "Historical effective time does not prove original publication or knowledge time.",
+    "The population is season-appearance based and excludes some zero-appearance contracted players.",
+    "A separately sealed 2026 current-universe census is required for a genuinely prospective holdout."
+  ]
+}
