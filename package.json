@@ -31,6 +31,9 @@
     "model:setup": "python3 modeling/bootstrap.py",
     "model:prepare": ".venv/bin/python modeling/prepare_dataset.py",
     "model:train": ".venv/bin/python modeling/train_arrival_baseline.py",
+    "model:population:prepare": ".venv/bin/python modeling/arrival_corpus.py --discover-locked-seasons",
+    "model:population:train": ".venv/bin/python modeling/train_arrival_population.py",
+    "model:population:all": "npm run model:population:prepare && npm run model:population:train",
     "model:test": ".venv/bin/python -m pytest modeling",
     "model:all": "npm run model:test && npm run model:prepare && npm run model:train"
   },

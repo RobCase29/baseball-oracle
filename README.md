@@ -36,6 +36,14 @@ npm run model:setup
 npm run model:all
 ```
 
+The broader affiliated-player benchmark discovers every prepared season with a
+verified private-archive lock, builds one content-addressed population corpus, and
+trains separate hitter and pitcher hazards:
+
+```bash
+npm run model:population:all
+```
+
 Raw data, derived Parquet files, and model artifacts stay local and are ignored by
 Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the code,
 environment lock, and database lineage schema are versioned. Preparation verifies
@@ -122,6 +130,7 @@ Every returned player has `forecast: null` until a validated model release is pu
 - [Product workflow](docs/PRODUCT.md)
 - [System architecture](docs/ARCHITECTURE.md)
 - [Modeling strategy](docs/MODELING.md)
+- [Research program and execution ladder](docs/RESEARCH_PROGRAM.md)
 - [Point-in-time data contract](docs/DATA_CONTRACT.md)
 - [Data sources and licensing](docs/DATA_SOURCES.md)
 - [Historical backfill strategy](docs/HISTORICAL_BACKFILL.md)
