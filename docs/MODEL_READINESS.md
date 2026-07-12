@@ -264,4 +264,6 @@ manifests, feature snapshots, censored labels, temporal folds and player-cluster
 assignments, training runs, artifacts, and links from releases and predictions
 back to their exact training evidence. Migration
 `0006_private_raw_archive_catalog.sql` adds append-only private archive objects,
-manifests, and reconciled manifest membership.
+manifests, and reconciled manifest membership. Migration
+`0007_fix_archive_manifest_trigger.sql` makes the shared deferred reconciliation
+trigger safe across its two row types.
