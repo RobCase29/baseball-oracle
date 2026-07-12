@@ -1,0 +1,480 @@
+{
+  "admission_failure_policy": {
+    "distribution_shift": {
+      "checks": [
+        "selected_feature_missingness_jump",
+        "unseen_categorical_fraction",
+        "population_stability_index"
+      ],
+      "failure_action": "score_and_publish_predeclared_test_mark_promotion_ineligible",
+      "test_suppression": false
+    },
+    "integrity": {
+      "checks": [
+        "source_and_archive_completeness",
+        "identity_resolution",
+        "duplicate_snapshot_or_prediction_keys",
+        "outcome_or_future_information_leakage",
+        "effective_time_and_knowledge_time_guards"
+      ],
+      "failure_action": "quarantine_block_scoring_and_publish_failure"
+    }
+  },
+  "benchmark": {
+    "configuration": {
+      "model": {
+        "metrics_json_pointer": "/model_configuration",
+        "sha256": "dec74bc09f17c7b5c0200596fd575eb8f1fb5101493b3a1eb2e5e90110a5c590"
+      },
+      "validation": {
+        "metrics_json_pointer": "/validation_configuration",
+        "sha256": "7ba7911d607a36453e72ff8c8b5102c592a06077d1f1f5bd39d63cd794756833"
+      }
+    },
+    "corpus": {
+      "content_addressed_path": "data/processed/arrival-population-v1/manifests/41f6f761ec14cce19e69daa4ac0928ebf6c6c8d196a29470cf26c766b59bbdca.json",
+      "corpus_content_sha256": "b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8",
+      "data_cutoff": "2025-12-31",
+      "file_sha256": "179d62ffb655b1a8f393f674983916077b96f9d3ccf3b2e4e1f84c7fd6e8eefa",
+      "manifest_sha256": "41f6f761ec14cce19e69daa4ac0928ebf6c6c8d196a29470cf26c766b59bbdca",
+      "outputs": {
+        "labels": {
+          "content_addressed_path": "data/processed/arrival-population-v1/datasets/b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8/labels.parquet",
+          "rows": 69326,
+          "sha256": "9f402203973b3009788c0fc7c69f1f3a9c93121091206abba4aa2b6ca3de1a19"
+        },
+        "snapshots": {
+          "content_addressed_path": "data/processed/arrival-population-v1/datasets/b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8/snapshots.parquet",
+          "rows": 69326,
+          "sha256": "56b475f5d029a963788186930fdcf7ee6c8e8503ad5e6f06af190712f629774f"
+        }
+      },
+      "producer": {
+        "files": {
+          "modeling/arrival_corpus.py": "916e3968879f91c1f97057db06b30f16a7ab7c0f6112f71fa33782cfb924cc1b",
+          "modeling/provenance.py": "7d5243e50241daf8a71e29ff041c1ecc243aceb78175b0d62a00e7a1df7112b7"
+        },
+        "git_commit": "5752256cc3fd8852c910efef2f9920b0b802bbe4"
+      },
+      "training_seasons": [
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ]
+    },
+    "metrics_report": {
+      "content_addressed_path": "artifacts/arrival-population-v1/runs/ec798febb0f497af32db37f2799e75acd885f0dfb5620aa823d7abcef47a6635.json",
+      "file_sha256": "8e06bb018c67416ad5d69b1770bbc0a9fc9a32a73e1dd675c458bc137ff2ec40",
+      "validation_report_sha256": "ec798febb0f497af32db37f2799e75acd885f0dfb5620aa823d7abcef47a6635"
+    },
+    "model_artifact": {
+      "content_addressed_path": "artifacts/arrival-population-v1/models/f711fdd224424e9fca38bf7992249c5031b2e9d0934ffa21706187fac67dced0.joblib",
+      "sha256": "f711fdd224424e9fca38bf7992249c5031b2e9d0934ffa21706187fac67dced0"
+    },
+    "producer": {
+      "files": {
+        "modeling/arrival_corpus.py": "916e3968879f91c1f97057db06b30f16a7ab7c0f6112f71fa33782cfb924cc1b",
+        "modeling/contracts.py": "ddca8c3bcf65f578d0c442083049fa1e87d2d8d47be59b02c6f6a37faa5206b1",
+        "modeling/provenance.py": "7d5243e50241daf8a71e29ff041c1ecc243aceb78175b0d62a00e7a1df7112b7",
+        "modeling/requirements.lock": "8f25c7acf92f65b05d5da71e87d29da6d668832e9ed76af7f8e5be318b8e2518",
+        "modeling/train_arrival_population.py": "a2f072d022d097e2061c3f9c1d0cba6a884d00c34d37ff2b7f847a446717cab2"
+      },
+      "git_commit": "5752256cc3fd8852c910efef2f9920b0b802bbe4"
+    }
+  },
+  "calibration": {
+    "calibrator": {
+      "content_addressed_path": "artifacts/arrival-calibration-v1/calibrators/8dc7e47c331e81ffba23716572ab807225dc859d99e6a632d8c9d8d39f2c7891.json",
+      "horizons_months": [
+        12,
+        24,
+        36,
+        48,
+        60
+      ],
+      "schema_version": "arrival-horizon-calibration/v1",
+      "sha256": "8dc7e47c331e81ffba23716572ab807225dc859d99e6a632d8c9d8d39f2c7891"
+    },
+    "censoring_aware_comparator": {
+      "config_sha256": "c979c74778038a88280f5c843a065dbb5eb1a4324ef31547569c2baeab32781c",
+      "content_addressed_path": "artifacts/arrival-calibration-v1/baselines/a27b7b73ed67431bcad96e42e1894e0741809f34daf5270048bb01f5be7bf828.json",
+      "horizons_months": [
+        12,
+        24,
+        36,
+        48,
+        60
+      ],
+      "model_content_sha256": "f4623b03307b77d11d63496959efa43e6678a57034230c803c4e6b9da4e99315",
+      "schema_version": "arrival-hierarchical-hazard-baseline/v2",
+      "sha256": "a27b7b73ed67431bcad96e42e1894e0741809f34daf5270048bb01f5be7bf828"
+    },
+    "manifest": {
+      "content_addressed_path": "artifacts/arrival-calibration-v1/manifests/9e96e1e2f9edbbd9d049e7b67520141f0ca07a7b73892c7cd129661148375eac.json",
+      "file_sha256": "183ec54af8dfee62c0ec238acd6c99b740959ab01b13b9e4730e9f9e6b8987fe",
+      "manifest_sha256": "9e96e1e2f9edbbd9d049e7b67520141f0ca07a7b73892c7cd129661148375eac",
+      "schema_version": "arrival-calibration-run/v1"
+    },
+    "oof_predictions": {
+      "columns": [
+        "snapshot_id",
+        "player_id",
+        "test_season",
+        "fold_origin",
+        "role",
+        "cold_start",
+        "horizon_months",
+        "probability",
+        "outcome",
+        "is_oof",
+        "sample_weight",
+        "calibrated_probability_unprojected",
+        "calibrated_probability"
+      ],
+      "content_addressed_path": "artifacts/arrival-calibration-v1/oof/fa524b923f5c17ac8a82703addd5c634b76fb8071402b9328c45931398c0fd13.parquet",
+      "rows": 178735,
+      "sha256": "fa524b923f5c17ac8a82703addd5c634b76fb8071402b9328c45931398c0fd13"
+    },
+    "producer": {
+      "files": {
+        "modeling/arrival_calibration.py": "2470886244fef8b87469486359bff4ef3875c061dd0dc4e93b4cca731c2d0518",
+        "modeling/arrival_corpus.py": "916e3968879f91c1f97057db06b30f16a7ab7c0f6112f71fa33782cfb924cc1b",
+        "modeling/arrival_hazard_baseline.py": "a384e27296f3ccd8b132a0f1266f57b3efed56867c905150813198159dab777c",
+        "modeling/contracts.py": "ddca8c3bcf65f578d0c442083049fa1e87d2d8d47be59b02c6f6a37faa5206b1",
+        "modeling/provenance.py": "7d5243e50241daf8a71e29ff041c1ecc243aceb78175b0d62a00e7a1df7112b7",
+        "modeling/requirements.lock": "ce9266066d795912e01d5e0f392a9b6eafc4785c8f9f3039c909c35211890ab1",
+        "modeling/train_arrival_calibration.py": "86a6e0268de0d6878cca68ebe3445c6b423ca51a5f4951a858c11035e874e727",
+        "modeling/train_arrival_population.py": "a2f072d022d097e2061c3f9c1d0cba6a884d00c34d37ff2b7f847a446717cab2"
+      },
+      "git_commit": "d81373f12410647766ceb7ccf61cd5662e8065d4"
+    }
+  },
+  "evaluation": {
+    "admission_gates": {
+      "declared_team_page_reconciliation_fraction": 1.0,
+      "distribution_shift_definition": {
+        "evaluation_cells": "each_external_season_role_selected_feature",
+        "missingness": "maximum_cell_fraction_and_absolute_training_reference_jump",
+        "population_stability_index_bins": "training_deciles_with_unique_edges_and_explicit_missing_bin",
+        "population_stability_index_features": "selected_numeric_features",
+        "population_stability_index_gate": "maximum_external_season_role_feature_value",
+        "population_stability_index_smoothing": 1e-06,
+        "reference": "exact_frozen_2010_2019_training_snapshots_within_role",
+        "unseen_categorical": "maximum_fraction_of_nonmissing_values_absent_from_role_training_values"
+      },
+      "distribution_shift_failure_action": "score_full_predeclared_cohort_publish_results_and_fail_promotion",
+      "integrity_failure_action": "quarantine_without_scoring_and_publish_failure",
+      "maximum_duplicate_snapshot_ids": 0,
+      "maximum_failed_team_pages": 0,
+      "maximum_missingness_cohort_jump_percentage_points": 5.0,
+      "maximum_population_stability_index": 0.2,
+      "maximum_selected_feature_missing_fraction": 0.05,
+      "maximum_unseen_categorical_fraction": 0.02,
+      "minimum_identity_resolution_rate": 1.0,
+      "require_effective_time_safe": true,
+      "require_immutable_source_and_corpus_hashes": true
+    },
+    "calibration": {
+      "candidate_selection_after_freeze": false,
+      "common_oof_test_seasons": [
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "fit_source": "raw_out_of_fold_predictions_only",
+      "formula": "logit(q_h)=alpha_h+beta_h*logit(p_h)+gamma_h*cold_start",
+      "monotone_projection": "row-wise weighted PAVA",
+      "probability_clip": 1e-06,
+      "projection_weight": "horizon OOF sample-weight sum",
+      "ridge_strength": 0.01,
+      "ridge_target": "identity(alpha=0,beta=1,gamma=0)",
+      "sample_weight": "inverse_player_snapshot_count_within_horizon",
+      "slope_constraint": "beta>=0"
+    },
+    "comparators": {
+      "evaluation_outcome_refit": false,
+      "fit_data": "frozen_pre_2021_person_period_rows_only",
+      "hierarchy": [
+        "interval_global",
+        "interval_role",
+        "interval_role_level",
+        "interval_role_level_age_band"
+      ],
+      "primary": "censoring_aware_hierarchical_empirical_bayes_annual_hazard",
+      "prior_strength": 50.0,
+      "secondary": "interval_global_annual_hazard",
+      "weighting": "inverse_player_snapshot_count_per_at_risk_interval"
+    },
+    "estimand": {
+      "horizons_months": [
+        12,
+        24,
+        36,
+        48,
+        60
+      ],
+      "outcome": "first_mlb_appearance_by_horizon",
+      "population": "model_eligible_affiliated_season_appearance_snapshots",
+      "prediction_time": "season_end",
+      "repeated_players": "retain_all_snapshots_cluster_inference_by_player",
+      "unit": "player_season_snapshot"
+    },
+    "external_evaluation": {
+      "2021_reporting": "separate_pandemic_and_reorganization_stress_cohort",
+      "application_order": [
+        "archive_complete_feature_census",
+        "apply_frozen_model_calibrator_and_comparators_to_all_five_horizons",
+        "content_lock_predictions_before_outcome_join",
+        "join_only_predeclared_mature_outcomes",
+        "score_and_publish_once"
+      ],
+      "data_cutoff": "2025-12-31",
+      "model_refit": false,
+      "non_predeclared_outcome_policy": "mask_even_when_historically_available",
+      "prediction_schema_version": "arrival-external-predictions/v1",
+      "publish_failures": true,
+      "recalibration_refit": false,
+      "schedule": [
+        {
+          "horizons_months": [
+            12,
+            24,
+            36,
+            48
+          ],
+          "mode": "retrospective_scored",
+          "season": 2021
+        },
+        {
+          "horizons_months": [
+            12,
+            24,
+            36
+          ],
+          "mode": "retrospective_scored",
+          "season": 2022
+        },
+        {
+          "horizons_months": [
+            12,
+            24
+          ],
+          "mode": "retrospective_scored",
+          "season": 2023
+        },
+        {
+          "horizons_months": [
+            12
+          ],
+          "mode": "retrospective_scored",
+          "season": 2024
+        },
+        {
+          "horizons_months": [],
+          "mode": "prediction_only",
+          "season": 2025
+        }
+      ],
+      "score_once": true,
+      "threshold_tuning": false
+    },
+    "frozen_benchmark": {
+      "corpus_content_sha256": "b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8",
+      "model_artifact_sha256": "f711fdd224424e9fca38bf7992249c5031b2e9d0934ffa21706187fac67dced0",
+      "model_configuration_sha256": "dec74bc09f17c7b5c0200596fd575eb8f1fb5101493b3a1eb2e5e90110a5c590",
+      "producer_git_commit": "5752256cc3fd8852c910efef2f9920b0b802bbe4",
+      "training_seasons": [
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "validation_configuration_sha256": "7ba7911d607a36453e72ff8c8b5102c592a06077d1f1f5bd39d63cd794756833"
+    },
+    "inference": {
+      "bootstrap_method": "paired_nonparametric_player_cluster",
+      "bootstrap_repetitions": 2000,
+      "bootstrap_seed": 29,
+      "confidence_level": 0.95,
+      "pooling": "within_horizon_only_never_across_horizons",
+      "resampling_unit": "player_id",
+      "same_draw_for_candidate_and_all_baselines": true
+    },
+    "limitations": [
+      "The external test is retrospective because outcomes may already exist when the lock is created.",
+      "Historical effective time does not prove original publication or knowledge time.",
+      "The population is season-appearance based and excludes some zero-appearance contracted players.",
+      "A separately sealed 2026 current-universe census is required for a genuinely prospective holdout."
+    ],
+    "metrics": {
+      "calibration": [
+        "observed_to_expected_ratio",
+        "calibration_in_the_large",
+        "calibration_intercept",
+        "calibration_slope",
+        "expected_calibration_error"
+      ],
+      "descriptive_discrimination": [
+        "roc_auc",
+        "average_precision",
+        "top_decile_lift"
+      ],
+      "fixed_reliability_edges": [
+        0.0,
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.2,
+        0.4,
+        0.7,
+        1.0
+      ],
+      "primary": "paired_brier_improvement_baseline_minus_candidate",
+      "proper_scoring_rules": [
+        "brier",
+        "log_loss"
+      ]
+    },
+    "promotion_gates": {
+      "calibration_in_the_large_absolute_maximum": 0.02,
+      "calibration_slope_interval_inclusive": [
+        0.8,
+        1.2
+      ],
+      "expected_calibration_error_maximum": 0.02,
+      "maximum_cumulative_horizon_violations": 0,
+      "maximum_major_cohort_brier_regression": 0.01,
+      "minimum_fraction_cells_with_absolute_calibration_in_the_large_at_most_0_03": 0.75,
+      "minimum_fraction_cells_with_calibration_slope_in_interval": 0.75,
+      "minimum_fraction_cells_with_expected_calibration_error_at_most_0_02": 0.75,
+      "minimum_fraction_cells_with_observed_to_expected_in_interval": 0.75,
+      "minimum_fraction_positive_pooled_role_horizon_cells": 0.75,
+      "observed_to_expected_interval_inclusive": [
+        0.8,
+        1.25
+      ],
+      "paired_brier_improvement_95pct_lower_bound_greater_than": 0.0,
+      "promotion_requires_every_gate": true
+    },
+    "schema_version": "arrival-validation-protocol/v2",
+    "status": "frozen_before_post_2020_ingestion",
+    "study_design": "retrospective_external_regime_test_not_prospective",
+    "sufficiency": {
+      "cold_start": {
+        "descriptive_minimum_unique_event_players": 30,
+        "release_gate_minimum_unique_event_players": 100,
+        "suppress_inference_below_unique_event_players": 30
+      },
+      "promotion_role_horizon_pooled_cell": {
+        "minimum_snapshots": 2500,
+        "minimum_unique_event_players": 100,
+        "minimum_unique_non_event_players": 100
+      },
+      "subgroup": {
+        "calibration_slope_minimum_unique_event_players": 100,
+        "minimum_snapshots": 500,
+        "minimum_unique_event_players": 50,
+        "minimum_unique_non_event_players": 50
+      }
+    }
+  },
+  "evaluator": {
+    "files": {
+      "modeling/arrival_calibration.py": "2470886244fef8b87469486359bff4ef3875c061dd0dc4e93b4cca731c2d0518",
+      "modeling/arrival_external.py": "630cc2a18a6f2f04cb4f0ccf62fa837db016b3b2115163e5d1daa0eaf82d4e0f",
+      "modeling/arrival_hazard_baseline.py": "a384e27296f3ccd8b132a0f1266f57b3efed56867c905150813198159dab777c",
+      "modeling/arrival_holdout.py": "42047e6c604b08d0eb033caf7f96cfa68277ba9d677b6cc40770fc33207cbfa1",
+      "modeling/arrival_validation.py": "23ab2f44c6bc68587c3a76848003a496e53bf5165fd58defa61c587a6139cf53",
+      "modeling/config/arrival-validation-v2.json": "6aad0d6a4ce44a1b6bccfff33ade6de2031c0e1b6b6d36e33fec29cbae6511be",
+      "modeling/contracts.py": "ddca8c3bcf65f578d0c442083049fa1e87d2d8d47be59b02c6f6a37faa5206b1"
+    },
+    "git_commit": "8c69989ecde0700ea95364b6b3cf3d7c1c2c6426"
+  },
+  "frozen_application": {
+    "application_order": [
+      "build_predictions_without_evaluation_outcomes",
+      "archive_candidate_calibrated_and_comparator_predictions",
+      "apply_predeclared_maturity_mask",
+      "join_mature_binary_outcomes_once",
+      "score_without_refit_or_threshold_tuning"
+    ],
+    "calibrator": {
+      "application": "modeling.arrival_calibration.apply_calibration",
+      "artifact_sha256": "8dc7e47c331e81ffba23716572ab807225dc859d99e6a632d8c9d8d39f2c7891",
+      "refit": false,
+      "reselection": false
+    },
+    "candidate": {
+      "artifact_sha256": "f711fdd224424e9fca38bf7992249c5031b2e9d0934ffa21706187fac67dced0",
+      "refit": false
+    },
+    "entrypoint": "modeling.arrival_external.build_external_prediction_rows",
+    "primary_comparator": {
+      "application": "modeling.arrival_hazard_baseline.ArrivalHazardBaselineModel.predict_cumulative",
+      "artifact_sha256": "a27b7b73ed67431bcad96e42e1894e0741809f34daf5270048bb01f5be7bf828",
+      "fit_source": "frozen_pre_2021_person_period_rows_only",
+      "refit": false
+    },
+    "scoring_code_git_commit": "8c69989ecde0700ea95364b6b3cf3d7c1c2c6426",
+    "secondary_comparator": {
+      "application": "frozen_interval_global_annual_hazard",
+      "artifact_sha256": "a27b7b73ed67431bcad96e42e1894e0741809f34daf5270048bb01f5be7bf828",
+      "refit": false
+    }
+  },
+  "limitations": [
+    "This temporal test is external to model development but retrospective because outcomes may already exist at lock creation time.",
+    "The lock does not convert historical source knowledge times into prospectively observed knowledge times.",
+    "The 2025 cohort is prediction-only at the 2025-12-31 data cutoff.",
+    "Creating this lock does not ingest cohorts, inspect outcomes, score predictions, or authorize release."
+  ],
+  "lock_sha256": "7fd9760e14948fe7260eab72e85ea70944dcf9f79c621e4a9c78c1a5d59ab789",
+  "protocol": {
+    "file_sha256": "6aad0d6a4ce44a1b6bccfff33ade6de2031c0e1b6b6d36e33fec29cbae6511be",
+    "git_path": "modeling/config/arrival-validation-v2.json",
+    "json_sha256": "5c21dd6a1a5d31c435ae05f3cdf66b9b8b4e915623f392ca3ba8b87a57599f35",
+    "schema_version": "arrival-validation-protocol/v2"
+  },
+  "schema_version": "arrival-external-holdout-lock/v2",
+  "status": "retrospective_external_regime_test_not_prospective",
+  "sufficiency": {
+    "content": {
+      "content_addressed_path": "artifacts/arrival-sufficiency-v1/content/615c7de8e2d54874020b2a8cdaf0c5b85178e08ef86fdc34cca3546b963a9c88.json",
+      "content_sha256": "615c7de8e2d54874020b2a8cdaf0c5b85178e08ef86fdc34cca3546b963a9c88",
+      "file_sha256": "707fe3a6863e08a9e93c3f36e4f6f03ea126f7cfccafcf12048643365fa60787"
+    },
+    "manifest": {
+      "content_addressed_path": "artifacts/arrival-sufficiency-v1/reports/24d47946275d32c84173b97b56c932c1894bbc860de739ff0ef6ae7a5a3b9a29.json",
+      "file_sha256": "72e513860900da3d023ad585cbb36c2b4ba59abc826c6d2123554176a55a16f4",
+      "manifest_sha256": "24d47946275d32c84173b97b56c932c1894bbc860de739ff0ef6ae7a5a3b9a29",
+      "schema_version": "arrival-data-sufficiency/v1"
+    },
+    "producer": {
+      "files": {
+        "modeling/arrival_sufficiency.py": "7fa61124fbff5366f88bbacadf41e2d41fe7aa6e42e4b68f0bf9d1172d822ba1",
+        "modeling/train_arrival_population.py": "a2f072d022d097e2061c3f9c1d0cba6a884d00c34d37ff2b7f847a446717cab2"
+      },
+      "git_commit": "d81373f12410647766ceb7ccf61cd5662e8065d4"
+    },
+    "publication_ready": false,
+    "research_process_ready": true,
+    "status": "research_process_ready_not_publication_ready"
+  }
+}
