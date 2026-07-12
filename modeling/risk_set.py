@@ -23,6 +23,11 @@ except ModuleNotFoundError:
 RISK_SET_CONTRACT_VERSION = "affiliated-player-census-v3"
 RISK_SET_POLICY = "explicit_pooled_context_effective_time_safe_v3"
 BREF_MISSING_DATE_SENTINELS = frozenset({"XXXX-XX-XX"})
+BREF_MEMBERSHIP_DATE_SENTINELS = frozenset({"9999-12-31"})
+BREF_MEMBERSHIP_DATE_IMPUTATION_BASIS = (
+    "appearance_qualified_exact_provider_sentinel_or_missing_value_"
+    "to_season_snapshot_boundary"
+)
 BREF_TEAM_ACTIVITY_STATUSES = frozenset({"observed", "declared_no_record"})
 
 COHORT_COVERAGE_SCOPES = {
@@ -202,6 +207,69 @@ def infer_bref_aggregate_role(group: pd.DataFrame) -> tuple[str, str]:
     raise RiskSetContractError(
         "appearance cohort row has no supported aggregate role evidence"
     )
+
+
+def _normalize_bref_appearance_membership_dates(
+    appearance_rows: pd.DataFrame,
+    season: int,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    normalized = appearance_rows.copy()
+    snapshot_boundary = pd.Timestamp(year=season, month=12, day=31)
+    imputed_rows = pd.Series(False, index=normalized.index)
+    sentinel_values = 0
+    missing_values = 0
+    field_counts: dict[str, int] = {}
+
+    for column in ("first_observed_on_team", "last_observed_on_team"):
+        raw = normalized[column]
+        missing = raw.isna() | raw.map(
+            lambda value: isinstance(value, str) and not value.strip()
+        )
+        sentinel = raw.map(
+            lambda value: (
+                isinstance(value, str)
+                and value in BREF_MEMBERSHIP_DATE_SENTINELS
+            )
+        )
+        imputed = missing | sentinel
+        candidates = ~imputed
+        parsed = pd.to_datetime(raw.where(candidates), errors="coerce").dt.normalize()
+        invalid = candidates & parsed.isna()
+        if invalid.any():
+            raise RiskSetContractError(
+                f"Baseball-Reference {column} contains malformed non-sentinel dates"
+            )
+        outside_season = candidates & (
+            parsed.dt.year.ne(season) | parsed.gt(snapshot_boundary)
+        )
+        if outside_season.any():
+            raise RiskSetContractError(
+                f"Baseball-Reference {column} contains dates outside the appearance season"
+            )
+
+        normalized.loc[imputed, column] = snapshot_boundary.date().isoformat()
+        imputed_rows |= imputed
+        sentinel_values += int(sentinel.sum())
+        missing_values += int(missing.sum())
+        field_counts[column] = int(imputed.sum())
+
+    return normalized, {
+        "membership_date_imputation_basis": BREF_MEMBERSHIP_DATE_IMPUTATION_BASIS,
+        "membership_date_imputation_boundary": snapshot_boundary.date().isoformat(),
+        "membership_date_imputation_rows": int(imputed_rows.sum()),
+        "membership_date_imputation_values": int(
+            field_counts["first_observed_on_team"]
+            + field_counts["last_observed_on_team"]
+        ),
+        "membership_date_sentinel_values": sentinel_values,
+        "membership_date_missing_values": missing_values,
+        "first_observed_on_team_imputed_values": field_counts[
+            "first_observed_on_team"
+        ],
+        "last_observed_on_team_imputed_values": field_counts[
+            "last_observed_on_team"
+        ],
+    }
 
 
 def canonicalize_baseball_reference_appearances(
@@ -385,6 +453,9 @@ def canonicalize_baseball_reference_appearances(
         raise RiskSetContractError(
             "Baseball-Reference input contains no rows with season appearance evidence"
         )
+    appearance_rows, membership_date_quality = (
+        _normalize_bref_appearance_membership_dates(appearance_rows, season)
+    )
     inferred_roles: dict[tuple[str, str], tuple[str, str]] = {}
     for key, group in appearance_rows.groupby(
         ["source_id_namespace", "source_player_id"],
@@ -442,6 +513,7 @@ def canonicalize_baseball_reference_appearances(
         "appearance_data_team_count": appearance_team_count,
         "declared_no_record_teams": declared_no_record_team_count,
         "cooperative_affiliate_teams": shared_team_count,
+        **membership_date_quality,
     }
     roster = pd.DataFrame(
         {

@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from modeling.risk_set import (
+    BREF_MEMBERSHIP_DATE_IMPUTATION_BASIS,
     CENSUS_METADATA_COLUMNS,
     PLAYER_SEASON_COLUMNS,
     PRIOR_STAT_FEATURES,
@@ -366,6 +367,8 @@ def test_baseball_reference_adapter_builds_an_explicit_appearance_cohort() -> No
     zero_game = source_rows.iloc[[0]].copy()
     zero_game.loc[:, "source_player_id"] = "zero-game-1"
     zero_game.loc[:, "player_name"] = "Zero Game Roster Entry"
+    zero_game.loc[:, "first_observed_on_team"] = "9999-12-31"
+    zero_game.loc[:, "last_observed_on_team"] = ""
     for column in [
         "batting_G",
         "batting_PA",
@@ -414,6 +417,8 @@ def test_baseball_reference_adapter_builds_an_explicit_appearance_cohort() -> No
     assert metadata.attrs["adapter_quality"]["source_observed_team_pages"] == 2
     assert metadata.attrs["adapter_quality"]["appearance_data_team_count"] == 2
     assert metadata.attrs["adapter_quality"]["declared_no_record_teams"] == 0
+    assert metadata.attrs["adapter_quality"]["membership_date_imputation_rows"] == 0
+    assert metadata.attrs["adapter_quality"]["membership_date_imputation_values"] == 0
 
     snapshots, risk_quality = build_affiliated_risk_set(
         metadata,
@@ -460,6 +465,100 @@ def test_baseball_reference_adapter_does_not_normalize_arbitrary_invalid_birth_d
         match="roster birth_date contains invalid dates",
     ):
         validate_canonical_inputs(metadata, roster, seasons)
+
+
+def test_bref_adapter_imputes_exact_membership_sentinel_and_blank_to_boundary() -> None:
+    source_rows = bref_player_team_seasons()
+    anomaly = source_rows.index[-1]
+    source_rows.loc[anomaly, "first_observed_on_team"] = "9999-12-31"
+    source_rows.loc[anomaly, "last_observed_on_team"] = ""
+
+    metadata, roster, seasons = canonicalize_baseball_reference_appearances(
+        source_rows,
+        bref_quality(),
+        bref_teams(),
+        bref_team_organizations(),
+    )
+    _, validated_roster, validated_seasons = validate_canonical_inputs(
+        metadata, roster, seasons
+    )
+
+    normalized = validated_roster.loc[validated_roster["team_id"].eq("AAA-NYY")].iloc[0]
+    assert normalized["first_observed_on_team"] == pd.Timestamp("2022-12-31")
+    assert normalized["last_observed_on_team"] == pd.Timestamp("2022-12-31")
+    assert validated_seasons.iloc[0]["stats_through"] == pd.Timestamp("2022-12-31")
+
+    quality = metadata.attrs["adapter_quality"]
+    assert quality["membership_date_imputation_basis"] == (
+        BREF_MEMBERSHIP_DATE_IMPUTATION_BASIS
+    )
+    assert quality["membership_date_imputation_boundary"] == "2022-12-31"
+    assert quality["membership_date_imputation_rows"] == 1
+    assert quality["membership_date_imputation_values"] == 2
+    assert quality["membership_date_sentinel_values"] == 1
+    assert quality["membership_date_missing_values"] == 1
+    assert quality["first_observed_on_team_imputed_values"] == 1
+    assert quality["last_observed_on_team_imputed_values"] == 1
+
+    _, risk_quality = build_affiliated_risk_set(
+        metadata,
+        roster,
+        seasons,
+        register(),
+    )
+    assert risk_quality["source_adapter_quality"][
+        "membership_date_imputation_rows"
+    ] == 1
+
+
+def test_bref_adapter_preserves_valid_membership_date_when_companion_is_missing() -> None:
+    source_rows = bref_player_team_seasons()
+    anomaly = source_rows.index[-1]
+    source_rows.loc[anomaly, "last_observed_on_team"] = None
+
+    metadata, roster, seasons = canonicalize_baseball_reference_appearances(
+        source_rows,
+        bref_quality(),
+        bref_teams(),
+        bref_team_organizations(),
+    )
+    _, validated_roster, _ = validate_canonical_inputs(metadata, roster, seasons)
+
+    normalized = validated_roster.loc[validated_roster["team_id"].eq("AAA-NYY")].iloc[0]
+    assert normalized["first_observed_on_team"] == pd.Timestamp("2022-07-16")
+    assert normalized["last_observed_on_team"] == pd.Timestamp("2022-12-31")
+    quality = metadata.attrs["adapter_quality"]
+    assert quality["membership_date_imputation_rows"] == 1
+    assert quality["membership_date_imputation_values"] == 1
+    assert quality["membership_date_sentinel_values"] == 0
+    assert quality["membership_date_missing_values"] == 1
+
+
+@pytest.mark.parametrize(
+    ("column", "value", "message"),
+    [
+        ("first_observed_on_team", "not-a-date", "malformed non-sentinel"),
+        ("last_observed_on_team", "9999-12-30", "malformed non-sentinel"),
+        ("last_observed_on_team", " 9999-12-31 ", "malformed non-sentinel"),
+        ("first_observed_on_team", "2021-12-31", "outside the appearance season"),
+        ("last_observed_on_team", "2023-01-01", "outside the appearance season"),
+    ],
+)
+def test_bref_adapter_rejects_other_malformed_or_out_of_season_membership_dates(
+    column: str,
+    value: str,
+    message: str,
+) -> None:
+    source_rows = bref_player_team_seasons()
+    source_rows.loc[source_rows.index[-1], column] = value
+
+    with pytest.raises(RiskSetContractError, match=message):
+        canonicalize_baseball_reference_appearances(
+            source_rows,
+            bref_quality(),
+            bref_teams(),
+            bref_team_organizations(),
+        )
 
 
 def test_genuine_two_way_domains_are_preserved_but_shared_contract_is_unsupported() -> None:
