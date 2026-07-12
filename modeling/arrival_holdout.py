@@ -424,7 +424,7 @@ def _verify_corpus_manifest(
         manifest.get("producer"),
         "Arrival corpus",
         root=root,
-        require_live_files=require_live_aliases,
+        require_live_files=False,
     )
     return {
         "content_addressed_path": _portable_path(archived_manifest, root),
@@ -550,7 +550,7 @@ def verify_benchmark_evidence(
         metrics.get("producer"),
         "Benchmark",
         root=root,
-        require_live_files=require_live_aliases,
+        require_live_files=False,
     )
 
     return {
@@ -1012,7 +1012,7 @@ def verify_calibration_evidence(
         manifest.get("producer"),
         "Calibration",
         root=root,
-        require_live_files=require_live_aliases,
+        require_live_files=False,
     )
     release_gates = manifest.get("release_gates")
     if not isinstance(release_gates, dict) or release_gates.get("release_eligible") is not False:
@@ -1095,7 +1095,7 @@ def verify_sufficiency_evidence(
         report.get("producer"),
         "Sufficiency report",
         root=root,
-        require_live_files=require_live_aliases,
+        require_live_files=False,
     )
     return {
         "manifest": {

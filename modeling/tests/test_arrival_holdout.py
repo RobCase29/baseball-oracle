@@ -544,6 +544,20 @@ def test_verification_uses_archives_and_git_not_mutable_live_aliases(tmp_path: P
     assert verify_holdout_lock(output, root=tmp_path) == lock
 
 
+def test_creation_uses_historical_producer_git_objects_not_current_worktree(
+    tmp_path: Path,
+) -> None:
+    fixture = _fixture(tmp_path, sufficiency=True)
+    (tmp_path / "modeling/benchmark_producer.py").write_text("# evolved after benchmark\n")
+    (tmp_path / "modeling/corpus_producer.py").write_text("# evolved after corpus\n")
+
+    lock = _create(fixture, tmp_path / "holdout.json", root=tmp_path)
+
+    assert lock["benchmark"]["producer"]["git_commit"] == fixture["benchmark"][
+        "producer_commit"
+    ]
+
+
 def test_verification_fails_when_content_addressed_model_changes(tmp_path: Path) -> None:
     fixture = _fixture(tmp_path)
     output = tmp_path / "holdout.json"
