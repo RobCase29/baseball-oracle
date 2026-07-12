@@ -1,15 +1,24 @@
-export type PlayerType = 'Hitter' | 'Pitcher'
+export type PlayerType = 'Hitter' | 'Pitcher' | 'Two-way'
 
-export type RiskBand = 'Low' | 'Moderate' | 'High'
+export type PlayerStage = 'pre_debut' | 'early_mlb' | 'established_mlb' | 'inactive'
 
-export type TrendDirection = 'up' | 'down' | 'flat'
+export type StageFilter = 'All' | 'Minors' | 'MLB'
 
-export interface CareerArcPoint {
+export type PublicationState = 'observed' | 'research' | 'released' | 'withheld'
+
+export type ConfidenceState = 'Low' | 'Moderate' | 'High' | 'Withheld'
+
+export interface WarQuantiles {
+  p10: number
+  p25: number
+  p50: number
+  p75: number
+  p90: number
+}
+
+export interface CareerForecastArcPoint extends WarQuantiles {
   age: number
-  low: number
-  median: number
-  high: number
-  actual?: number
+  actual: number | null
 }
 
 export interface ModelDriver {
@@ -17,25 +26,54 @@ export interface ModelDriver {
   value: string
   impact: number
   detail: string
+  source?: string
 }
 
-export interface PublishedForecast {
+export interface HofStandardReference {
+  label: string
+  roleOrPosition: string | null
+  careerWar: number | null
+  peakSevenWar: number | null
+  jaws: number | null
+  fallbackUsed: boolean
+}
+
+export interface CareerForecastDecomposition {
+  arrivalProbability: number | null
+  hofCaliberGivenMlbProbability: number | null
+  noMlbProbability: number | null
+  observedCumulativeWar: number | null
+}
+
+export interface CareerForecastLineage {
   modelVersion: string
-  publishedAt: string
+  targetVersion: string
+  dataVersion: string | null
+  providerVersion: string | null
+}
+
+export interface CareerForecast {
+  publicationState: PublicationState
+  releaseEligible: boolean
+  asOf: string
   rank: number | null
-  arrivalProbability: number
-  arrivalDelta: number | null
-  eta: string | null
-  expectedCareerWar: number
-  starProbability: number
-  hofProbability: number
-  floorWar: number
-  ceilingWar: number
-  risk: RiskBand
-  confidence: number
-  summary: string
+  hofCaliberProbability: number | null
+  finalCareerWar: WarQuantiles | null
+  peakSevenWar: WarQuantiles | null
+  finalJaws: WarQuantiles | null
+  scenarioSupportExtensionJaws: number | null
+  cumulativeWar: number | null
+  arrivalProbability36: number | null
+  confidenceScore: number | null
+  confidenceState: ConfidenceState
+  intervalWidth: number | null
+  arc: CareerForecastArcPoint[]
+  decomposition: CareerForecastDecomposition
+  hofStandard: HofStandardReference | null
+  summary: string | null
   drivers: ModelDriver[]
-  careerArc: CareerArcPoint[]
+  warnings: string[]
+  lineage: CareerForecastLineage
 }
 
 export interface ObservedMetric {
@@ -72,7 +110,7 @@ export interface PlayerProvenance {
     pitchQualifier: number
     minAge: number
     maxAge: number
-  }
+  } | null
   externalIds: Record<string, string | number | null>
 }
 
@@ -108,8 +146,9 @@ export interface PlayerRecord {
   organizationCode: string | null
   position: string | null
   playerType: PlayerType
+  stage: PlayerStage
   age: number | null
-  level: string
+  level: string | null
   batsThrows: string | null
   psScore: number | null
   psPercentile: number | null
@@ -119,13 +158,14 @@ export interface PlayerRecord {
   coverage: PlayerCoverage
   provenance: PlayerProvenance
   researchEstimate: ResearchArrivalEstimate | null
-  forecast: PublishedForecast | null
+  careerForecast: CareerForecast | null
 }
 
-export type SortKey = 'arrival36' | 'psScore' | 'psPercentile' | 'age' | 'name'
+export type SortKey = 'hofProbability' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
+  stage: StageFilter
   playerType: 'All' | PlayerType
   level: string
   sort: SortKey
@@ -147,6 +187,18 @@ export interface PlayersResponseMeta {
   researchCoverage?: number | null
   researchAsOf?: string | null
   releaseEligible?: boolean
+  targetVersion?: string | null
+  stageCoverage?: {
+    minors: number
+    mlb: number
+  } | null
+  degraded?: boolean
+  degradedReason?: string
+  rankScope?: 'stage_specific'
+  stageRankAvailability?: {
+    mlb: boolean
+    minors: boolean
+  }
 }
 
 export interface PlayersResponse {

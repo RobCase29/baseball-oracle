@@ -6,6 +6,7 @@ import pytest
 from modeling.prepare_dataset import (
     ROOT,
     aggregate_career_outcomes,
+    build_career_landmarks,
     build_labels,
     categorical,
     exact_age,
@@ -28,6 +29,114 @@ def test_role_inference_handles_two_way_players() -> None:
     assert infer_role("RHP") == "pitcher"
     assert infer_role("SS") == "hitter"
     assert infer_role("P/OF") == "two_way"
+
+
+def test_career_landmark_roles_require_material_balanced_workloads() -> None:
+    people = pd.DataFrame(
+        [
+            {
+                "playerID": player_id,
+                "bbrefID": player_id,
+                "birthYear": "1980",
+                "birthMonth": "1",
+                "birthDay": "1",
+                "debut": "2000-04-01",
+            }
+            for player_id in ("pitcher01", "hitter01", "twoway01")
+        ]
+    )
+    batting = pd.DataFrame(
+        [
+            ["pitcher01", "2000", 35, 80, 0, 0, 0, 0, 0, 0, 0, 0],
+            ["hitter01", "2000", 140, 500, 0, 0, 0, 0, 0, 0, 0, 0],
+            ["twoway01", "2000", 158, 725, 0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        columns=["playerID", "yearID", "G", "AB", "H", "2B", "3B", "HR", "SB", "BB", "SO", "HBP"],
+    )
+    batting["SH"] = 0
+    batting["SF"] = 0
+    pitching = pd.DataFrame(
+        [
+            ["pitcher01", "2000", 20, 5, 32, 32, 0, 600, 0, 0, 0, 0, 0],
+            ["hitter01", "2000", 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0],
+            ["twoway01", "2000", 5, 3, 14, 10, 0, 141, 0, 0, 0, 0, 0],
+        ],
+        columns=[
+            "playerID",
+            "yearID",
+            "W",
+            "L",
+            "G",
+            "GS",
+            "SV",
+            "IPouts",
+            "H",
+            "ER",
+            "HR",
+            "BB",
+            "SO",
+        ],
+    )
+
+    landmarks, _ = build_career_landmarks(people, batting, pitching, {})
+    roles = landmarks.set_index("lahman_id")["role"].to_dict()
+
+    assert roles == {
+        "pitcher01": "pitcher",
+        "hitter01": "hitter",
+        "twoway01": "two_way",
+    }
+
+
+def test_career_terminal_labels_are_null_for_right_censored_players() -> None:
+    people = pd.DataFrame(
+        [
+            {
+                "playerID": player_id,
+                "bbrefID": player_id,
+                "birthYear": "1990",
+                "birthMonth": "1",
+                "birthDay": "1",
+                "debut": "2020-04-01",
+            }
+            for player_id in ("resolved01", "active01")
+        ]
+    )
+    batting = pd.DataFrame(
+        [
+            ["resolved01", "2020", 10, 40],
+            ["resolved01", "2021", 20, 80],
+            ["active01", "2024", 30, 100],
+            ["active01", "2025", 40, 120],
+        ],
+        columns=["playerID", "yearID", "G", "AB"],
+    )
+    for column in ("H", "2B", "3B", "HR", "SB", "BB", "SO", "HBP", "SH", "SF"):
+        batting[column] = 0
+    pitching = pd.DataFrame(
+        columns=["playerID", "yearID", "W", "L", "G", "GS", "SV", "IPouts", "H", "ER", "HR", "BB", "SO"]
+    )
+
+    _, labels = build_career_landmarks(people, batting, pitching, {})
+    resolved = labels[labels["lahman_id"] == "resolved01"].sort_values("season")
+    active = labels[labels["lahman_id"] == "active01"].sort_values("season")
+
+    assert resolved["career_resolution"].eq("three_year_inactivity_proxy").all()
+    assert resolved["future_active_seasons"].tolist() == [1, 0]
+    assert resolved["remaining_batting_pa"].tolist() == [80, 0]
+    assert resolved["remaining_pitching_outs"].tolist() == [0, 0]
+    assert resolved["final_season"].tolist() == [2021, 2021]
+
+    assert active["career_resolution"].eq("right_censored").all()
+    for column in (
+        "future_active_seasons",
+        "remaining_batting_pa",
+        "remaining_pitching_outs",
+        "final_season",
+    ):
+        assert active[column].isna().all()
+    assert bool(active.iloc[0]["appeared_next_season"])
+    assert pd.isna(active.iloc[1]["appeared_next_season"])
 
 
 def test_draft_parser_separates_international_signings() -> None:

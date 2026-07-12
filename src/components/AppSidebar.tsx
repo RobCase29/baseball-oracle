@@ -53,6 +53,7 @@ export function AppSidebar({
             key={label}
             type="button"
             onClick={() => onChangeView(label)}
+            aria-current={activeView === label ? 'page' : undefined}
             title={label}
           >
             <Icon size={18} aria-hidden="true" />

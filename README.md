@@ -6,11 +6,12 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 2. The distribution of that player's remaining career outcomes, updated as new minor- and major-league evidence arrives.
 
 The repository ships a working React research cockpit backed by authorized
-Prospect Savant observations stored in Neon. The directory contains 6,868 real
-2026 player-role profiles. Exact MLBAM-and-role matches expose frozen Dec. 31,
-2025 arrival estimates for 4,442 current profiles as a research preview. These
-estimates are visibly non-release-eligible; published career and Hall of Fame
-forecasts remain absent.
+Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
+corpus. The live minor-league directory contains 6,868 real 2026 player-role
+profiles (6,800 canonical MLBAM identities). The career artifact adds 1,291
+current 40-man-roster MLB players and 6,455 frozen prospect research forecasts.
+All career outputs are visibly research-only and use separate MLB and MiLB rank
+universes because their targets are not directly comparable.
 
 ## Run locally
 
@@ -49,13 +50,22 @@ trains separate hitter and pitcher hazards:
 npm run model:population:all
 ```
 
+The career tournament verifies and consumes the locked 1871-2026 MLB WAR corpus,
+builds player-season landmarks, runs its chronological tournament, and exports
+the static research artifact used by the API:
+
+```bash
+npm run model:career:test
+npm run model:career:train
+```
+
 The current verified corpus covers every nonzero affiliated season from 2010
 through 2019: 69,326 eligible player-season snapshots, 24,406 players, and 9,832
 MLB debuts within 60 months. The research benchmark beats its hierarchical
 age-level-role comparator on all 35 supported forward fold-horizons, but remains
 unpublished because long-horizon and cold-start calibration, context normalization,
-and a locked prospective holdout are still pending. A locked 2021-2025 external
-regime evaluation is complete and improves the censoring-aware baseline across
+and a locked prospective holdout are still pending. A content-locked 2021-2025
+retrospective regime evaluation improves the censoring-aware baseline across
 eight sufficient role-horizon cells, but fails preregistered population-shift and
 calibration cell-fraction gates, so it is not release-eligible.
 
@@ -64,8 +74,11 @@ Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the c
 environment lock, and database lineage schema are versioned. Preparation verifies
 every raw byte against a matching acquisition manifest, then archives each table,
 build manifest, validation report, and model under a content digest.
-The application serves the frozen 2025 arrival candidate only through a separate
-`researchEstimate` field. The validated publication field remains `forecast: null`.
+The application serves the frozen 2025 arrival candidate and the Career Oracle
+artifact through explicitly research-only fields. No artifact is marked released.
+The Hall target is statistical JAWS caliber, not induction probability, and the
+prospect result is an arrival-horizon lower-bound proxy composed with a debut-age
+career bridge rather than a directly trained MiLB-to-Hall model.
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
 results, and the gates that remain before forecasts can be published.
 
@@ -124,29 +137,29 @@ The latest complete Prospect Savant season is merged into
 the snapshot automatically; the CLI backfill refreshes once after a successful
 run.
 
-The allowlisted public endpoint supports server-side search, role and level
-filters, source-score or research-P36 sorting, and pagination:
+The allowlisted public endpoint supports stage-aware search, role and level
+filters, research outcome sorting, and pagination:
 
 ```text
-GET /api/players?q=jenkins&playerType=Hitter&level=AAA&sort=psScore&page=1&limit=50
-GET /api/players?playerType=Pitcher&sort=arrival36&page=1&limit=50
+GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
+GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
 ```
 
 Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Prospect board:** real-player search, role and level filtering, global frozen-P36 ranking, source-score sorting, pagination, and a browser-local watchlist.
-- **Player dossier:** observed metrics, identity provenance, and matched 12-60 month research arrival curves against the frozen age-level baseline.
+- **Oracle board:** real minor and major leaguers, stage/role/level filters, stage-specific Hall-caliber and career-outcome ranks, pagination, and a browser-local watchlist.
+- **Player dossier:** observed evidence, identity provenance, actual cumulative WAR, terminal career WAR/peak-seven/JAWS distributions, Hall standard, warnings, and model lineage.
 - **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
 - **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
 - **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.
 
-Every returned player has `forecast: null` until a validated model release is
-published. The separate `researchEstimate` is frozen, lineage-bound, and labeled
-with its failed release decision; its 60-month point is descriptive only. Current
-MLB status and 2026 evidence are not reconciled. Provider scores and percentiles
-remain source evidence. The domain contracts live in `src/domain/forecast.ts`.
+Every model output remains lineage-bound and labeled with its publication state.
+In-season 2026 evidence is context only; scoring defaults to the latest complete
+season and withholds players without a valid completed-season feature state.
+Provider scores and percentiles remain source evidence and do not determine the
+default rank. The domain contracts live in `src/domain/forecast.ts`.
 
 ## Design documents
 
@@ -158,6 +171,7 @@ remain source evidence. The domain contracts live in `src/domain/forecast.ts`.
 - [Data sources and licensing](docs/DATA_SOURCES.md)
 - [Historical backfill strategy](docs/HISTORICAL_BACKFILL.md)
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
+- [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 
 ## Core principle
 

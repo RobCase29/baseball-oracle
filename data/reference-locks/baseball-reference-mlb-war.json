@@ -1,0 +1,2672 @@
+{
+  "schemaVersion": "baseball-reference-mlb-war-reference-lock/v1",
+  "source": "baseball-reference-mlb-war",
+  "createdAt": "2026-07-12T18:30:20.537Z",
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "protocolLock": {
+    "path": "data/reference-locks/baseball-reference-mlb-war-protocol-v1.json",
+    "sha256": "466f0a5dac2fb6fe2a30cf46e7023e5a78ebc32846c23c836a6ad1239a1a9286"
+  },
+  "sourceLockIsolation": {
+    "globalSourceLock": "data/source-lock.json",
+    "globalSourceLockModified": false
+  },
+  "coverage": {
+    "startSeason": 1871,
+    "endSeason": 2026,
+    "latestCompleteSeason": 2025,
+    "mutableSeasons": [
+      2026
+    ],
+    "plannedUnits": 324,
+    "completedUnits": 324,
+    "failedUnits": 0,
+    "complete": true
+  },
+  "datasetManifest": {
+    "path": "data/processed/baseball-reference-mlb-war/manifest.json",
+    "byteLength": 151672,
+    "sha256": "ed6a5bc4113f33da0e8fd8b0e1d6d3c6c52dc68590eb89823afc6c9fa483be63"
+  },
+  "inputs": [
+    {
+      "unitId": "hof-batting",
+      "url": "https://www.baseball-reference.com/awards/hof_batting.shtml",
+      "retrievedAt": "2026-07-12T18:10:14.280Z",
+      "byteLength": 606430,
+      "sha256": "20cdf70c26b82451cef44161d059d8e146c332ee5c6e096f435654959509b0f5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/91b1919f705da863b40d337fd6bdad676289e2301dfc37441927c3bfa33ac810/manifest.json"
+    },
+    {
+      "unitId": "hof-pitching",
+      "url": "https://www.baseball-reference.com/awards/hof_pitching.shtml",
+      "retrievedAt": "2026-07-12T18:10:17.345Z",
+      "byteLength": 282568,
+      "sha256": "61bb01c38f88d21239dd5eba665f6317648a51434050f1911377da9ff42c662c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1651b7711b278c739c21dd83f02548ccb21a85c57fe3b7761ff03b05e8a57dd5/manifest.json"
+    },
+    {
+      "unitId": "jaws-1B",
+      "url": "https://www.baseball-reference.com/leaders/jaws_1B.shtml",
+      "retrievedAt": "2026-07-12T18:10:24.277Z",
+      "byteLength": 1167587,
+      "sha256": "5800993ade12f23ac2fd06be57727a7a888514bd6297de225997bd424f86a91e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e29bdce6e8361caa05b1566ddab7d3c71310eff9aa4d5ebe2ccb9234b63c889b/manifest.json"
+    },
+    {
+      "unitId": "jaws-2B",
+      "url": "https://www.baseball-reference.com/leaders/jaws_2B.shtml",
+      "retrievedAt": "2026-07-12T18:10:27.361Z",
+      "byteLength": 1168638,
+      "sha256": "7106496a4d79f5903b8ab5df76d847d798f58cbb4a0234a06b023f1362c110e8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6564bdc2c487831e5048b75f25cb044a0a38bb97a5637cb0cde92a9636b7df86/manifest.json"
+    },
+    {
+      "unitId": "jaws-3B",
+      "url": "https://www.baseball-reference.com/leaders/jaws_3B.shtml",
+      "retrievedAt": "2026-07-12T18:10:31.486Z",
+      "byteLength": 1168319,
+      "sha256": "0b980127fd2deda1adca68ef107bcca14d70dd4168fd562118d5f14fb8b9ddc6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/db465ee8cc1cca5d3729930e4e9d8a1d72f751b4b09eb5a8b123c60b908ce681/manifest.json"
+    },
+    {
+      "unitId": "jaws-C",
+      "url": "https://www.baseball-reference.com/leaders/jaws_C.shtml",
+      "retrievedAt": "2026-07-12T18:10:20.948Z",
+      "byteLength": 1167183,
+      "sha256": "2fd566125462be99c5f6f8c2149fe28ba3b6451071b54e3c59713d4c4ad60bdf",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/54d60e835c12d1b5cc5ff24cc74d89491c9f38dc44c0c6c08d5a0da5292a3faf/manifest.json"
+    },
+    {
+      "unitId": "jaws-CF",
+      "url": "https://www.baseball-reference.com/leaders/jaws_CF.shtml",
+      "retrievedAt": "2026-07-12T18:10:40.138Z",
+      "byteLength": 1169190,
+      "sha256": "5125f5d8b601010605e3287a5ab8c086fb12846c8d3987fb39f49d5c3409dd9f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/70dc0f6a93b48fc72eefcaf5e592dc403c37ae87bf62a5af9b482e9549591a95/manifest.json"
+    },
+    {
+      "unitId": "jaws-LF",
+      "url": "https://www.baseball-reference.com/leaders/jaws_LF.shtml",
+      "retrievedAt": "2026-07-12T18:10:37.094Z",
+      "byteLength": 1168610,
+      "sha256": "12b6731dace650d899dc4f9063bb26bac64dd4e55d45c6b0ac1245d9b44cc7c2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/87c40c497942a7d47a0f2a547cd36ae6e50c7724f40dc8be01f464d2e9b23df1/manifest.json"
+    },
+    {
+      "unitId": "jaws-P",
+      "url": "https://www.baseball-reference.com/leaders/jaws_P.shtml",
+      "retrievedAt": "2026-07-12T18:10:46.815Z",
+      "byteLength": 1193388,
+      "sha256": "c1fd352913454eb5820edf67900668ba39a88bbd013aec2ec5aebf4a96827e44",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2f0ec35d75a11519d9a459d369582b541e3010cd1cffafceee2b603be9538d1a/manifest.json"
+    },
+    {
+      "unitId": "jaws-RF",
+      "url": "https://www.baseball-reference.com/leaders/jaws_RF.shtml",
+      "retrievedAt": "2026-07-12T18:10:43.371Z",
+      "byteLength": 1168474,
+      "sha256": "cd58f89bc3796b8e500330d7b79ff3a5943b2d8b7c2f0bff04b85da2878319b0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d83a27fda8e48ba7867fdafb18772c6345f6d88d12bcac0185ce0eb7f869f8db/manifest.json"
+    },
+    {
+      "unitId": "jaws-RP",
+      "url": "https://www.baseball-reference.com/leaders/jaws_RP.shtml",
+      "retrievedAt": "2026-07-12T18:10:49.805Z",
+      "byteLength": 1162772,
+      "sha256": "426da6be3e146d9b7fbfa1340fa29da74672d8b7bfda8cf597fdc5c8a4cf23e2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8cf39ca21a2c308b8f18ceb3bee1d8e4ead395db099c0a0730d4878c7d481de8/manifest.json"
+    },
+    {
+      "unitId": "jaws-SS",
+      "url": "https://www.baseball-reference.com/leaders/jaws_SS.shtml",
+      "retrievedAt": "2026-07-12T18:10:34.105Z",
+      "byteLength": 1168294,
+      "sha256": "ea74ad0b836847794f700041179e4160a19d1c5eab7812e6a5047252c566af64",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1ef87e52e629042a65715b4c97b400fcb316df2e74d1e7ba74eb9868a54a1ce9/manifest.json"
+    },
+    {
+      "unitId": "season-1871-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1871-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:30:10.894Z",
+      "byteLength": 352886,
+      "sha256": "84a67fdc48f01fd42cc4617a876b32f78ace4b581499b8030288aeb4b77eb967",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/57caa4e6b0ceffe288383ce75fe253b055c34f89a29573377bc91b639d5b480f/manifest.json"
+    },
+    {
+      "unitId": "season-1871-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1871-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:30:13.925Z",
+      "byteLength": 204677,
+      "sha256": "13679aa073827e095fad9782d57be13324257e8e3a399014e986d6033e7252cd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0889c848d3e92ef4d60d84aadbb98a19d7627cd5a14e27af88d342e506490540/manifest.json"
+    },
+    {
+      "unitId": "season-1872-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1872-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:30:04.574Z",
+      "byteLength": 438385,
+      "sha256": "1b4321e9881185c1313930ac0c8180c3c571303c232945b5fdec892f1c7049dc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e83bd8886624b44e21fbaa29ba3ad9f9f0b183cd21729d5ef9532bdc10c448f4/manifest.json"
+    },
+    {
+      "unitId": "season-1872-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1872-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:30:07.549Z",
+      "byteLength": 220546,
+      "sha256": "642a2e6188a5dc7070fa9d94b311e48a32f4f36b1576447124211423f19cf68d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/30386801742bd5d353c4e9a0a1975c79e6c6b7798ce037cdf9a53ab60e2f6f76/manifest.json"
+    },
+    {
+      "unitId": "season-1873-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1873-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:58.077Z",
+      "byteLength": 373812,
+      "sha256": "cc976c656bfc1b7a14eb0802de1bd9492ead90dbdea2f0a38b7db74e02bdc883",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/57bf71c4ae443a98f073bb78f7d6cf5ce2e548e6627cd56b8b44f29c8901e9c7/manifest.json"
+    },
+    {
+      "unitId": "season-1873-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1873-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:30:01.160Z",
+      "byteLength": 214983,
+      "sha256": "1abc195826bc525743f255bd642470e5fef3f134f9a76511c00867d3c61c728f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/08a9efd23195d24359db040dd3f1ee5689c9d05c9b8bb4ae94d185f60c2ce015/manifest.json"
+    },
+    {
+      "unitId": "season-1874-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1874-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:51.786Z",
+      "byteLength": 369435,
+      "sha256": "4b21b7fd003dd4af2e90cf4eed451c29eb9fd66a376af32a8471ce980ff9f7d0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c1cfa1f876d4c2163728aea53961f781fceb45fef8ebbc511eaf5aa41dd7889c/manifest.json"
+    },
+    {
+      "unitId": "season-1874-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1874-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:54.735Z",
+      "byteLength": 200705,
+      "sha256": "40d5e07c30ec5ac758a6785fb9b463f62835900126f2278c16da39f15fac0fc4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d9ca5ec905aff28c7c4663671d213a29cc3e0717459fc06941aa03837ac9cf48/manifest.json"
+    },
+    {
+      "unitId": "season-1875-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1875-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:45.462Z",
+      "byteLength": 561548,
+      "sha256": "92f557bd477bbbd274a1d9aa458ee138e2503b610cd5f62de0f8f11ef65d8898",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ab2a91e6b3ed579fc3d38e6bf08983b9d1421a1fd711f6a12d29be8ea1e7741c/manifest.json"
+    },
+    {
+      "unitId": "season-1875-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1875-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:48.394Z",
+      "byteLength": 264491,
+      "sha256": "1488f88d7faaf05e8eace561f59b3da5af9fd2c122627586fb0c9f2aaf3d61fc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1f5ec87905254548a00edd0437dd3187a51461488c4b422ac167133a7131ab3c/manifest.json"
+    },
+    {
+      "unitId": "season-1876-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1876-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:38.915Z",
+      "byteLength": 371205,
+      "sha256": "542fc1194e29f951da4f5c4e9c106d1b3b6f665dd7eb9fd4ab8ac85722aba5bb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8b177f79a455f812d64fe0182a52f5352aac41aae0cc34f75c630057a73723f9/manifest.json"
+    },
+    {
+      "unitId": "season-1876-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1876-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:41.975Z",
+      "byteLength": 228685,
+      "sha256": "36acbaf40191afa4080b27ae153a6d303c0bec19dc08b5453c6bd63d3cbc0328",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4a77b8753c2b67d7664a7bbf8131ea6ff507b85fc050ff8ec493b08ba2c3f839/manifest.json"
+    },
+    {
+      "unitId": "season-1877-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1877-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:32.469Z",
+      "byteLength": 327279,
+      "sha256": "c8cdf7b070540ee77956df95ed970d29bfde38320b95800a33d14b0ef052f2bc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5533aca4890b1fd34dc3f292fc42095148504169dc7ed07fdf8b0124773917c3/manifest.json"
+    },
+    {
+      "unitId": "season-1877-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1877-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:35.569Z",
+      "byteLength": 202224,
+      "sha256": "9f414d0785e7c271cb770783674b7f5e52b88cbd27c3856018912870536c18d4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/db0b88bf5595f19444f7e2f3a754f9adb8259f19090580d534a9a0ed628bd05e/manifest.json"
+    },
+    {
+      "unitId": "season-1878-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1878-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:26.054Z",
+      "byteLength": 300651,
+      "sha256": "e7e1d1a851a6ef5f332c26b7a11aff75d42fd0583ea094cc9de987a9203b39d4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/eaceee3e340488e3195a9ed78634ceda0f9ac0d29401a1eba82fbb5db483f7e0/manifest.json"
+    },
+    {
+      "unitId": "season-1878-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1878-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:29.151Z",
+      "byteLength": 208734,
+      "sha256": "0726789d318b66c587a1ee01d54802d3b207792571f776282609d093a10fc515",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9d16566417f1fa9a1e6a8844ab085e5628d8dbb1bd879b5f0ccdca98d1405910/manifest.json"
+    },
+    {
+      "unitId": "season-1879-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1879-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:19.727Z",
+      "byteLength": 384439,
+      "sha256": "b85a6040397a164c1da6688fbe0a519ccefd1068cd162e0aac9c1accda7304f2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b2a826d6e7ade5108bed2f39d7f05ebdb57895ade9ad2aaa1ceb06d658c107bb/manifest.json"
+    },
+    {
+      "unitId": "season-1879-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1879-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:22.869Z",
+      "byteLength": 217886,
+      "sha256": "8f081dabf04758dccbe2cb9e8855dfe690fe825c83d1093241c7bffa11a6f6d4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b9b44efaaa7d372c6eaf5016ebb699003a6fb46d0f0d4133d75aae18e00a17ce/manifest.json"
+    },
+    {
+      "unitId": "season-1880-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1880-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:13.337Z",
+      "byteLength": 396976,
+      "sha256": "e7162384489172a8fabec27c82641bbbdfdd1b741f91b2bb134c6eb39d437ff6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d95093a417bc9f68d57f0d5fb7d1bbba0897777b76c829e4ea7c72fc9b184f19/manifest.json"
+    },
+    {
+      "unitId": "season-1880-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1880-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:16.364Z",
+      "byteLength": 229530,
+      "sha256": "a3cb7c83f1f23baa5635d4d36a521c140a8ada64a12af3ce6b99e1f5c5e78096",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/258e8c916904fcd4c5f74c63712e7de778f04db6d0e5680310cce7c01f61acbe/manifest.json"
+    },
+    {
+      "unitId": "season-1881-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1881-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:06.928Z",
+      "byteLength": 395555,
+      "sha256": "7b7c83e59e9ae19ed1785e29dce07badc21136f4254b2b97147f8a68f89ff2ae",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/48548621c426f26f58d5fca42cc8d81e01ac6e3ede0b5204eb5546e7197c586c/manifest.json"
+    },
+    {
+      "unitId": "season-1881-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1881-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:09.947Z",
+      "byteLength": 227937,
+      "sha256": "a6f88948845b340ad5bc05016c42d4e0ed93564bef4bf365ef392d18466d2933",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/99cbee1ebb5a49e67a21c712ec86742dedd53d134e4518ee9f333a582aa4f89f/manifest.json"
+    },
+    {
+      "unitId": "season-1882-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1882-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:29:00.801Z",
+      "byteLength": 604361,
+      "sha256": "9fd00bcc0815019f34f147638f1d456cf2fb6ee5afa46699e30558b9ba3e77a8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/dfc93a588b75443b53f1d3bb2cfac6649516da2d6a308827a613cc23d79f1ef0/manifest.json"
+    },
+    {
+      "unitId": "season-1882-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1882-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:29:03.636Z",
+      "byteLength": 307657,
+      "sha256": "341b76916ec12d534f0853cb892e3e4d3505cec526cefbe7b3ed1760bbd09098",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ccd0ff7df0c26cad16c06f6cbbd71b6c9228e95e3c2fae50ed8733eb119772a5/manifest.json"
+    },
+    {
+      "unitId": "season-1883-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1883-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:54.338Z",
+      "byteLength": 661761,
+      "sha256": "19c888bd9132cc882f5b029e4634b4afb2927769d3c6859d5377460079e5de03",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8f32db0585aaec921e480ce9ed2db47b689b883bc1842ce69cd73e5c09fb426e/manifest.json"
+    },
+    {
+      "unitId": "season-1883-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1883-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:57.196Z",
+      "byteLength": 345222,
+      "sha256": "d5d9d5a0ae6c8580d67792186783d8e3b1ee8b20cee956e2609335e6d0b41dbb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/82105015d1c770f2ea855447c6990b9a9d8123834119eba19a5a534d09701803/manifest.json"
+    },
+    {
+      "unitId": "season-1884-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1884-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:48.825Z",
+      "byteLength": 1643046,
+      "sha256": "dc8f2720d63ea22b2edc3193fb52f9d309bed73d982ebf15e3b20e2aa4052283",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/cf624b8a6c8335037b2e98bc0948b73420f59bf04f3970601623e0bad10d8a26/manifest.json"
+    },
+    {
+      "unitId": "season-1884-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1884-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:51.007Z",
+      "byteLength": 648598,
+      "sha256": "ab3a4f3ea2e02708e4703fae90ff568db9036d56ffd81acb031a8a39197a03e8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ae9f9a24bd61633a1a7fc618468c2a1876d4755a90c9e7220bc3f55f49b192e0/manifest.json"
+    },
+    {
+      "unitId": "season-1885-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1885-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:41.608Z",
+      "byteLength": 785497,
+      "sha256": "c7bd7f023a09aa2b1fdf8fe39e6973fa74117b9ae8cd817754112658f65871cd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7889ff3397c8d6a982fa57a575ecb0f9b7b48ba2c557d45718a27a026d127cba/manifest.json"
+    },
+    {
+      "unitId": "season-1885-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1885-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:44.465Z",
+      "byteLength": 394043,
+      "sha256": "3da752e506df2e77d520749661d2f19c7fa1d86c8909badad5e23e2e1c1dfbe0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b9aee62963ac28bfc30527d6989cd2582f99a01cd4fac928a93c8841a459ff0c/manifest.json"
+    },
+    {
+      "unitId": "season-1886-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1886-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:35.144Z",
+      "byteLength": 773259,
+      "sha256": "d5da33e6fcf961c2a5a85f5eb4061e0697dac774c3489f159015931d0dbd6994",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8d04df0ea85948eff7562196ccabafe74e615dd99046afec404c931a832b50b8/manifest.json"
+    },
+    {
+      "unitId": "season-1886-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1886-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:38.081Z",
+      "byteLength": 432338,
+      "sha256": "667ef404321d2ec4d1ea85fb088f72fcf3283e1de21193aa8f686d98342fa450",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c0764bd1dfd26c472ec650c5c2ff109bfbc2afcd1d6303dcd608e2a7e09dc775/manifest.json"
+    },
+    {
+      "unitId": "season-1887-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1887-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:28.779Z",
+      "byteLength": 729163,
+      "sha256": "b52ea665df509640561fef1f9822e5fa8f52a4b2eea09ff6c7c0528c66a237ea",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bfc0e1a5e82983f7872abc8dbf974ad0017ea93d5964617724dcf7a05432ba8c/manifest.json"
+    },
+    {
+      "unitId": "season-1887-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1887-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:31.765Z",
+      "byteLength": 420728,
+      "sha256": "3ed9b1988efe0052732c72c231b670282a3b5257e4a330d0f22d861ceb11abcc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6ff8499a16f910ffc4f3df0e8b069011c93abab42d58d7f9ad6d8c2c40399706/manifest.json"
+    },
+    {
+      "unitId": "season-1888-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1888-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:22.383Z",
+      "byteLength": 761676,
+      "sha256": "4046afe9a9ed446bc959f62f47623b2b9a66b8f9677d169edbd22e24691512eb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/560c35182fe358373045ee6389e8bb71d8d8819f0b1f9247478b0bae80647df8/manifest.json"
+    },
+    {
+      "unitId": "season-1888-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1888-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:25.219Z",
+      "byteLength": 389186,
+      "sha256": "ee191a8a0431dcf273447e338097185d1bd7bf6b85945557bb93a79872c2c54b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b13b21bb33046f7ca82707c519ae8743e4329e05d96b34069207f50358739192/manifest.json"
+    },
+    {
+      "unitId": "season-1889-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1889-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:15.947Z",
+      "byteLength": 747829,
+      "sha256": "a0bbeeb997b0218bc0e32b0b17fb132466809a394d596d85e02add28ee713154",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/62658c4cccbddb784792361a855d6182b996e22ddfa8b311c7275f950468d396/manifest.json"
+    },
+    {
+      "unitId": "season-1889-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1889-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:18.838Z",
+      "byteLength": 407063,
+      "sha256": "f14716d3d5b6a97f85614de1eb50745cacd68dc9eb61aa415877badf48042a6f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/65cb198b34fb276d810f19c82628f5eb6a52cd3b1489851b8a2168865fe15a74/manifest.json"
+    },
+    {
+      "unitId": "season-1890-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1890-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:10.035Z",
+      "byteLength": 1198895,
+      "sha256": "76488fb3ae30e480a70b8f5d4471c3eb61043f9ddab3b0347439b401784127c4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/23feba67487002eb8ab9e7ee171ad0895a7054fabfb6cb6cbc890a211220e1e8/manifest.json"
+    },
+    {
+      "unitId": "season-1890-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1890-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:12.547Z",
+      "byteLength": 590169,
+      "sha256": "9d90804a4060b3a8ffd0aa2249df862b69cd0e5e20c502b81628bc697a51cf90",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c20cc1800ad8a7f6aad094247e549fd8becaf94eb9db6fe694a64dcab4c26977/manifest.json"
+    },
+    {
+      "unitId": "season-1891-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1891-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:28:02.537Z",
+      "byteLength": 903288,
+      "sha256": "f66b3188246a697384e1b1a161f14b4c3b382c81281b58e2fe5a56a31344c269",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d7ce672f92493e1c03aca815a9c217abdc614706775d4766610a894f7e2d80c5/manifest.json"
+    },
+    {
+      "unitId": "season-1891-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1891-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:28:06.196Z",
+      "byteLength": 458486,
+      "sha256": "24cdcf4e8dfc787955a7d0e24a88c2564c28300e60744bca13a7a6a9db5e8222",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bf31b2ca546ebc45b51dd11d6345631d6b9e70838cb608082fe40fe93a07cab9/manifest.json"
+    },
+    {
+      "unitId": "season-1892-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1892-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:56.021Z",
+      "byteLength": 725296,
+      "sha256": "0d297c9b525b8c945ebbdf16e12e518aa5092b98cdd71a4f7369ce6d3511fe8b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/da94b36d1ebb24c0bea4858779b7a72d81a4ee8b31fe261472b4abf953ce67dd/manifest.json"
+    },
+    {
+      "unitId": "season-1892-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1892-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:58.966Z",
+      "byteLength": 389551,
+      "sha256": "cc8f88b95d8f16481c78f8db396b63d8e8d833f604e0a1b83c65e55edee6d8c1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5220ef87d429ff5ace6d9aaac03a60972b1110d99606462dc1d887f7ddbbe055/manifest.json"
+    },
+    {
+      "unitId": "season-1893-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1893-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:49.587Z",
+      "byteLength": 666661,
+      "sha256": "9531ebbb62ec149373cdf9fef26ed572a4ac0066414fdebd4525cd26925ac3c1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9dcd7df94959d3ad1f36a34ed8d5786a5900adc618ea8bfcf7b09a4a530c931a/manifest.json"
+    },
+    {
+      "unitId": "season-1893-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1893-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:52.542Z",
+      "byteLength": 381339,
+      "sha256": "ec2cbe934a7802dc707ae20eba6472c7790dcddb165cb8e75de91358a32f7c8e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d8ba8ae9e31130c8a4e08d9e8778a986edb6a5be17877e01d9416b62b0e400bb/manifest.json"
+    },
+    {
+      "unitId": "season-1894-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1894-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:43.262Z",
+      "byteLength": 686069,
+      "sha256": "09766a8387c3cbb4c29206f6405d9ad69243e2ac5ddc384e7cbecbbd80317472",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d4041f308197b5af1936af22064658a61dd9b27b753e4a1722c229ff60b7390b/manifest.json"
+    },
+    {
+      "unitId": "season-1894-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1894-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:46.213Z",
+      "byteLength": 419626,
+      "sha256": "ecced21dc9d696b962466d432ea30a22f3953f17734b6fcc17f658083ee86b1f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9f212fdad6981ddeca53bdb718a276516025070ec271d83ecd08f131747a8d93/manifest.json"
+    },
+    {
+      "unitId": "season-1895-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1895-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:36.794Z",
+      "byteLength": 687487,
+      "sha256": "182a13f40ed713267ae8efeb02613944ce617cf2ff300a9c443a8a6120382a0d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c3ded916bf9c0399d30ddb8a46dba858fee3b9822fad6e4754b5bfa1db45087e/manifest.json"
+    },
+    {
+      "unitId": "season-1895-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1895-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:39.743Z",
+      "byteLength": 384781,
+      "sha256": "c675043216a998b67ead3466e2cd29cf671176831adc41409c0f4b36d3e8ad00",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3804d86e5aa78340ab0eeebd9ee864a3b83dd17b1297095e85c2c4a6b21304fa/manifest.json"
+    },
+    {
+      "unitId": "season-1896-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1896-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:30.338Z",
+      "byteLength": 679355,
+      "sha256": "ca526cbac08c48f92fbded2eddcba3ca8da5f7959d61cc3fe8a8c49e5204eba2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5cfeefdc2bf05fc037e4606641373ca2baa50d8a099d5129b676c9b6bbaa1ab3/manifest.json"
+    },
+    {
+      "unitId": "season-1896-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1896-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:33.266Z",
+      "byteLength": 377770,
+      "sha256": "d894bf9054853c97174a8ec9973c3827736a306ee5ce2161b2b666c89c013d11",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4ed523d610d96aa358a9b4aff1af88fd1f483cdf9e545cea2dbe70d64d9770c0/manifest.json"
+    },
+    {
+      "unitId": "season-1897-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1897-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:24.044Z",
+      "byteLength": 643401,
+      "sha256": "bd3987ab9dc27554ca25ca25a2767f46bf068d54872768b05f994bdeaa98f888",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8eb8cdf62ec956f8e850c1dc6e6238db863aa19a51892ebb6eb9bafd6a754c86/manifest.json"
+    },
+    {
+      "unitId": "season-1897-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1897-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:27.157Z",
+      "byteLength": 358109,
+      "sha256": "5ea8ec8846d1393b7c01078b632c4629389fc973d21f203741a55acc57d5f2c4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/79b88cbe48651f7febb2951776df8d01b202f401ab2f94560c5abb804da1a7a1/manifest.json"
+    },
+    {
+      "unitId": "season-1898-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1898-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:17.537Z",
+      "byteLength": 717536,
+      "sha256": "ab930e7c0e0e9fe6a04843e0a45b9b7c27aa09793f0dbeddddca2d4bab9a68c9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8827b4d64be1afab7a04ace28a07c4e441691e6ded5b89ebd268294020ce3549/manifest.json"
+    },
+    {
+      "unitId": "season-1898-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1898-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:20.507Z",
+      "byteLength": 376521,
+      "sha256": "3e9e25ffd2e8795cff3f7e5386e7a63f78ee07c9fe1b3ffd9098862704442e03",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b3a15aa736451568964c506b5a5d7b53e300b89aeda227534bc3bf88e66feb3a/manifest.json"
+    },
+    {
+      "unitId": "season-1899-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1899-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:11.271Z",
+      "byteLength": 772784,
+      "sha256": "aae5804166548cc50194872c69580e8b26d43389ff141b9e5a9c691727f406fd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a60c844d0716b7845d817efdc9777515b83531107d7aed9fb5d26a9293400c27/manifest.json"
+    },
+    {
+      "unitId": "season-1899-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1899-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:14.176Z",
+      "byteLength": 409832,
+      "sha256": "2f1428793c0fbe65905baf235ee3629fe1a1c1268669c4f9cc74f4a115e1905d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b49d19501e05bef6ce65b441c303269008a64246b0819f7e3dda34098c8b770f/manifest.json"
+    },
+    {
+      "unitId": "season-1900-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1900-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:27:04.707Z",
+      "byteLength": 490581,
+      "sha256": "926cf3412b49852200013cd6e555fe07d3bf3cc547ac3265928f6a970f139681",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/df00850578a15ebaf75e18649db484a6f2b5ad531641e4395ef1f1ea88c3443b/manifest.json"
+    },
+    {
+      "unitId": "season-1900-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1900-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:07.707Z",
+      "byteLength": 297577,
+      "sha256": "c9b94f391aefa6a53df566de82e84c542234d031f4ca21cf8aa70889b7975014",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/432110b013a5342fd7c4ba1d0d3c4c21455eaa65ba368ae397014b0f2c488b06/manifest.json"
+    },
+    {
+      "unitId": "season-1901-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1901-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:58.533Z",
+      "byteLength": 894043,
+      "sha256": "32925b4f1eb585b66738d7bb238ddd944d01cd8b1e8b0c19a2614c7872b57350",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/62c1bfd147add54e812adf19774f1353cc304f0dfb2b169e5cfb797a29d64791/manifest.json"
+    },
+    {
+      "unitId": "season-1901-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1901-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:27:01.494Z",
+      "byteLength": 461991,
+      "sha256": "da0b4dfac70a070718573d8f768d351fed04be3d12234e8344a40cbd7e9f29c1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/145e8a7d04d28977dbb38fee88d2244874626d6cb809297c4ba543d557a8517f/manifest.json"
+    },
+    {
+      "unitId": "season-1902-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1902-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:52.483Z",
+      "byteLength": 989657,
+      "sha256": "763bc9e9be7692ddb2d0a84670953d26ae67e0e1b7638e2ebe3e30113f189690",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/99a615a74377b6f39d341073545bdc2c88a874ea1e5d5a22ad4d27025cf2114a/manifest.json"
+    },
+    {
+      "unitId": "season-1902-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1902-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:55.017Z",
+      "byteLength": 539665,
+      "sha256": "a4a1b65fdf207061b02d0bf14705de783d48e2be7517a119be0b9dd232648365",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/61260eb3e6c9eb67ea21ade1d8cc411a0d6ba235511abd72a9cbdd73787a5fb6/manifest.json"
+    },
+    {
+      "unitId": "season-1903-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1903-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:45.775Z",
+      "byteLength": 859626,
+      "sha256": "f322ab840809f08ab904aad95c9940c70efcfbc56139f15fa77625d8e8346783",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/709c6295788c5b05283844d7ddea09effaba16309e527a81257d103be2a959fd/manifest.json"
+    },
+    {
+      "unitId": "season-1903-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1903-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:48.596Z",
+      "byteLength": 463969,
+      "sha256": "a09516e73b5e74bd701f17d4776406693ed6156769fc153c131d59ca3c39ad25",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2d9b2b6fd9ff19adbd0ed05b728d103da1bc3aec25b2bb28dec061b8630dccc4/manifest.json"
+    },
+    {
+      "unitId": "season-1904-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1904-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:39.618Z",
+      "byteLength": 871915,
+      "sha256": "f56cf451945a971893dc10045babe7da2c963a7ceda7de34f9d0f274e59729c1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/732a6a251c727183a9afc8089e1c8769bf29490be131c32bde27b13562546767/manifest.json"
+    },
+    {
+      "unitId": "season-1904-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1904-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:42.328Z",
+      "byteLength": 432388,
+      "sha256": "999ffd2c098386ecb8a0ddce4b1dac8e8dd8e29fc5845877854bf9a9f28f7e1e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3919830ab78baa62136c596fa75b8861bcb68362569237d04f9f1dcc1b3c22c9/manifest.json"
+    },
+    {
+      "unitId": "season-1905-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1905-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:33.207Z",
+      "byteLength": 838763,
+      "sha256": "bd9dcf4fb201825da9e1ae576aa1562ddb95a43e49ab427cc629437160961c2b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/df0158176cf11072f32ac7f51656f29a1fc2295af9599218eb986748e30b2a20/manifest.json"
+    },
+    {
+      "unitId": "season-1905-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1905-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:35.803Z",
+      "byteLength": 430702,
+      "sha256": "d00299b2035db76495836068ab6f979242e180c17af78806ebb44bbb1bb6cec9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d76df3c897bf2df2975301b046cdbf3c1aac41a9206350385cdae8b707b002ff/manifest.json"
+    },
+    {
+      "unitId": "season-1906-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1906-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:27.353Z",
+      "byteLength": 906064,
+      "sha256": "1b89563bd3374b064e82cd159897f24dd2f7236490f2084ae6ca5a9513ca236d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bf2ba2757ba6e4d88d4fd1dc8810c8c49031afe803a1aa690b90c20fe18b0e7d/manifest.json"
+    },
+    {
+      "unitId": "season-1906-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1906-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:29.525Z",
+      "byteLength": 474083,
+      "sha256": "e78b009afdc6741d49fe8994043087bec242644a4a3588a116a81781928fa596",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/13822e1606b9ada7a0648d723d190eb7f8aba0b288813be46aea19f7188a820b/manifest.json"
+    },
+    {
+      "unitId": "season-1907-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1907-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:20.394Z",
+      "byteLength": 926513,
+      "sha256": "0e6c3d7e90adda38f956bf94202e76b9164aacab96b322b33ef785fbd32c4a2b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/02b87edfc0b063df1973e67159890c32fbf3b177452c47d020ae64af9733a3a4/manifest.json"
+    },
+    {
+      "unitId": "season-1907-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1907-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:23.255Z",
+      "byteLength": 492612,
+      "sha256": "ac21e96fc47c559f259365af65ca94200bd36dbf50b7a76f51b3996bcff3cd6d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3c56a00724226ac2c3f5a2d14f7d49bb0deec360ab91027ba76683d862d7a89f/manifest.json"
+    },
+    {
+      "unitId": "season-1908-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1908-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:13.832Z",
+      "byteLength": 965627,
+      "sha256": "a7c74a70e53ca4226e26c364d3babb3c990a97b4eb85592dc3024fe20770e179",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0b07325d4cb5a186beaf1600e2dba2e978d125fa11c4fc9e242e7ec5a1c98ff4/manifest.json"
+    },
+    {
+      "unitId": "season-1908-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1908-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:16.590Z",
+      "byteLength": 506006,
+      "sha256": "db2182781d1ebf17a926a540cae961bf3bd86e38fb1fdd51031fda8582844869",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1d885c30a64c25affec5f09f4264a20ce7306b438c8612b6a1207a2c1578a9fe/manifest.json"
+    },
+    {
+      "unitId": "season-1909-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1909-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:07.587Z",
+      "byteLength": 1095852,
+      "sha256": "2c7295258d6de530e6b8d6cd549c0c9fddfeca9b320249a1eade5baf1af93ef3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/352e2684be884afa380426db4c98c1a6b2d79402cfdbd580efd55899b596bbe9/manifest.json"
+    },
+    {
+      "unitId": "season-1909-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1909-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:10.190Z",
+      "byteLength": 565819,
+      "sha256": "91499d7ece0e23551f4fbd6b53cf5ea35cd65461acc7d78b34c133b545abfa76",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c04554042219273e2c283143fcd28878e09ac18b9fdf34a04fcd4064ad9f4d0d/manifest.json"
+    },
+    {
+      "unitId": "season-1910-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1910-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:26:01.133Z",
+      "byteLength": 1071322,
+      "sha256": "55807192f12995f7dc4b203d0333a145f30f1727055404b28f3d4c21b9fdc0b5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5d3c380c60420898499f4c06d30d6c06e374fc5a88db16a2760abeb6950baa91/manifest.json"
+    },
+    {
+      "unitId": "season-1910-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1910-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:26:03.818Z",
+      "byteLength": 553398,
+      "sha256": "8b4f19d73d1914d4188139470b26e103d6b7ee3b7a1997c261e04572761d09fc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/af6731e4d232020746b97c9891928eb10cb4e0c41db54f44f555e2776396f616/manifest.json"
+    },
+    {
+      "unitId": "season-1911-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1911-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:54.731Z",
+      "byteLength": 1123617,
+      "sha256": "017f27cbd53fa984f38e1bf3232cd852f77d0e40f9d7959c1f371478348d313b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5f70506884b76d7680e6e98112f49e595a9cbb500bde011842629f42b14891d6/manifest.json"
+    },
+    {
+      "unitId": "season-1911-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1911-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:57.398Z",
+      "byteLength": 587732,
+      "sha256": "413428b67b8d1135e87d36a8b176c810b3889fb5cedde1190cdd75bc50242dc5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3d9528296656d60a7f4d5bd60d6435133ed3ebe753fea463d18b58ca15204be4/manifest.json"
+    },
+    {
+      "unitId": "season-1912-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1912-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:49.006Z",
+      "byteLength": 1217073,
+      "sha256": "fce12da54b4e35d9a0c9a2b06515822f4bdb3604eff9eb471500c6402fe7f58b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4ef45e75b8bf0754036306a836c5f08742aaadee900e2db2c9474d4a97265c70/manifest.json"
+    },
+    {
+      "unitId": "season-1912-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1912-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:50.991Z",
+      "byteLength": 630387,
+      "sha256": "a7cbe0cbb58cebc841ab66b4f04459dfa4ccccc1bb9770cc5bb8c967f0178156",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/12788229ae09bc3a367a478dc6e7617260a6a2f435b8042ad08d93ec117a24a4/manifest.json"
+    },
+    {
+      "unitId": "season-1913-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1913-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:42.235Z",
+      "byteLength": 1203811,
+      "sha256": "c4c9de63fe308ad2f056cc15c0a2dfdbcc3c9be326473ca9ebeab222a504d58c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ba8cdd97f066fe169bd4ffa209828b37d9c071f08aa043d81759ea7a23720926/manifest.json"
+    },
+    {
+      "unitId": "season-1913-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1913-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:44.670Z",
+      "byteLength": 598765,
+      "sha256": "d4091625909036ed07ef38f964e4af364fdd651cd439ade4d82c64893a9f47b5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/eea9001dd8c6d3158ce398bdb045dbcfb340062ecae583e64cdd99ace0d487a9/manifest.json"
+    },
+    {
+      "unitId": "season-1914-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1914-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:35.765Z",
+      "byteLength": 1534301,
+      "sha256": "74f79393f28f59c35977bf7fe83111809bcaf678bccac22a9f0bf49c0e8c90c0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/64c44a48c35c244bf2245eefd63a43f735b302610ff7088e6b61a54007df24bd/manifest.json"
+    },
+    {
+      "unitId": "season-1914-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1914-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:38.254Z",
+      "byteLength": 708808,
+      "sha256": "47907fe44178d90d9bbc81c2e412ccdb9d662246191d8e963921fffd0bf61144",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ef1fecb3e87942ebc624efb88c590cfd8bd23c5d1cfc811f84ebe246e7f3c6c2/manifest.json"
+    },
+    {
+      "unitId": "season-1915-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1915-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:29.575Z",
+      "byteLength": 1539916,
+      "sha256": "fa744b1850612cfd0ce65719c9e8fa3e03e5723f6b6cdbeeb1c59bacc2e05f62",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5897a7a1000f448e9f280d1c191f8a6102cf8822226a2fe635831c411ea68909/manifest.json"
+    },
+    {
+      "unitId": "season-1915-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1915-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:31.885Z",
+      "byteLength": 759661,
+      "sha256": "4e00ff841920463172b1fdee066f8237666cd24f181467acac7f1aeb42997bd6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/60e8612bf5b4fc48ef228773c1048c98fe9f7780f985eaf02e37548bd48c560d/manifest.json"
+    },
+    {
+      "unitId": "season-1916-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1916-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:21.484Z",
+      "byteLength": 1128192,
+      "sha256": "e488b83270ac38207522dea1e7ac79be4dd7ecb7550954d12ed3bc76bf503afb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/91b529ca4e9837db6a606446080df428ceb89344771cb7ec864116c7e0d7c2c2/manifest.json"
+    },
+    {
+      "unitId": "season-1916-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1916-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:25.798Z",
+      "byteLength": 532543,
+      "sha256": "93eb1f28bf6f754b4149a6eb998a65822e0bf05d1c23f3da0de5a30f8af91ba5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/086884d50bda942d701ba8643c6f5929f45565a42f0a10f78b12ec43d127a879/manifest.json"
+    },
+    {
+      "unitId": "season-1917-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1917-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:15.089Z",
+      "byteLength": 1033873,
+      "sha256": "f5b1889dd50a521e602165999cd76ce14f78a2db8b74db69683f0202fe422d17",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f5ca7d680fbe86e04368632ed539f83ff55aeefbbc51c11fdd1f40e5cf0f3abd/manifest.json"
+    },
+    {
+      "unitId": "season-1917-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1917-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:17.532Z",
+      "byteLength": 492010,
+      "sha256": "0a95dd3684eec5fb55851e8977a951509942bb5cfe0c69accd9bf1150547dfd9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/570318b152e4d3a140493d62cb2939659a218199343f8808e59b833b24c36ab7/manifest.json"
+    },
+    {
+      "unitId": "season-1918-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1918-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:08.610Z",
+      "byteLength": 1002376,
+      "sha256": "9fd7e66a87b6db1930a1330c873fff38e93f4d5c69eb658a4927bc6968af851a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/82ae39d236d7c847f8ec51d4563403f5c50fdf213a831d81d0047c4e804e1c6f/manifest.json"
+    },
+    {
+      "unitId": "season-1918-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1918-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:11.276Z",
+      "byteLength": 552543,
+      "sha256": "60042d955879d75811de456bfdf94d667d10311182c4dfbcef5bd7ad426db234",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b77cfcf87c37332bccaf2b0877009c0551d8c233d9ddf34ba7af4239d5a81780/manifest.json"
+    },
+    {
+      "unitId": "season-1919-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1919-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:25:02.306Z",
+      "byteLength": 1103105,
+      "sha256": "148c2ac1c705f22b835a38547a62f5761a38f920c04a0e57069e6d900ba0c188",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bd71a72136622d95115d503377ec261ed01b477225412b63d652ea6f4a37ff72/manifest.json"
+    },
+    {
+      "unitId": "season-1919-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1919-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:25:04.774Z",
+      "byteLength": 603201,
+      "sha256": "ec224da5dadc2fe3de5ab6196a0111b57de4c18a14c30d5f39a48b7220846abd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5c2c2702f634273a011e43bf6cdfcd9ea5e378c93ebd031ecbbf5b6229603706/manifest.json"
+    },
+    {
+      "unitId": "season-1920-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1920-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:55.872Z",
+      "byteLength": 1357363,
+      "sha256": "bbb30c45cb89129638bc913ab628526a5fff87a8a77b0d605badb5a3f1dfd906",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c51c43f046b13436e124735e6d97ec694bb7226599400adf53b2768730986ded/manifest.json"
+    },
+    {
+      "unitId": "season-1920-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1920-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:58.448Z",
+      "byteLength": 691610,
+      "sha256": "859a76e1e1cdb906802f61cc43befe98d9dfc1fd3f05ecddf6c66823a9bd8fbc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ea5764a13f6b78c257ffb11edb9d44e59806a33b6e5ffb514834deb196d87d7b/manifest.json"
+    },
+    {
+      "unitId": "season-1921-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1921-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:49.593Z",
+      "byteLength": 1406590,
+      "sha256": "a72826f7b0be21aedfb33ac5ce2312b1a13c562ad2af3b01be61de3197dedf82",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/48ce6ff34eefe670f610ac158afd71b7471237b668b6d355b6e1e88e82bdef93/manifest.json"
+    },
+    {
+      "unitId": "season-1921-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1921-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:52.180Z",
+      "byteLength": 726402,
+      "sha256": "00e22c678159e2e8a5b3eabfebd2e32b58f1417d92f21aa4a9505d92d45f22d8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bb566e40d87a8c101b4fb23c28abfa8d38f477532474dbf6582b6218c50950fa/manifest.json"
+    },
+    {
+      "unitId": "season-1922-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1922-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:43.377Z",
+      "byteLength": 1321694,
+      "sha256": "c64921eb33369c08b1c2f5052fff83edaccdbc32ee7891680680ff0b6fa4ec1b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d375a3f7ee6228b0e8fa60a812a6cb4b47358f70665047129a4f90b1f0f23973/manifest.json"
+    },
+    {
+      "unitId": "season-1922-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1922-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:45.853Z",
+      "byteLength": 686569,
+      "sha256": "4cbf44bb2b18348a26d1279df3a67b7def305e46c8a37d7a26db023e32e84d33",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/887e985f9fb34f34b8ae914715bcdb2f79b578c42e4856ffa8a6a38e5eb48484/manifest.json"
+    },
+    {
+      "unitId": "season-1923-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1923-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:37.275Z",
+      "byteLength": 1632555,
+      "sha256": "a0f9a79899ce2697d65a4763de1008c7b49c0da64203c480b52e31264112176b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7ca653156791e59d17ec57ab2e5b7c936ca6a181c07071e11efc9c60d85d8192/manifest.json"
+    },
+    {
+      "unitId": "season-1923-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1923-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:39.434Z",
+      "byteLength": 830935,
+      "sha256": "502e284ebea6adb7740f9e0ac785ff03e1d9bd99c684606657e7b2fda797b3bb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/22e72c8f1cfd23998fab178b0eb74aa5caec383d47b19faf121fdf524f15444a/manifest.json"
+    },
+    {
+      "unitId": "season-1924-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1924-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:30.867Z",
+      "byteLength": 1802058,
+      "sha256": "fa2ef1be7dd2e8d317c10ec158e00d4c7c7aaef6551d92d447af30f557f36467",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/87d6505be8a1e98caea2226c1fc311fbdc876729066ec2752bbce497cc5f4e43/manifest.json"
+    },
+    {
+      "unitId": "season-1924-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1924-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:33.294Z",
+      "byteLength": 912605,
+      "sha256": "0040334a7931cb7d8201125b07f4118a3f8935442a7af26a072ba7a629bc1130",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e45d463d338d250ca8e7668d1ba332afb2ed884cb3ccaecc01ce25b977ada7e0/manifest.json"
+    },
+    {
+      "unitId": "season-1925-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1925-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:23.969Z",
+      "byteLength": 1798624,
+      "sha256": "f33048f62a9e6b5389802a8b8bed4d55792d91206d382c52e552cb0ab75407b7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a8400bee8923508ef27f392ac04c65eda197ab8163c485406c12b546271c3cb3/manifest.json"
+    },
+    {
+      "unitId": "season-1925-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1925-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:26.522Z",
+      "byteLength": 889275,
+      "sha256": "e6491a83a26824e1f08a4e9b863fc2b3390f1bee1fff8b0257de3e8f92a4954d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/38d451e66e779ed1e05e80977a3382b46030b07c21a237e1da189b9d99fba868/manifest.json"
+    },
+    {
+      "unitId": "season-1926-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1926-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:15.534Z",
+      "byteLength": 1730297,
+      "sha256": "e7ad1a54aee813120303dbc400df9348483293b63bf08384121693354fbee78a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/aa12fcb764fef518d2d7a461d7b37969b3c666193ebf21e14a878ac9472cc3e0/manifest.json"
+    },
+    {
+      "unitId": "season-1926-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1926-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:17.985Z",
+      "byteLength": 854140,
+      "sha256": "857a15030dac2625528ee704c105162335f3371d23b0dfdc4aca1d989fb6fb80",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f1da2f9d164799a8ff132e95d880ce469ef4454972b34978963f6e1fd8870dfc/manifest.json"
+    },
+    {
+      "unitId": "season-1927-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1927-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:09.194Z",
+      "byteLength": 1707890,
+      "sha256": "d339d9ab21f471a1be4b2c581a9561a66f2b669afef0f3a7a367eb790291fdff",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a66e1fc9b92175151e9e840dab8c0ecdb6e60992b5c413451945f400c2ac60e3/manifest.json"
+    },
+    {
+      "unitId": "season-1927-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1927-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:11.586Z",
+      "byteLength": 854697,
+      "sha256": "aa96d7e65882211b349d8d8c489bd17a10740e13fd78d96d6c585560e8a1c6d2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ddeafde0daecd0a1f4c15bc91a906866447e026a18cd395ff27eb9d104ce1082/manifest.json"
+    },
+    {
+      "unitId": "season-1928-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1928-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:24:02.713Z",
+      "byteLength": 1599973,
+      "sha256": "706d9a82f7d7355594f624204011044ec842e072a7a53f256f0b1f33b3e3aca1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bc711dfc967dd403d67e2c80240aaeb7ae41090850c95ca2514a9861496a5729/manifest.json"
+    },
+    {
+      "unitId": "season-1928-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1928-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:24:05.153Z",
+      "byteLength": 793480,
+      "sha256": "b6ba77836cc787fb3446e963c8b5081dd09fcf3e25da8c7ff5448f9c83be3103",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a5537826b838c62a02b2a2c872368b3af2b4bb2e4c9bf65071659873d643d2f3/manifest.json"
+    },
+    {
+      "unitId": "season-1929-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1929-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:56.484Z",
+      "byteLength": 1616323,
+      "sha256": "37f5df4ee61ae6beeedb3cc5deac80400c4bf6f47a5813b58d3638d9aed8aa91",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2f946da3315c414525b5b9bc984641c5c30609f8dbfe0c89f55ced9e7bc3239f/manifest.json"
+    },
+    {
+      "unitId": "season-1929-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1929-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:58.684Z",
+      "byteLength": 808738,
+      "sha256": "59c659fcec301c843160ae3520331368eaf998a38bca4ed1e1c92071a47b540d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/382ddde22469ef84e49d737d6e2a010722f0156664f35e6819fbc565205d3ec2/manifest.json"
+    },
+    {
+      "unitId": "season-1930-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1930-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:49.710Z",
+      "byteLength": 1439483,
+      "sha256": "c7462ba6acd8ebbbce2ad77d24a853cc1fa93eae42f9f589d60f33dbbff13932",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b5333fb9229f93caed0e554ba42643ebc33d396db216a0c5b7885cb7351956d4/manifest.json"
+    },
+    {
+      "unitId": "season-1930-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1930-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:52.232Z",
+      "byteLength": 732937,
+      "sha256": "7dfa81636862b7d80dab63a220cb0250e3e83c0f522a72cb860a55d9a6013866",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d97952d6b1adbe6c6caadc9759679b6cbf69ec2153fd8795837a1c15cc943481/manifest.json"
+    },
+    {
+      "unitId": "season-1931-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1931-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:43.274Z",
+      "byteLength": 1286229,
+      "sha256": "a6c41456ba3c8c67410f2075cd27dd66742d9b5de21c430ddf5de44c6375c880",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f3c9a9ac0c1eac8adb657320d4eb9ab33696247bcf039b5443ecffdb7eae7c87/manifest.json"
+    },
+    {
+      "unitId": "season-1931-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1931-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:45.796Z",
+      "byteLength": 645511,
+      "sha256": "fa236e28a9996a2c0f4b9c057deb26388585f5a9c967bc2cd0299b26fb1ee608",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ba11c2cad76b49eb4f8267306d9c83a49df8e58208142da399b9563025a2d11e/manifest.json"
+    },
+    {
+      "unitId": "season-1932-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1932-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:37.299Z",
+      "byteLength": 1889423,
+      "sha256": "b9fffcfc1582fa044ae3f75c7109575368e06e1bc264228fa145e6f0e5032560",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ce103474b5624a8ef120487243ae2015b9504de0b0f912e1a0199f12f7e1b1bb/manifest.json"
+    },
+    {
+      "unitId": "season-1932-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1932-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:39.686Z",
+      "byteLength": 910028,
+      "sha256": "44491cba9664025eaf0b44a64cec44af84ad08fc67c1cfc15db16e61dd459a52",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9cad28cbddc223f8cd7afc5f9759965006b5ac0403b4ad19b0e9708e5cdd303c/manifest.json"
+    },
+    {
+      "unitId": "season-1933-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1933-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:30.521Z",
+      "byteLength": 1371564,
+      "sha256": "2b66dd0d7a08ad582039a5d348c7a0a331bd76b9587b7bb634d3f8011e3d80cd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f98aec6cd29d221a741af88d785c88dd96979594fe35b5cb5cc2f66a60294d9f/manifest.json"
+    },
+    {
+      "unitId": "season-1933-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1933-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:32.993Z",
+      "byteLength": 669845,
+      "sha256": "22f3a1c16edbdac160885ff524175f9b2ea0bf9d322aedeb5493a65bd90e04f1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fab56b57960980b25a4e1b90c748c31450e24ab4e48136ec3f949641989ba62f/manifest.json"
+    },
+    {
+      "unitId": "season-1934-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1934-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:24.038Z",
+      "byteLength": 1389063,
+      "sha256": "7d00dfa12c888a69f98debf7b0ccf36d3de7cc9399c421b61101bb758fa55de8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/91fe3bc86405ccab08e032af7537c2c00dfa75d73086dc0e551e71cf6bb1ce95/manifest.json"
+    },
+    {
+      "unitId": "season-1934-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1934-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:26.674Z",
+      "byteLength": 708530,
+      "sha256": "f6842fa5b941f41bf7e25cf0958a685c1c2de51bc7711ec9d668c6d26125006a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1fd915f564469f839161012400d2d00c1654f48ab1249ce6df519f7347f2845f/manifest.json"
+    },
+    {
+      "unitId": "season-1935-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1935-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:17.667Z",
+      "byteLength": 1385631,
+      "sha256": "db07c793e07566c92ce667e9130c5e15a5fc20d7deaf32fad271b0b4b0d758ff",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5f3bb8f4777722894643385db3165de7491e582c5718d36ae2ef1ba643d2dea3/manifest.json"
+    },
+    {
+      "unitId": "season-1935-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1935-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:20.320Z",
+      "byteLength": 730487,
+      "sha256": "fc2a6777fe87f61cb0b11954a993478884cee3f14c9c4677edf6fa5a00de3117",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/802f96f8f02a274e630b29945ae057f143cefd939cab09f30010638972fd9085/manifest.json"
+    },
+    {
+      "unitId": "season-1936-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1936-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:11.267Z",
+      "byteLength": 1351132,
+      "sha256": "308d6da3169cbdd685951de3f56b7162951719184ae4c58e47d99b7793256062",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b9f35f43d57984afb07c96ad70e1f383a8671b8e5deb2d12337530e362b0d127/manifest.json"
+    },
+    {
+      "unitId": "season-1936-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1936-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:13.861Z",
+      "byteLength": 729005,
+      "sha256": "34e63efbf6f057e4cf719f2e3b83186c916dfe9c4030cf00cb4bd5242be6cd9c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d8d9e29d2cb9163b182e13bce4ed6aa0e51e5bdf6a3fc767efcc39f12a632b54/manifest.json"
+    },
+    {
+      "unitId": "season-1937-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1937-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:23:05.251Z",
+      "byteLength": 1764035,
+      "sha256": "a504ea1300c1b85548b33132a3952c7eb69e8da92c88f08b2585e5fd57443b89",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6b17e75f908d28b6632d52995f390ad00638fadb8ac9f0f3f80ca51effdff80f/manifest.json"
+    },
+    {
+      "unitId": "season-1937-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1937-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:07.611Z",
+      "byteLength": 891411,
+      "sha256": "49413d4e2da83c8e4160793cf455e89ef6bf608138d59d0dd40b988177ab89e1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fc45040c608914532f1b0cb9eaf030597f8b499eb9b3b5604da8812eb6fc8ef2/manifest.json"
+    },
+    {
+      "unitId": "season-1938-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1938-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:58.787Z",
+      "byteLength": 1793644,
+      "sha256": "5caa96c463f31829a04a649a4fed7fadba8d4cb64ad125fdde2144f520ed2d7e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6a5b5214816706d44bacfed89124953d950a416fe520bd3030a2d1de899633b8/manifest.json"
+    },
+    {
+      "unitId": "season-1938-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1938-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:23:01.141Z",
+      "byteLength": 898380,
+      "sha256": "30cab916f875de5031c65a73094761aedd45fa46022f4490c8d71583097a983e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a040411f190a815825f6b62a9c3a155ac7a9f7ec68d19e17b1e3f3f9433f9ba6/manifest.json"
+    },
+    {
+      "unitId": "season-1939-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1939-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:52.449Z",
+      "byteLength": 1776576,
+      "sha256": "8f2e262a7121971d9ab51f484e04b9d7ec7039c7fff917395dee3d704b4962ea",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9e7dafa86ac486a29b158d3a745e893098e4af8cc88de7e97df43f8281350574/manifest.json"
+    },
+    {
+      "unitId": "season-1939-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1939-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:54.791Z",
+      "byteLength": 882251,
+      "sha256": "e26549c563a4e1cc11e55ed5b8795773a245151895c3b096045a2d0b733eb639",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4254e4737919367f813b98c095b71c1c8c8b2246b1a9803e921b6197290021b5/manifest.json"
+    },
+    {
+      "unitId": "season-1940-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1940-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:45.958Z",
+      "byteLength": 1720851,
+      "sha256": "d269e73685bc2dda01d99166aee49c2ab976eea9462fc420fab9b40004615696",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a4a86764deaf8e9b9acfa9aa14f29a793c569c47ac6641083ac6cfbbfeb3eb92/manifest.json"
+    },
+    {
+      "unitId": "season-1940-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1940-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:48.320Z",
+      "byteLength": 854356,
+      "sha256": "533542f214f5612534b532eee470f5e0f0d2d3cf44ebc16d65ec5f539761c953",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6575865dd734389801318932d91d52180968478e8f1136ccc87e684f61d237be/manifest.json"
+    },
+    {
+      "unitId": "season-1941-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1941-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:37.841Z",
+      "byteLength": 1720298,
+      "sha256": "ebfd88a86f94d4847ec87b2efe87858c968c87214754ac2d8ddde409ff3668cc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/02f10857f8de674fbfaf6ed98062488e24f6b8c1124c252120f0d6e3e1306121/manifest.json"
+    },
+    {
+      "unitId": "season-1941-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1941-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:42.097Z",
+      "byteLength": 861316,
+      "sha256": "c848e65dd748b3e343df7e17b1a360c8b9dfdbe3309dbf550feec0fbf9407c15",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f3cd389e3bc53652b76e53b4d6d5d9268b04767f94029fa0700cce852f99ed21/manifest.json"
+    },
+    {
+      "unitId": "season-1942-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1942-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:31.393Z",
+      "byteLength": 1731213,
+      "sha256": "d9a22ec0f65976fd4e344fddea28e0b40a701ad7d61ec5151acaecb79a0d356e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/665a09107fedd46ab7d806992c6a6b7e05462f6d4beb7e94602c405bc2a4e1fe/manifest.json"
+    },
+    {
+      "unitId": "season-1942-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1942-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:33.815Z",
+      "byteLength": 858314,
+      "sha256": "56bbb6265196dd9ee20bf2006516d15a9627333799ebb9563ff35188bded098e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e2a83544660e02e9743d683f64b0338a86db346a0d9c7e3ae88e18eaeec4dd45/manifest.json"
+    },
+    {
+      "unitId": "season-1943-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1943-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:25.107Z",
+      "byteLength": 1789275,
+      "sha256": "d129ca65a440736be7a651bb0813199a48256fd19fe7459750f1376cc7520662",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/42a785f3cd2517dfc9bcdbd518f9ca5290e293ef60ac49feb31e5bef18d5fc79/manifest.json"
+    },
+    {
+      "unitId": "season-1943-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1943-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:27.476Z",
+      "byteLength": 882647,
+      "sha256": "4206d2e99b19c39907ae50ef564f145cffe32c2033b985aeb38c49f3d23ca9d1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/afe08e1b19e0f7a9e40435bcac38db98f6d7979624f81528f389f1265fb8ad05/manifest.json"
+    },
+    {
+      "unitId": "season-1944-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1944-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:18.752Z",
+      "byteLength": 1729532,
+      "sha256": "f64d3cc8b0965771f2ddc924a7cc7407d3345d262dc858f8c447128f70e89ae2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/80db2d3c90117bbea090e1253daa4a5de812b96a2b730030abdc5e52f55afb66/manifest.json"
+    },
+    {
+      "unitId": "season-1944-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1944-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:21.383Z",
+      "byteLength": 857548,
+      "sha256": "c6b096c89c3190da3a0bb60d5e051c2803f95bc64478a3144b398407a489d6ea",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/111e3acd11aa947407826e0507db5ed9b33289f2fc3363321aaba927164528c3/manifest.json"
+    },
+    {
+      "unitId": "season-1945-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1945-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:12.380Z",
+      "byteLength": 1753439,
+      "sha256": "d347fc7c5aaad9e45c48bbd10f1d595b2abcf381681405763728a0bdd2c0dc4d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/cda3a49e9b4d1a14e4113264cc4c816b2c5e518df5595937ac37828cf8e9b04b/manifest.json"
+    },
+    {
+      "unitId": "season-1945-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1945-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:14.646Z",
+      "byteLength": 875600,
+      "sha256": "4735b11cb1985661e75ff5a70a89c895ef9ef16e32b1757b2ea0bb4e033c5942",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/66c24457783cb76d2afd5f3969a283baf4ff62d63fbf3c53f75e34e6e48c23e2/manifest.json"
+    },
+    {
+      "unitId": "season-1946-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1946-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:22:05.969Z",
+      "byteLength": 1930658,
+      "sha256": "deb181b26a26110b9abc790a8261c8004d21e2a3bbc011707d99815fbebb1ba1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f26c99e703df70d2d1649e2710f967ba7a368df3c3eada8f9382c62f5670b326/manifest.json"
+    },
+    {
+      "unitId": "season-1946-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1946-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:08.341Z",
+      "byteLength": 955726,
+      "sha256": "49781ea0d8bbd0d692dc03f96c6b39df88766aad4d14bb6dd90ee13ed0ee034d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4e8eb648a82d62f72c651348ee06a2fd384fe489730843c314c7766d0e50174c/manifest.json"
+    },
+    {
+      "unitId": "season-1947-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1947-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:59.635Z",
+      "byteLength": 1720130,
+      "sha256": "e84f1fe07d01879512d5fb38e8e4b647da98748e7821581be11005496b3f0738",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9287e7fe2cdd7447a9eca649d1a0b93e09c39d39d341f0836e7150d4a6803f36/manifest.json"
+    },
+    {
+      "unitId": "season-1947-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1947-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:22:02.041Z",
+      "byteLength": 876896,
+      "sha256": "85ed5d6cb57b2b6d1f9b66663fb2cdd2187037e09f66c490a7f6847e49538187",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c3c42d279018ff5a737052ce7b64b7a7f0f248e907dd4cd9e4876a4d0a0a520c/manifest.json"
+    },
+    {
+      "unitId": "season-1948-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1948-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:52.975Z",
+      "byteLength": 1630603,
+      "sha256": "0fb991c5b3aab9616dee41725aa1dbb25811e94beb1ca476528ede1d41e17d46",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9ac126b52b95c8db8ff2d20216c5118e5adebb10f4daaef4ee0dfc4f2a6677e3/manifest.json"
+    },
+    {
+      "unitId": "season-1948-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1948-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:55.468Z",
+      "byteLength": 835383,
+      "sha256": "7611f0a3c2bc0bcd89298dc9279ea3c8ac665bde1515d1bb18cc665bf0c20f76",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a36a74256a0049a33ec86bd34c8efd48a1e7f9407c5d4d82094b32e8c05261dc/manifest.json"
+    },
+    {
+      "unitId": "season-1949-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1949-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:46.125Z",
+      "byteLength": 1148968,
+      "sha256": "31f9532df801870808ca8706ec64a87b06148dd0f6745ed7bad8bcd215a5a0fa",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6a7448dafb8ccca2b94b669e394c5d902b2307d7d15c1ff0adcb79d5352897f6/manifest.json"
+    },
+    {
+      "unitId": "season-1949-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1949-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:48.860Z",
+      "byteLength": 586469,
+      "sha256": "a75e32fa7dcdc21d2e1399676b1bb3781a3ee0da850cda5689e3973dcdeacf30",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/73d31fab87c3d1f66041acc4c22b7ef1d7e0ee4a668ff669654003def9324596/manifest.json"
+    },
+    {
+      "unitId": "season-1950-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1950-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:39.738Z",
+      "byteLength": 1169093,
+      "sha256": "484a6d808bfc10d673c2be53429ce82494aa4183970bf8dd42f0d32c995d8c2f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/881e9012aaf0ae21c4078d983c0be51931de23d085ee3c9edc045459a101b65b/manifest.json"
+    },
+    {
+      "unitId": "season-1950-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1950-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:42.473Z",
+      "byteLength": 634931,
+      "sha256": "e4ed9efaff4c8f2180169d12f174580ae49fd644f3493e9b2094addff8070289",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b278b024feef8c89f510b337a4ec0dda900f5e610a59ef7a7b5da1cf7115cbce/manifest.json"
+    },
+    {
+      "unitId": "season-1951-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1951-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:33.502Z",
+      "byteLength": 1268039,
+      "sha256": "149a2d2602e44e6e0f1c864b5ce414a12efb76a61ef4a6b11a9f593e605995eb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1301a0a9511b11044a8b4c1510aba059ef4c858c76fb70eeb929fca899a2048f/manifest.json"
+    },
+    {
+      "unitId": "season-1951-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1951-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:36.053Z",
+      "byteLength": 644857,
+      "sha256": "cebba037ae89181685cac6939b7ccc8af7fb38328c635017de106b1c2cc74f1e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6544aa795b65f2c1d1c0cb98311285906e1c0a693110a4cccfe6129184244ac7/manifest.json"
+    },
+    {
+      "unitId": "season-1952-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1952-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:27.039Z",
+      "byteLength": 1291894,
+      "sha256": "7d9031f30ff54dfb77bed0d60133aa945761ca8807f3e1de9595e1a04bf5bf55",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b28b0069af97ee9cd4b2da7723ae650bda16f6295bd5ddf77439a4cf14ab6fc2/manifest.json"
+    },
+    {
+      "unitId": "season-1952-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1952-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:29.654Z",
+      "byteLength": 663230,
+      "sha256": "5a458d74a1662f6827143fb0a76b0ce5648de53ded0a9f5961ae84b948f94784",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bebb26558c0dc9f4f6fe7ef91b3e4992dba68f4d15488fa24f71f822a71072fd/manifest.json"
+    },
+    {
+      "unitId": "season-1953-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1953-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:20.688Z",
+      "byteLength": 1193055,
+      "sha256": "5f41a2af54c8888d2795bc4c04f6af96f06cbd830714ebfaf8a15980cdb90874",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e6470f6258c25aee667127fa838bb83ffe81d7d5138cd7e1ce0f525c94975088/manifest.json"
+    },
+    {
+      "unitId": "season-1953-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1953-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:23.230Z",
+      "byteLength": 629174,
+      "sha256": "2b55eb32f435cc012e943fcccd8e7efa8e425ea0b12b2d1c78f4b246f5671c12",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e5446d019a14002bd6c3dff99b2a6b58adf79db484747e51fee42d358eaa489a/manifest.json"
+    },
+    {
+      "unitId": "season-1954-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1954-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:14.182Z",
+      "byteLength": 1158404,
+      "sha256": "22dc24380554093193637085f3aad5b95782a64128a5ce38b230613f50aa4b49",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d17f0c420b1a7fa79bec0f5a0b1b0332d85129284292b0fc1ac2288c74023486/manifest.json"
+    },
+    {
+      "unitId": "season-1954-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1954-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:16.805Z",
+      "byteLength": 617805,
+      "sha256": "f339b0d4476dd2fd38c63a78cdf19b3014257899b109c599ebadbba959ed230c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4e10c095a92601a37cf6d5d8f53673caf760dae3f866f9a1d29d1100a35f9a0c/manifest.json"
+    },
+    {
+      "unitId": "season-1955-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1955-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:08.145Z",
+      "byteLength": 1304075,
+      "sha256": "b49af6ca22e12026c2f5e89534be0b4abf6d8dd08070e36da17aaa470eb806c1",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/717a35afeddb22dba4063d9cc75141c774161595fd1500b12957abb53f4aaab7/manifest.json"
+    },
+    {
+      "unitId": "season-1955-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1955-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:10.551Z",
+      "byteLength": 689215,
+      "sha256": "6252d6a0b0cf64776b180a559001f229609c503952af5633e1aafe563c257b3c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/440393ecd5699eaaa975a91e02121ce2ac311fc0f8bc71f61644f39dc3b4871e/manifest.json"
+    },
+    {
+      "unitId": "season-1956-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1956-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:21:01.527Z",
+      "byteLength": 1272228,
+      "sha256": "dedff8f5f159ef4288a26dbbbc8f186c4ef2eeed37f9fc179faa563fe39e4cf9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/86db21c3a55ab1344431b8014e2d4dd13a6cad59b1a70221576254b081867383/manifest.json"
+    },
+    {
+      "unitId": "season-1956-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1956-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:21:04.052Z",
+      "byteLength": 684533,
+      "sha256": "7d42ab3f3e6c779f3b3404b112a88c301f0e3ac38f35c797f89730115331974a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b6fb34e5cbab38cca17ab160371fd9bff66d8ca9d5b90eef0ecbbaa8c1ea19b5/manifest.json"
+    },
+    {
+      "unitId": "season-1957-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1957-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:55.120Z",
+      "byteLength": 1237407,
+      "sha256": "fcb46814660fc5a94003ca14ef5858de8fac3930091cb6c99a7f332e9cc62795",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a049ed55af8b27b24030c4b00f925ed578467f5ceb3b71b8f625377e5b8a203f/manifest.json"
+    },
+    {
+      "unitId": "season-1957-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1957-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:57.674Z",
+      "byteLength": 667624,
+      "sha256": "52ef2b3ea943a6fee7e0dd7d70d49514d658a456ff1cdcdf4569efd95eacec32",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d91eddf465ebc0807171da9988e58796dcba1a1148b9a29a3f63c08690061123/manifest.json"
+    },
+    {
+      "unitId": "season-1958-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1958-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:48.699Z",
+      "byteLength": 1282944,
+      "sha256": "a776a55d48eaf31d852a6cf662640ac34d20a15c5709ca92f88c73a697bc4a49",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ce81112396c8bda43f1e8e7672cc4f21ddae1709c3d300093051145a8a76f059/manifest.json"
+    },
+    {
+      "unitId": "season-1958-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1958-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:51.330Z",
+      "byteLength": 707915,
+      "sha256": "e28a8f31b25f0551889dc615a197f4c4a97e1c01dd495479160daf3ad4cb46c3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/93ddfc9cf31cacd91751453bdb9749c3b9a7f76f840836c45f11cef66215215d/manifest.json"
+    },
+    {
+      "unitId": "season-1959-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1959-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:42.400Z",
+      "byteLength": 1274060,
+      "sha256": "5e7289bdef86e307af590111cb551c1e947b589665451b92360501bedb33b912",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d3a38627b8817dc1b3542126ae145cffb0fcc4e1df2cd9a262444cde8743084a/manifest.json"
+    },
+    {
+      "unitId": "season-1959-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1959-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:44.978Z",
+      "byteLength": 665627,
+      "sha256": "de896ea1e7f29788c48ca643500237f21570826d5375dfefa71f4a0310ab1c73",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/15c9fe5675d281faeb3b0e9584f360764cf844f2b7affebf0b48290670645f5a/manifest.json"
+    },
+    {
+      "unitId": "season-1960-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1960-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:35.844Z",
+      "byteLength": 1291835,
+      "sha256": "ac99387c824d1cc8bb7c89f36d5a9c3d0813574f8a1c21f36769c2e8d11014e6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5953f312ee75a9caceb1206ff22f7c0361aaf6f23b7b093afd4e4d6b44759f87/manifest.json"
+    },
+    {
+      "unitId": "season-1960-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1960-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:38.463Z",
+      "byteLength": 651174,
+      "sha256": "164754f988a174e72d8f2f86ebcd2b2b36cd4fecfdc4aa535da9636ffa9af82c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c844a58b31496e5512ac11dab579f63678332fda3e07943bccc3ae53ca8ab808/manifest.json"
+    },
+    {
+      "unitId": "season-1961-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1961-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:29.583Z",
+      "byteLength": 1419345,
+      "sha256": "bb05eb90786f0da0be1a57ceaf7a3994c2ebf535e6a2ce4aac9a1525b2211880",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fb2fa964c0333ebd2001bfdb54863732e4f2b9d6c82bdfe726fea972d1abaeab/manifest.json"
+    },
+    {
+      "unitId": "season-1961-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1961-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:32.137Z",
+      "byteLength": 712166,
+      "sha256": "003b5078bb88e7df489ae3c9eb04afda73ed3b4e3deca942ffdedf021be92f46",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/655ca9be5da143c5489a5cd9959a6c4d19cbe0d101b35bb2efbe83075c911517/manifest.json"
+    },
+    {
+      "unitId": "season-1962-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1962-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:23.364Z",
+      "byteLength": 1489051,
+      "sha256": "655bec9473a03a08bd2df0808d32048f4799480d9950fa09bc334e29979db36f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/636037fed191e02b6563d2b05f9688f75ab5923bceabcd86e9a7d895e5084d7f/manifest.json"
+    },
+    {
+      "unitId": "season-1962-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1962-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:25.867Z",
+      "byteLength": 799635,
+      "sha256": "722b71af2562655687f303e93ac0efcc07bcc2e56353d781f84ee78e3f9f0baf",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/961702df603c4f0d268b7f5cfe1123c7a2db2db4b204f462bf33d46290626f3a/manifest.json"
+    },
+    {
+      "unitId": "season-1963-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1963-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:17.197Z",
+      "byteLength": 1474287,
+      "sha256": "05e9fb6b5f3347c74f83f89be6af151f8af28d3c2ab9d4cf105a287bfaa9ef9f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1ae80e24a0a67f73bff89af4ba9f16f1722188c43bd6473a2d9504653c5272e5/manifest.json"
+    },
+    {
+      "unitId": "season-1963-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1963-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:19.456Z",
+      "byteLength": 766590,
+      "sha256": "3efdf0308dd3038f6a11d42c82edbba7471ae09af11ecee51766732135c53e01",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a7b300995c52866e4f477930fa04a9cd71bc5e87cc7c791fcb5c72e9da03e797/manifest.json"
+    },
+    {
+      "unitId": "season-1964-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1964-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:10.800Z",
+      "byteLength": 1468683,
+      "sha256": "fcf145ba6c5f3e083c5c066788c941eb2418e20d25986776444cdbe5f62e8aa2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/224f5eb924419ac6b8f37813f15a5655bad782b709be9950cf57a3cb5b9d8421/manifest.json"
+    },
+    {
+      "unitId": "season-1964-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1964-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:14.145Z",
+      "byteLength": 804036,
+      "sha256": "1b87d8384c3b278ab592885ee875c6f524ab29f6ff8a18bf696124ff4cd34970",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f950e635a458a6633e45e160e95e3cfe6b863d51500ba0699cab90466c7a2872/manifest.json"
+    },
+    {
+      "unitId": "season-1965-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1965-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:20:04.111Z",
+      "byteLength": 1458409,
+      "sha256": "53d7f01f89397b571003bbded5380885a252a4d20e8603bb261dd10a89a64faf",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fe479ce5bdd1dca8d15afdb6250ec84c99d16fe13f4bfdee4bd21e1c077cdc7f/manifest.json"
+    },
+    {
+      "unitId": "season-1965-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1965-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:06.504Z",
+      "byteLength": 770790,
+      "sha256": "15de09260839c6a66b0b2ae0e121a4674ab617738a5179fa14b5db6a143c61f4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/948e1b2b73441bda4414692a41ef14c44bfea62cfc102a66d014ec10b30154ef/manifest.json"
+    },
+    {
+      "unitId": "season-1966-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1966-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:56.534Z",
+      "byteLength": 1513279,
+      "sha256": "1148952c8ea4d837c0d662213b66bd8cd77d97739011c73b309c3743cf63c693",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c109b1e7bcfa09a4c6a8881d99ce95ff2dfa84f3f3066e19b2ba764af68b8f49/manifest.json"
+    },
+    {
+      "unitId": "season-1966-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1966-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:20:00.292Z",
+      "byteLength": 835561,
+      "sha256": "d54eef7bd0dcd8f68ce0f227dfb8721543c1afb21418ec0c4760d2da5b374a51",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b75994848b77372b3eaf6fe282e3dc322d874d72279fa4ceaf0e7c027f8b1d18/manifest.json"
+    },
+    {
+      "unitId": "season-1967-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1967-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:50.050Z",
+      "byteLength": 1542461,
+      "sha256": "aedadc4811d907c926d672f3e1d68f65bdc663734d7d65b42e06af1fda00dee3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fd0ff3a5895843ead0059b4b0df6906a869b85d0cbd06413e2f2b16666984605/manifest.json"
+    },
+    {
+      "unitId": "season-1967-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1967-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:52.531Z",
+      "byteLength": 820770,
+      "sha256": "da781dd92ad12626edb182466c86a9002dc9f331f005f4ac705ea822819ee468",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/651c73b7c7c62f745998837e9e7fe81fba62b33c06e04782a3092f2049e5c2e1/manifest.json"
+    },
+    {
+      "unitId": "season-1968-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1968-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:43.424Z",
+      "byteLength": 1386557,
+      "sha256": "9ab5e93064a2edb09ce779d7d3f470b48c067701c7bdbedb79a1013afea88b55",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6f0444252e83e736068361b1b15e1072d98ce4f4e19a5b150632db76a5e65a0e/manifest.json"
+    },
+    {
+      "unitId": "season-1968-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1968-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:46.260Z",
+      "byteLength": 741996,
+      "sha256": "88608c398b3c0a3f3cc5ebb07a1ddc15889ac66591f6ff5f0355fc3b1d33ba2f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6f4a8cd9c1701513b0998a88f9266ce81d640fd548c8b5c842a879cbd1f79450/manifest.json"
+    },
+    {
+      "unitId": "season-1969-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1969-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:37.533Z",
+      "byteLength": 1800541,
+      "sha256": "d1519e0d78552f250722cd001d4b334eeb7164d113f8a315ca5a79e177dceaa4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9beacf8d3faae607262e6494ff856186767b246e4e3705bf964377524cefe0e3/manifest.json"
+    },
+    {
+      "unitId": "season-1969-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1969-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:39.760Z",
+      "byteLength": 951270,
+      "sha256": "f500a5e27e5cb7a6c7b6b86a34f66b15b5d0d29cda794f83c07c1a3eb4137767",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7a59ebdb892c2c512b6935e21648cd83ddd0ac22f97b935c5165030f3930f506/manifest.json"
+    },
+    {
+      "unitId": "season-1970-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1970-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:31.413Z",
+      "byteLength": 1763730,
+      "sha256": "a9ea7c1ddc97fa8b1d375e884bd60d8c15d63e7e8afc6b47298594f5043c36f5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e77f0397a7bad063e294c4a0765547f317fd44075e061e584ca247a5a6b1fc1d/manifest.json"
+    },
+    {
+      "unitId": "season-1970-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1970-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:33.686Z",
+      "byteLength": 947318,
+      "sha256": "93dec130e2cdd774f1fbc115364b149b56e6ebb847a345d2b2ff9926732f6260",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4dc8a973b728f155511667694deaa4f7541cbae5db8e806322c0db26d54e8306/manifest.json"
+    },
+    {
+      "unitId": "season-1971-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1971-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:24.789Z",
+      "byteLength": 1678260,
+      "sha256": "7d8ae63199eaf5fe42f7d930669988ddf5248c47f0982e8ce54588f91d5f3378",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/03a5f37659c5452d8e65828b1fa41dc1fb6f27f8226b37ab72d298e72572f831/manifest.json"
+    },
+    {
+      "unitId": "season-1971-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1971-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:27.040Z",
+      "byteLength": 838131,
+      "sha256": "d0544c861f7ca0613f2189ebf179626b6318272407fd849072438fc81b9c5947",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/757f58203a2494724af7a87d084fd0b6757a170a2a6a660e0d561e0c6e887f45/manifest.json"
+    },
+    {
+      "unitId": "season-1972-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1972-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:18.737Z",
+      "byteLength": 1702502,
+      "sha256": "e31ed6adb331fdd02d5ee54edf4693b5ecea814c73120a8588455ff8b645130b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bf4b92617cf2bb4d7d58ca7d43ea47e2ac8023cda8631c0438de24e07f2a8917/manifest.json"
+    },
+    {
+      "unitId": "season-1972-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1972-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:20.854Z",
+      "byteLength": 863169,
+      "sha256": "57116f77f0942c482cbcf5567bca96fef1c347abb30dd5f170fc06bd6af5baf2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/830892374a29feea4e9d27b87c5c980b74c5a76a4029486dfa9e84daacf536d8/manifest.json"
+    },
+    {
+      "unitId": "season-1973-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1973-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:12.532Z",
+      "byteLength": 1475651,
+      "sha256": "41c3fae5a52222bdba383277cc3aab7a6fd6cf524762cb3658c6856bfa55f062",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/58f5057a2e07f8d34fde36bf196e4838729d73d3e4a57aebcdc3e10bafb1361e/manifest.json"
+    },
+    {
+      "unitId": "season-1973-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1973-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:14.549Z",
+      "byteLength": 865046,
+      "sha256": "e821b75c95f33cded3102ddc246fb49177092b8a6c10446db17c01a318a81a45",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0143fe5c3836191d9daa15b5a6a16095ad52d8582584ab8066c33172243fb7c4/manifest.json"
+    },
+    {
+      "unitId": "season-1974-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1974-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:19:04.799Z",
+      "byteLength": 1488523,
+      "sha256": "c167f1b7a1b0dd2d6e4539e8ea9984cb390e96c16c2adee337d018dda81c03f6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/cfab87838bdbd4d20c4ee054c48cd64f22677f58330da4e6321a9c0d5831865d/manifest.json"
+    },
+    {
+      "unitId": "season-1974-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1974-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:07.288Z",
+      "byteLength": 851068,
+      "sha256": "d9267a87a4b07d7e7ad0ed99acbc850260229690aada7eb1330b0f286a1078a6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3581096708667fa94d9fde690faa6c8ddf75f9b4a2bf102056d94bedee77f62d/manifest.json"
+    },
+    {
+      "unitId": "season-1975-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1975-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:58.328Z",
+      "byteLength": 1495400,
+      "sha256": "6f2e22ba68ffd4b558652d104b1f6ec4fc8bcdd23b6e20ced57bc44635859431",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/390407fe9a73888da1bff1b25cfc620fbdbec4ef65cfaf91bfcc070461c3b926/manifest.json"
+    },
+    {
+      "unitId": "season-1975-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1975-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:19:00.968Z",
+      "byteLength": 867762,
+      "sha256": "ed7d39383daab7d2617003a92e74a01837a74ae92f5f89955d5dee37daf39a89",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/3a45131fc92729bb83dfdb26ff8249c64e3b7309055b82530c60e84a46b5f947/manifest.json"
+    },
+    {
+      "unitId": "season-1976-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1976-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:51.959Z",
+      "byteLength": 1478731,
+      "sha256": "5b884394956f81712188bf259af0c10eab85870637488db79285eba3fa74b13b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b9ff3d413537d6a284142057898bf6bcb49f87b948e796fb4dac24e495616e3b/manifest.json"
+    },
+    {
+      "unitId": "season-1976-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1976-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:54.498Z",
+      "byteLength": 829566,
+      "sha256": "2975649fe7452a54fc62785630f6d6aef184e4c67f2ce6b537016f0d3d72a16c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/986c0d7aebe6597acb1392abbad8e0925775eef654d1caf78922987b4add4004/manifest.json"
+    },
+    {
+      "unitId": "season-1977-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1977-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:45.551Z",
+      "byteLength": 1541037,
+      "sha256": "b34f44f6b44d80f98507425dc01ab09f1bba5c1ffa5820ef7b7a54f7cb2120c3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0984b89a307895d0785ee5a9fc3e57b5503684ef7c5b5792011be6967b58a2aa/manifest.json"
+    },
+    {
+      "unitId": "season-1977-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1977-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:48.081Z",
+      "byteLength": 973460,
+      "sha256": "68bb568b012528b70c91c87bc6b0d4b8390d8b3460f7e42d7a66afb5e571796d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9ad76a67d5856e72f8001fa8b1cf3e313655e909323efc01b771a80731b30ea7/manifest.json"
+    },
+    {
+      "unitId": "season-1978-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1978-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:39.138Z",
+      "byteLength": 1512918,
+      "sha256": "89eaa407e79221b22d15dd622178201c2791b6aef78703e25306b0be17b095e9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ae139a2a0d1f8b7b3e043c6fc80cb093d364ecde4b89829560abe644d3c8a4a5/manifest.json"
+    },
+    {
+      "unitId": "season-1978-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1978-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:41.727Z",
+      "byteLength": 899326,
+      "sha256": "d88351342026c34d510c5109ac6876f1fb6a49aa7176ec76ad328218a5198fa7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7d462a37845a44ceb55a631d199d7603425e89f1212c3f6f4450c170fff0237d/manifest.json"
+    },
+    {
+      "unitId": "season-1979-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1979-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:32.929Z",
+      "byteLength": 1484456,
+      "sha256": "4d121d47ff53ab030f4fb4cd39a7939dcd5142685d86918ded35ccba64ccfcbf",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9d0780e4e1604624522b4cf4a17e15473d03fa61ca22445d6fd657c5880af28a/manifest.json"
+    },
+    {
+      "unitId": "season-1979-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1979-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:35.297Z",
+      "byteLength": 953550,
+      "sha256": "21e72a461fa9696bb35ad16171cd88e88d6332adc337b0bc49c455bee9ef1d72",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/cbff2d52ae6be8386973ab575b3e2edfd5b5a2c038c59fb9c7c2a12fe76ed35f/manifest.json"
+    },
+    {
+      "unitId": "season-1980-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1980-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:26.316Z",
+      "byteLength": 1479465,
+      "sha256": "340c54a37142c383a301bd852df549920b3ab9aa9edef89c0829fd1e6de4bb25",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7dd11113da780789967ff52b790dee4fd99eba14beb4880f2e8d5587309bc40e/manifest.json"
+    },
+    {
+      "unitId": "season-1980-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1980-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:29.005Z",
+      "byteLength": 885435,
+      "sha256": "9e776270648f5213e4590539c074e49f69e26622c7959777a82a8bd44aa95659",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/357be1dce3670d5e51274bbbe657c6439cb0b019b800565793e43d87b53166a7/manifest.json"
+    },
+    {
+      "unitId": "season-1981-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1981-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:20.081Z",
+      "byteLength": 1444747,
+      "sha256": "f31d733ca2eb2a1e53f2e738211a960602732dce3b8a8c764d71ed284ac09055",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/11d462fc34caed8c77cf20f848c25d32df7226606a5819cdc86b4fb616fbf95f/manifest.json"
+    },
+    {
+      "unitId": "season-1981-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1981-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:22.544Z",
+      "byteLength": 856735,
+      "sha256": "79b73e7b8d50ea24c17164dfb0a6158b3eedbd19bbf2eddb4063b7fc147c9dd3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6463970dd911dbcf89b2b2139f498b7656f2d7c9377701577c7deb36c665f67a/manifest.json"
+    },
+    {
+      "unitId": "season-1982-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1982-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:13.794Z",
+      "byteLength": 1499471,
+      "sha256": "124b7e7caeecb0465d16cac5ad6c305bc6d1aa814f79d4b121cf8fa023e6c861",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9be3f3a95431485c1d90b8552d0344ff331452535dbd5f1edede93f47c4fd3d5/manifest.json"
+    },
+    {
+      "unitId": "season-1982-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1982-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:16.247Z",
+      "byteLength": 923897,
+      "sha256": "822888945787efc76341b32b0c1c7d62a3d6c623171e9acb89124d8f5d3dfa1b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4498027c4f6448366ed396224f5db28b62a5c9591ccd76dff680f05eeb6258f1/manifest.json"
+    },
+    {
+      "unitId": "season-1983-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1983-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:07.948Z",
+      "byteLength": 1557742,
+      "sha256": "95dfbd4c461ab08f2b7d6a23ca32353a5078e11187d711ad768880b33caf0c0f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/de442a0ad14c0859e5e408c7f631c59c98bf04148cd9829113bc48b52232d63d/manifest.json"
+    },
+    {
+      "unitId": "season-1983-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1983-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:10.917Z",
+      "byteLength": 943005,
+      "sha256": "a1e044bc4f79f681588b156898fe6d19b772ba11fb9372a6f725c7048d9ea515",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f42790ab6ebc110d88144330f4fedc3b31e8053eb581bb1e6513385b15e3f25e/manifest.json"
+    },
+    {
+      "unitId": "season-1984-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1984-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:18:00.388Z",
+      "byteLength": 1513282,
+      "sha256": "8c3b13ac59fa79fb9966e3702f8816ad2fc4abeb496e7a6391aae89aa891cf2c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f57c4e6ead65427506a259922e4e81e1e457558b42e134dd10a68fe92ab86dee/manifest.json"
+    },
+    {
+      "unitId": "season-1984-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1984-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:18:03.695Z",
+      "byteLength": 938416,
+      "sha256": "5d317e96acdd49093d15da3fc80adc510c831265d2de7e9cd942254c00b20841",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8924fb9c041ba4516bfca6d7cd0034e202c2e0d6c48c9866fc26eb0672fc1663/manifest.json"
+    },
+    {
+      "unitId": "season-1985-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1985-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:54.037Z",
+      "byteLength": 1500465,
+      "sha256": "0f0dc708b647b87cc57d0ba06d09ebbdce3f07953038cb2b5c5840b1fd28152b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/de34f9a3225bb2a76016ac684f892f75a52c7cab93c32e9d5a6551e8b42f9112/manifest.json"
+    },
+    {
+      "unitId": "season-1985-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1985-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:56.823Z",
+      "byteLength": 981768,
+      "sha256": "e536c049d737bd5d04cd41e47f0e8754048c68551daac693549fb28f05137a1b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/78d3b8c673569d665cc87338cf314d755b3bf70fe304f791759e2f77f4c0e5e1/manifest.json"
+    },
+    {
+      "unitId": "season-1986-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1986-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:47.670Z",
+      "byteLength": 1533552,
+      "sha256": "74eb93784d99ceb5ba724c468046ea4823cd97ac81b470c9f7e0e38602c6f56f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/81b81d4beaf4d83200680f17bc3a94e7f5f9caea3609acef676ff14c5ed4bc7e/manifest.json"
+    },
+    {
+      "unitId": "season-1986-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1986-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:50.160Z",
+      "byteLength": 1026967,
+      "sha256": "a397d16bfa4909a70807f6c93ba84a9def2dbaf296ec6610b4340b798a887e43",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/17753d450ec455cd4da6ecff831786c19255844561a9e9f25546c48171a6a934/manifest.json"
+    },
+    {
+      "unitId": "season-1987-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1987-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:41.360Z",
+      "byteLength": 1604972,
+      "sha256": "1756806bbc3c834ba8ea30fdb74e9290865a7cddcacd0db56eecb19c7e158f2e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/de6b3e819ea29ee2f7740f962721d62fcecb9666738e51fc07536270529304d3/manifest.json"
+    },
+    {
+      "unitId": "season-1987-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1987-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:43.858Z",
+      "byteLength": 1063638,
+      "sha256": "464e0664fb9da4bc2bbef5fc44b3d5033025fe5ee73c9b2eae9343ed6c1a1b66",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5d430c17cb1fd42f3c13487f08a8704c2904b159e2d49c46c03d9fb602f58efc/manifest.json"
+    },
+    {
+      "unitId": "season-1988-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1988-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:34.727Z",
+      "byteLength": 1571683,
+      "sha256": "207a63e71a0408f1be5d11bdc0516f07f7d6f694c4600fdf0cb2accad693e5b8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/41d6d8d54c4c1edb07fa43fdbd5c5751c45215027d1f6367b2735d89d185eb1e/manifest.json"
+    },
+    {
+      "unitId": "season-1988-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1988-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:37.503Z",
+      "byteLength": 1016149,
+      "sha256": "45cdce3bda38c146d6cb7248da9f0f091ce7f70d21947a5fea3a21c103d66b28",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/428760224917ebaff9d90a9a2eecb0c8e2ed0fcab8e1f9c7c670ab8502166074/manifest.json"
+    },
+    {
+      "unitId": "season-1989-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1989-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:28.510Z",
+      "byteLength": 1655502,
+      "sha256": "649bf3c63be101326eb7cfd72f2390df082a62ede33c7771a4d5afd7f1f2cc1e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/806291e2257bedbf4f2ef27ff23d993b69d40f565b46bbaa5cb03cb6cba55bbf/manifest.json"
+    },
+    {
+      "unitId": "season-1989-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1989-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:31.362Z",
+      "byteLength": 1092194,
+      "sha256": "4a1386b07c8c65976d1770e0a485d7114806c3e1f04e333fa3fb7b68526f22cb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ddeb1dd122f810eb102c00c038bdd4d253c6e3d90bd2f142c2f3272996e33b2b/manifest.json"
+    },
+    {
+      "unitId": "season-1990-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1990-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:17:22.259Z",
+      "byteLength": 1687039,
+      "sha256": "90eeb6a0e765d5dc25c0cbb571c4bc17e3cdcec341955e82650d74e719c0e72d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/71cbcc31951d64f2322268dd0684650d8023c513df70a4de85a088eff2f6a228/manifest.json"
+    },
+    {
+      "unitId": "season-1990-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1990-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:25.000Z",
+      "byteLength": 1138911,
+      "sha256": "7ba9e918c211f08f74201f25a700da605f46288cd102fc67255f5df794603d60",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7c668c657c78dfb3fda2491831a40c3b4506ae4ddecfc09de59357c230e0c3e8/manifest.json"
+    },
+    {
+      "unitId": "season-1991-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1991-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:40.316Z",
+      "byteLength": 1614923,
+      "sha256": "944a138eff87ddbe8a600f0fed6ddd40f30e83f279ce95821d838a5669323068",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0cd7a804ff98001bafaefec67e0ab695396288b282a7f0e251471d35ee25d1e0/manifest.json"
+    },
+    {
+      "unitId": "season-1991-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1991-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:17:18.346Z",
+      "byteLength": 1082033,
+      "sha256": "64ae47b33fd68709ffc7a4050c4dfb82120966ba6940c41ba2d083ad84b9585f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1b34f2c8700425a6aa2d641d5a852a8f6083e73c8a7f696472c25fa8c2960749/manifest.json"
+    },
+    {
+      "unitId": "season-1992-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1992-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:33.880Z",
+      "byteLength": 1582145,
+      "sha256": "aac36c4d59fa1335dd85eaf1c06b5ec7cdce40936520c5feae13144b92ee2f97",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/634a4eb1699fb218e88ebcc816acea854dee1b84caf09a15f1a144327cda0c11/manifest.json"
+    },
+    {
+      "unitId": "season-1992-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1992-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:36.503Z",
+      "byteLength": 1055114,
+      "sha256": "cba3b074d31333f9b6acbeefb30acf562b2aa7e33b8711fc4335bbb2df956c27",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8eba45bc5a71ef42b090bbb58c08a3e2b7363d2c2dd573d5cfe9a792b1efb10e/manifest.json"
+    },
+    {
+      "unitId": "season-1993-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1993-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:27.822Z",
+      "byteLength": 1765007,
+      "sha256": "9e931bfe109b8b70b96743ebb969b73c684cebc1d3e4801e0865ca0723e46c9b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bdf96c1607ebe4ba85c57758055b3c4160c70fa0792195afe5d0ed74d4904e37/manifest.json"
+    },
+    {
+      "unitId": "season-1993-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1993-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:30.624Z",
+      "byteLength": 1218534,
+      "sha256": "a5f295497f975ba34b807a8fcb2efaf0da76a3421d057c5d92716a5f67a61b0d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1d8cd5353e26736241f189b1b7b0209791ffe7e734f6cddcb129a1a4c73f64da/manifest.json"
+    },
+    {
+      "unitId": "season-1994-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1994-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:21.364Z",
+      "byteLength": 1512688,
+      "sha256": "679c0109efaafa4c22422e428de11275f641bea8f1c686965efc22fc48803d75",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5d25644da7925e13dfe4acd3a58e01d460a8da37a4497713188d53f2e025aa54/manifest.json"
+    },
+    {
+      "unitId": "season-1994-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1994-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:24.041Z",
+      "byteLength": 1068676,
+      "sha256": "5c15f0b00f5397e5732ee63738e9e213a0e1b597474437b88d140b2bdf345661",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/93f91efb452972efe09038e571cbaab00d821dee9852697390a1c6a3c7b3c8f2/manifest.json"
+    },
+    {
+      "unitId": "season-1995-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1995-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:14.940Z",
+      "byteLength": 1858614,
+      "sha256": "473702ea90027618a495e70f48c88ed175ae476582821e9cae18d09d3759aa28",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8412866e9a8b46fb3205967e918b9b79cd7dab86478cac5c4cc5fcacee6d6106/manifest.json"
+    },
+    {
+      "unitId": "season-1995-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1995-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:17.665Z",
+      "byteLength": 1354168,
+      "sha256": "47f48c6b1dead62877333c38ec16558f0be0c151ce1366d866502cd680c32737",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9fa00e75726824be9d9dabd36f2ad3c03d2491f312ed50f4a1adad0472361d3c/manifest.json"
+    },
+    {
+      "unitId": "season-1996-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1996-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:08.804Z",
+      "byteLength": 1861137,
+      "sha256": "42868b3e9c494c7c1540706a6ff1b5f568d23adc6ad50d9dd7806318becd69d2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2a1fe4036ef1aed45c260207d0e53795446afae790f637cf2558ec778c978444/manifest.json"
+    },
+    {
+      "unitId": "season-1996-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1996-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:11.197Z",
+      "byteLength": 1287162,
+      "sha256": "f1f378128e2b2e0950351ae3219463523c5e6eea6386ba02a157efec5a367b5b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7b208ec358cc57f9a0b465912e0a8ee5821ef627cbd8bad8244ffbfcdd20e168/manifest.json"
+    },
+    {
+      "unitId": "season-1997-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1997-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:15:01.804Z",
+      "byteLength": 2136345,
+      "sha256": "84e6fd63d308f810a07d616f9b312b8384ff8e7e090888729ee2323824cfa4eb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/eef4a617ca92af4f3dcb981b2ed3d4620ef32ec05903fefbc59990b861cd8bb8/manifest.json"
+    },
+    {
+      "unitId": "season-1997-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1997-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:15:05.160Z",
+      "byteLength": 1299933,
+      "sha256": "7c123168445e582cb6bbfee0aef852f31718eb9043d11d3fdbf214c1c098471c",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/70d65b1972562e32d826fe48a319215050a5a86e1426b022bc72e37f66802ee8/manifest.json"
+    },
+    {
+      "unitId": "season-1998-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1998-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:54.446Z",
+      "byteLength": 2290818,
+      "sha256": "969e92616d6a9825137b28255400a81fad06cd037aa4cf0275b7f581df3c99f9",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6df3a9abd519a6e93bd184b783bc03fbdd9fc33128b19350346e069ecf15ec2b/manifest.json"
+    },
+    {
+      "unitId": "season-1998-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1998-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:56.851Z",
+      "byteLength": 1361500,
+      "sha256": "c0c3c5f21d1beca5c8dee830d8a904c9f1ab32be796bdbfe538d25672044929e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/77e94f2b12eee8cc17e960389563ff1ea38cbc40b67b8d6745dc3c4ded71cf2b/manifest.json"
+    },
+    {
+      "unitId": "season-1999-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/1999-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:47.605Z",
+      "byteLength": 2168449,
+      "sha256": "7e0b8570ff5a9d5d5823360b3d7307bc599f7f7928a50d06a55a93bf43bb4a0b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4982b340aac6cf5a76da9b8160dde676aa4f3607b75550f6a156752bef776808/manifest.json"
+    },
+    {
+      "unitId": "season-1999-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/1999-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:50.347Z",
+      "byteLength": 1377873,
+      "sha256": "041f11ea79ce88a53c2e6aa741d1893b35cb7c7747a7cb4e39ecabeaadbe0de5",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a151300bc7efe667e11a95fbe4bf99b7703f3355b7daaad6cb78e9912df2c13a/manifest.json"
+    },
+    {
+      "unitId": "season-2000-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2000-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:39.958Z",
+      "byteLength": 2378620,
+      "sha256": "fb5ef366716fe31e23c690fb936f4afdadd5f8f72db1d484cdcfb3fd5c11df53",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d318a783ebcf820d770406a78a6d48f35ad62e3bb308efbf19f95aaee47d6fad/manifest.json"
+    },
+    {
+      "unitId": "season-2000-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2000-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:42.782Z",
+      "byteLength": 1456754,
+      "sha256": "303638e0822ef6e9ff00037239212f5dce720e4ced299c6d95d2c8800aef5659",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5b40aa690d455dd11c543b669f96469c087145bd987d32d594fc595bcd6a2cab/manifest.json"
+    },
+    {
+      "unitId": "season-2001-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2001-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:33.175Z",
+      "byteLength": 2319084,
+      "sha256": "6a5c227437d5b218b5de2d045d6cc21b16c61380db929eaabbd8302388a53b12",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2cb8c27882f573068c2b6b3740263b38222b59d7461098e6eea4258eb71c17d6/manifest.json"
+    },
+    {
+      "unitId": "season-2001-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2001-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:35.706Z",
+      "byteLength": 1402862,
+      "sha256": "eaae8eab02b272167e336355e161d2eace5b39d9cc2940d72ab867e343a86599",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/24061e4576b7620efd062b11c71c02db4b73c90bf8a28b78e0172d090270d1bd/manifest.json"
+    },
+    {
+      "unitId": "season-2002-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2002-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:26.435Z",
+      "byteLength": 2197785,
+      "sha256": "009e5e1dfc0f969d35b925988cbe1af8d66af7a52fb235644598abf8b0457b06",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/68ee52f16e5e95ec7a399e92abbe5ffd3db8de9b29a9ad531b9ba4f43b85a666/manifest.json"
+    },
+    {
+      "unitId": "season-2002-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2002-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:28.937Z",
+      "byteLength": 1395334,
+      "sha256": "2dd522e68466ca07e290d4517774deacba25af22efef6fdd6fff8c0d643e89c7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c0542bd07c7b6ef8b6012715723c61df2de7cfbe3bd82c7cd1241933a5da5dc4/manifest.json"
+    },
+    {
+      "unitId": "season-2003-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2003-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:19.732Z",
+      "byteLength": 2262014,
+      "sha256": "9c31cf6ce9e087b9a6ea373f5138a0f3e46c0556704c150a2995ce27cffb3174",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c3e6108a96a76cd997d48d5618de75f5989cf538d3b2a391e95a0cc61b1c7336/manifest.json"
+    },
+    {
+      "unitId": "season-2003-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2003-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:22.303Z",
+      "byteLength": 1447265,
+      "sha256": "41fe52597d2bbceec33e59d873ce559245f0a171e4a09ea8bb368ced6e094e66",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b472ce221ca0129137c28a4164b92a3b2ef97a1f456ec07d7800e0cc97d4dfcd/manifest.json"
+    },
+    {
+      "unitId": "season-2004-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2004-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:12.550Z",
+      "byteLength": 2244023,
+      "sha256": "9aecf13b66d034ee34318bd32c6948bbb9126e7ae44c90657bfb7e2cc47d09d7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/bec91ebacb9fe3d60e0da310df6efbf8c09d24293783a1a0fc64f7275993641a/manifest.json"
+    },
+    {
+      "unitId": "season-2004-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2004-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:15.473Z",
+      "byteLength": 1427108,
+      "sha256": "4f945e1ad0141b4206b3a55133e965f44261a60296ad64bffb5361556e9b8ddc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c968ec2930b19f546716973c6df93709c72cd746d8f2672cc381794347d4774f/manifest.json"
+    },
+    {
+      "unitId": "season-2005-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2005-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:14:05.757Z",
+      "byteLength": 2240389,
+      "sha256": "408d7daa43d82b39cd28c80f14979b030bfdb2e323bf251c254ee9bb90a627d4",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/1bb371a19445b3d970c32eac4432423fb25aed3fbfefbfedef784ab58eee240a/manifest.json"
+    },
+    {
+      "unitId": "season-2005-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2005-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:08.256Z",
+      "byteLength": 1383068,
+      "sha256": "ee5bc9b88dc58bdbac73e9fa9c473b7b92dd3bdf8ffe93eb442f91ba0e4678d6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/491d3752f863137e09cfe1b3f96a598a6d86d101951d1254d6207c3310548c36/manifest.json"
+    },
+    {
+      "unitId": "season-2006-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2006-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:13:59.022Z",
+      "byteLength": 2339827,
+      "sha256": "cd981b69dcef540eb2e36f75542cd17e2be9ddc7bd3096459c8f49fe6d0a90b7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/fdde2144d9948dfe1cf91858e715c8c990703f8d789a573c2430318864c47983/manifest.json"
+    },
+    {
+      "unitId": "season-2006-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2006-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:14:01.828Z",
+      "byteLength": 1490666,
+      "sha256": "2b8dd6f2c09e350da40648d836152c35814487c190bfde747df34f7794d52dfb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/b52f54a2c8fb0936e7d5c23f50ebf32365be32792da52f118223d0be821d8e3d/manifest.json"
+    },
+    {
+      "unitId": "season-2007-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2007-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:13:00.756Z",
+      "byteLength": 2318353,
+      "sha256": "5f639ccdba7bdf6d8f39c9e795512762928ca03c81deed61127ee4b1f81a2a0f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c2fc995235292a870c949cda7746580d62358c0ef1ef30d83b7a66f40253489a/manifest.json"
+    },
+    {
+      "unitId": "season-2007-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2007-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:13:55.094Z",
+      "byteLength": 1493949,
+      "sha256": "b560809f93435057431262cd1a815dc7410c7ab0d05bc7a91c9c5a3446df4356",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9a8c0082b2a890279143a519a67cd96cc9f582cdf12fbb8bb6ca0629c0561fdf/manifest.json"
+    },
+    {
+      "unitId": "season-2008-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2008-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:53.448Z",
+      "byteLength": 2297954,
+      "sha256": "d46ca88d6d96d2a079cd80a7c695de9d92dbd3ffbdb76161b0d2af10a77e8c0e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/7e5caa9aa4db13ee6bd0f69751d591e50f18575b0889d453e727481196580eca/manifest.json"
+    },
+    {
+      "unitId": "season-2008-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2008-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:56.075Z",
+      "byteLength": 1463778,
+      "sha256": "40ce96f802312080b4ba19b300f3951132e30e33da5f26287fe4c558af6bafc2",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/79c92775aa38701b28b0c50ad8d95839ca49974016568f4841224e3dc61090fb/manifest.json"
+    },
+    {
+      "unitId": "season-2009-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2009-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:46.547Z",
+      "byteLength": 2328520,
+      "sha256": "8cd1317de84082e6c917a8eefd54e7cafb5d0cddd225dbbb77bfa0168f2a6c27",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a740c1dc211b78310ed0d5ebd9c6ea6ba312db3957e291fb48d2d1a7d8647904/manifest.json"
+    },
+    {
+      "unitId": "season-2009-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2009-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:49.374Z",
+      "byteLength": 1536676,
+      "sha256": "61772c229e4becf3d86b3edffd766687cf76547207c9933c39b504d7a0f0298a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/704c57ada6daac4836eee36197de9037fcb0ebfb4169dae2bc75d9f49caf4774/manifest.json"
+    },
+    {
+      "unitId": "season-2010-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2010-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:39.282Z",
+      "byteLength": 2315185,
+      "sha256": "7d9e14ccdea745d15adfd65e6690d6241d4edf25e488f73298aecaebe07adaae",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/be51c274331269e7ed2aa68e6ad024ec9835429ec0d9246a719e55d5de169961/manifest.json"
+    },
+    {
+      "unitId": "season-2010-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2010-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:42.039Z",
+      "byteLength": 1436430,
+      "sha256": "f20de2a726b4d7aea945455b47410e4c1ef535c7dcb4304ef089e14bc027a251",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4e6d5d2d6ac6592aa6adf31341e7f64c4644c1f8e061846a56c061541cdf2249/manifest.json"
+    },
+    {
+      "unitId": "season-2011-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2011-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:31.363Z",
+      "byteLength": 2275342,
+      "sha256": "3b3b0c85974943a33af0c53742cc0288a105d07007b7b14be3f0633d68281506",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6724190196af36e65c5b76fac73893640190d528edb93596f594b1a98c245db2/manifest.json"
+    },
+    {
+      "unitId": "season-2011-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2011-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:35.191Z",
+      "byteLength": 1468144,
+      "sha256": "fad1963b2219d061bf7a4612d8397ce82b2d884e8c42bbfbd0dd55881965f838",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a6a525a4355660ec2851bf8b31e9b66991294854fc2fb93690c79d7b9c0914c2/manifest.json"
+    },
+    {
+      "unitId": "season-2012-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2012-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:24.708Z",
+      "byteLength": 2375206,
+      "sha256": "0e826bed1dde479b7e406f356125506a5343aaf4982742475cf425341a17f54a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/77b9130b4955814372fb2d6d483fb5a776ef8c5b6b6dc397fb1b8bfb77c2dfbf/manifest.json"
+    },
+    {
+      "unitId": "season-2012-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2012-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:27.404Z",
+      "byteLength": 1518818,
+      "sha256": "6e9efe63226984cdec5aa644fee36910ff63ad7b4046a457e5093dc2b4444aae",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a24bb89d7f972e1984772ff8bc19fa9cb59ef106627252ad3629db2138328996/manifest.json"
+    },
+    {
+      "unitId": "season-2013-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2013-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:17.954Z",
+      "byteLength": 2384807,
+      "sha256": "22a7e24fdd8ff03eacd448fa36b5c6e5a40f9492eea8267daf582950e99585ba",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/f0b0fca756e194a74a5e38e1840eab59eacb15d63d7ffc664e3f16ce7394143f/manifest.json"
+    },
+    {
+      "unitId": "season-2013-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2013-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:20.554Z",
+      "byteLength": 1503976,
+      "sha256": "c219cceca32695a053555e0d6c47f5efb620a8371646878dba5de5cf86a1626f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/ef7d8eacdf3e4c0e08a81290617fb33f3a171fd81c608ae0e7c540468d1fa74b/manifest.json"
+    },
+    {
+      "unitId": "season-2014-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2014-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:11.252Z",
+      "byteLength": 2386591,
+      "sha256": "6a3c44c1ba726a914ca05f0d1da5ea8a7ab617097e325ca1ba00ab0b5975a3b0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/2626b7d8a08408acb338c36844dfb8d5191281f127ad09f6406bd6a270b6c04b/manifest.json"
+    },
+    {
+      "unitId": "season-2014-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2014-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:14.052Z",
+      "byteLength": 1544072,
+      "sha256": "779096bace053db177646820ca5ad3d7a900d80d7b737b92afbd72c3569d4ffd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/800dfcade1ce0f0c7e75b349377bba3afc42d36b1055cf3488ac455b16dc7964/manifest.json"
+    },
+    {
+      "unitId": "season-2015-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2015-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:12:04.167Z",
+      "byteLength": 2536296,
+      "sha256": "9dbfbab2d4f4ef8577e3575b06c6e252973d68cb6a24324d201bb5c9733b3dc0",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/8bdef734f7dedf01222f8e14b558ce589ac681e93dca546f5e6e95e719c6ed8f/manifest.json"
+    },
+    {
+      "unitId": "season-2015-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2015-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:07.014Z",
+      "byteLength": 1687425,
+      "sha256": "c3012e4eb75ead29f74cd119e00f9c54e8ff71a9ae1d45621130ac85ef32511e",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a8ece100abf543dd0a95b01718473f517452a427d7302ca4106694c93941e582/manifest.json"
+    },
+    {
+      "unitId": "season-2016-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2016-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:57.238Z",
+      "byteLength": 2498224,
+      "sha256": "9ea5319753fb7bddb854238f291dc5fd9deb702d9875bc82411d7179a531b5a3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/800a5f202481528ac74d4ebf6e3a0e74767084770f0067e3e1f5342b2cf858d4/manifest.json"
+    },
+    {
+      "unitId": "season-2016-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2016-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:12:00.361Z",
+      "byteLength": 1726139,
+      "sha256": "3018abc65c1bf2ba42bb051d1376ab02cc326185d7a968d9698078ff286644af",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/c03902dc206def93663878fd31f466bb88df26d1ddf5a95b101cfad10b18a48d/manifest.json"
+    },
+    {
+      "unitId": "season-2017-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2017-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:49.253Z",
+      "byteLength": 2450454,
+      "sha256": "2a279a2c1286720f5fe1276b4f698b3048f216f458845bb6ccffeb473cc3e2ea",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0cd92e686a9b61b3a3c2e4b2fc9706b5a6041fa706cdd784b1a4ab609d1f4a80/manifest.json"
+    },
+    {
+      "unitId": "season-2017-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2017-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:52.270Z",
+      "byteLength": 1750411,
+      "sha256": "f869c1471a618a1d2743fb9919667c906d75b2981bb34df310c95d6a7e508112",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/6367fc5eabfc06e664aad87697601465abd8c11f083945faab56284fbb8c99d2/manifest.json"
+    },
+    {
+      "unitId": "season-2018-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2018-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:42.047Z",
+      "byteLength": 2585852,
+      "sha256": "cf7d1203a105fdf76a64ee1efd1bcb8af945361fac493a7cf2a3ff9ec274b293",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/e57ffcbcd069ba54f04e3e73a66601ba543131fa37d9f1f537eaf2128327a9f1/manifest.json"
+    },
+    {
+      "unitId": "season-2018-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2018-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:45.028Z",
+      "byteLength": 1854140,
+      "sha256": "98e408e5f4cd97caa2ac29cc5537feaa89e5533790402b07eb6be81840607a74",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/17fb275ff067e1cc5c63311f143c61109375ba666f20875a6fa776369fe486c7/manifest.json"
+    },
+    {
+      "unitId": "season-2019-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2019-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:35.158Z",
+      "byteLength": 2611934,
+      "sha256": "6441e39a243ee4789c5366e3ccf520e1493b9286df3d3d1046b8056b8a09febb",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9162831c20ae43d0a4f75a4347673586b2da83204cf7f8d302d67fd36bb9d4a4/manifest.json"
+    },
+    {
+      "unitId": "season-2019-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2019-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:38.297Z",
+      "byteLength": 1926506,
+      "sha256": "6a913672b2a8c743b93b108328a704fabce57a9ea221ca43174fc30f1b0e4668",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/315cce991f3c08ad4e0825e969cba8e3c3560637e9a2876b465f87e56cb92b45/manifest.json"
+    },
+    {
+      "unitId": "season-2020-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2020-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:27.425Z",
+      "byteLength": 1300886,
+      "sha256": "5fa759c1973e6b4a75f85555bc756ec4001145c80c338728e10b8f79284d7f4f",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5a1270ca2f28e496e54056ed9dbb9bd346520486cfc5b393f0d2f99eec1afe00/manifest.json"
+    },
+    {
+      "unitId": "season-2020-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2020-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:30.776Z",
+      "byteLength": 1620624,
+      "sha256": "3e0c856a5575b64cf32fe0581027ba984800a68825c95a534a42fd67e64587f7",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/cd2f588026e0c472bcb420ec21d8afa72552af5e1ac9dbf69786e45b901ba4ca/manifest.json"
+    },
+    {
+      "unitId": "season-2021-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2021-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:21.054Z",
+      "byteLength": 2887799,
+      "sha256": "3a48587dac0661266eeb3a0aacba17b20275e236f389e8e03416b99b94d9a16d",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/5a22a25c11f5a5c12bdcdb2cbc44112d1dae0cb8328cee075391f70ca7af6ec7/manifest.json"
+    },
+    {
+      "unitId": "season-2021-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2021-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:24.616Z",
+      "byteLength": 2232403,
+      "sha256": "29fa00d2f2200d608008e95bd9b86bf2b2b5f560803be4e992c3bdf31917bce6",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9eed8329dbb57640efeed3f0e9da76a468a2a7c1dedd7105d77da43ecfd034a1/manifest.json"
+    },
+    {
+      "unitId": "season-2022-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2022-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:13.040Z",
+      "byteLength": 1745734,
+      "sha256": "65b6419ff9b56d2c503e9c156840c69b08545327e8b641f90c74ffdbd1f5a9f3",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/10ded2ad492b8ea4eca7e903b773014a270998b0f8c29f9476a72a6a226393cb/manifest.json"
+    },
+    {
+      "unitId": "season-2022-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2022-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:16.509Z",
+      "byteLength": 2083133,
+      "sha256": "b8db46af1e6241143da6aac1e2d59a0c1e9fb85eade26546e5ddde541a27619b",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/4bbaec6465692be0700472c1a2fa14ffc246fea84984a8b72e51f215c0654c9d/manifest.json"
+    },
+    {
+      "unitId": "season-2023-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2023-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:06.576Z",
+      "byteLength": 1600742,
+      "sha256": "2135f78fe1fcd4ba351ea9a4576a0b8b8ccd3f5fc1f9b7a56dee61801a87cedc",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d94b268e7f86a226d151f53f740fef0ff9762b784aed8cdef21e91697a7d6e50/manifest.json"
+    },
+    {
+      "unitId": "season-2023-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2023-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:09.851Z",
+      "byteLength": 2076499,
+      "sha256": "fe3d97825ef9ebbfff92c78e0777da11f5bab0f867381c1a6bc4aff7ddc1b692",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/a3e7f07a7a90c3278b5e57180cd254ca1eeba2bd46b52a5b53699c98d775402c/manifest.json"
+    },
+    {
+      "unitId": "season-2024-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2024-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:11:00.018Z",
+      "byteLength": 1623143,
+      "sha256": "4022d9ad7e0eec96fe0730df712585a4a59a2b2afe1d0677521d986fa202bfed",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/00d87803a1d02acca7ec0cc18df18d05ce44d99401619df9519c0a3c37e6b418/manifest.json"
+    },
+    {
+      "unitId": "season-2024-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2024-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:11:03.502Z",
+      "byteLength": 2127685,
+      "sha256": "785b3bfcaa6f1a5da59e0618b9948aa57be6ad83481016bd8fe1ae13bc2b29de",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/339e144aa94a69c69455ef87adbf7292a1e32277f7a9054a6715b986dc8db810/manifest.json"
+    },
+    {
+      "unitId": "season-2025-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2025-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:10:53.705Z",
+      "byteLength": 1667105,
+      "sha256": "18078843d80ee8eb9bca72a8922af4b0351befaf2f32d813827f633300789f05",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/0527193c041a2357b56de6c614dc55bbdb90cbadf8534447b9793ace094c99d9/manifest.json"
+    },
+    {
+      "unitId": "season-2025-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2025-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:10:57.073Z",
+      "byteLength": 2229140,
+      "sha256": "401686f13a24fb9f9a70c3f3256168d42869ead02151de0d7914bb7c008648fd",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/d77f2eb8b478352dc4e7fdce5e4eec1699eed824453f67a43b49812bb6ca4bee/manifest.json"
+    },
+    {
+      "unitId": "season-2026-batting",
+      "url": "https://www.baseball-reference.com/leagues/majors/2026-value-batting.shtml",
+      "retrievedAt": "2026-07-12T18:08:42.478Z",
+      "byteLength": 1312798,
+      "sha256": "64c6afda659b44fd1c16226502d8da099656b349b0df686f2cf2a8f61805041a",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/520dad3abaa3cfc80264c7eb0a8de2a838b9e176119df8b464738a751bb1052a/manifest.json"
+    },
+    {
+      "unitId": "season-2026-pitching",
+      "url": "https://www.baseball-reference.com/leagues/majors/2026-value-pitching.shtml",
+      "retrievedAt": "2026-07-12T18:10:12.272Z",
+      "byteLength": 1639491,
+      "sha256": "6c173cad12014ff102eb8d10ba657908761780c69abc3269ef3639521eb8e6c8",
+      "requestManifestPath": "data/raw/baseball-reference-mlb-war/requests/9b5f76d6c488afc03be6566fb47aebef8497ca49a155464d8d3c347cbf0edc12/manifest.json"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/processed/baseball-reference-mlb-war/player_seasons.json",
+      "mediaType": "application/json",
+      "rowCount": 117033,
+      "byteLength": 104892717,
+      "sha256": "5d97a116231227aee56d931ba0e27317347df729eba7762483cceae1e63d71ce"
+    },
+    {
+      "path": "data/processed/baseball-reference-mlb-war/player_seasons.csv",
+      "mediaType": "text/csv",
+      "rowCount": 117033,
+      "byteLength": 20934660,
+      "sha256": "b2f482a1f4211d635130f0f4854f3d0fee57074a33d25dd5176a6029476d61e9"
+    },
+    {
+      "path": "data/processed/baseball-reference-mlb-war/hof_inductees.json",
+      "mediaType": "application/json",
+      "rowCount": 279,
+      "byteLength": 103614,
+      "sha256": "8151c3eed7421e52998af62aeba6d78e39a1160b15a3813227d0ed163feb87f7"
+    },
+    {
+      "path": "data/processed/baseball-reference-mlb-war/hof_inductees.csv",
+      "mediaType": "text/csv",
+      "rowCount": 279,
+      "byteLength": 19493,
+      "sha256": "2873935418edca84740abbe4af2e49255c3b9699656b92b4cc8f140a61881cb6"
+    },
+    {
+      "path": "data/processed/baseball-reference-mlb-war/jaws_standards.json",
+      "mediaType": "application/json",
+      "rowCount": 10,
+      "byteLength": 2759,
+      "sha256": "c1761e459ab0f0509c949a67fad1913bea7caab6f7004f5b5050046c7086e2a8"
+    },
+    {
+      "path": "data/processed/baseball-reference-mlb-war/jaws_standards.csv",
+      "mediaType": "text/csv",
+      "rowCount": 10,
+      "byteLength": 713,
+      "sha256": "c6f8b8a0c3f2400720894a0622da1a8e2d9a133042ec40c20852e0285420e0e9"
+    }
+  ]
+}

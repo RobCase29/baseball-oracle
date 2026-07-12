@@ -4,11 +4,12 @@ Status as of July 12, 2026.
 
 ## Verdict
 
-Baseball Oracle now has an executable, reproducible research baseline for MLB
-arrival, a clean career-model landmark panel, and ten mature historical cohorts
-drawn from the full population of recorded affiliated-season participants. It is
-ready for feature research and honest forward backtests. It is not yet ready to
-publish player probabilities.
+Baseball Oracle now has executable, reproducible research baselines for MLB
+arrival and terminal MLB career outcomes, plus ten mature affiliated-season
+arrival cohorts. The application displays real players and explicitly
+research-only estimates, including withheld states. It is ready for model
+research and retrospective chronological audits. It is not ready to mark any
+player probability as released or to claim superiority on prospective evidence.
 
 There are now two distinct arrival research tracks. The original 2017-2026 track
 is conditional on appearing on a FanGraphs prospect board. The primary population
@@ -31,6 +32,7 @@ about 162 MB:
 | Retrosheet | `bf5af7d40e1f0c33026074705cda8ed1c5177f95` | Independent MLB debut-date validation |
 | FanGraphs | 2017-2026 board editions | Independently acquired hitter and pitcher scouting reports plus prior-season statistics under the project's research permission |
 | Baseball-Reference Register | Complete 2010-2019 affiliated seasons; locked 2021-2025 external cohorts; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
+| Baseball-Reference MLB WAR/JAWS | 1871-2026 player-season census; 2025 latest complete scoring season | Career WAR, peak-seven WAR, exact position/role JAWS standards, current MLB census, and terminal career research targets |
 
 For the original 44-resource acquisition, every URL, byte count, license
 reference, and SHA-256 digest is pinned in `data/source-lock.json`. Requests for
@@ -218,6 +220,79 @@ is fully bound by the successor lock; the original failed admission remains
 preserved. Because aggregate outcome QA had been inspected before the failed
 attempt, this evaluation is retrospective rather than researcher-blind.
 
+## Career Oracle Terminal Baseline
+
+The authorized Baseball-Reference MLB WAR backfill is complete across all 324
+registered acquisition units from 1871 through 2026 with zero failures. It
+contains 117,033 player-seasons for 23,711 Baseball-Reference identities. The
+2026 rows are an in-season census and actual-evidence layer; 2025 is the latest
+complete feature season. Exact Hall JAWS standards are locked for eight hitter
+positions, starting pitchers, and relief pitchers.
+
+The current scoring census reconciles all 1,291 Baseball-Reference identities on
+2026 40-man rosters to the WAR corpus. Exact Chadwick keys add MLBAM identities
+for 1,278 players; the 13 unresolved external IDs remain in the MLB census without
+a guessed name join. An additional 46 MLBAM-only pre-debut roster players remain
+in the minor-league universe rather than being fabricated into the MLB WAR panel.
+
+The implemented target is `hof-caliber-point-in-time-jaws-v1`: final JAWS clears
+the exact standard attached to the player's career-to-date role/position at each
+landmark. A later role or position change therefore rebaselines the threshold.
+Completed-career classification is diagnostic only, actual induction is
+descriptive only, and unsupported two-way careers are withheld.
+
+The terminal distribution model draws paired final-WAR and peak-seven-WAR
+residual scenarios by role, career stage, and performance band, then recomputes
+JAWS. It is a terminal landmark baseline, not an annual aging-path simulation.
+The final scorer preserves held-out residual/calibration layers while refitting
+the point and raw probability learners through resolved 2022 careers. Full
+player-disjoint cross-fitting is still required in the next registered version.
+
+Mechanical champion selection uses a chronological selection cohort. The later
+historical cohort was inspected during iterative development, so it is labeled a
+development holdout and cannot support a blind or prospective superiority claim.
+The release decision remains false independently of the selected tournament
+entrant. Early-career interval coverage, high-performance subgroup behavior, a
+new untouched forward cohort, and operational lineage all remain release gates.
+
+The current chronological selection chose the calibrated scenario-tilt entrant
+at classifier weight `0.60`. Its player-equal Brier score was `0.00313` versus
+`0.00635` for the age-position empirical prior. On the retrospective development
+holdout those values were `0.00314` and `0.00658`, respectively, across only 24
+Hall-caliber event players. These are useful architecture diagnostics, not an
+external superiority claim. The early-career interval release floor failed at
+`61.3%` observed minimum coverage versus `65%` required, and the top-decile
+pitcher distribution gates failed for first-season and seasons 7-10 landmarks.
+
+Those tournament metrics do not validate the exact current-player scorer. The
+deployed research bundle refits its point and raw probability learners through
+2022 while retaining earlier residual/calibration layers; the artifact records
+`classifierRefitCalibrationApproximate=true` and `fullPlayerCrossFit=false`.
+Current-player probabilities therefore remain unvalidated research estimates and
+must not inherit the tournament Brier, AUC, or interval-coverage claims.
+
+Early Hall-tail behavior is also unresolved. On the retrospective development
+holdout, central P80 coverage among the 29 actual first-season Hall-caliber cases
+is zero and final-WAR MAE is 73.2. Because Hall cases are a rare upper tail, that
+conditional slice is a tail-detection diagnostic rather than a conventional
+central-interval calibration target. It nevertheless shows why the current
+single-scenario JAWS support adjustment cannot be considered an elite-career
+model. The next entrant must learn an elite-tail distribution and report P95/P99,
+tail-weighted scores, and expected shortfall before early-career confidence can
+be promoted.
+
+Finally, the outcome split is based on completed career end year, not prediction
+origin. It is player-disjoint but conditions cohort membership on future career
+length, and some early landmarks predate the calibration cutoff. A rolling debut
+or prediction-origin design with censoring-aware outcomes is required for the
+prospective track.
+
+The MiLB result remains a distinct bridge: the externally failed 60-month arrival
+candidate is combined with a debut-age career baseline. It is a lower-bound proxy,
+not eventual arrival probability and not direct MiLB-to-Hall training. Accordingly,
+the product assigns stage-specific MLB and MiLB ranks and excludes Prospect
+Savant's composite from the default model and sort.
+
 ## Trouble With The Curve Audit
 
 The referenced repository is a useful hypothesis source, not training truth. At
@@ -256,17 +331,18 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
    context.
 5. Evidence original publication/knowledge times or keep reconstructed historical
    features out of strict historical-information backtests.
-6. Add provider-versioned Sports Reference or FanGraphs WAR to the prepared career
-   landmarks. Lahman supports playing time, rate, longevity, awards, and Hall of
-   Fame outcomes, but does not contain WAR.
+6. Extend the locked Baseball-Reference WAR landmark baseline with normalized
+   era, league, park, position, workload, and opportunity features. Raw calendar
+   year is excluded until an era transformation is preregistered and tested.
 7. Build monthly competing-risk arrival hazards, IPCW survival metrics,
    chronological calibration, organization and era diagnostics, missing-feature
    stress tests, paired baseline-skill intervals, cold-start observed/expected
    gates, and a content-locked prospective 2026 holdout; the external 2021-2025
    test is retrospective and does not satisfy this gate.
-8. Build post-debut opportunity, performance, exit/re-entry, and WAR components,
-   then simulate joint career paths. Model Hall-of-Fame-caliber performance
-   separately from the later voting process.
+8. Replace the terminal landmark baseline with cross-fitted post-debut
+   opportunity, performance, exit/re-entry, aging, injury, and WAR components,
+   then simulate coherent annual career paths. Keep statistical Hall caliber
+   separate from the later voting process.
 9. Normalize Prospect Savant's 2023+ tracking components and point-in-time
    FanGraphs scouting grades as separate challengers. Require coverage-aware
    missingness indicators and forward-fold incremental value over the

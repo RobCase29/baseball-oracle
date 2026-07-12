@@ -1,18 +1,59 @@
 import { describe, expect, it } from 'vitest'
-import type { BoardFilters, PlayerRecord, PublishedForecast } from '../domain/forecast'
+import type { BoardFilters, CareerForecast, PlayerRecord } from '../domain/forecast'
 import {
   filterAndSortPlayers,
   formatOrdinal,
+  formatProbability,
   formatScore,
   formatSigned,
-  oracleScore,
+  formatWar,
+  stageCoverageForPlayers,
+  stageLabel,
 } from './forecast'
 
 const baseFilters: BoardFilters = {
   query: '',
+  stage: 'All',
   playerType: 'All',
   level: 'All',
-  sort: 'psScore',
+  sort: 'hofProbability',
+}
+
+function makeForecast(overrides: Partial<CareerForecast> = {}): CareerForecast {
+  return {
+    publicationState: 'research',
+    releaseEligible: false,
+    asOf: '2026-07-12T00:00:00.000Z',
+    rank: 1,
+    hofCaliberProbability: 0.08,
+    finalCareerWar: { p10: 2, p25: 8, p50: 20, p75: 38, p90: 62 },
+    peakSevenWar: { p10: 1, p25: 6, p50: 15, p75: 27, p90: 40 },
+    finalJaws: null,
+    scenarioSupportExtensionJaws: null,
+    cumulativeWar: null,
+    arrivalProbability36: 0.61,
+    confidenceScore: 0.7,
+    confidenceState: 'Moderate',
+    intervalWidth: 60,
+    arc: [],
+    decomposition: {
+      arrivalProbability: 0.8,
+      hofCaliberGivenMlbProbability: 0.1,
+      noMlbProbability: 0.2,
+      observedCumulativeWar: null,
+    },
+    hofStandard: null,
+    summary: null,
+    drivers: [],
+    warnings: [],
+    lineage: {
+      modelVersion: 'career-v1',
+      targetVersion: 'hof-caliber-jaws-v1',
+      dataVersion: null,
+      providerVersion: null,
+    },
+    ...overrides,
+  }
 }
 
 function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
@@ -24,6 +65,7 @@ function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
     organizationCode: 'TST',
     position: 'SS',
     playerType: 'Hitter',
+    stage: 'pre_debut',
     age: 21,
     level: 'AA',
     batsThrows: 'R/R',
@@ -48,42 +90,103 @@ function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
       externalIds: { prospectSavant: '1' },
     },
     researchEstimate: null,
-    forecast: null,
+    careerForecast: null,
     ...overrides,
   }
 }
 
-describe('real-player board utilities', () => {
-  it('filters observed records by player type and source identity', () => {
+describe('Oracle Board utilities', () => {
+  it('filters canonical records by stage, role, and source identity', () => {
     const players = [
       makePlayer({ id: 'one', name: 'Jackson Miller' }),
-      makePlayer({ id: 'two', name: 'Andre Lewis', playerType: 'Pitcher', position: 'RHP' }),
+      makePlayer({
+        id: 'two',
+        name: 'Andre Lewis',
+        playerType: 'Pitcher',
+        position: 'RHP',
+        stage: 'early_mlb',
+        level: null,
+      }),
     ]
 
-    const results = filterAndSortPlayers(
-      players,
-      { ...baseFilters, query: 'miller', playerType: 'Hitter' },
-    )
-
-    expect(results.map((player) => player.id)).toEqual(['one'])
-    expect(results[0]?.forecast).toBeNull()
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      query: 'lewis',
+      stage: 'MLB',
+      playerType: 'Pitcher',
+    }).map((player) => player.id)).toEqual(['two'])
   })
 
-  it('sorts real source scores while keeping missing values last', () => {
+  it('ranks only by unconditional HOF probability and never by confidence', () => {
     const players = [
-      makePlayer({ id: 'missing', psScore: null }),
-      makePlayer({ id: 'low', psScore: 42 }),
-      makePlayer({ id: 'high', psScore: 91 }),
+      makePlayer({
+        id: 'lower-probability',
+        careerForecast: makeForecast({
+          hofCaliberProbability: 0.09,
+          confidenceScore: 0.99,
+          confidenceState: 'High',
+        }),
+      }),
+      makePlayer({
+        id: 'higher-probability',
+        careerForecast: makeForecast({
+          hofCaliberProbability: 0.1,
+          confidenceScore: 0.1,
+          confidenceState: 'Low',
+        }),
+      }),
+      makePlayer({ id: 'withheld', careerForecast: null }),
     ]
 
     expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
+      'higher-probability',
+      'lower-probability',
+      'withheld',
+    ])
+  })
+
+  it('groups incomparable MLB outcomes and prospect proxies in the All view', () => {
+    const players = [
+      makePlayer({
+        id: 'minor-high',
+        careerForecast: makeForecast({ hofCaliberProbability: 0.9 }),
+      }),
+      makePlayer({
+        id: 'mlb-low',
+        stage: 'early_mlb',
+        level: null,
+        careerForecast: makeForecast({ hofCaliberProbability: 0.01 }),
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
+      'mlb-low',
+      'minor-high',
+    ])
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'Minors' }).map((player) => player.id))
+      .toEqual(['minor-high'])
+  })
+
+  it('uses final WAR P50 only when that secondary sort is selected', () => {
+    const players = [
+      makePlayer({ id: 'low', careerForecast: makeForecast() }),
+      makePlayer({
+        id: 'high',
+        careerForecast: makeForecast({
+          finalCareerWar: { p10: 4, p25: 15, p50: 42, p75: 60, p90: 75 },
+        }),
+      }),
+      makePlayer({ id: 'missing' }),
+    ]
+
+    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'finalWar' }).map((player) => player.id)).toEqual([
       'high',
       'low',
       'missing',
     ])
   })
 
-  it('sorts frozen research estimates while keeping unmatched profiles last', () => {
+  it('sorts frozen arrival estimates while keeping unmatched profiles last', () => {
     const estimate = (probability: number) => ({
       status: 'research_only' as const,
       releaseEligible: false as const,
@@ -108,35 +211,24 @@ describe('real-player board utilities', () => {
     ).toEqual(['higher', 'lower', 'unmatched'])
   })
 
-  it('bounds the decision score for a future published forecast', () => {
-    const forecast: PublishedForecast = {
-      modelVersion: 'arrival-v1',
-      publishedAt: '2027-01-01T00:00:00.000Z',
-      rank: 1,
-      arrivalProbability: 84,
-      arrivalDelta: null,
-      eta: '2028',
-      expectedCareerWar: 28,
-      starProbability: 35,
-      hofProbability: 5,
-      floorWar: 0,
-      ceilingWar: 55,
-      risk: 'Moderate',
-      confidence: 79,
-      summary: 'Validated forecast fixture.',
-      drivers: [],
-      careerArc: [],
-    }
-
-    expect(oracleScore(forecast)).toBeGreaterThanOrEqual(0)
-    expect(oracleScore(forecast)).toBeLessThanOrEqual(100)
-  })
-
-  it('formats source values without inventing missing values', () => {
+  it('formats model values without converting invalid probabilities', () => {
     expect(formatSigned(3.2, ' pts')).toBe('+3.2 pts')
     expect(formatSigned(-1.5, ' pts')).toBe('-1.5 pts')
     expect(formatOrdinal(91.4)).toBe('91st')
     expect(formatScore(72.25)).toBe('72.3')
     expect(formatScore(null)).toBe('—')
+    expect(formatProbability(0.123)).toBe('12.3%')
+    expect(formatProbability(84)).toBe('—')
+    expect(formatWar(24.23)).toBe('24.2')
+    expect(stageLabel('established_mlb')).toBe('Established MLB')
+  })
+
+  it('summarizes the stage mix for filtered and saved player sets', () => {
+    expect(stageCoverageForPlayers([
+      makePlayer({ id: 'minor' }),
+      makePlayer({ id: 'rookie', stage: 'early_mlb' }),
+      makePlayer({ id: 'veteran', stage: 'established_mlb' }),
+      makePlayer({ id: 'inactive', stage: 'inactive' }),
+    ])).toEqual({ minors: 1, mlb: 2 })
   })
 })

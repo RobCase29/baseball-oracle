@@ -12,8 +12,16 @@ import type {
   PlayerRecord,
   PlayersPage,
   PlayerType,
+  StageFilter,
 } from '../domain/forecast'
-import { formatOrdinal, formatScore, probabilityTone } from '../lib/forecast'
+import {
+  arrivalProbability36,
+  formatProbability,
+  formatWar,
+  isMlbStage,
+  probabilityTone,
+  stageLabel,
+} from '../lib/forecast'
 
 interface ProspectBoardProps {
   players: PlayerRecord[]
@@ -29,7 +37,12 @@ interface ProspectBoardProps {
   onChangePage: (page: number) => void
 }
 
-const playerTypes: Array<'All' | PlayerType> = ['All', 'Hitter', 'Pitcher']
+const stages: StageFilter[] = ['All', 'Minors', 'MLB']
+const playerTypes: Array<'All' | PlayerType> = ['All', 'Hitter', 'Pitcher', 'Two-way']
+
+function confidenceLabel(player: PlayerRecord): string {
+  return player.careerForecast?.confidenceState ?? 'Withheld'
+}
 
 export function ProspectBoard({
   players,
@@ -51,12 +64,12 @@ export function ProspectBoard({
     <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading}>
       <div className="board-heading">
         <div>
-          <span className="eyebrow">RESEARCH UNIVERSE</span>
-          <h2 id="board-title">Prospect board</h2>
+          <span className="eyebrow">STAGE-SPECIFIC RESEARCH RANK</span>
+          <h2 id="board-title">Oracle Board</h2>
         </div>
         <span className="record-count">
           {loading ? <LoaderCircle className="spin" size={12} aria-hidden="true" /> : null}
-          {pagination.total.toLocaleString()} profiles
+          {pagination.total.toLocaleString()} players
         </span>
       </div>
 
@@ -72,24 +85,43 @@ export function ProspectBoard({
           />
         </label>
 
-        <div className="segmented-control" aria-label="Player type">
-          {playerTypes.map((type) => (
+        <div className="segmented-control stage-control" aria-label="Career stage">
+          {stages.map((stage) => (
             <button
-              key={type}
+              key={stage}
               type="button"
-              className={filters.playerType === type ? 'is-active' : ''}
-              onClick={() => onChangeFilters({ playerType: type })}
+              className={filters.stage === stage ? 'is-active' : ''}
+              aria-pressed={filters.stage === stage}
+              onClick={() => onChangeFilters(stage === 'MLB' ? { stage, level: 'All' } : { stage })}
             >
-              {type === 'All' ? 'All' : `${type}s`}
+              {stage}
             </button>
           ))}
         </div>
+
+        <label className="select-field">
+          <span>Role</span>
+          <select
+            aria-label="Player role"
+            value={filters.playerType}
+            onChange={(event) =>
+              onChangeFilters({ playerType: event.target.value as 'All' | PlayerType })
+            }
+          >
+            {playerTypes.map((type) => (
+              <option key={type} value={type}>
+                {type === 'All' ? 'All roles' : type === 'Two-way' ? 'Two-way' : `${type}s`}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label className="select-field">
           <span>Level</span>
           <select
             aria-label="Level"
             value={filters.level}
+            disabled={filters.stage === 'MLB'}
             onChange={(event) => onChangeFilters({ level: event.target.value })}
           >
             <option>All</option>
@@ -101,7 +133,7 @@ export function ProspectBoard({
           </select>
         </label>
 
-        <label className="select-field">
+        <label className="select-field rank-select">
           <span>Rank by</span>
           <select
             aria-label="Rank by"
@@ -110,9 +142,9 @@ export function ProspectBoard({
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
             }
           >
-            <option value="arrival36">Research P(MLB) · 36m</option>
-            <option value="psScore">PS Score</option>
-            <option value="psPercentile">PS percentile</option>
+            <option value="hofProbability">P(HOF caliber)</option>
+            <option value="finalWar">Final WAR P50</option>
+            <option value="arrival36">P(MLB) · 36m</option>
             <option value="age">Age</option>
             <option value="name">Name</option>
           </select>
@@ -130,22 +162,23 @@ export function ProspectBoard({
       {loading && players.length === 0 ? (
         <div className="empty-state" role="status">
           <LoaderCircle className="spin" size={22} aria-hidden="true" />
-          <strong>Loading real player profiles</strong>
-          <span>Reading the current Prospect Savant snapshot.</span>
+          <strong>Loading the player universe</strong>
+          <span>Reading the current research artifact and source directory.</span>
         </div>
       ) : null}
 
       {players.length > 0 ? (
         <div className="board-table-wrap">
-          <table className="board-table">
+          <table className="board-table oracle-board-table">
             <thead>
               <tr>
-                <th scope="col">Player</th>
-                <th scope="col">Age / level</th>
-                <th scope="col">PS Score</th>
-                <th scope="col">Research P36</th>
-                <th scope="col">Percentile</th>
-                <th scope="col">Opportunity</th>
+                <th scope="col">Rank</th>
+                <th scope="col">Player / stage</th>
+                <th scope="col">Age / context</th>
+                <th scope="col">P(HOF caliber)</th>
+                <th scope="col">Final WAR</th>
+                <th scope="col">Arrival / actual</th>
+                <th scope="col">Confidence</th>
                 <th scope="col"><span className="sr-only">Save</span></th>
               </tr>
             </thead>
@@ -155,12 +188,25 @@ export function ProspectBoard({
                 const selected = player.id === selectedId
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
-                const research36 = player.researchEstimate?.horizons.find(
-                  (horizon) => horizon.months === 36,
-                )?.probability
+                const forecast = player.careerForecast
+                const hofProbability = forecast?.hofCaliberProbability ?? null
+                const arrival36 = arrivalProbability36(player)
+                const mlbStage = isMlbStage(player.stage)
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
+                    <td className="rank-cell">
+                      <strong className="table-primary">
+                        {forecast?.rank ? `#${forecast.rank}` : '—'}
+                      </strong>
+                      <small>
+                        {forecast?.rank
+                          ? mlbStage ? 'MLB' : 'minors'
+                          : forecast?.hofCaliberProbability != null
+                            ? 'unavailable'
+                            : 'withheld'}
+                      </small>
+                    </td>
                     <td>
                       <button
                         className="player-cell"
@@ -176,41 +222,57 @@ export function ProspectBoard({
                           <small>
                             {organization} · {player.position ?? player.playerType}
                           </small>
+                          <span className={`stage-badge stage-badge--${player.stage}`}>
+                            {stageLabel(player.stage)}
+                          </span>
                         </span>
                         <ChevronRight className="row-chevron" size={16} aria-hidden="true" />
                       </button>
                     </td>
                     <td>
                       <strong className="table-primary">{player.age ?? '—'}</strong>
-                      <small>{player.level}</small>
+                      <small>{player.level ?? stageLabel(player.stage)}</small>
                     </td>
                     <td>
-                      <strong className="table-primary">{formatScore(player.psScore)}</strong>
-                      <small>source metric</small>
-                    </td>
-                    <td>
-                      {research36 === undefined ? (
+                      {hofProbability === null ? (
                         <strong className="table-primary">—</strong>
                       ) : (
-                        <span className={`probability-value tone-${probabilityTone(research36 * 100)}`}>
-                          {(research36 * 100).toFixed(1)}%
+                        <span className={`probability-value tone-${probabilityTone(hofProbability * 100)}`}>
+                          {formatProbability(hofProbability)}
                         </span>
                       )}
-                      <small>{research36 === undefined ? 'no exact match' : 'frozen 2025'}</small>
+                      <small>
+                        {player.stage === 'pre_debut' && forecast
+                          ? 'research · 60m lower bound'
+                          : forecast?.publicationState ?? 'no career model'}
+                      </small>
                     </td>
                     <td>
-                      {player.psPercentile === null ? (
-                        <strong className="table-primary">—</strong>
+                      <strong className="table-primary">
+                        {formatWar(forecast?.finalCareerWar?.p50 ?? null)}
+                      </strong>
+                      <small>P50 · P90 {formatWar(forecast?.finalCareerWar?.p90 ?? null)}</small>
+                    </td>
+                    <td>
+                      {mlbStage ? (
+                        <>
+                          <strong className="table-primary">{formatWar(forecast?.cumulativeWar ?? null)}</strong>
+                          <small>cumulative WAR</small>
+                        </>
                       ) : (
-                        <span className={`probability-value tone-${probabilityTone(player.psPercentile)}`}>
-                          {formatOrdinal(player.psPercentile)}
-                        </span>
+                        <>
+                          <strong className="table-primary">{formatProbability(arrival36)}</strong>
+                          <small>P(MLB) within 36m</small>
+                        </>
                       )}
-                      <small>PS cohort</small>
                     </td>
                     <td>
-                      <strong className="table-primary">{player.opportunity?.value ?? '—'}</strong>
-                      <small>{player.opportunity?.label ?? 'not reported'}</small>
+                      <strong className="table-primary confidence-value">{confidenceLabel(player)}</strong>
+                      <small>
+                        {forecast?.confidenceScore === null || !forecast
+                          ? 'score withheld'
+                          : `${formatProbability(forecast.confidenceScore)} evidence`}
+                      </small>
                     </td>
                     <td>
                       <button
@@ -234,11 +296,11 @@ export function ProspectBoard({
       {!loading && !error && players.length === 0 ? (
         <div className="empty-state">
           {pagination.total === 0 ? <Search size={22} aria-hidden="true" /> : <Database size={22} aria-hidden="true" />}
-          <strong>{pagination.total === 0 ? 'No matching players' : 'No profiles on this page'}</strong>
+          <strong>{filters.stage === 'MLB' ? 'No matching MLB players' : 'No matching players'}</strong>
           <span>
-            {pagination.total === 0
-              ? 'Adjust the search or cohort filters.'
-              : 'Move to another results page.'}
+            {filters.stage === 'MLB'
+              ? 'Adjust the search or role filters.'
+              : 'Adjust the search or cohort filters.'}
           </span>
         </div>
       ) : null}

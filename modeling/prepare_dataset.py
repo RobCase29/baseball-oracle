@@ -48,6 +48,14 @@ FANGRAPHS_VERSION = "2017-2026-editions"
 SNAPSHOT_POLICY = "edition_year_end_capped_at_acquisition_v1"
 ACQUISITION_DATE = pd.Timestamp("2026-07-11")
 
+# Lahman career landmarks do not include fielding position, so cross-domain
+# opportunity needs both material volume and balance before it denotes two-way play.
+CAREER_ROLE_MIN_BATTING_PA = 60
+CAREER_ROLE_MIN_BATTING_GAMES = 20
+CAREER_ROLE_MIN_PITCHING_OUTS = 60
+CAREER_ROLE_MIN_SECONDARY_WORKLOAD_SHARE = 0.30
+CAREER_ROLE_MIN_NON_PITCHING_BATTING_GAMES = 20
+
 HITTER_STATS = {
     "G": "prior_g",
     "PA": "prior_pa",
@@ -199,6 +207,34 @@ def infer_role(position: Any) -> str:
     if has_pitcher and has_hitter:
         return "two_way"
     return "pitcher" if has_pitcher else "hitter"
+
+
+def infer_career_landmark_roles(seasons: pd.DataFrame) -> pd.Series:
+    batting_pa = seasons["season_batting_pa"].clip(lower=0)
+    batting_games = seasons["season_batting_g"].clip(lower=0)
+    pitching_outs = seasons["season_pitching_ipouts"].clip(lower=0)
+    pitching_games = seasons["season_pitching_g"].clip(lower=0)
+    larger_workload = pd.concat([batting_pa, pitching_outs], axis=1).max(axis=1)
+    smaller_workload = pd.concat([batting_pa, pitching_outs], axis=1).min(axis=1)
+    secondary_workload_share = smaller_workload.div(larger_workload.where(larger_workload > 0))
+    independent_batting_games = batting_games.sub(pitching_games).clip(lower=0)
+    material_batting = batting_pa.ge(CAREER_ROLE_MIN_BATTING_PA) & batting_games.ge(
+        CAREER_ROLE_MIN_BATTING_GAMES
+    )
+    material_pitching = pitching_outs.ge(CAREER_ROLE_MIN_PITCHING_OUTS)
+    two_way = (
+        material_batting
+        & material_pitching
+        & (
+            secondary_workload_share.ge(CAREER_ROLE_MIN_SECONDARY_WORKLOAD_SHARE)
+            | independent_batting_games.ge(CAREER_ROLE_MIN_NON_PITCHING_BATTING_GAMES)
+        )
+    )
+
+    roles = pd.Series("hitter", index=seasons.index, dtype="object")
+    roles.loc[pitching_outs.gt(batting_pa)] = "pitcher"
+    roles.loc[two_way] = "two_way"
+    return roles
 
 
 def source_hash(path: Path) -> str:
@@ -747,11 +783,7 @@ def build_career_landmarks(
     )
     midpoint = pd.to_datetime(seasons["season"].astype(str) + "-07-01")
     seasons["age_midseason"] = (midpoint - seasons["birth_date"]).dt.days / 365.2425
-    seasons["role"] = "hitter"
-    has_pitching = seasons["season_pitching_ipouts"] > 0
-    has_batting = seasons["season_batting_pa"] > 0
-    seasons.loc[has_pitching & ~has_batting, "role"] = "pitcher"
-    seasons.loc[has_pitching & has_batting, "role"] = "two_way"
+    seasons["role"] = infer_career_landmark_roles(seasons)
     seasons["seasons_played_to_date"] = seasons.groupby("playerID").cumcount() + 1
 
     cumulative_columns: list[str] = []
@@ -772,15 +804,29 @@ def build_career_landmarks(
         .astype("boolean")
     )
     labels.loc[seasons["season"] >= int(DATA_CUTOFF[:4]), "appeared_next_season"] = pd.NA
-    labels["future_active_seasons"] = total_seasons - seasons["seasons_played_to_date"]
-    labels["remaining_batting_pa"] = total_batting_pa - seasons["career_to_date_batting_pa"]
-    labels["remaining_pitching_outs"] = (
-        total_pitching_outs - seasons["career_to_date_pitching_ipouts"]
+    labels["future_active_seasons"] = pd.array(
+        total_seasons - seasons["seasons_played_to_date"], dtype="Int64"
     )
-    labels["final_season"] = final_season
+    labels["remaining_batting_pa"] = pd.array(
+        total_batting_pa - seasons["career_to_date_batting_pa"], dtype="Int64"
+    )
+    labels["remaining_pitching_outs"] = pd.array(
+        total_pitching_outs - seasons["career_to_date_pitching_ipouts"], dtype="Int64"
+    )
+    labels["final_season"] = pd.array(final_season, dtype="Int64")
     labels["outcome_cutoff"] = DATA_CUTOFF
     labels["career_resolution"] = "three_year_inactivity_proxy"
-    labels.loc[final_season > int(DATA_CUTOFF[:4]) - 3, "career_resolution"] = "right_censored"
+    right_censored = final_season > int(DATA_CUTOFF[:4]) - 3
+    labels.loc[right_censored, "career_resolution"] = "right_censored"
+    labels.loc[
+        right_censored,
+        [
+            "future_active_seasons",
+            "remaining_batting_pa",
+            "remaining_pitching_outs",
+            "final_season",
+        ],
+    ] = pd.NA
 
     features = seasons.drop(columns=["birth_date", "debut_date"])
     forbidden = ("remaining_", "future_", "final_", "appeared_next", "outcome_", "resolution")

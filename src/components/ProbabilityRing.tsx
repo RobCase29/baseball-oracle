@@ -9,15 +9,20 @@ export function ProbabilityRing({
   label,
   size = 'large',
 }: ProbabilityRingProps) {
+  const boundedValue = Math.min(100, Math.max(0, value))
+  const displayValue = Number.isInteger(boundedValue)
+    ? boundedValue.toFixed(0)
+    : boundedValue.toFixed(1)
+
   return (
     <div
       className={`probability-ring probability-ring--${size}`}
-      style={{ '--probability': `${value * 3.6}deg` } as React.CSSProperties}
+      style={{ '--probability': `${boundedValue * 3.6}deg` } as React.CSSProperties}
       role="img"
-      aria-label={`${label}: ${value}%`}
+      aria-label={`${label}: ${displayValue}%`}
     >
       <div>
-        <strong>{value}%</strong>
+        <strong>{displayValue}%</strong>
         <span>{label}</span>
       </div>
     </div>

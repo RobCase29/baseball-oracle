@@ -13,23 +13,35 @@ Baseball Oracle forecasts baseball outcomes. A later market layer can compare th
 
 ## Current MVP Checkpoint
 
-The July 2026 MVP is an arrival-only research cockpit. It joins the live 2026
-Prospect Savant directory to the frozen Dec. 31, 2025 external prediction cohort
-using exact MLBAM ID and role. This yields 4,442 matched profiles out of 6,868.
-The board can rank globally by the candidate's 36-month MLB-arrival estimate, and
-the dossier shows the cumulative 12-60 month curve, age-level baseline, as-of
-date, and research-support state.
+The July 2026 MVP is a two-stage research cockpit. It combines a live directory
+of 6,800 canonical minor-league players with a locked 2026 40-man-roster census
+covering 1,291 canonical Baseball-Reference MLB identities. The career evidence
+base contains 117,033 player-seasons from 1871 through the in-season 2026 census;
+2025 is the latest complete season used for scoring features.
 
-These are candidate research estimates, not published forecasts. The external
-evaluation beat the censoring-aware baseline in all eight sufficient cells, but
-failed population-shift admission and the pooled ECE cell-fraction gate. Current
-MLB status and 2026 evidence are not reconciled, and the 60-month external outcome
-is not mature. Career WAR, star, Hall of Fame, market-value, and investment-return
-outputs remain absent rather than simulated with placeholder values.
+For MLB players, the MVP reports a paired terminal distribution for final career
+WAR, peak-seven WAR, and JAWS, plus `P(final JAWS clears the career-to-date
+role/position standard)`. For minor leaguers, it composes a separately evaluated
+60-month arrival lower-bound proxy with a debut-age career bridge. Those are
+different endpoints, so MLB and MiLB ranks are stage-specific and the All view
+groups rather than interleaves them.
+
+Minor-league performance currently affects the arrival component but does not yet
+shape the conditional terminal career distribution, which uses role and estimated
+debut age. A direct cross-level entry-state model is a required next component.
+
+All outputs remain research-only. The inspected historical test was reviewed
+during model development and is therefore a development holdout, not prospective
+validation. The external arrival evaluation failed registered admission gates;
+the career intervals also retain failed release gates. Current 2026 statistics
+are context only, and unsupported partial-season, stale-return, no-appearance,
+two-way, and failed-distribution cases are withheld instead of filled with a
+plausible-looking heuristic.
 
 ## Product Principles
 
-- **Probabilities, not promises.** Every forecast is a calibrated probability or distribution with a defined horizon.
+- **Probabilities, not promises.** Every released forecast is a calibrated probability or distribution with a defined horizon.
+- **Research is not release.** Candidate estimates may expose model behavior, but only a released forecast may claim validated calibration for its exact scoring procedure.
 - **Probability is not confidence.** `P(reaches MLB in three years)` is the modeled outcome probability. Forecast confidence describes data coverage, sample size, stability, and uncertainty.
 - **Point-in-time by default.** Every board, profile, comparison, and backtest is reproducible as of a named date and model version.
 - **Evidence earns trust.** Surface normalized performance, development trends, comparable cohorts, key positive and negative drivers, and model validation next to the forecast.
@@ -64,20 +76,25 @@ For a player who has debuted, and for a prospect conditional on debut, report:
 
 The interface must clearly label conditional forecasts. For example, a prospect's career arc is `conditional on reaching MLB`; the unconditional star probability also includes the risk of never arriving.
 
-Hall of Fame probability is not an MVP target. The historical positive class is tiny, careers are heavily right-censored, and voting standards change. The platform should first model observable stepping stones such as peak WAR, productive longevity, awards-level seasons, and aging. A Hall of Fame path score can later be derived from those components with prominent caveats.
+The MVP Hall target is a statistical career threshold, not induction probability.
+It is derived from final WAR and peak-seven WAR through JAWS and compared with an
+exact position/role standard. Actual induction remains descriptive only because
+voting rules, eligibility, era, and committee paths are separate mechanisms. The
+positive class is rare, so the research probability and ranking remain unreleased
+until a newly frozen forward cohort and all distribution/calibration gates pass.
 
 ## First Shippable Workflow
 
 The first release supports one complete loop:
 
-1. **Scan:** Open the Prospect Board and rank the universe by MLB arrival probability, career ceiling, or recent change.
+1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, terminal career WAR, or arrival probability.
 2. **Narrow:** Search and filter by player type, organization, position, level, age, and forecast confidence.
 3. **Compare:** Select two to four players and compare outcome distributions, timelines, drivers, and data coverage on the same scale.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
 5. **Commit:** Add a player to a watchlist with a thesis, target milestone, and review date.
 6. **Revisit:** See what changed between prediction snapshots and whether the original thesis strengthened or weakened.
 
-The initial build may use clearly labeled demonstration data, but every interaction should behave as it will with production prediction snapshots.
+The current build uses real players and real source evidence; missing or unsupported model outputs remain visibly withheld.
 
 ## Product Views
 

@@ -39,14 +39,14 @@ const sourceRows = [
     status: 'Authorized',
   },
   {
-    layer: 'Player history',
-    source: 'Sports Reference',
-    coverage: 'Player, season, game, and event records',
+    layer: 'MLB value / HOF target',
+    source: 'Baseball-Reference',
+    coverage: '1871–2026 WAR, ten JAWS standards, Hall registers, current 40-man rosters',
     right: 'Authorized research use',
     status: 'Authorized',
   },
   {
-    layer: 'MLB history',
+    layer: 'MLB event history',
     source: 'Retrosheet + Lahman',
     coverage: 'Events, seasons, awards, HOF',
     right: 'Attribution / CC BY-SA',
@@ -139,7 +139,7 @@ export function DataHealth() {
             <span className="eyebrow">RESEARCH STACK</span>
             <h2 id="source-plan-title">Source plan</h2>
           </div>
-          <span className="record-count">Researched Jul 11, 2026</span>
+          <span className="record-count">Updated Jul 12, 2026</span>
         </div>
         <div className="source-table-wrap">
           <table className="source-table">

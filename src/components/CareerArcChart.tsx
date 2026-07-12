@@ -9,11 +9,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { CareerArcPoint } from '../domain/forecast'
+import type { CareerForecastArcPoint } from '../domain/forecast'
 
 interface CareerArcChartProps {
-  data: CareerArcPoint[]
-  currentAge: number
+  data: CareerForecastArcPoint[]
+  currentAge: number | null
 }
 
 interface CareerTooltipProps {
@@ -28,7 +28,7 @@ interface CareerTooltipProps {
 function CareerTooltip({ active, label, payload }: CareerTooltipProps) {
   if (!active || !payload?.length) return null
 
-  const median = payload.find((item) => item.dataKey === 'median')?.value
+  const median = payload.find((item) => item.dataKey === 'p50')?.value
   const range = payload.find((item) => item.dataKey === 'range')?.value
   const actual = payload.find((item) => item.dataKey === 'actual')?.value
 
@@ -38,7 +38,7 @@ function CareerTooltip({ active, label, payload }: CareerTooltipProps) {
       {typeof median === 'number' ? <span>Median: {median.toFixed(1)} WAR</span> : null}
       {Array.isArray(range) ? (
         <span>
-          80% range: {range[0].toFixed(1)}–{range[1].toFixed(1)}
+          P10–P90: {range[0].toFixed(1)}–{range[1].toFixed(1)} WAR
         </span>
       ) : null}
       {typeof actual === 'number' ? <span>Recorded: {actual.toFixed(1)} WAR</span> : null}
@@ -49,11 +49,11 @@ function CareerTooltip({ active, label, payload }: CareerTooltipProps) {
 export function CareerArcChart({ data, currentAge }: CareerArcChartProps) {
   const chartData = data.map((point) => ({
     ...point,
-    range: [point.low, point.high],
+    range: [point.p10, point.p90],
   }))
 
   return (
-    <div className="career-chart" role="img" aria-label="Projected cumulative career WAR by age">
+    <div className="career-chart" role="img" aria-label="Recorded cumulative WAR and terminal career WAR distribution by age">
       <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={240}>
         <ComposedChart data={chartData} margin={{ top: 12, right: 12, bottom: 0, left: -18 }}>
           <CartesianGrid stroke="#e4e7e5" strokeDasharray="2 5" vertical={false} />
@@ -62,7 +62,7 @@ export function CareerArcChart({ data, currentAge }: CareerArcChartProps) {
             axisLine={false}
             tickLine={false}
             tick={{ fill: '#69716f', fontSize: 11 }}
-            ticks={[20, 23, 26, 29, 32, 35, 38]}
+            minTickGap={22}
           />
           <YAxis
             axisLine={false}
@@ -72,12 +72,14 @@ export function CareerArcChart({ data, currentAge }: CareerArcChartProps) {
             tickFormatter={(value) => `${value}`}
           />
           <Tooltip content={<CareerTooltip />} cursor={{ stroke: '#9ca7a3', strokeDasharray: '3 3' }} />
-          <ReferenceLine
-            x={currentAge}
-            stroke="#8a9491"
-            strokeDasharray="4 4"
-            label={{ value: 'NOW', position: 'insideTopLeft', fill: '#69716f', fontSize: 10 }}
-          />
+          {currentAge === null ? null : (
+            <ReferenceLine
+              x={currentAge}
+              stroke="#8a9491"
+              strokeDasharray="4 4"
+              label={{ value: 'NOW', position: 'insideTopLeft', fill: '#69716f', fontSize: 10 }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="range"
@@ -88,7 +90,7 @@ export function CareerArcChart({ data, currentAge }: CareerArcChartProps) {
           />
           <Line
             type="monotone"
-            dataKey="median"
+            dataKey="p50"
             stroke="#147965"
             strokeWidth={2.5}
             dot={false}

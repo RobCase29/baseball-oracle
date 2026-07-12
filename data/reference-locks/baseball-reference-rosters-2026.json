@@ -1,0 +1,344 @@
+{
+  "schemaVersion": "baseball-reference-rosters-reference-lock/v1",
+  "source": "baseball-reference-rosters",
+  "created_at": "2026-07-12T18:36:27.387Z",
+  "season": 2026,
+  "permission_evidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "protocol_lock": {
+    "path": "data/reference-locks/baseball-reference-rosters-2026-protocol-v1.json",
+    "sha256": "483cd60636c789f142ff909295e904c127a508200f1ff1e005b55fa47575a920"
+  },
+  "source_lock_isolation": {
+    "global_source_lock": "data/source-lock.json",
+    "global_source_lock_modified": false
+  },
+  "dataset_manifest": {
+    "path": "data/processed/baseball-reference-rosters/2026/manifest.json",
+    "byte_length": 18757,
+    "sha256": "3a51bce84663d7793f9b4fa2f68a7ef4fe6c0fbe93875e5d50a4866ed4039b01"
+  },
+  "inputs": [
+    {
+      "unit_id": "league-2026-teams",
+      "kind": "team-discovery",
+      "team_id": null,
+      "url": "https://www.baseball-reference.com/leagues/majors/2026.shtml",
+      "retrieved_at": "2026-07-12T18:31:07.208Z",
+      "byte_length": 499724,
+      "sha256": "5ff34ca923a5596b1105d6fc1fe70d49ed7030df6a1dc2de9f4ff5ae3d2a2109",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/13bc1433b30d2748a75f26341a79fdbac27250c27a213416c82a10d6783cdb58/manifest.json"
+    },
+    {
+      "unit_id": "team-ARI-2026-roster",
+      "kind": "team-roster",
+      "team_id": "ARI",
+      "url": "https://www.baseball-reference.com/teams/ARI/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:33:50.512Z",
+      "byte_length": 280415,
+      "sha256": "40376f374a52977b9f8840f066a79c75a13fc746668366f58f22bb9f0df5aa0f",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/419264916f92809c76cb9b3932a7efdf5eeba3f24df519eaf90a3c064b43b470/manifest.json"
+    },
+    {
+      "unit_id": "team-ATH-2026-roster",
+      "kind": "team-roster",
+      "team_id": "ATH",
+      "url": "https://www.baseball-reference.com/teams/ATH/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:33:53.747Z",
+      "byte_length": 283336,
+      "sha256": "a2a6f05ffe06ec8a5bd21719c4b10610f9cef3ab2624eb9d6f3af012eeec003d",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/5111e80b71c5433efae4b4ee7f71be462159b29600a3583d2538a4e5749196e4/manifest.json"
+    },
+    {
+      "unit_id": "team-ATL-2026-roster",
+      "kind": "team-roster",
+      "team_id": "ATL",
+      "url": "https://www.baseball-reference.com/teams/ATL/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:31:36.614Z",
+      "byte_length": 292873,
+      "sha256": "9fa066a8502597ccda1602ed2ed3a229e72bb1b6e6d05a6de95730a1f008e531",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/ee6c40f462c084e4984ed288be340a4e6f4a0a1b0bd1333f9534a413736ced32/manifest.json"
+    },
+    {
+      "unit_id": "team-BAL-2026-roster",
+      "kind": "team-roster",
+      "team_id": "BAL",
+      "url": "https://www.baseball-reference.com/teams/BAL/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:33:56.866Z",
+      "byte_length": 280190,
+      "sha256": "58d7c1a4f5b835637a1e71b820babdc893a6b46620eab7a71f8d4c145b267510",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/8e76b8af0d8dd44b62d860d3a1e783b9d2ca7365f89a57a0ad2c7d3d86b10d35/manifest.json"
+    },
+    {
+      "unit_id": "team-BOS-2026-roster",
+      "kind": "team-roster",
+      "team_id": "BOS",
+      "url": "https://www.baseball-reference.com/teams/BOS/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:31:53.012Z",
+      "byte_length": 286632,
+      "sha256": "fdeeceff0b903f590a4b4fa5467efe36ab4473e9d998c58ed39aed05c9a48e2a",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/be990eb8cb8e13cc36c67ad01b3e104b551d8a0f6b4d7d695a2253880ab2a7cc/manifest.json"
+    },
+    {
+      "unit_id": "team-CHC-2026-roster",
+      "kind": "team-roster",
+      "team_id": "CHC",
+      "url": "https://www.baseball-reference.com/teams/CHC/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:34:00.075Z",
+      "byte_length": 290844,
+      "sha256": "a3a9651875e83c2bfc3f2ba958b530ba0e93eb9cb3eea2863373f67409bcb220",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/147a34ae3a47589e5a133522b07fa9f9d19e276eb56b05514554ddd9d6eb94d3/manifest.json"
+    },
+    {
+      "unit_id": "team-CHW-2026-roster",
+      "kind": "team-roster",
+      "team_id": "CHW",
+      "url": "https://www.baseball-reference.com/teams/CHW/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:14.009Z",
+      "byte_length": 290213,
+      "sha256": "835151065624a036272945e1cddc8d1740416276da87347a2c94aa437a371f0e",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/bdcf1974d92c7881fec24e282969032bbc45120908368d0ee7c53e0bf4effc1a/manifest.json"
+    },
+    {
+      "unit_id": "team-CIN-2026-roster",
+      "kind": "team-roster",
+      "team_id": "CIN",
+      "url": "https://www.baseball-reference.com/teams/CIN/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:34:16.591Z",
+      "byte_length": 280640,
+      "sha256": "c3f2b4c4f4d4734c358eab7831f17a29e78a53ba9c198c9d7cd26091df296922",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/907db62cf7dfa2fdd94fc14c4987bafdafbd1b47d53769f1dd41d9d761d3092b/manifest.json"
+    },
+    {
+      "unit_id": "team-CLE-2026-roster",
+      "kind": "team-roster",
+      "team_id": "CLE",
+      "url": "https://www.baseball-reference.com/teams/CLE/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:34:19.678Z",
+      "byte_length": 271514,
+      "sha256": "0bb61b2c19f515e8a9e4936a59de4965919be25c8a2f1ed61d39cbeced91c955",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/abe3d6f5ab60a322b4679ed314c7f00e6c458aa5078b7ab1fff185cfd2a4954c/manifest.json"
+    },
+    {
+      "unit_id": "team-COL-2026-roster",
+      "kind": "team-roster",
+      "team_id": "COL",
+      "url": "https://www.baseball-reference.com/teams/COL/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:34:22.893Z",
+      "byte_length": 281083,
+      "sha256": "94b4e4f487fcd16abd2e156ba06de9a5ef72190d0f82d89693c078b6727a7c97",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/1944a92093531cb9d07f6bbf7a2d80a90d1ba97cdf972e1a7766c3d98659e4ce/manifest.json"
+    },
+    {
+      "unit_id": "team-DET-2026-roster",
+      "kind": "team-roster",
+      "team_id": "DET",
+      "url": "https://www.baseball-reference.com/teams/DET/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:17.140Z",
+      "byte_length": 284243,
+      "sha256": "489b5a52b452f10026496bbfaf61ce144d85ca1f7ffe12059a694df56f06b9b1",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/5de6a2e2d765fd1809a095b5617b3410ae72cbfb7cc8af63e02a836fa5c5429b/manifest.json"
+    },
+    {
+      "unit_id": "team-HOU-2026-roster",
+      "kind": "team-roster",
+      "team_id": "HOU",
+      "url": "https://www.baseball-reference.com/teams/HOU/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:20.435Z",
+      "byte_length": 289750,
+      "sha256": "80858ae37abbef17147c98c7b7267ac608e8317192fe3928aa48668ed925540c",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/e7961d376bf450a447bf4d41c4314dd8a0b2adc2fb2d24058962f7d6b58a66b5/manifest.json"
+    },
+    {
+      "unit_id": "team-KCR-2026-roster",
+      "kind": "team-roster",
+      "team_id": "KCR",
+      "url": "https://www.baseball-reference.com/teams/KCR/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:23.553Z",
+      "byte_length": 277792,
+      "sha256": "0c0b9161303e8bd0431fd3a40413df28f55c3654ed52c79945bccfdac77f771c",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/9789d6a10fb7ffd6c85b6dab646760098b2e9387f96c89b8e4b506426e1f9771/manifest.json"
+    },
+    {
+      "unit_id": "team-LAA-2026-roster",
+      "kind": "team-roster",
+      "team_id": "LAA",
+      "url": "https://www.baseball-reference.com/teams/LAA/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:26.752Z",
+      "byte_length": 290510,
+      "sha256": "f0a8d428c5278f431969f6e2631de7519316cc5fbcd8708ce92ab50805d33d41",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/b6e83143385963ad811390808bad6334f950207b13d74a04c3f54006f74f5e0e/manifest.json"
+    },
+    {
+      "unit_id": "team-LAD-2026-roster",
+      "kind": "team-roster",
+      "team_id": "LAD",
+      "url": "https://www.baseball-reference.com/teams/LAD/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:30.003Z",
+      "byte_length": 280124,
+      "sha256": "b7e1c87609e4240b40aed11b05e9974548aa1398096f1e650298420b6334b6bd",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/3fb709754fe39330d85e290c111ca60734a8174bac35c09b42fcd2384be02575/manifest.json"
+    },
+    {
+      "unit_id": "team-MIA-2026-roster",
+      "kind": "team-roster",
+      "team_id": "MIA",
+      "url": "https://www.baseball-reference.com/teams/MIA/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:33.172Z",
+      "byte_length": 276133,
+      "sha256": "c2db6a96a67a94b34669ab472dba8d4a57038336c919600c3413bc4cabc0701e",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/f667b4d5f326e976d2b928c4d130a98695d2ff0a8efc0caaf8d31f0edbd21e28/manifest.json"
+    },
+    {
+      "unit_id": "team-MIL-2026-roster",
+      "kind": "team-roster",
+      "team_id": "MIL",
+      "url": "https://www.baseball-reference.com/teams/MIL/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:36.374Z",
+      "byte_length": 280819,
+      "sha256": "26a7ec862cb9d329fab3b7cf21c4c9770df0027df9f637239d325e99971bb78b",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/66cdd90fb1d9312e788ea85d2c9688c93e3d1811a10751ed77bc696c2f510d1a/manifest.json"
+    },
+    {
+      "unit_id": "team-MIN-2026-roster",
+      "kind": "team-roster",
+      "team_id": "MIN",
+      "url": "https://www.baseball-reference.com/teams/MIN/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:39.560Z",
+      "byte_length": 284432,
+      "sha256": "5e91ffb0400852c2e56a429aad37f6e320dffe9c768d299f104c5441cbec48a4",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/02cc049d21d18b726e36f6c1e9b314af91ac25a86fc00b85d7ca03074d8e3c3a/manifest.json"
+    },
+    {
+      "unit_id": "team-NYM-2026-roster",
+      "kind": "team-roster",
+      "team_id": "NYM",
+      "url": "https://www.baseball-reference.com/teams/NYM/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:42.740Z",
+      "byte_length": 294085,
+      "sha256": "b81e1a8bd4f8e2a5f5bd8b04fa5c44e00eb088f0501ae9404ca37aace9b279b6",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/354fc1623e1fbb488a638d5d09796997285d7c4df04050dae2baf36b65b66e0f/manifest.json"
+    },
+    {
+      "unit_id": "team-NYY-2026-roster",
+      "kind": "team-roster",
+      "team_id": "NYY",
+      "url": "https://www.baseball-reference.com/teams/NYY/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:45.990Z",
+      "byte_length": 266761,
+      "sha256": "037d20a1d7c81b2d3038f3b9ed6380b3fff72fff92d743a52e3809ecae9734f6",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/db66a1f19d08667a1f98b7984718fcc4c53b9eb47f0a173560014326f22fa62f/manifest.json"
+    },
+    {
+      "unit_id": "team-PHI-2026-roster",
+      "kind": "team-roster",
+      "team_id": "PHI",
+      "url": "https://www.baseball-reference.com/teams/PHI/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:49.152Z",
+      "byte_length": 273539,
+      "sha256": "687bcbf0c430fe9f8b01e78076093bcb5d4259cebec4f4933347e89b22f1b83e",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/192a525b65c30fa9225f3932856f314ce42117e56d73b0baa65c595f12585d3c/manifest.json"
+    },
+    {
+      "unit_id": "team-PIT-2026-roster",
+      "kind": "team-roster",
+      "team_id": "PIT",
+      "url": "https://www.baseball-reference.com/teams/PIT/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:52.375Z",
+      "byte_length": 276350,
+      "sha256": "d5755d9d23866b5684354601a9a945e66efe29059eb7be6f6e27a55405d51fd5",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/d205c9dd5e8319228503881b07c5b5a74ae28179f58484cd189b2a02c50f8614/manifest.json"
+    },
+    {
+      "unit_id": "team-SDP-2026-roster",
+      "kind": "team-roster",
+      "team_id": "SDP",
+      "url": "https://www.baseball-reference.com/teams/SDP/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:55.564Z",
+      "byte_length": 277511,
+      "sha256": "1d25cfc6573134a544923654eda9bf8b34c161fae2483f24c38817e90469594a",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/cd3b731ec2b61bce921294730d2751600d603963dd35d35fede6e88238da2b4a/manifest.json"
+    },
+    {
+      "unit_id": "team-SEA-2026-roster",
+      "kind": "team-roster",
+      "team_id": "SEA",
+      "url": "https://www.baseball-reference.com/teams/SEA/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:35:58.764Z",
+      "byte_length": 275710,
+      "sha256": "f6966a76f2bddc491f474d1ad3641a804ba34bc06cd7bb3a70dc5304fba65db7",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/a32e9f4eab4ac8a3904a22038cee046eaae4507b933604aa546282aa29f97078/manifest.json"
+    },
+    {
+      "unit_id": "team-SFG-2026-roster",
+      "kind": "team-roster",
+      "team_id": "SFG",
+      "url": "https://www.baseball-reference.com/teams/SFG/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:02.006Z",
+      "byte_length": 288634,
+      "sha256": "812ec7c7f737664578a2f1a30db50d9771a4565a6df5b467aa33d9e19871d73c",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/524acd6fae9f999a5ee497fea52101b1d2fa6cfaf06c1035030fc5db5f482257/manifest.json"
+    },
+    {
+      "unit_id": "team-STL-2026-roster",
+      "kind": "team-roster",
+      "team_id": "STL",
+      "url": "https://www.baseball-reference.com/teams/STL/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:05.214Z",
+      "byte_length": 270151,
+      "sha256": "bd2a563a654dc9980d191c3c02c4d7226c4293fc4c970c70eeb68234f2342441",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/ffc1b55ece5b4ea0b7cb02dbc6cfefcad44a82076d9b66aa0fd6970d185a9e82/manifest.json"
+    },
+    {
+      "unit_id": "team-TBR-2026-roster",
+      "kind": "team-roster",
+      "team_id": "TBR",
+      "url": "https://www.baseball-reference.com/teams/TBR/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:08.402Z",
+      "byte_length": 276586,
+      "sha256": "bb52beb1aba6a44862853344b923141811c2abc153ff4e33f2d755e23398fe27",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/3237a4de19a7a2efb3f0dac4b371f0a31cf17a141aba960fd619f5be9ff28f1f/manifest.json"
+    },
+    {
+      "unit_id": "team-TEX-2026-roster",
+      "kind": "team-roster",
+      "team_id": "TEX",
+      "url": "https://www.baseball-reference.com/teams/TEX/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:11.578Z",
+      "byte_length": 278276,
+      "sha256": "a9311458496c991cd9ccd8fdb2af7506f5e4c44d807fe42c143b08b9b9d277d0",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/1f61b28258aa1235d0a3236c9318f2884bfeb6567179291344610b43c23e5a25/manifest.json"
+    },
+    {
+      "unit_id": "team-TOR-2026-roster",
+      "kind": "team-roster",
+      "team_id": "TOR",
+      "url": "https://www.baseball-reference.com/teams/TOR/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:14.785Z",
+      "byte_length": 287986,
+      "sha256": "ab3f98f56b8f836505b0246944c679e4ddb1b1eac4a3340f40c74a7b0590087a",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/adf33a003366d1d173bdf3f97036413a38fd3ad69a4dc2cb8ef8e047daf9df9c/manifest.json"
+    },
+    {
+      "unit_id": "team-WSN-2026-roster",
+      "kind": "team-roster",
+      "team_id": "WSN",
+      "url": "https://www.baseball-reference.com/teams/WSN/2026-roster.shtml",
+      "retrieved_at": "2026-07-12T18:36:17.986Z",
+      "byte_length": 277014,
+      "sha256": "4a272b80a5fb1e0f9ae0ef0acd38657073fe7be214bb780222d069f45d23636b",
+      "request_manifest_path": "data/raw/baseball-reference-rosters/requests/f807f33ff376ec33c42b99baede50f9cd796042faf69efc508440c3eefdd66f3/manifest.json"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/processed/baseball-reference-rosters/2026/active_roster.json",
+      "media_type": "application/json",
+      "row_count": 1337,
+      "byte_length": 580526,
+      "sha256": "245a004823d749893e9e089290889ae2bd82056e92031d13ec08cbb1157772ac"
+    }
+  ]
+}

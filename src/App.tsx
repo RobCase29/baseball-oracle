@@ -19,10 +19,10 @@ import type {
   PlayersResponse,
   PlayersResponseMeta,
 } from './domain/forecast'
-import { filterAndSortPlayers } from './lib/forecast'
+import { filterAndSortPlayers, stageCoverageForPlayers } from './lib/forecast'
 
 const PAGE_SIZE = 50
-const WATCHLIST_STORAGE_KEY = 'baseball-oracle.real-watchlist.v1'
+const WATCHLIST_STORAGE_KEY = 'baseball-oracle.real-watchlist.v3'
 
 const ValidationDashboard = lazy(() =>
   import('./components/ValidationDashboard').then((module) => ({
@@ -32,9 +32,10 @@ const ValidationDashboard = lazy(() =>
 
 const initialFilters: BoardFilters = {
   query: '',
+  stage: 'All',
   playerType: 'All',
   level: 'All',
-  sort: 'arrival36',
+  sort: 'hofProbability',
 }
 
 const emptyPage: PlayersPage = {
@@ -47,9 +48,9 @@ const emptyPage: PlayersPage = {
 const emptyMeta: PlayersResponseMeta = {
   dataAsOf: null,
   season: null,
-  coverage: 'Current minor-league observed profiles',
+  coverage: 'Professional player universe awaiting Career Oracle preview',
   forecastStatus: 'research_only',
-  source: 'Prospect Savant',
+  source: 'Baseball Oracle research',
 }
 
 function loadWatchlist(): Map<string, PlayerRecord> {
@@ -59,16 +60,24 @@ function loadWatchlist(): Map<string, PlayerRecord> {
     const parsed = JSON.parse(stored) as unknown
     if (!Array.isArray(parsed)) return new Map()
 
-    const players = parsed.filter(
-      (candidate): candidate is PlayerRecord =>
-        typeof candidate === 'object' &&
-        candidate !== null &&
-        'id' in candidate &&
-        typeof candidate.id === 'string' &&
-        'name' in candidate &&
-        typeof candidate.name === 'string' &&
-        'forecast' in candidate,
-    )
+    const players = parsed.filter((candidate): candidate is PlayerRecord => {
+      if (typeof candidate !== 'object' || candidate === null) return false
+      const input = candidate as Record<string, unknown>
+      const coverage = input.coverage
+      const provenance = input.provenance
+      return (
+        typeof input.id === 'string' &&
+        typeof input.name === 'string' &&
+        typeof input.initials === 'string' &&
+        typeof input.stage === 'string' &&
+        typeof input.playerType === 'string' &&
+        'careerForecast' in input &&
+        Array.isArray(input.metrics) &&
+        typeof coverage === 'object' && coverage !== null &&
+        Array.isArray((coverage as Record<string, unknown>).levelsObserved) &&
+        typeof provenance === 'object' && provenance !== null
+      )
+    })
     return new Map(players.map((player) => [player.id, player]))
   } catch {
     return new Map()
@@ -103,6 +112,16 @@ function isPlayersResponse(value: unknown): value is PlayersResponse {
   )
 }
 
+function normalizePlayerRecord(player: PlayerRecord): PlayerRecord {
+  const validStages = new Set(['pre_debut', 'early_mlb', 'established_mlb', 'inactive'])
+  return {
+    ...player,
+    // players.v1 predates the unified artifact and contains only minor-league records.
+    stage: validStages.has(player.stage) ? player.stage : 'pre_debut',
+    careerForecast: player.careerForecast ?? null,
+  }
+}
+
 function App() {
   const [activeView, setActiveView] = useState<WorkspaceView>('Board')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -133,6 +152,7 @@ function App() {
     })
     const query = deferredQuery.trim()
     if (query) parameters.set('q', query)
+    if (filters.stage !== 'All') parameters.set('stage', filters.stage)
     if (filters.playerType !== 'All') parameters.set('playerType', filters.playerType)
     if (filters.level !== 'All') parameters.set('level', filters.level)
 
@@ -144,7 +164,7 @@ function App() {
         if (!response.ok) throw new Error(`Player endpoint returned ${response.status}.`)
         const result = (await response.json()) as unknown
         if (!isPlayersResponse(result)) throw new Error('Player endpoint returned an unexpected response.')
-        setPlayers(result.items)
+        setPlayers(result.items.map(normalizePlayerRecord))
         setPagination(result.page)
         setMeta(result.meta)
       })
@@ -159,7 +179,7 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [deferredQuery, filters.level, filters.playerType, filters.sort, page])
+  }, [deferredQuery, filters.level, filters.playerType, filters.sort, filters.stage, page])
 
   const savedPlayers = useMemo(
     () => filterAndSortPlayers(Array.from(watchlist.values()), filters),
@@ -185,7 +205,8 @@ function App() {
   }
 
   function changeFilters(patch: Partial<BoardFilters>) {
-    setFilters((current) => ({ ...current, ...patch }))
+    const compatiblePatch = patch.stage === 'MLB' ? { ...patch, level: 'All' } : patch
+    setFilters((current) => ({ ...current, ...compatiblePatch }))
     setPage(1)
   }
 
@@ -223,7 +244,22 @@ function App() {
   }
 
   const statcastCoverage = visiblePlayers.filter((player) => player.coverage.hasStatcast).length
-  const topbarStatus = loading && players.length === 0 ? 'loading' : error ? 'error' : 'live'
+  const careerForecastCoverage = visiblePlayers.filter(
+    (player) => player.careerForecast?.hofCaliberProbability != null,
+  ).length
+  const stageCoverage = isWatchlistView
+    ? stageCoverageForPlayers(visiblePlayers)
+    : meta.stageCoverage ?? stageCoverageForPlayers(visiblePlayers)
+  const hofForecastCount = isWatchlistView
+    ? careerForecastCoverage
+    : meta.researchCoverage ?? careerForecastCoverage
+  const topbarStatus = loading && players.length === 0
+    ? 'loading'
+    : error
+      ? 'error'
+      : meta.degraded
+        ? 'degraded'
+        : 'live'
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -239,15 +275,21 @@ function App() {
         <div className="topbar">
           <div className="topbar-context">
             <CircleDot size={14} aria-hidden="true" />
-            <span>Professional baseball · MLB-affiliated development</span>
+            <span>Professional baseball · stage-specific career outcomes</span>
           </div>
           <div className="topbar-meta">
             <span><CalendarDays size={14} aria-hidden="true" /> Data as of {formatDataDate(meta.dataAsOf)}</span>
-            <span className={`source-pill source-pill--${topbarStatus}`}>
+            <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
-              {topbarStatus === 'error' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
+              {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'live' ? <DatabaseZap size={13} aria-hidden="true" /> : null}
-              {topbarStatus === 'loading' ? 'Connecting' : topbarStatus === 'error' ? 'Source unavailable' : 'Live source data'}
+              {topbarStatus === 'loading'
+                ? 'Connecting'
+                : topbarStatus === 'error'
+                  ? 'Source unavailable'
+                  : topbarStatus === 'degraded'
+                    ? 'Partial source data'
+                    : 'Live source data'}
             </span>
           </div>
         </div>
@@ -264,35 +306,49 @@ function App() {
           <main className="research-workspace">
             <header className="workspace-header board-workspace-header">
               <div>
-                <span className="eyebrow">OBSERVED PLAYER INTELLIGENCE</span>
-                <h1>{isWatchlistView ? 'Watchlist' : 'Prospect intelligence'}</h1>
+                <span className="eyebrow">CAREER OUTCOME RESEARCH</span>
+                <h1>{isWatchlistView ? 'Watchlist' : 'Oracle Board'}</h1>
                 <p>
                   {isWatchlistView
-                    ? 'Saved real-player profiles and their current source evidence.'
-                    : 'Current minor-league evidence joined to frozen 2025 research arrival estimates where identity and role match.'}
+                    ? 'Saved player snapshots with research-only career evidence.'
+                    : 'Minor and major leaguers shown with separate MLB and live-minors ranks. Pre-debut Hall values are 60-month lower-bound research proxies and are not directly calibrated against MLB outcomes.'}
                 </p>
               </div>
               <div className="snapshot-id">
-                <span>SOURCE COHORT</span>
-                <strong>{meta.season ? `${meta.season} · ${meta.source}` : meta.source}</strong>
+                <span>RESEARCH STATE</span>
+                <strong>{meta.targetVersion ?? 'Career model pending'}</strong>
               </div>
             </header>
 
+            {meta.degraded && !isWatchlistView ? (
+              <div className="degraded-source-banner" role="status">
+                <AlertTriangle size={16} aria-hidden="true" />
+                <strong>Partial player universe</strong>
+                <span>{meta.degradedReason ?? meta.coverage}</span>
+              </div>
+            ) : null}
+
             <section className="overview-strip" aria-label="Board summary">
               <div>
-                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'PLAYER PROFILES'}</span>
+                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'PLAYER UNIVERSE'}</span>
                 <strong>{visiblePagination.total.toLocaleString()}</strong>
-                <small>{isWatchlistView ? `${watchlist.size} saved total` : `${meta.season ?? 'Current'} source profiles`}</small>
+                <small>{isWatchlistView ? `${watchlist.size} saved total` : 'one row per available player record'}</small>
               </div>
               <div>
-                <span>RESEARCH ESTIMATES</span>
-                <strong>{meta.researchCoverage?.toLocaleString() ?? visiblePlayers.filter((player) => player.researchEstimate).length}</strong>
-                <small>exact ID + role matches</small>
+                <span>HOF FORECASTS</span>
+                <strong>{hofForecastCount.toLocaleString()}</strong>
+                <small>MLB probabilities and pre-debut lower bounds</small>
               </div>
               <div>
-                <span>STATCAST COVERAGE</span>
-                <strong>{statcastCoverage}</strong>
-                <small>of {visiblePlayers.length} visible profiles</small>
+                <span>MINORS / MLB</span>
+                <strong>{stageCoverage.minors.toLocaleString()} / {stageCoverage.mlb.toLocaleString()}</strong>
+                <small>
+                  {isWatchlistView
+                    ? 'stage mix in matching watchlist'
+                    : statcastCoverage > 0
+                      ? `${statcastCoverage} visible with tracking data`
+                      : 'stage coverage in current artifact'}
+                </small>
               </div>
               <div>
                 <span>WATCHLIST</span>

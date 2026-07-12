@@ -19,34 +19,38 @@ const targets: Record<
     target: 'Discrete-time event probability at 12, 24, 36, 48, and 60 months.',
     model: 'Separate hitter and pitcher annual hazards with chronological calibration and horizon-monotone probabilities.',
     evaluation: [
-      { label: 'External Brier skill', status: 'Candidate beat the censoring-aware baseline in 8 of 8 sufficient cells', measured: true },
-      { label: 'Paired skill interval', status: 'Brier improvement 0.0153; 95% CI 0.0133–0.0173', measured: true },
-      { label: 'Calibration coverage', status: 'ECE passed 5 of 8 cells; 6 were required', measured: false },
-      { label: 'Population shift', status: 'Unseen-category and stability admission gates failed', measured: false },
+      { label: 'Frozen external evaluation', status: 'The candidate cleared the sufficient-cell predictive-skill comparison in the current retrospective report', measured: true },
+      { label: 'Calibration release gate', status: 'Required cohort calibration coverage did not clear the release threshold', measured: false },
+      { label: 'Population stability gate', status: 'Unseen-category and stability admission checks did not clear', measured: false },
+      { label: 'Prospective horizon maturity', status: 'Long-horizon outcomes are not mature enough for a release claim', measured: false },
     ],
   },
   career: {
     label: 'Career arc',
     question: 'What distribution of MLB value remains from this point forward?',
-    target: 'Joint distribution of playing time and value by age, including zero and early-exit outcomes.',
-    model: 'State-transition simulator with role, health, aging, and performance submodels.',
+    target: 'Final career WAR and peak-seven WAR distributions anchored to the value already recorded.',
+    model: 'Point-in-time MLB landmarks with player-equal weighting and paired terminal WAR and peak-seven scenarios.',
     evaluation: [
-      { label: 'Season landmarks', status: '118,184 feature and label rows built', measured: true },
-      { label: 'Censoring states', status: 'Recent careers remain right-censored', measured: true },
-      { label: 'WAR and playing-time error', status: 'Provider-versioned WAR backfill required', measured: false },
-      { label: 'Trajectory shape error', status: 'Awaiting joint career simulator', measured: false },
+      { label: 'Historical corpus', status: 'The provider-versioned MLB player-season corpus and positional standards are source-locked', measured: true },
+      { label: 'Point-in-time integrity', status: 'Active careers are masked and 2026 is scoring-only', measured: true },
+      { label: 'Development holdout', status: 'Player-disjoint chronological results are retrospective descriptive evidence, not a prospective test', measured: true },
+      { label: 'Current scoring refit', status: 'The 2022 refit is not cross-fitted or evaluated and cannot inherit tournament metrics', measured: false },
+      { label: 'Interval release gates', status: 'Final WAR, JAWS, and peak-seven interval gates have not all cleared for release', measured: false },
+      { label: 'Annual path coherence', status: 'Awaiting the opportunity, aging, and attrition simulator', measured: false },
     ],
   },
   hall: {
     label: 'HOF-caliber tail',
-    question: 'How often does the simulated career reach a historically elite performance shape?',
-    target: 'Performance-defined career tail, intentionally separate from eventual induction voting.',
-    model: 'Career simulation tail probability with era, position, and role normalization.',
+    question: 'How likely is the final career to reach the frozen position-specific JAWS standard?',
+    target: 'Statistical Hall caliber under Baseball-Reference career WAR, peak-seven WAR, and JAWS; induction voting is separate.',
+    model: 'Paired terminal WAR and peak-seven scenarios reweighted by a calibrated ensemble probability head; sparse tail support remains a research limitation.',
     evaluation: [
-      { label: 'Historical outcomes', status: 'Inductions observed; every non-inducted career remains censored', measured: true },
-      { label: 'Tail calibration', status: 'Awaiting career simulation paths', measured: false },
-      { label: 'Era and position stability', status: 'Required before release', measured: false },
-      { label: 'Decade backtests', status: 'Required before release', measured: false },
+      { label: 'Frozen statistical target', status: 'Ten exact positional JAWS references are source-locked', measured: true },
+      { label: 'Provisional entrant selection', status: 'Selection used a low-event development split and is not promotion evidence', measured: false },
+      { label: 'Development holdout', status: 'Retrospective holdout results are descriptive only and do not support a superiority claim', measured: false },
+      { label: 'Early Hall tail', status: 'Rare-event diagnostics failed; a learned elite-tail model with P95/P99 validation is still required', measured: false },
+      { label: 'Young high-performance gate', status: 'Two pitcher development slices did not clear; affected player forecasts are withheld', measured: false },
+      { label: 'Prospective track record', status: 'Required before any superiority or release claim', measured: false },
     ],
   },
 }
@@ -148,9 +152,10 @@ export function ModelLab() {
         </div>
         <ol>
           <li className="is-complete"><span>01</span><div><strong>Historical baseline</strong><small>Built and retained as the frozen benchmark</small></div></li>
-          <li className="is-current"><span>02</span><div><strong>Arrival candidate</strong><small>External skill confirmed; calibration and drift remediation active</small></div></li>
-          <li><span>03</span><div><strong>Career simulator</strong><small>Role, aging, attrition, and value paths</small></div></li>
-          <li><span>04</span><div><strong>Decision layer</strong><small>Watch triggers and forecast revisions</small></div></li>
+          <li className="is-current"><span>02</span><div><strong>Arrival candidate</strong><small>Retrospective skill observed; calibration and drift remediation active</small></div></li>
+          <li className="is-current"><span>03</span><div><strong>Career and JAWS baseline</strong><small>Paired terminal research distributions with active release gates</small></div></li>
+          <li><span>04</span><div><strong>Annual path simulator</strong><small>Opportunity, aging, attrition, and correlated value paths</small></div></li>
+          <li><span>05</span><div><strong>Decision layer</strong><small>Watch triggers and forecast revisions</small></div></li>
         </ol>
       </section>
     </main>

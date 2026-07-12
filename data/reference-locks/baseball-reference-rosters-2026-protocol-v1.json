@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "baseball-reference-rosters-protocol/v1",
+  "source": "baseball-reference-rosters",
+  "parserVersion": "baseball-reference-rosters/v1",
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "coverage": {
+    "season": 2026,
+    "expectedTeamCount": 30
+  },
+  "transport": {
+    "crawlDelayMs": 3200,
+    "maxAttempts": 3,
+    "oneWorker": true,
+    "acceptEncoding": "identity"
+  },
+  "resources": {
+    "teamDiscovery": "https://www.baseball-reference.com/leagues/majors/2026.shtml",
+    "teamRoster": "https://www.baseball-reference.com/teams/{team}/2026-roster.shtml#the40man"
+  },
+  "semantics": {
+    "snapshot": "Mutable in-season 40-man roster membership captured team by team; every output row carries the source page retrieval timestamp in known_at.",
+    "active": "is_active is the normalized Baseball-Reference #the40man is_active field and identifies the active MLB roster at retrieval time.",
+    "injuredList": "is_dl is the normalized Baseball-Reference #the40man is_dl field and identifies an injured-list designation at retrieval time.",
+    "rawRedistribution": false,
+    "globalSourceLockIsolation": "This reference protocol and its generated snapshot lock do not modify data/source-lock.json."
+  }
+}
