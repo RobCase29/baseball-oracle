@@ -196,10 +196,11 @@ def test_missing_debut_date_keeps_datetime_schema() -> None:
     assert pd.isna(labels.iloc[0]["debut_date"])
 
 
-def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
+def test_hall_of_fame_inductions_respect_cutoff_and_non_inducted_remain_censored() -> None:
     people = pd.DataFrame(
         [
             {"playerID": "inducted01", "bbrefID": "inducted01", "debut": "1980-04-01", "finalGame": "2000-09-30"},
+            {"playerID": "future01", "bbrefID": "future01", "debut": "1985-04-01", "finalGame": "2000-09-30"},
             {"playerID": "inactive01", "bbrefID": "inactive01", "debut": "1990-04-01", "finalGame": "2000-09-30"},
         ]
     )
@@ -209,6 +210,7 @@ def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
     batting = pd.DataFrame(
         [
             ["inducted01", "2000", 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ["future01", "2000", 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             ["inactive01", "2000", 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ],
         columns=batting_columns,
@@ -217,7 +219,20 @@ def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
         columns=["playerID", "yearID", "W", "L", "G", "GS", "CG", "SHO", "SV", "IPouts", "H", "ER", "HR", "BB", "SO"]
     )
     hall = pd.DataFrame(
-        [{"playerID": "inducted01", "inducted": "Y", "category": "Player"}]
+        [
+            {
+                "playerID": "inducted01",
+                "yearid": "2005",
+                "inducted": "Y",
+                "category": "Player",
+            },
+            {
+                "playerID": "future01",
+                "yearid": "2026",
+                "inducted": "Y",
+                "category": "Player",
+            },
+        ]
     )
 
     outcomes = aggregate_career_outcomes(
@@ -225,13 +240,60 @@ def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
         batting,
         pitching,
         hall,
-        {"inducted01": "uuid-1", "inactive01": "uuid-2"},
+        {"inducted01": "uuid-1", "future01": "uuid-2", "inactive01": "uuid-3"},
     ).set_index("lahman_id")
 
     assert outcomes.loc["inducted01", "hall_of_fame_inducted"]
     assert outcomes.loc["inducted01", "hall_of_fame_outcome_state"] == "inducted"
+    assert outcomes.loc["inducted01", "source_hall_of_fame_induction_year"] == 2005
+    assert pd.isna(outcomes.loc["future01", "hall_of_fame_inducted"])
+    assert (
+        outcomes.loc["future01", "hall_of_fame_outcome_state"]
+        == "inactive_not_inducted_censored"
+    )
+    assert outcomes.loc["future01", "source_hall_of_fame_induction_year"] == 2026
     assert pd.isna(outcomes.loc["inactive01", "hall_of_fame_inducted"])
     assert outcomes.loc["inactive01", "hall_of_fame_outcome_state"] == "inactive_not_inducted_censored"
+    assert pd.isna(outcomes.loc["inactive01", "source_hall_of_fame_induction_year"])
+
+
+def test_hall_of_fame_player_induction_requires_a_numeric_year() -> None:
+    people = pd.DataFrame(
+        [
+            {
+                "playerID": "inducted01",
+                "bbrefID": "inducted01",
+                "debut": "1980-04-01",
+                "finalGame": "2000-09-30",
+            }
+        ]
+    )
+    batting = pd.DataFrame(
+        [["inducted01", "2000", 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+        columns=[
+            "playerID", "yearID", "G", "AB", "R", "H", "2B", "3B", "HR", "RBI",
+            "SB", "BB", "SO", "HBP", "SF",
+        ],
+    )
+    pitching = pd.DataFrame(
+        columns=[
+            "playerID", "yearID", "W", "L", "G", "GS", "CG", "SHO", "SV",
+            "IPouts", "H", "ER", "HR", "BB", "SO",
+        ]
+    )
+    hall = pd.DataFrame(
+        [
+            {
+                "playerID": "inducted01",
+                "yearid": "not-a-year",
+                "inducted": "Y",
+                "category": "Player",
+            }
+        ]
+    )
+
+    with pytest.raises(ValueError, match="require a numeric yearid"):
+        aggregate_career_outcomes(people, batting, pitching, hall, {})
 
 
 def test_raw_input_verification_detects_post_acquisition_tampering(tmp_path) -> None:

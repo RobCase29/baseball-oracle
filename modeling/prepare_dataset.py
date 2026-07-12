@@ -655,10 +655,22 @@ def aggregate_career_outcomes(
     bat = bat.rename(columns={column: f"batting_{column.lower()}" for column in numeric_batting})
     pit = pitching.groupby("playerID", as_index=False)[numeric_pitching].sum()
     pit = pit.rename(columns={column: f"pitching_{column.lower()}" for column in numeric_pitching})
-    inducted = set(
-        hall.loc[
-            (hall.get("inducted") == "Y") & (hall.get("category") == "Player"), "playerID"
-        ].dropna()
+    player_inductions = hall.loc[
+        (hall.get("inducted") == "Y") & (hall.get("category") == "Player")
+    ].copy()
+    if not player_inductions.empty and "yearid" not in player_inductions:
+        raise ValueError("Hall of Fame player induction rows require a numeric yearid")
+    player_inductions["source_hall_of_fame_induction_year"] = pd.to_numeric(
+        player_inductions.get("yearid"), errors="coerce"
+    )
+    if player_inductions["source_hall_of_fame_induction_year"].isna().any():
+        raise ValueError("Hall of Fame player induction rows require a numeric yearid")
+    induction_year_by_player = (
+        player_inductions.dropna(subset=["playerID"])
+        .groupby("playerID")["source_hall_of_fame_induction_year"]
+        .min()
+        .astype(int)
+        .to_dict()
     )
     latest_batting = pd.to_numeric(batting["yearID"], errors="coerce").groupby(batting["playerID"]).max()
     latest_pitching = pd.to_numeric(pitching["yearID"], errors="coerce").groupby(pitching["playerID"]).max()
@@ -666,10 +678,15 @@ def aggregate_career_outcomes(
     outcomes = people[["playerID", "bbrefID", "debut", "finalGame"]].copy()
     outcomes = outcomes.merge(bat, on="playerID", how="left").merge(pit, on="playerID", how="left")
     outcomes["last_observed_season"] = outcomes["playerID"].map(latest_season)
+    outcomes["source_hall_of_fame_induction_year"] = pd.array(
+        outcomes["playerID"].map(induction_year_by_player), dtype="Int64"
+    )
     outcomes["hall_of_fame_outcome_state"] = "active_or_recent_not_inducted_censored"
     inactive = outcomes["last_observed_season"].le(int(DATA_CUTOFF[:4]) - 5)
     outcomes.loc[inactive, "hall_of_fame_outcome_state"] = "inactive_not_inducted_censored"
-    inducted_mask = outcomes["playerID"].isin(inducted)
+    inducted_mask = outcomes["source_hall_of_fame_induction_year"].le(
+        int(DATA_CUTOFF[:4])
+    ).fillna(False)
     outcomes.loc[inducted_mask, "hall_of_fame_outcome_state"] = "inducted"
     outcomes["hall_of_fame_inducted"] = pd.Series(pd.NA, index=outcomes.index, dtype="boolean")
     outcomes.loc[inducted_mask, "hall_of_fame_inducted"] = True
