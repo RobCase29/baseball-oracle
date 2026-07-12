@@ -24,11 +24,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 try:
-    from modeling.arrival_corpus import CORPUS_SCHEMA_VERSION
+    from modeling.arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
     from modeling.contracts import SURVIVAL_HORIZON_MONTHS
     from modeling.provenance import file_sha256, json_sha256, producer_metadata
 except ModuleNotFoundError:
-    from arrival_corpus import CORPUS_SCHEMA_VERSION
+    from arrival_corpus import CORPUS_SCHEMA_VERSION, corpus_stable_content
     from contracts import SURVIVAL_HORIZON_MONTHS
     from provenance import file_sha256, json_sha256, producer_metadata
 
@@ -131,21 +131,12 @@ def load_arrival_corpus(
     outputs = manifest.get("outputs")
     if not isinstance(inputs, list) or not isinstance(outputs, dict):
         raise PopulationTrainingError("Arrival corpus manifest is incomplete")
-    stable_content = {
-        "schema_version": manifest["schema_version"],
-        "data_cutoff": manifest["data_cutoff"],
-        "snapshot_policy": manifest["snapshot_policy"],
-        "input_dataset_content_sha256": [
-            item["dataset_content_sha256"] for item in inputs
-        ],
-        "raw_archive_manifest_sha256": [
-            item["archive"]["raw_archive_manifest_sha256"] for item in inputs
-        ],
-        "outputs": {
-            name: {"rows": output["rows"], "sha256": output["sha256"]}
-            for name, output in outputs.items()
-        },
-    }
+    try:
+        stable_content = corpus_stable_content(manifest)
+    except (KeyError, TypeError, ValueError) as error:
+        raise PopulationTrainingError(
+            "Arrival corpus stable content is incomplete"
+        ) from error
     if json_sha256(stable_content) != manifest.get("corpus_content_sha256"):
         raise PopulationTrainingError("Arrival corpus stable content address is invalid")
 
@@ -819,6 +810,8 @@ def release_gate_diagnostics(folds: list[dict[str, Any]]) -> dict[str, Any]:
             "No chronological calibration block has been frozen.",
             "No prospective holdout manifest has been locked.",
             "Monthly hazards and censoring-aware partial-follow-up metrics are pending.",
+            "A censoring-aware baseline and paired player-cluster skill intervals are pending.",
+            "Cold-start and rare-event observed/expected gates are pending.",
             "Context normalization and missing-feature stress tests are pending.",
         ],
     }

@@ -346,7 +346,7 @@ def test_bref_release_blockers_name_missing_season_lock_lineage() -> None:
         unresolved_identity_rows=0,
     )
 
-    assert any("parser-v4 season archive lock" in blocker for blocker in blockers)
+    assert any("versioned season archive lock" in blocker for blocker in blockers)
     assert not any("identities are unresolved" in blocker for blocker in blockers)
     assert not any("acquisition source lock" in blocker for blocker in blockers)
 
@@ -408,6 +408,12 @@ def test_baseball_reference_adapter_builds_an_explicit_appearance_cohort() -> No
     assert validated_seasons.iloc[0]["stats_through"] == pd.Timestamp("2022-09-20")
     assert set(validated_roster["organization"]) == {"NYY", "COOP | NYY"}
     assert metadata.attrs["adapter_quality"]["excluded_zero_game_roster_rows"] == 1
+    assert metadata.iloc[0]["expected_team_count"] == 2
+    assert metadata.iloc[0]["observed_team_count"] == 2
+    assert metadata.attrs["adapter_quality"]["source_declared_team_count"] == 2
+    assert metadata.attrs["adapter_quality"]["source_observed_team_pages"] == 2
+    assert metadata.attrs["adapter_quality"]["appearance_data_team_count"] == 2
+    assert metadata.attrs["adapter_quality"]["declared_no_record_teams"] == 0
 
     snapshots, risk_quality = build_affiliated_risk_set(
         metadata,
@@ -502,6 +508,174 @@ def test_baseball_reference_adapter_rejects_partial_team_backfills() -> None:
             bref_quality(complete=False),
             bref_teams().iloc[[0]],
             bref_team_organizations().iloc[[0]],
+        )
+
+
+def test_baseball_reference_adapter_preserves_declared_no_record_page_coverage() -> None:
+    teams = bref_teams().assign(activity_status="observed")
+    teams = pd.concat(
+        [
+            teams,
+            pd.DataFrame(
+                [
+                    {
+                        "season": "2022",
+                        "team_id": "RK-NYY",
+                        "organization": "NYY",
+                        "level": "Rk",
+                        "source_url": (
+                            "https://www.baseball-reference.com/register/team.cgi?"
+                            "id=RK-NYY"
+                        ),
+                        "activity_status": "declared_no_record",
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    organizations = pd.concat(
+        [
+            bref_team_organizations(),
+            pd.DataFrame(
+                [
+                    {
+                        "season": "2022",
+                        "team_id": "RK-NYY",
+                        "organization": "NYY",
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    quality = bref_quality()
+    quality.update(
+        {
+            "declaredTeamCount": 3,
+            "observedTeamCount": 3,
+            "appearanceDataTeamCount": 2,
+            "declaredNoRecordTeamCount": 1,
+        }
+    )
+
+    metadata, roster, seasons = canonicalize_baseball_reference_appearances(
+        bref_player_team_seasons(),
+        quality,
+        teams,
+        organizations,
+    )
+    validated_metadata, validated_roster, _ = validate_canonical_inputs(
+        metadata,
+        roster,
+        seasons,
+    )
+
+    assert validated_metadata.iloc[0]["expected_team_count"] == 2
+    assert validated_metadata.iloc[0]["observed_team_count"] == 2
+    assert set(validated_roster["team_id"]) == {"AA-NYY", "AAA-NYY"}
+    assert metadata.attrs["adapter_quality"]["source_declared_team_count"] == 3
+    assert metadata.attrs["adapter_quality"]["source_observed_team_pages"] == 3
+    assert metadata.attrs["adapter_quality"]["appearance_data_team_count"] == 2
+    assert metadata.attrs["adapter_quality"]["declared_no_record_teams"] == 1
+
+
+def test_baseball_reference_adapter_rejects_rows_for_declared_no_record_team() -> None:
+    teams = bref_teams().assign(activity_status="observed")
+    teams.loc[teams["team_id"].eq("AAA-NYY"), "activity_status"] = (
+        "declared_no_record"
+    )
+    quality = bref_quality()
+    quality.update(
+        {
+            "appearanceDataTeamCount": 1,
+            "declaredNoRecordTeamCount": 1,
+        }
+    )
+    rows = bref_player_team_seasons()
+    for column in [
+        "batting_G",
+        "batting_PA",
+        "batting_AB",
+        "batting_H",
+        "batting_2B",
+        "batting_3B",
+        "batting_HR",
+        "batting_BB",
+        "batting_SO",
+        "batting_SB",
+        "batting_SF",
+    ]:
+        rows.loc[rows["team_id"].eq("AAA-NYY"), column] = "0"
+
+    with pytest.raises(
+        RiskSetContractError,
+        match="declared_no_record teams must have zero participant rows",
+    ):
+        canonicalize_baseball_reference_appearances(
+            rows,
+            quality,
+            teams,
+            bref_team_organizations(),
+        )
+
+
+def test_baseball_reference_adapter_requires_every_active_team_to_participate() -> None:
+    teams = pd.concat(
+        [
+            bref_teams().assign(activity_status="observed"),
+            pd.DataFrame(
+                [
+                    {
+                        "season": "2022",
+                        "team_id": "RK-NYY",
+                        "organization": "NYY",
+                        "level": "Rk",
+                        "source_url": (
+                            "https://www.baseball-reference.com/register/team.cgi?"
+                            "id=RK-NYY"
+                        ),
+                        "activity_status": "observed",
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    organizations = pd.concat(
+        [
+            bref_team_organizations(),
+            pd.DataFrame(
+                [
+                    {
+                        "season": "2022",
+                        "team_id": "RK-NYY",
+                        "organization": "NYY",
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    quality = bref_quality()
+    quality.update(
+        {
+            "declaredTeamCount": 3,
+            "observedTeamCount": 3,
+            "appearanceDataTeamCount": 3,
+            "declaredNoRecordTeamCount": 0,
+        }
+    )
+
+    with pytest.raises(
+        RiskSetContractError,
+        match="Participant team IDs must exactly match teams with activity_status=observed",
+    ):
+        canonicalize_baseball_reference_appearances(
+            bref_player_team_seasons(),
+            quality,
+            teams,
+            organizations,
         )
 
 

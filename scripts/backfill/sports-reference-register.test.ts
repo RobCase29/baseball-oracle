@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   CRAWL_DELAY_MS,
   MAX_RETRY_AFTER_MS,
+  PARSER_VERSION,
   acquireAcquisitionLock,
   normalizePlayerTeamSeasons,
   parseAffiliatePage,
@@ -56,6 +57,15 @@ const teamHtml = `<!doctype html><html><body>
     <th data-stat="player"><a href="/register/player.fcgi?id=pitch-001pat">Pat Pitcher</a></th>
     <td data-stat="G">24</td><td data-stat="Inn_def">130.1</td>
   </tr></tbody></table>
+</body></html>`
+
+const noRecordTeamHtml = `<!doctype html><html><body>
+  <div id="meta"><h1><span>2017</span><span>Iowa Cubs</span></h1>
+    <p><strong>Classification</strong>: AAA</p>
+    <p><strong>League</strong>: <a>Pacific Coast League</a> (American Northern)</p>
+    <p><strong>Affiliation</strong>: <a>Chicago Cubs</a> (NL)</p>
+    <p><strong>Record</strong>: N/A</p>
+  </div>
 </body></html>`
 
 const temporaryDirectories: string[] = []
@@ -155,6 +165,7 @@ describe('Baseball-Reference Register parser', () => {
     const page = parseTeamPage(teamHtml, discovery(), 2017)
     const players = normalizePlayerTeamSeasons(page)
 
+    expect(page.team.activityStatus).toBe('observed')
     expect(page.batting).toHaveLength(1)
     expect(page.pitching).toHaveLength(1)
     expect(page.fielding).toHaveLength(2)
@@ -174,6 +185,56 @@ describe('Baseball-Reference Register parser', () => {
         batting_PA: '500',
       }),
     ])
+  })
+
+  it('reconciles an explicit Record: N/A page without inventing participants', () => {
+    const page = parseTeamPage(noRecordTeamHtml, discovery(), 2017)
+
+    expect(page.team.activityStatus).toBe('declared_no_record')
+    expect(page.roster).toEqual([])
+    expect(page.batting).toEqual([])
+    expect(page.pitching).toEqual([])
+    expect(page.fielding).toEqual([])
+    expect(normalizePlayerTeamSeasons(page)).toEqual([])
+  })
+
+  it('rejects partial tables and unlabeled all-table loss', () => {
+    expect(() =>
+      parseTeamPage(
+        noRecordTeamHtml.replace(
+          '</body>',
+          '<table id="team_pitching"><tbody></tbody></table></body>',
+        ),
+        discovery(),
+        2017,
+      ),
+    ).toThrow('missing required tables: standard_roster, team_batting')
+
+    expect(() =>
+      parseTeamPage(
+        noRecordTeamHtml.replace(
+          '</body>',
+          '<table id="team_fielding_P"><tbody></tbody></table></body>',
+        ),
+        discovery(),
+        2017,
+      ),
+    ).toThrow(
+      'missing required tables: standard_roster, team_batting, team_pitching',
+    )
+
+    expect(() =>
+      parseTeamPage(
+        noRecordTeamHtml.replace(
+          '<p><strong>Record</strong>: N/A</p>',
+          '<p><strong>Record</strong>: 0-0</p>',
+        ),
+        discovery(),
+        2017,
+      ),
+    ).toThrow(
+      'missing required tables: standard_roster, team_batting, team_pitching',
+    )
   })
 
   it('rejects every non-header player row without one accepted Register ID', () => {
@@ -458,11 +519,13 @@ describe('bounded resumable backfill', () => {
     )
     const payload = await readFile(payloadPath)
     expect(payload.equals(Buffer.from(teamHtml))).toBe(true)
+    const requestManifestPath = path.join(path.dirname(payloadPath), 'manifest.json')
     const requestManifest = JSON.parse(
-      await readFile(path.join(path.dirname(payloadPath), 'manifest.json'), 'utf8'),
-    ) as { sha256: string; byteLength: number }
+      await readFile(requestManifestPath, 'utf8'),
+    ) as { sha256: string; byteLength: number; parserVersion: string }
     expect(requestManifest.sha256).toBe(createHash('sha256').update(payload).digest('hex'))
     expect(requestManifest.byteLength).toBe(payload.byteLength)
+    expect(requestManifest.parserVersion).toBe(PARSER_VERSION)
     expect(await readFile(path.join(rootDir, 'data/processed/baseball-reference-register/2017/roster.csv'), 'utf8')).toContain('ramir-001jos')
     expect(await readFile(path.join(rootDir, 'data/processed/baseball-reference-register/2017/player_team_seasons.json'), 'utf8')).toContain('pitch-001pat')
     const quality = JSON.parse(
@@ -470,12 +533,24 @@ describe('bounded resumable backfill', () => {
         path.join(rootDir, 'data/processed/baseball-reference-register/2017/quality.json'),
         'utf8',
       ),
-    ) as { censusAttested: boolean; censusAttestationReason: string }
+    ) as {
+      censusAttested: boolean
+      censusAttestationReason: string
+      observedTeamCount: number
+      appearanceDataTeamCount: number
+      declaredNoRecordTeamCount: number
+    }
     expect(quality).toMatchObject({
       censusAttested: false,
+      observedTeamCount: 1,
+      appearanceDataTeamCount: 1,
+      declaredNoRecordTeamCount: 0,
       censusAttestationReason:
         'Complete team pages establish a season-appearance population, not a contracted roster census; zero-appearance players may be absent.',
     })
+
+    requestManifest.parserVersion = 'baseball-reference-register/v4'
+    await writeFile(requestManifestPath, `${JSON.stringify(requestManifest, null, 2)}\n`)
 
     const resumed = await runBackfill({
       rootDir,
@@ -497,6 +572,69 @@ describe('bounded resumable backfill', () => {
     expect(resumedManifest.inputCount).toBe(2)
     expect(resumedManifest.liveRequestCount).toBe(0)
     expect(resumedManifest.requests).toHaveLength(2)
+  })
+
+  it('writes explicit no-record team coverage without player rows', async () => {
+    const rootDir = await projectRoot()
+    const responses = [affiliateHtml, noRecordTeamHtml]
+    let calls = 0
+
+    const result = await runBackfill({
+      rootDir,
+      season: 2017,
+      maxTeams: 1,
+      execute: true,
+      fetchImpl: async () =>
+        new Response(responses[calls++], {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        }),
+      sleep: async () => undefined,
+      log: () => undefined,
+    })
+
+    expect(result.status).toBe('complete')
+    const teams = JSON.parse(
+      await readFile(
+        path.join(
+          rootDir,
+          'data/processed/baseball-reference-register/2017/teams.json',
+        ),
+        'utf8',
+      ),
+    ) as Array<{ team_id: string; activity_status: string }>
+    expect(teams).toEqual([
+      expect.objectContaining({
+        team_id: TEAM_ID,
+        activity_status: 'declared_no_record',
+      }),
+    ])
+    const participants = JSON.parse(
+      await readFile(
+        path.join(
+          rootDir,
+          'data/processed/baseball-reference-register/2017/player_team_seasons.json',
+        ),
+        'utf8',
+      ),
+    ) as unknown[]
+    expect(participants).toEqual([])
+    const quality = JSON.parse(
+      await readFile(
+        path.join(
+          rootDir,
+          'data/processed/baseball-reference-register/2017/quality.json',
+        ),
+        'utf8',
+      ),
+    ) as Record<string, unknown>
+    expect(quality).toMatchObject({
+      declaredTeamCount: 1,
+      observedTeamCount: 1,
+      appearanceDataTeamCount: 0,
+      declaredNoRecordTeamCount: 1,
+      complete: true,
+    })
   })
 
   it('retries transient responses with backoff and records the successful attempt count', async () => {

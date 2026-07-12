@@ -74,8 +74,17 @@ def _write_corpus_fixture(root: Path) -> tuple[Path, dict]:
     }
     inputs = [
         {
+            "season": 2018,
             "dataset_content_sha256": "a" * 64,
-            "archive": {"raw_archive_manifest_sha256": "b" * 64},
+            "archive": {
+                "raw_archive_manifest_sha256": "b" * 64,
+                "source_adapter_coverage": {
+                    "declared_team_pages": 1,
+                    "observed_team_pages": 1,
+                    "appearance_data_team_pages": 1,
+                    "declared_no_record_team_pages": 0,
+                },
+            },
         }
     ]
     stable_content = {
@@ -84,6 +93,15 @@ def _write_corpus_fixture(root: Path) -> tuple[Path, dict]:
         "snapshot_policy": "synthetic-effective-time-policy",
         "input_dataset_content_sha256": ["a" * 64],
         "raw_archive_manifest_sha256": ["b" * 64],
+        "source_adapter_coverage": [
+            {
+                "season": 2018,
+                "declared_team_pages": 1,
+                "observed_team_pages": 1,
+                "appearance_data_team_pages": 1,
+                "declared_no_record_team_pages": 0,
+            }
+        ],
         "outputs": {
             name: {"rows": output["rows"], "sha256": output["sha256"]}
             for name, output in outputs.items()
@@ -386,5 +404,29 @@ def test_rejects_tampered_corpus_manifest(tmp_path: Path) -> None:
     with pytest.raises(
         PopulationTrainingError,
         match="Arrival corpus manifest content address is invalid",
+    ):
+        load_arrival_corpus(manifest_path)
+
+
+def test_rejects_source_coverage_outside_corpus_content_address(
+    tmp_path: Path,
+) -> None:
+    manifest_path, manifest = _write_corpus_fixture(tmp_path)
+    manifest["inputs"][0]["archive"]["source_adapter_coverage"][
+        "declared_no_record_team_pages"
+    ] = 1
+    manifest["manifest_sha256"] = json_sha256(
+        {key: value for key, value in manifest.items() if key != "manifest_sha256"}
+    )
+    body = json.dumps(manifest, indent=2) + "\n"
+    manifest_path.write_text(body)
+    archived_manifest = (
+        tmp_path / "manifests" / f"{manifest['manifest_sha256']}.json"
+    )
+    archived_manifest.write_text(body)
+
+    with pytest.raises(
+        PopulationTrainingError,
+        match="Arrival corpus stable content address is invalid",
     ):
         load_arrival_corpus(manifest_path)

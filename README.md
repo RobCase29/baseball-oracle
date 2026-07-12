@@ -44,6 +44,13 @@ trains separate hitter and pitcher hazards:
 npm run model:population:all
 ```
 
+The current verified corpus covers every nonzero affiliated season from 2010
+through 2019: 69,326 eligible player-season snapshots, 24,406 players, and 9,832
+MLB debuts within 60 months. The research benchmark beats its hierarchical
+age-level-role comparator on all 35 supported forward fold-horizons, but remains
+unpublished because long-horizon and cold-start calibration, context normalization,
+and a locked prospective holdout are still pending.
+
 Raw data, derived Parquet files, and model artifacts stay local and are ignored by
 Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the code,
 environment lock, and database lineage schema are versioned. Preparation verifies

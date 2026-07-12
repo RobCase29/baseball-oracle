@@ -18,7 +18,7 @@ const { JSDOM } = require('jsdom') as {
 }
 
 export const SOURCE_SLUG = 'baseball-reference-register'
-export const PARSER_VERSION = 'baseball-reference-register/v4'
+export const PARSER_VERSION = 'baseball-reference-register/v5'
 export const STATE_SCHEMA_VERSION = 'baseball-reference-register-state/v1'
 export const REQUEST_SCHEMA_VERSION = 'baseball-reference-register-request/v1'
 export const RUN_SCHEMA_VERSION = 'baseball-reference-register-run/v1'
@@ -34,6 +34,10 @@ export const MAX_RETRY_AFTER_MS = 5 * 60_000
 const BASE_URL = 'https://www.baseball-reference.com'
 const TEAM_ID_PATTERN = /^[0-9a-f]{8}$/
 const PLAYER_ID_PATTERN = /^[a-z0-9-]{11,12}$/
+const COMPATIBLE_REQUEST_PARSER_VERSIONS = new Set<string>([
+  'baseball-reference-register/v4',
+  PARSER_VERSION,
+])
 const STRUCTURAL_2020_REASON =
   'The affiliated Minor League Baseball season was canceled; zero team-season pages are expected.'
 
@@ -62,6 +66,7 @@ export interface ParsedTeamPage {
     season: number
     classification: string
     league: string
+    activityStatus: 'observed' | 'declared_no_record'
   }
   roster: TableRow[]
   batting: TableRow[]
@@ -111,7 +116,7 @@ interface RequestReceipt {
   sha256: string
   mediaType: string
   payloadPath: string
-  parserVersion: typeof PARSER_VERSION
+  parserVersion: string
   permissionEvidence: PermissionEvidence
 }
 
@@ -497,7 +502,7 @@ export function parseTeamPage(
   const classification = labeledMeta(main, 'Classification') || discovery.level
   const league = labeledMeta(main, 'League')
   const affiliation = labeledMeta(main, 'Affiliation')
-  const team = {
+  const teamBase = {
     ...discovery,
     season,
     teamName,
@@ -509,29 +514,43 @@ export function parseTeamPage(
     season: String(season),
     team_id: discovery.teamId,
     team_name: teamName,
-    organization: team.organization,
+    organization: teamBase.organization,
     level: classification,
     league,
   }
   const rosterTable = findTable(documents, 'standard_roster')
   const battingTable = findTable(documents, 'team_batting')
   const pitchingTable = findTable(documents, 'team_pitching')
+  const fieldingTables = allTables(documents, 'table[id^="team_fielding_"]')
   if (!rosterTable || !battingTable || !pitchingTable) {
     const missing = [
       !rosterTable && 'standard_roster',
       !battingTable && 'team_batting',
       !pitchingTable && 'team_pitching',
     ].filter(Boolean)
+    const declaredNoRecord =
+      labeledMeta(main, 'Record') === 'N/A' &&
+      missing.length === 3 &&
+      fieldingTables.length === 0
+    if (declaredNoRecord) {
+      return {
+        team: { ...teamBase, activityStatus: 'declared_no_record' },
+        roster: [],
+        batting: [],
+        pitching: [],
+        fielding: [],
+      }
+    }
     throw new Error(`Team ${discovery.teamId} is missing required tables: ${missing.join(', ')}`)
   }
-  const fielding = allTables(documents, 'table[id^="team_fielding_"]').flatMap((table) =>
+  const fielding = fieldingTables.flatMap((table) =>
     parseTable(table, {
       ...base,
       position: table.id.replace('team_fielding_', ''),
     }),
   )
   return {
-    team,
+    team: { ...teamBase, activityStatus: 'observed' },
     roster: parseTable(rosterTable, base),
     batting: parseTable(battingTable, base),
     pitching: parseTable(pitchingTable, base),
@@ -803,7 +822,8 @@ async function readCachedRequest(
     !receipt.mediaType?.includes('html') ||
     receipt.payloadPath !== expectedPayloadPath ||
     receipt.byteLength !== body.byteLength ||
-    receipt.sha256 !== sha256(body)
+    receipt.sha256 !== sha256(body) ||
+    !COMPATIBLE_REQUEST_PARSER_VERSIONS.has(receipt.parserVersion)
   ) {
     throw new Error(`Immutable request cache failed verification: ${receipt.payloadPath}`)
   }
@@ -1085,6 +1105,7 @@ async function writeNormalizedOutputs(
       level: page.team.classification,
       league: page.team.league,
       league_abbreviation: page.team.leagueAbbreviation,
+      activity_status: page.team.activityStatus,
       source_url: page.team.url,
     })),
     team_organizations: pages.flatMap((page) =>
@@ -1122,6 +1143,12 @@ async function writeNormalizedOutputs(
       })
     }
   }
+  const appearanceDataTeamCount = pages.filter(
+    (page) => page.team.activityStatus === 'observed',
+  ).length
+  const declaredNoRecordTeamCount = pages.filter(
+    (page) => page.team.activityStatus === 'declared_no_record',
+  ).length
   const quality = {
     schemaVersion: 'baseball-reference-register-quality/v1',
     season: state.season,
@@ -1132,7 +1159,9 @@ async function writeNormalizedOutputs(
     sharedAffiliateTeamCount: state.teams.filter(
       (team) => teamOrganizations(team).length > 1,
     ).length,
-    observedTeamCount: state.teams.filter((team) => team.status === 'succeeded').length,
+    observedTeamCount: pages.length,
+    appearanceDataTeamCount,
+    declaredNoRecordTeamCount,
     complete:
       state.structuralZeroSeason ||
       (state.declaredTeamCount !== null &&

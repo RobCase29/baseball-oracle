@@ -837,7 +837,7 @@ def affiliated_release_blockers(
     blockers = [
         (
             "Baseball-Reference prepared inputs are content-hashed, but this "
-            "dataset manifest does not yet verify their parser-v4 season archive lock."
+            "dataset manifest does not yet verify their matching versioned season archive lock."
             if using_bref_adapter
             else "Canonical MiLB inputs are content-hashed but are not yet verified "
             "by the acquisition source lock."

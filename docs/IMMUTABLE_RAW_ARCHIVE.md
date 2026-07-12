@@ -45,18 +45,24 @@ c5df36a9e3cc552c06af1c85468e93910efa695ec2bc9c8c39759eb2faf50743
 Completed Baseball-Reference history is archived separately. The current
 historical archive contains:
 
-| Season | Source pages | Source bytes | Season manifest |
+| Season | Archived inputs | Source bytes | Season manifest |
 | ---: | ---: | ---: | --- |
 | 2010 | 229 | 88,230,722 | `f535646fa3029f67b60e1d0f917e733407618719bd7382817db5214346a34363` |
+| 2011 | 228 | 87,784,078 | `48e38cebb3cd9cad326dd0f5d0000087364941729267a82f27d6d58e2cfe7cc1` |
+| 2012 | 227 | 88,092,610 | `942415f6bb8ac2d828e4ece2e6c50822cefacf9aab35ee98990e6b779b704502` |
+| 2013 | 230 | 88,997,338 | `598c2240dfdfce8b640821bdac85f1790e09d491c32409e58fea8a8b8e78b18f` |
+| 2014 | 231 | 90,335,270 | `89a75272d7d19e36588cce8ea45e7e5218d6d7410d17e1254c7950dfd9284ad6` |
+| 2015 | 234 | 92,217,422 | `8a7165bef72da3dc9ced554ae6de4cb7e323ff8d3faeedd970c05e921aab058b` |
+| 2016 | 234 | 93,448,455 | `5a02ae9c8345cda8f1941ce8e0afcc21ee158a80530e136ffa31129d6f9dd050` |
 | 2017 | 233 | 93,988,604 | `ccd39a256d19e6fc0597cb220c497f127fdaf0ddda0600bef6d4abab8aa5ca54` |
 | 2018 | 241 | 97,840,369 | `931bad5218f62b80d92d4c4a376eced68c5e6ae6256413377818027b62c7cc19` |
 | 2019 | 245 | 100,429,356 | `f7f7bd909c0e7dc5a26926afb7092ecd9ab2a114bc4a4a2a34c380138130a3be` |
 | 2020 | 0 | 0 | `107885d401f5f5a742dd245620457a0f366e96b629fedc3c9b75bb4877778049` |
 
-The committed season locks point only to complete parser-v4 runs. Earlier season
-manifests remain preserved as superseded evidence. Across the locked corpus, raw
-pages, and every manifest version, the remote `raw/v1/` inventory is 1,010
-private objects and 545,732,908 bytes.
+The committed season locks point only to complete supported parser runs. Earlier
+season manifests remain preserved as superseded evidence. The current locks cover
+2,332 archived inputs and 921,364,224 source bytes; the private remote inventory also
+contains their content-addressed manifests and preserved superseded evidence.
 
 Replaying the command is checkpointed and does not upload or create a second
 manifest for an already-complete acquisition:

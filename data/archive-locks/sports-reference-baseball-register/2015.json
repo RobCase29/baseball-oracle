@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "baseball-reference-register-archive-lock/v1",
+  "season": 2015,
+  "sourceRunManifest": {
+    "path": "data/manifests/runs/2026-07-12T114338010Z-7366-4a9d3c13-baseball-reference-register-2015.json",
+    "sha256": "49558508a14c0b2a5eba801413c08083609ddd0d5af7b79de1fa88a1b2c562a2"
+  },
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "coverage": {
+    "structuralZeroSeason": false,
+    "structuralReason": null,
+    "declaredTeams": 233,
+    "affiliateSlots": 233,
+    "discoveredTeams": 233,
+    "completedTeams": 233,
+    "failedTeams": 0
+  },
+  "inputCount": 234,
+  "inputBytes": 92217422,
+  "manifest": {
+    "sha256": "8a7165bef72da3dc9ced554ae6de4cb7e323ff8d3faeedd970c05e921aab058b",
+    "byteLength": 286336,
+    "mediaType": "application/json",
+    "pathname": "raw/v1/sports-reference/baseball-register/sha256/8a/8a7165bef72da3dc9ced554ae6de4cb7e323ff8d3faeedd970c05e921aab058b",
+    "storageStatus": "created",
+    "archivedAt": "2026-07-12T11:57:11.199Z"
+  }
+}

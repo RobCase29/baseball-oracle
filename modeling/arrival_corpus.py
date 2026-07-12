@@ -27,7 +27,13 @@ SNAPSHOT_OUTPUT = "affiliated_risk_set_snapshots"
 LABEL_OUTPUT = "affiliated_arrival_labels"
 ARCHIVE_LOCK_SCHEMA = "baseball-reference-register-archive-lock/v1"
 SOURCE_RUN_SCHEMA = "baseball-reference-register-run/v1"
-SOURCE_RUN_PARSER = "baseball-reference-register/v4"
+SOURCE_RUN_PARSER = "baseball-reference-register/v5"
+SUPPORTED_SOURCE_RUN_PARSERS = frozenset(
+    {
+        "baseball-reference-register/v4",
+        SOURCE_RUN_PARSER,
+    }
+)
 RISK_SET_CONTRACT = "affiliated-player-census-v3"
 RISK_SET_POLICY = "explicit_pooled_context_effective_time_safe_v3"
 EXPECTED_RISK_SET_INPUTS = {
@@ -59,6 +65,46 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 class ArrivalCorpusError(ValueError):
     pass
+
+
+def corpus_stable_content(manifest: dict[str, Any]) -> dict[str, Any]:
+    inputs = manifest.get("inputs")
+    outputs = manifest.get("outputs")
+    if not isinstance(inputs, list) or not isinstance(outputs, dict):
+        raise ArrivalCorpusError("Population corpus manifest is incomplete")
+    ordered_inputs = sorted(inputs, key=lambda item: int(item["season"]))
+    stable_content: dict[str, Any] = {
+        "schema_version": manifest.get("schema_version"),
+        "data_cutoff": manifest.get("data_cutoff"),
+        "snapshot_policy": manifest.get("snapshot_policy"),
+        "input_dataset_content_sha256": [
+            item["dataset_content_sha256"] for item in ordered_inputs
+        ],
+        "raw_archive_manifest_sha256": [
+            item["archive"]["raw_archive_manifest_sha256"]
+            for item in ordered_inputs
+        ],
+        "outputs": {
+            name: {"rows": output.get("rows"), "sha256": output.get("sha256")}
+            for name, output in outputs.items()
+            if isinstance(output, dict)
+        },
+    }
+    source_coverage = [
+        {
+            "season": item["season"],
+            **item["archive"]["source_adapter_coverage"],
+        }
+        for item in ordered_inputs
+        if isinstance(item.get("archive", {}).get("source_adapter_coverage"), dict)
+    ]
+    if source_coverage:
+        if len(source_coverage) != len(ordered_inputs):
+            raise ArrivalCorpusError(
+                "Population corpus source coverage is missing for one or more seasons"
+            )
+        stable_content["source_adapter_coverage"] = source_coverage
+    return stable_content
 
 
 def _portable_path(path: Path, root: Path) -> str:
@@ -198,7 +244,7 @@ def verify_season_archive_lineage(
         run.get("schemaVersion") != SOURCE_RUN_SCHEMA
         or run.get("source") != "baseball-reference-register"
         or run.get("season") != season
-        or run.get("parserVersion") != SOURCE_RUN_PARSER
+        or run.get("parserVersion") not in SUPPORTED_SOURCE_RUN_PARSERS
         or run.get("status") != "complete"
     ):
         raise ArrivalCorpusError(f"Source run is not complete for season {season}")
@@ -211,6 +257,42 @@ def verify_season_archive_lineage(
         or coverage.get("completedTeams") != coverage.get("declaredTeams")
     ):
         raise ArrivalCorpusError(f"Source run coverage is incomplete for season {season}")
+
+    risk_quality = risk_set.get("quality")
+    if not isinstance(risk_quality, dict):
+        risk_quality = {}
+    adapter_quality = risk_quality.get("source_adapter_quality")
+    if not isinstance(adapter_quality, dict):
+        adapter_quality = {}
+    declared_team_pages = int(coverage["declaredTeams"])
+    observed_team_pages = int(coverage["completedTeams"])
+    appearance_data_team_pages = int(
+        adapter_quality.get(
+            "appearance_data_team_count",
+            adapter_quality.get("observed_team_rows", observed_team_pages),
+        )
+    )
+    declared_no_record_team_pages = int(
+        adapter_quality.get(
+            "declared_no_record_teams",
+            observed_team_pages - appearance_data_team_pages,
+        )
+    )
+    if (
+        min(
+            declared_team_pages,
+            observed_team_pages,
+            appearance_data_team_pages,
+            declared_no_record_team_pages,
+        )
+        < 0
+        or observed_team_pages != declared_team_pages
+        or appearance_data_team_pages + declared_no_record_team_pages
+        != observed_team_pages
+    ):
+        raise ArrivalCorpusError(
+            f"Source adapter team coverage does not reconcile for season {season}"
+        )
 
     permission = lock.get("permissionEvidence")
     if not isinstance(permission, dict) or not isinstance(permission.get("path"), str):
@@ -298,6 +380,12 @@ def verify_season_archive_lineage(
         "raw_archive_input_count": lock.get("inputCount"),
         "raw_archive_input_bytes": lock.get("inputBytes"),
         "coverage": coverage,
+        "source_adapter_coverage": {
+            "declared_team_pages": declared_team_pages,
+            "observed_team_pages": observed_team_pages,
+            "appearance_data_team_pages": appearance_data_team_pages,
+            "declared_no_record_team_pages": declared_no_record_team_pages,
+        },
     }
 
 
@@ -558,26 +646,51 @@ def build_arrival_corpus(
 
     live_snapshots = _write_parquet(snapshots, output_dir / "snapshots.parquet")
     live_labels = _write_parquet(labels, output_dir / "labels.parquet")
-    stable_content = {
-        "schema_version": CORPUS_SCHEMA_VERSION,
-        "data_cutoff": next(iter(data_cutoffs)),
-        "snapshot_policy": "affiliated-season-appearance-effective-time-v1",
-        "input_dataset_content_sha256": [
-            item["dataset_content_sha256"]
-            for item in sorted(input_lineage, key=lambda x: x["season"])
+    source_coverage_by_season = [
+        {
+            "season": item["season"],
+            **item["archive"]["source_adapter_coverage"],
+        }
+        for item in sorted(input_lineage, key=lambda x: x["season"])
+    ]
+    source_coverage = {
+        "declared_team_pages": sum(
+            item["declared_team_pages"] for item in source_coverage_by_season
+        ),
+        "observed_team_pages": sum(
+            item["observed_team_pages"] for item in source_coverage_by_season
+        ),
+        "appearance_data_team_pages": sum(
+            item["appearance_data_team_pages"] for item in source_coverage_by_season
+        ),
+        "declared_no_record_team_pages": sum(
+            item["declared_no_record_team_pages"]
+            for item in source_coverage_by_season
+        ),
+        "seasons_with_declared_no_record_pages": [
+            item["season"]
+            for item in source_coverage_by_season
+            if item["declared_no_record_team_pages"] > 0
         ],
-        "raw_archive_manifest_sha256": [
-            item["archive"]["raw_archive_manifest_sha256"]
-            for item in sorted(input_lineage, key=lambda x: x["season"])
-        ],
-        "outputs": {
-            "snapshots": {
-                "rows": live_snapshots["rows"],
-                "sha256": live_snapshots["sha256"],
-            },
-            "labels": {"rows": live_labels["rows"], "sha256": live_labels["sha256"]},
-        },
     }
+    stable_content = corpus_stable_content(
+        {
+            "schema_version": CORPUS_SCHEMA_VERSION,
+            "data_cutoff": next(iter(data_cutoffs)),
+            "snapshot_policy": "affiliated-season-appearance-effective-time-v1",
+            "inputs": input_lineage,
+            "outputs": {
+                "snapshots": {
+                    "rows": live_snapshots["rows"],
+                    "sha256": live_snapshots["sha256"],
+                },
+                "labels": {
+                    "rows": live_labels["rows"],
+                    "sha256": live_labels["sha256"],
+                },
+            },
+        }
+    )
     corpus_address = json_sha256(stable_content)
     archive_dir = output_dir / "datasets" / corpus_address
     archive_dir.mkdir(parents=True, exist_ok=True)
@@ -616,6 +729,7 @@ def build_arrival_corpus(
         "snapshot_policy": stable_content["snapshot_policy"],
         "corpus_content_sha256": corpus_address,
         "summary": summary,
+        "source_coverage": source_coverage,
         "inputs": input_lineage,
         "outputs": {"snapshots": live_snapshots, "labels": live_labels},
         "producer": producer_metadata(

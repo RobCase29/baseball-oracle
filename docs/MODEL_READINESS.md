@@ -1,23 +1,23 @@
 # Model Readiness
 
-Status as of July 11, 2026.
+Status as of July 12, 2026.
 
 ## Verdict
 
 Baseball Oracle now has an executable, reproducible research baseline for MLB
-arrival, a clean career-model landmark panel, and four mature historical cohorts
+arrival, a clean career-model landmark panel, and ten mature historical cohorts
 drawn from the full population of recorded affiliated-season participants. It is
 ready for feature research and honest forward backtests. It is not yet ready to
 publish player probabilities.
 
 There are now two distinct arrival research tracks. The original 2017-2026 track
-is conditional on appearing on a FanGraphs prospect board. The new 2010 and
-2017-2019 Baseball-Reference tracks include every player with a recorded appearance
-on all reconciled affiliated team pages for the season. They are broader than a
-prospect list, but they are not contract-roster censuses: players with no recorded
-game appearance can be absent. The historical statistics are effective-time safe,
-but their original knowledge time is not independently evidenced. These
-limitations are stored as release blockers in the generated dataset manifests.
+is conditional on appearing on a FanGraphs prospect board. The primary population
+benchmark covers every nonzero season from 2010 through 2019 and includes every
+player with a recorded appearance on all reconciled affiliated team pages. It is
+broader than a prospect list, but it is not a contract-roster census: players with
+no recorded game appearance can be absent. Historical statistics are effective-time
+safe, but their original knowledge time is not independently evidenced. These
+limitations are stored as release blockers in the generated manifests.
 
 ## Acquired Data
 
@@ -30,7 +30,7 @@ about 162 MB:
 | SABR Lahman | 2025 release | People, batting, pitching, fielding, Hall of Fame, and source documentation through the 2025 MLB season |
 | Retrosheet | `bf5af7d40e1f0c33026074705cda8ed1c5177f95` | Independent MLB debut-date validation |
 | FanGraphs | 2017-2026 board editions | Independently acquired hitter and pitcher scouting reports plus prior-season statistics under the project's research permission |
-| Baseball-Reference Register | Complete 2010 and 2017-2019 affiliated seasons; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
+| Baseball-Reference Register | Complete 2010-2019 affiliated seasons; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
 
 For the original 44-resource acquisition, every URL, byte count, license
 reference, and SHA-256 digest is pinned in `data/source-lock.json`. Requests for
@@ -49,11 +49,9 @@ source-lock digest and re-hashes all 44 local inputs before parsing. A raw file
 changed after acquisition therefore fails the build instead of inheriting trusted
 lineage from an earlier run.
 
-The separate Baseball-Reference backfill has archived 948 exact HTML responses
-totaling 380,489,051 bytes for 2010 and 2017-2019, plus deterministic season
-manifests and a zero-page manifest for the canceled 2020 season. Across all
-sources and preserved manifest versions, the private archive currently holds
-1,010 objects totaling 545,732,908 bytes. Details, digests, and recovery
+The separate Baseball-Reference backfill has locked 2,332 exact HTML responses
+totaling 921,364,224 bytes for 2010-2019, plus deterministic season manifests and
+a zero-page manifest for the canceled 2020 season. Details, digests, and recovery
 procedures are recorded in
 [`IMMUTABLE_RAW_ARCHIVE.md`](IMMUTABLE_RAW_ARCHIVE.md).
 
@@ -109,82 +107,85 @@ from this contract.
 | Season | Appearance census | Identity linked | Model eligible | 12m debuts | 60m debuts |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 2010 | 7,777 | 7,777 (100%) | 6,623 | 229 | 866 |
+| 2011 | 7,825 | 7,825 (100%) | 6,639 | 195 | 886 |
+| 2012 | 7,852 | 7,852 (100%) | 6,666 | 221 | 968 |
+| 2013 | 7,970 | 7,970 (100%) | 6,764 | 223 | 1,017 |
+| 2014 | 8,107 | 8,107 (100%) | 6,887 | 246 | 1,004 |
+| 2015 | 8,111 | 8,111 (100%) | 6,870 | 244 | 964 |
+| 2016 | 8,221 | 8,221 (100%) | 6,965 | 253 | 1,011 |
 | 2017 | 8,346 | 8,346 (100%) | 7,051 | 243 | 1,048 |
 | 2018 | 8,607 | 8,607 (100%) | 7,330 | 249 | 1,040 |
 | 2019 | 8,816 | 8,816 (100%) | 7,531 | 197 | 1,028 |
 
-Every 12, 24, 36, 48, and 60-month label in all four cohorts is mature as of the
-2025-12-31 outcome cutoff. Together they contain 33,546 player-season census rows:
-17,673 pitchers, 15,863 hitters, and ten genuine two-way players. The shared-role
-feature contract conservatively excludes those ten two-way snapshots while
-retaining their separate batting and pitching domains in the census.
+Every 12, 24, 36, 48, and 60-month label in all ten cohorts is mature as of the
+2025-12-31 outcome cutoff. Together they contain 81,632 player-season census rows
+and 69,326 model-eligible snapshots. The shared-role feature contract
+conservatively excludes genuine two-way snapshots while retaining their separate
+batting and pitching domains in the census.
 
 Model eligibility means MLB-naive at the season-end snapshot, exact outcome-linked,
-and supported by the current role feature contract. The adapter removed 1,151
-pre-snapshot MLB debuts and three unsupported two-way rows in 2010. It removed
-1,289 pre-snapshot debuts, five independently detected debut-source disagreements,
-and one unsupported two-way row in 2017. The 2018 exclusions are 1,264 prior MLB
-debuts, nine source disagreements, and four two-way rows; the 2019 exclusions are
-1,275 prior debuts, eight source disagreements, and two two-way rows. No unresolved
-identity is silently dropped: all four dataset manifests report 100% Chadwick
-crosswalk coverage. The combined model-analysis population is 28,535 rows with
-3,982 observed MLB debuts by 60 months.
+and supported by the current role feature contract. Pre-snapshot MLB debuts,
+independently detected source disagreements, and unsupported two-way rows are
+quarantined with explicit reasons. No unresolved identity is silently dropped:
+all ten manifests report 100% Chadwick crosswalk coverage. The combined analysis
+population contains 24,406 players and 9,832 observed MLB debuts by 60 months.
 
-The content-addressed dataset digests are:
+The 2015 source season contains one affiliate whose page explicitly reports
+`Record: N/A` and supplies no player tables. The parser preserves that page as
+`declared_no_record`, requires it to contribute zero participant rows, and still
+requires all other appearance-data teams to reconcile exactly. This avoids both
+invented players and silent denominator shrinkage.
 
-```text
-2010  6da657a1abf2710359b735c5cb61d8460d2d5769cbf8b5aca8e514107becf3b3
-2017  1be26f899e4109cdd6a1ffddb4f7562c117498d2dcfd822f87390d50ba2d107f
-2018  345dd52c5ff9ff601ed9baa299f9e0c91299d72afaf1a4db03d02f455b706fa0
-2019  9b0ff4fd46632a62b714e955eafad82b277c5102f5da84fbd633d0b0fd506616
-```
-
-These cohorts validate the data contract and provide three consecutive
-pre-pandemic test years; they are not yet a release model. More seasons are needed
-for robust rolling folds, era diagnostics, and locked calibration. The source also
-does not establish original publication timestamps, so the manifests correctly
-set `effective_time_safe=true`, `knowledge_time_verified=false`, and
-`strict_point_in_time_features=false`.
+The combined corpus content digest is
+`b9e50c7f1a8500c5dc7b4403b3a1d092d0ecce3c85232ef20b82d43abbedb2e8`.
+These cohorts provide nine expanding-origin tests, but they are not yet a release
+model. The source does not establish original publication timestamps, so the
+manifests correctly set `effective_time_safe=true`,
+`knowledge_time_verified=false`, and `strict_point_in_time_features=false`.
 
 ## Arrival Baseline
 
-The baseline is a regularized discrete-time logistic hazard model. One coherent
-annual hazard curve produces 12, 24, 36, 48, and 60-month research estimates.
-Numeric values are median-imputed and standardized inside each fold; categories
-are imputed and one-hot encoded inside each fold. Repeated snapshots are weighted
-by player. There is no random split.
+The population baseline is a role-specific regularized discrete-time logistic
+hazard model. Separate hitter and pitcher annual hazards produce coherent 12, 24,
+36, 48, and 60-month research estimates. Numeric imputation and scaling,
+categorical encoding, feature selection, and the empirical-Bayes comparator are
+fit inside each chronological fold. Repeated snapshots receive inverse player
+snapshot weights; player-cluster bootstraps retain within-player dependence.
 
-The final research fit uses 5,356 snapshots from 2,867 players, producing 14,086
-person-period rows and 2,478 observed debuts. Each historical fold restricts its
-training labels to outcomes available by that fold's origin, and a horizon is
-scored only when the complete test cohort has matured.
+The final research fit uses 69,326 snapshots from 24,406 players, producing
+324,417 at-risk person-periods and 9,832 observed debuts. Nine expanding-origin
+folds test 2011 through 2019. Each fold restricts labels to its origin and scores
+only fully mature horizons for which both role models have trained interval
+support.
 
-| Test edition | Horizon | Brier | Base-rate Brier | Skill | ROC AUC |
+| Horizon | Eligible folds | Median ROC AUC | Median average precision | Median top-decile lift | Median Brier improvement vs age-level-role baseline |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 2020 | 12m | 0.120 | 0.134 | +9.9% | 0.798 |
-| 2020 | 24m | 0.178 | 0.222 | +19.8% | 0.788 |
-| 2020 | 36m | 0.203 | 0.248 | +18.4% | 0.773 |
-| 2020 | 48m | 0.228 | n/a | n/a | 0.750 |
-| 2020 | 60m | 0.245 | n/a | n/a | 0.736 |
-| 2021 | 12m | 0.260 | 0.229 | -13.4% | 0.548 |
-| 2021 | 24m | 0.433 | 0.284 | -52.7% | 0.560 |
-| 2021 | 36m | 0.518 | 0.244 | -112.2% | 0.607 |
-| 2021 | 48m | 0.564 | 0.209 | -169.8% | 0.634 |
-| 2022 | 12m | 0.139 | 0.153 | +9.3% | 0.736 |
-| 2022 | 24m | 0.198 | 0.217 | +9.2% | 0.723 |
-| 2022 | 36m | 0.224 | 0.249 | +9.9% | 0.709 |
-| 2023 | 12m | 0.115 | 0.141 | +18.5% | 0.800 |
-| 2023 | 24m | 0.168 | 0.216 | +22.2% | 0.777 |
-| 2024 | 12m | 0.115 | 0.140 | +17.6% | 0.812 |
+| 12m | 9 | 0.937 | 0.376 | 7.49x | 14.3% |
+| 24m | 8 | 0.925 | 0.513 | 6.49x | 21.6% |
+| 36m | 7 | 0.909 | 0.567 | 5.43x | 23.7% |
+| 48m | 6 | 0.892 | 0.586 | 4.83x | 23.2% |
+| 60m | 5 | 0.879 | 0.594 | 4.45x | 22.4% |
 
-The 2020 48 and 60-month scores extrapolate beyond the longest interval observable
-in that fold's training data, and no honest training-era base-rate comparator is
-available for them. They are retained as diagnostics, not release evidence. The
-2021 failure is also important. The canceled 2020 affiliated season, delayed
-development, and 2021 league reorganization created a cohort unlike the earlier
-training history. It is retained as a mandatory stress test, not post-hoc repaired.
-The model is explicitly marked `research_baseline_not_release_eligible` and no
-forecast is written to the product tables.
+The model beats the hierarchical age-level-role empirical-Bayes baseline on all
+35 supported fold-horizons. Across those comparisons, median AUC is 0.918, median
+top-decile lift is 5.9x, and median relative Brier improvement is 21.8%.
+Calibration-in-the-large is within 0.02 on 34 of 35 comparisons and calibration
+slope is within 0.8-1.2 on 28 of 35.
+
+Those baseline wins are correlated point estimates, not 35 independent
+experiments. The current empirical-Bayes comparator also uses fully mature rows
+while the hazard likelihood can use partial follow-up. Release review therefore
+requires a censoring-aware null hazard, paired player-cluster skill intervals,
+and pooled out-of-fold calibration before treating the advantage as confirmed.
+
+The failures are actionable. All five scored 60-month folds have slopes below
+0.8, indicating over-dispersed long-horizon probabilities. Cold-start 60-month
+risk is also underpredicted: in the 2019 test cohort the observed rate is 7.7%
+versus a 5.5% mean prediction. A chronological calibration block, context
+normalization, post-2020 regime stress test, and locked prospective holdout remain
+mandatory. The artifact is marked
+`research_population_benchmark_not_release_eligible`; no forecast is written to
+product tables.
 
 ## Trouble With The Curve Audit
 
@@ -213,13 +214,12 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
    inactive and zero-appearance players. The Baseball-Reference appearance census
    is the broad research denominator; SIS or a Chadwick commercial history remains
    the production path for complete roster membership.
-2. Fill the 2011-2016 history and add post-2020 cohorts for deeper rolling temporal
-   folds and regime diagnostics. Preserve 2020 as a structural zero rather than
-   inventing observations for the canceled season.
-3. Register historical season manifests in the Neon lineage catalog and add
-   periodic remote digest reconciliation. Migration `0006` and the deployment
-   registrar now catalog the original 47-member locked corpus.
-4. Normalize level, league, park, organization, workload, promotion, transaction,
+2. Add post-2020 cohorts for regime diagnostics. Preserve 2020 as a structural
+   zero, use only mature horizons for ordinary binary metrics, and retain 2021 as
+   a predeclared reorganization and pandemic-development stress test.
+3. Register every historical season manifest in the Neon lineage catalog and add
+   periodic remote digest reconciliation for both current and superseded evidence.
+4. Normalize level, league, park, organization, era, workload, promotion, transaction,
    and explicit coverage features without collapsing pooled stints into a single
    context.
 5. Evidence original publication/knowledge times or keep reconstructed historical
@@ -227,13 +227,17 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
 6. Add provider-versioned Sports Reference or FanGraphs WAR to the prepared career
    landmarks. Lahman supports playing time, rate, longevity, awards, and Hall of
    Fame outcomes, but does not contain WAR.
-7. Build monthly competing-risk arrival hazards, time-specific calibration,
-   confidence intervals, organization and era diagnostics, and a locked holdout.
+7. Build monthly competing-risk arrival hazards, IPCW survival metrics,
+   chronological calibration, organization and era diagnostics, missing-feature
+   stress tests, paired baseline-skill intervals, cold-start observed/expected
+   gates, and a content-locked prospective holdout.
 8. Build post-debut opportunity, performance, exit/re-entry, and WAR components,
    then simulate joint career paths. Model Hall-of-Fame-caliber performance
    separately from the later voting process.
-9. Normalize Prospect Savant's 2023+ tracking components as a challenger and test
-   incremental value over the performance-only baseline.
+9. Normalize Prospect Savant's 2023+ tracking components and point-in-time
+   FanGraphs scouting grades as separate challengers. Require coverage-aware
+   missingness indicators and forward-fold incremental value over the
+   performance-only baseline.
 
 Only a candidate that beats the frozen baseline across multiple forward folds,
 passes calibration and subgroup gates, and scores the complete risk set can be

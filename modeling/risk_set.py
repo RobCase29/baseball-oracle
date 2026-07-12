@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 RISK_SET_CONTRACT_VERSION = "affiliated-player-census-v3"
 RISK_SET_POLICY = "explicit_pooled_context_effective_time_safe_v3"
 BREF_MISSING_DATE_SENTINELS = frozenset({"XXXX-XX-XX"})
+BREF_TEAM_ACTIVITY_STATUSES = frozenset({"observed", "declared_no_record"})
 
 COHORT_COVERAGE_SCOPES = {
     "dated_roster": "all_affiliated_roster_members_at_landmark",
@@ -260,6 +261,20 @@ def canonicalize_baseball_reference_appearances(
         raise RiskSetContractError(
             f"Baseball-Reference teams is missing columns: {missing_team_columns}"
         )
+    teams = teams.copy()
+    if "activity_status" not in teams.columns:
+        teams["activity_status"] = "observed"
+    teams["activity_status"] = (
+        teams["activity_status"].astype("string").str.strip().str.lower()
+    )
+    invalid_activity_statuses = sorted(
+        set(teams["activity_status"].dropna()) - BREF_TEAM_ACTIVITY_STATUSES
+    )
+    if teams["activity_status"].isna().any() or invalid_activity_statuses:
+        raise RiskSetContractError(
+            "Baseball-Reference teams contains invalid activity_status values: "
+            f"{invalid_activity_statuses}"
+        )
     if teams["team_id"].duplicated(keep=False).any():
         raise RiskSetContractError("Baseball-Reference teams contains duplicate team_id rows")
     team_seasons = pd.to_numeric(teams["season"], errors="coerce")
@@ -273,6 +288,25 @@ def canonicalize_baseball_reference_appearances(
         "https://www.baseball-reference.com/register/team.cgi?"
     ).all():
         raise RiskSetContractError("Baseball-Reference teams contains an invalid source_url")
+    declared_page_team_ids = set(teams["team_id"].astype(str))
+    appearance_team_ids = set(
+        teams.loc[teams["activity_status"].eq("observed"), "team_id"].astype(str)
+    )
+    declared_no_record_team_ids = declared_page_team_ids - appearance_team_ids
+    appearance_team_count = len(appearance_team_ids)
+    declared_no_record_team_count = len(declared_no_record_team_ids)
+    if quality.get("appearanceDataTeamCount") is not None and int(
+        quality["appearanceDataTeamCount"]
+    ) != appearance_team_count:
+        raise RiskSetContractError(
+            "Baseball-Reference appearanceDataTeamCount does not reconcile to teams"
+        )
+    if quality.get("declaredNoRecordTeamCount") is not None and int(
+        quality["declaredNoRecordTeamCount"]
+    ) != declared_no_record_team_count:
+        raise RiskSetContractError(
+            "Baseball-Reference declaredNoRecordTeamCount does not reconcile to teams"
+        )
     required_organization_columns = {"season", "team_id", "organization"}
     missing_organization_columns = sorted(
         required_organization_columns - set(team_organizations.columns)
@@ -296,8 +330,7 @@ def canonicalize_baseball_reference_appearances(
             "Baseball-Reference team_organizations contains duplicate relationships"
         )
     organization_team_ids = set(team_organizations["team_id"].astype(str))
-    observed_team_ids = set(teams["team_id"].astype(str))
-    if organization_team_ids != observed_team_ids:
+    if organization_team_ids != declared_page_team_ids:
         raise RiskSetContractError(
             "Every observed team must have one or more organization relationships"
         )
@@ -315,6 +348,21 @@ def canonicalize_baseball_reference_appearances(
     if player_team_seasons["source_id_namespace"].ne("bbref_minors").any():
         raise RiskSetContractError(
             "Baseball-Reference appearance rows must use bbref_minors identifiers"
+        )
+    source_team_ids = set(player_team_seasons["team_id"].astype(str))
+    unknown_source_team_ids = sorted(source_team_ids - declared_page_team_ids)
+    if unknown_source_team_ids:
+        raise RiskSetContractError(
+            "Baseball-Reference appearance rows reference undeclared teams: "
+            f"{unknown_source_team_ids}"
+        )
+    no_record_participant_teams = sorted(
+        source_team_ids & declared_no_record_team_ids
+    )
+    if no_record_participant_teams:
+        raise RiskSetContractError(
+            "Baseball-Reference declared_no_record teams must have zero participant rows: "
+            f"{no_record_participant_teams}"
         )
     appearance_evidence = pd.Series(False, index=player_team_seasons.index)
     for column in (
@@ -351,9 +399,9 @@ def canonicalize_baseball_reference_appearances(
         axis=1,
     )
     participant_teams = set(appearance_rows["team_id"].astype(str))
-    if participant_teams != observed_team_ids:
+    if participant_teams != appearance_team_ids:
         raise RiskSetContractError(
-            "Every observed team must have a participant row and every participant team must be observed"
+            "Participant team IDs must exactly match teams with activity_status=observed"
         )
 
     team_organization_labels = team_organizations.groupby("team_id")[
@@ -372,11 +420,13 @@ def canonicalize_baseball_reference_appearances(
                 "cohort_basis": "season_appearance",
                 "coverage_scope": COHORT_COVERAGE_SCOPES["season_appearance"],
                 "completeness_attested": True,
-                "expected_team_count": expected_teams,
-                "observed_team_count": observed_teams,
+                "expected_team_count": appearance_team_count,
+                "observed_team_count": appearance_team_count,
                 "inclusion_rule": (
                     "Every player with a recorded appearance on every successfully "
-                    "reconciled affiliated team-season page; this is not a contracted-player census."
+                    "reconciled affiliated team-season page with appearance data; "
+                    "declared_no_record pages are retained in source provenance but contribute "
+                    "no players; this is not a contracted-player census."
                 ),
             }
         ],
@@ -387,6 +437,10 @@ def canonicalize_baseball_reference_appearances(
         "included_appearance_rows": int(len(appearance_rows)),
         "excluded_zero_game_roster_rows": excluded_zero_game_rows,
         "observed_team_rows": int(len(teams)),
+        "source_declared_team_count": expected_teams,
+        "source_observed_team_pages": observed_teams,
+        "appearance_data_team_count": appearance_team_count,
+        "declared_no_record_teams": declared_no_record_team_count,
         "cooperative_affiliate_teams": shared_team_count,
     }
     roster = pd.DataFrame(

@@ -33,6 +33,8 @@ def _make_season_dataset(
     label_cutoff: str = DATA_CUTOFF,
     effective_time_safe: bool | str = True,
     drop_snapshot_feature: str | None = None,
+    source_run_parser: str = arrival_corpus.SOURCE_RUN_PARSER,
+    declared_no_record_team_pages: int = 0,
 ) -> dict[str, Path]:
     permission_path = root / "docs/permissions/research-source-attestation.md"
     permission_path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,13 +53,14 @@ def _make_season_dataset(
         "bytes": raw_input.stat().st_size,
         "sha256": file_sha256(raw_input),
     }
+    declared_team_pages = 1 + declared_no_record_team_pages
     coverage = {
         "structuralZeroSeason": False,
         "structuralReason": None,
-        "declaredTeams": 1,
-        "affiliateSlots": 1,
-        "discoveredTeams": 1,
-        "completedTeams": 1,
+        "declaredTeams": declared_team_pages,
+        "affiliateSlots": declared_team_pages,
+        "discoveredTeams": declared_team_pages,
+        "completedTeams": declared_team_pages,
         "failedTeams": 0,
     }
     run_path = root / f"data/manifests/runs/register-{season}.json"
@@ -65,7 +68,7 @@ def _make_season_dataset(
         "schemaVersion": arrival_corpus.SOURCE_RUN_SCHEMA,
         "source": "baseball-reference-register",
         "season": season,
-        "parserVersion": arrival_corpus.SOURCE_RUN_PARSER,
+        "parserVersion": source_run_parser,
         "status": "complete",
         "error": None,
         "coverage": coverage,
@@ -221,6 +224,13 @@ def _make_season_dataset(
             "contract_version": arrival_corpus.RISK_SET_CONTRACT,
             "snapshot_policy": arrival_corpus.RISK_SET_POLICY,
             "board_enrichment_policy": "excluded_edition_only",
+            "quality": {
+                "source_adapter_quality": {
+                    "observed_team_rows": declared_team_pages,
+                    "appearance_data_team_count": 1,
+                    "declared_no_record_teams": declared_no_record_team_pages,
+                }
+            },
             "inputs": {
                 name: input_evidence for name in arrival_corpus.EXPECTED_RISK_SET_INPUTS
             },
@@ -246,7 +256,12 @@ def _make_season_dataset(
 
 
 def test_builds_verified_multi_season_corpus(tmp_path, monkeypatch) -> None:
-    first = _make_season_dataset(tmp_path, 2018, debut_within_60m=True)
+    first = _make_season_dataset(
+        tmp_path,
+        2018,
+        debut_within_60m=True,
+        declared_no_record_team_pages=1,
+    )
     second = _make_season_dataset(tmp_path, 2019)
     monkeypatch.setattr(
         arrival_corpus,
@@ -270,6 +285,13 @@ def test_builds_verified_multi_season_corpus(tmp_path, monkeypatch) -> None:
     }
     assert [item["season"] for item in manifest["inputs"]] == [2018, 2019]
     assert manifest["status"] == "research_population_corpus_not_release_eligible"
+    assert manifest["source_coverage"] == {
+        "declared_team_pages": 3,
+        "observed_team_pages": 3,
+        "appearance_data_team_pages": 2,
+        "declared_no_record_team_pages": 1,
+        "seasons_with_declared_no_record_pages": [2018],
+    }
 
     live_manifest = output_dir / "corpus_manifest.json"
     archived_manifest = output_dir / "manifests" / f"{manifest['manifest_sha256']}.json"
@@ -341,6 +363,44 @@ def test_rejects_feature_schema_drift_and_truthy_safety_strings(tmp_path) -> Non
             [false_string_first["manifest"], false_string_second["manifest"]],
             tmp_path / "truthy/corpus",
             root=tmp_path / "truthy",
+        )
+
+
+def test_accepts_locked_v4_source_runs_during_v5_transition(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        arrival_corpus,
+        "producer_metadata",
+        lambda *_args, **_kwargs: {"fixture": "synthetic"},
+    )
+    first = _make_season_dataset(
+        tmp_path, 2018, source_run_parser="baseball-reference-register/v4"
+    )
+    second = _make_season_dataset(
+        tmp_path, 2019, source_run_parser="baseball-reference-register/v4"
+    )
+
+    manifest = build_arrival_corpus(
+        [first["manifest"], second["manifest"]],
+        tmp_path / "corpus",
+        root=tmp_path,
+    )
+
+    assert manifest["summary"]["seasons"] == [2018, 2019]
+
+
+def test_rejects_unknown_source_parser_version(tmp_path) -> None:
+    first = _make_season_dataset(
+        tmp_path, 2018, source_run_parser="baseball-reference-register/v999"
+    )
+    second = _make_season_dataset(tmp_path, 2019)
+
+    with pytest.raises(ArrivalCorpusError, match="Source run is not complete"):
+        build_arrival_corpus(
+            [first["manifest"], second["manifest"]],
+            tmp_path / "corpus",
+            root=tmp_path,
         )
 
 
