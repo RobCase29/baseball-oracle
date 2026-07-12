@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "archive-catalog-lock/v1",
+  "checkpoint": {
+    "path": "data/manifests/archive/latest.json",
+    "sha256": "0f9ea3339f7c3aff10c80b8023cd5609fe3d3ca3ef242296e1b3400173139a34",
+    "startedAt": "2026-07-11T23:51:33.711Z",
+    "completedAt": "2026-07-11T23:52:39.450Z",
+    "memberCount": 47,
+    "memberBytes": 162011234
+  },
+  "sourceLockSha256": "9bed81384260167435f40834b27ef10b65ee5f792a0c78f226a7c9ca8a8bc9a8",
+  "acquisitionManifest": {
+    "path": "data/manifests/runs/2026-07-11T231943689Z.json",
+    "sha256": "fe858adb675846316c6ab4e05144be39a2f08f68038b0878c83dc24e292b7e3f"
+  },
+  "manifest": {
+    "sha256": "c5df36a9e3cc552c06af1c85468e93910efa695ec2bc9c8c39759eb2faf50743",
+    "byteLength": 36218,
+    "mediaType": "application/json",
+    "pathname": "raw/v1/baseball-oracle/archive-manifest/sha256/c5/c5df36a9e3cc552c06af1c85468e93910efa695ec2bc9c8c39759eb2faf50743",
+    "storageStatus": "created",
+    "archivedAt": "2026-07-11T23:52:39.583Z"
+  }
+}

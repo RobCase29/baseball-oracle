@@ -21,6 +21,12 @@ try:
         assert_feature_contract,
     )
     from modeling.provenance import file_sha256, json_sha256, producer_metadata
+    from modeling.risk_set import (
+        RISK_SET_CONTRACT_VERSION,
+        RISK_SET_POLICY,
+        build_affiliated_risk_set,
+        canonicalize_baseball_reference_appearances,
+    )
 except ModuleNotFoundError:
     from contracts import (
         CATEGORICAL_FEATURES,
@@ -29,6 +35,12 @@ except ModuleNotFoundError:
         assert_feature_contract,
     )
     from provenance import file_sha256, json_sha256, producer_metadata
+    from risk_set import (
+        RISK_SET_CONTRACT_VERSION,
+        RISK_SET_POLICY,
+        build_affiliated_risk_set,
+        canonicalize_baseball_reference_appearances,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 CHADWICK_VERSION = "7e23e7dfaff51b3ae72c16393703eda7e5ecad27"
@@ -503,6 +515,7 @@ def build_labels(
     people: pd.DataFrame,
     register: pd.DataFrame,
     retrosheet_debuts: dict[str, pd.Timestamp],
+    exclusion_reasons: dict[str, str] | None = None,
 ) -> tuple[pd.DataFrame, dict[str, int]]:
     identified = people[people["bbrefID"].notna()].copy()
     identified["bbrefID"] = identified["bbrefID"].map(clean_identifier)
@@ -536,6 +549,10 @@ def build_labels(
             else:
                 quality["dual_source_disagreements"] += 1
                 quality["source_disagreements_quarantined"] += 1
+                if exclusion_reasons is not None:
+                    exclusion_reasons[row["snapshot_id"]] = (
+                        "source_debut_disagreement"
+                    )
                 continue
         debut = lahman_debut if lahman_debut is not None else retro_debut
         debut_source = "lahman+retrosheet" if lahman_debut == retro_debut and debut is not None else (
@@ -545,10 +562,14 @@ def build_labels(
             quality["retrosheet_fallbacks"] += 1
         if debut is not None and debut <= as_of:
             quality["pre_snapshot_debuts_removed"] += 1
+            if exclusion_reasons is not None:
+                exclusion_reasons[row["snapshot_id"]] = "pre_snapshot_debut"
             continue
         mlb_first_year = numeric(identity.get("mlb_played_first"))
         if debut is None and mlb_first_year is not None and mlb_first_year <= int(DATA_CUTOFF[:4]):
             quality["missing_exact_debut_quarantined"] += 1
+            if exclusion_reasons is not None:
+                exclusion_reasons[row["snapshot_id"]] = "missing_exact_debut"
             continue
         label: dict[str, Any] = {
             "snapshot_id": row["snapshot_id"],
@@ -752,6 +773,91 @@ def write_table(frame: pd.DataFrame, path: Path) -> dict[str, Any]:
     return {"path": portable_path(path), "rows": len(frame), "sha256": source_hash(path)}
 
 
+def read_canonical_table(path: Path) -> pd.DataFrame:
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return pd.read_csv(path, dtype=str, low_memory=False)
+    if suffix in {".parquet", ".pq"}:
+        return pd.read_parquet(path)
+    raise ValueError(f"Canonical model input must be CSV or Parquet: {path}")
+
+
+def canonical_input_evidence(path: Path, frame: pd.DataFrame) -> dict[str, Any]:
+    return {
+        "path": portable_path(path),
+        "rows": int(len(frame)),
+        "bytes": path.stat().st_size,
+        "sha256": source_hash(path),
+    }
+
+
+def source_universe_manifest_metadata(
+    census_rows: pd.DataFrame,
+) -> dict[str, Any]:
+    required = {"cohort_basis", "source_universe_scope"}
+    missing = sorted(required - set(census_rows.columns))
+    if missing:
+        raise ValueError(
+            f"Affiliated census rows are missing source-universe columns: {missing}"
+        )
+    if census_rows.empty:
+        raise ValueError("Affiliated census rows cannot be empty")
+    lineage = census_rows[["cohort_basis", "source_universe_scope"]].copy()
+    if lineage.isna().any().any():
+        raise ValueError("Affiliated census rows contain missing source-universe lineage")
+    lineage = lineage.astype(str).drop_duplicates()
+
+    details: list[dict[str, str]] = []
+    for cohort_basis, group in lineage.groupby("cohort_basis", sort=True):
+        scopes = sorted(group["source_universe_scope"].unique())
+        expected_scope = f"full_{cohort_basis}_census"
+        if scopes != [expected_scope]:
+            raise ValueError(
+                f"cohort_basis {cohort_basis} requires source_universe_scope "
+                f"{expected_scope}"
+            )
+        details.append(
+            {
+                "cohort_basis": cohort_basis,
+                "source_universe_scope": expected_scope,
+            }
+        )
+
+    if len(details) == 1:
+        return {"source_universe_scope": details[0]["source_universe_scope"]}
+    return {
+        "source_universe_scope": "mixed_affiliated_census_scopes",
+        "source_universe_scopes": details,
+    }
+
+
+def affiliated_release_blockers(
+    *, using_bref_adapter: bool, unresolved_identity_rows: int
+) -> list[str]:
+    blockers = [
+        (
+            "Baseball-Reference prepared inputs are content-hashed, but this "
+            "dataset manifest does not yet verify their parser-v4 season archive lock."
+            if using_bref_adapter
+            else "Canonical MiLB inputs are content-hashed but are not yet verified "
+            "by the acquisition source lock."
+        )
+    ]
+    if unresolved_identity_rows > 0:
+        blockers.append(
+            f"{unresolved_identity_rows} affiliated census identities are unresolved; "
+            "an acceptance threshold has not been approved."
+        )
+    blockers.extend(
+        [
+            "Historical source values are effective-time safe but knowledge-time unverified.",
+            "The affiliated-cohort model has not yet completed temporal calibration "
+            "and validation.",
+        ]
+    )
+    return blockers
+
+
 def archive_dataset_outputs(
     outputs: dict[str, dict[str, Any]], output_dir: Path, dataset_content_sha256: str
 ) -> None:
@@ -776,7 +882,38 @@ def main() -> None:
     parser.add_argument("--raw-root", type=Path, default=ROOT / "data/raw")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "data/processed/model-v1")
     parser.add_argument("--acquisition-manifest", type=Path)
+    parser.add_argument("--milb-census-metadata", type=Path)
+    parser.add_argument("--milb-roster-census", type=Path)
+    parser.add_argument("--milb-player-seasons", type=Path)
+    parser.add_argument("--bref-player-team-seasons", type=Path)
+    parser.add_argument("--bref-quality", type=Path)
+    parser.add_argument("--bref-teams", type=Path)
+    parser.add_argument("--bref-team-organizations", type=Path)
     args = parser.parse_args()
+
+    risk_set_paths = (
+        args.milb_census_metadata,
+        args.milb_roster_census,
+        args.milb_player_seasons,
+    )
+    if any(risk_set_paths) and not all(risk_set_paths):
+        parser.error(
+            "--milb-census-metadata, --milb-roster-census, and "
+            "--milb-player-seasons must be supplied together"
+        )
+    bref_paths = (
+        args.bref_player_team_seasons,
+        args.bref_quality,
+        args.bref_teams,
+        args.bref_team_organizations,
+    )
+    if any(bref_paths) and not all(bref_paths):
+        parser.error(
+            "--bref-player-team-seasons, --bref-quality, --bref-teams, and "
+            "--bref-team-organizations must be supplied together"
+        )
+    if all(risk_set_paths) and all(bref_paths):
+        parser.error("Canonical MiLB inputs and Baseball-Reference adapter inputs are exclusive")
 
     source_lock = ROOT / "data/source-lock.json"
     acquisition_evidence = verify_locked_raw_inputs(
@@ -800,6 +937,171 @@ def main() -> None:
         "career_landmarks": write_table(career_landmarks, args.output_dir / "career_landmarks.parquet"),
         "career_labels": write_table(career_labels, args.output_dir / "career_labels.parquet"),
     }
+    risk_set_manifest: dict[str, Any] | None = None
+    if all(risk_set_paths) or all(bref_paths):
+        if all(bref_paths):
+            bref_player_team_seasons = read_canonical_table(
+                args.bref_player_team_seasons
+            )
+            bref_quality = json.loads(args.bref_quality.read_text())
+            bref_teams = read_canonical_table(args.bref_teams)
+            bref_team_organizations = read_canonical_table(
+                args.bref_team_organizations
+            )
+            census_metadata, roster_census, player_seasons = (
+                canonicalize_baseball_reference_appearances(
+                    bref_player_team_seasons,
+                    bref_quality,
+                    bref_teams,
+                    bref_team_organizations,
+                )
+            )
+            risk_set_input_evidence = {
+                "bref_player_team_seasons": canonical_input_evidence(
+                    args.bref_player_team_seasons,
+                    bref_player_team_seasons,
+                ),
+                "bref_quality": canonical_input_evidence(
+                    args.bref_quality,
+                    pd.DataFrame([bref_quality]),
+                ),
+                "bref_teams": canonical_input_evidence(
+                    args.bref_teams,
+                    bref_teams,
+                ),
+                "bref_team_organizations": canonical_input_evidence(
+                    args.bref_team_organizations,
+                    bref_team_organizations,
+                ),
+            }
+        else:
+            census_metadata = read_canonical_table(args.milb_census_metadata)
+            roster_census = read_canonical_table(args.milb_roster_census)
+            player_seasons = read_canonical_table(args.milb_player_seasons)
+            risk_set_input_evidence = {
+                "census_metadata": canonical_input_evidence(
+                    args.milb_census_metadata, census_metadata
+                ),
+                "roster_census": canonical_input_evidence(
+                    args.milb_roster_census, roster_census
+                ),
+                "player_seasons": canonical_input_evidence(
+                    args.milb_player_seasons, player_seasons
+                ),
+            }
+        risk_set_census, risk_set_quality = build_affiliated_risk_set(
+            census_metadata,
+            roster_census,
+            player_seasons,
+            register,
+        )
+        resolved_risk_set = risk_set_census[risk_set_census["player_id"].notna()].copy()
+        risk_set_label_exclusions: dict[str, str] = {}
+        all_risk_set_labels, risk_set_label_quality = build_labels(
+            resolved_risk_set,
+            people,
+            register,
+            retrosheet_debuts,
+            risk_set_label_exclusions,
+        )
+        if all_risk_set_labels.empty:
+            raise ValueError("Canonical MiLB census produced no outcome-linkable at-risk rows")
+        label_eligible_ids = set(all_risk_set_labels["snapshot_id"])
+        supported_feature_ids = set(
+            risk_set_census.loc[
+                risk_set_census["feature_support_status"] == "supported",
+                "snapshot_id",
+            ]
+        )
+        eligible_risk_set_ids = label_eligible_ids & supported_feature_ids
+        risk_set_labels = all_risk_set_labels[
+            all_risk_set_labels["snapshot_id"].isin(eligible_risk_set_ids)
+        ].copy()
+        risk_set_census["model_eligible"] = risk_set_census["snapshot_id"].isin(
+            eligible_risk_set_ids
+        )
+        risk_set_census["model_exclusion_reason"] = pd.NA
+        unresolved = risk_set_census["player_id"].isna()
+        risk_set_census.loc[unresolved, "model_exclusion_reason"] = "unresolved_identity"
+        risk_set_census["model_exclusion_reason"] = risk_set_census.apply(
+            lambda row: risk_set_label_exclusions.get(
+                row["snapshot_id"], row["model_exclusion_reason"]
+            ),
+            axis=1,
+        )
+        unsupported = (
+            risk_set_census["model_exclusion_reason"].isna()
+            & risk_set_census["feature_support_status"].ne("supported")
+        )
+        risk_set_census.loc[
+            unsupported, "model_exclusion_reason"
+        ] = "unsupported_two_way_feature_contract"
+        unexplained = (
+            ~risk_set_census["model_eligible"]
+            & risk_set_census["model_exclusion_reason"].isna()
+        )
+        risk_set_census.loc[
+            unexplained, "model_exclusion_reason"
+        ] = "outcome_linkage_unexplained"
+        risk_set_census.loc[
+            risk_set_census["model_eligible"], "model_analysis_scope"
+        ] = "mlb_naive_outcome_linked_supported_features"
+        risk_set_snapshots = risk_set_census[risk_set_census["model_eligible"]].copy()
+        exclusion_counts = {
+            str(reason): int(count)
+            for reason, count in risk_set_census.loc[
+                ~risk_set_census["model_eligible"], "model_exclusion_reason"
+            ].value_counts().items()
+        }
+        risk_set_quality["outcome_linkable_rows"] = int(len(all_risk_set_labels))
+        risk_set_quality["model_exclusion_counts"] = exclusion_counts
+        source_universe_metadata = source_universe_manifest_metadata(
+            risk_set_census
+        )
+        outputs.update(
+            {
+                "affiliated_risk_set_census": write_table(
+                    risk_set_census,
+                    args.output_dir / "affiliated_risk_set_census.parquet",
+                ),
+                "affiliated_risk_set_snapshots": write_table(
+                    risk_set_snapshots,
+                    args.output_dir / "affiliated_risk_set_snapshots.parquet",
+                ),
+                "affiliated_arrival_labels": write_table(
+                    risk_set_labels,
+                    args.output_dir / "affiliated_arrival_labels.parquet",
+                ),
+            }
+        )
+        risk_set_manifest = {
+            "contract_version": RISK_SET_CONTRACT_VERSION,
+            "snapshot_policy": RISK_SET_POLICY,
+            "strict_point_in_time_features": risk_set_quality[
+                "strict_point_in_time_features"
+            ],
+            "effective_time_safe": risk_set_quality["effective_time_safe"],
+            "knowledge_time_verified": risk_set_quality[
+                "knowledge_time_verified"
+            ],
+            "board_enrichment_policy": risk_set_quality[
+                "board_enrichment_policy"
+            ],
+            **source_universe_metadata,
+            "model_analysis_scope": "mlb_naive_outcome_linked_supported_features",
+            "model_exclusion_counts": exclusion_counts,
+            "release_eligible": False,
+            "release_blockers": affiliated_release_blockers(
+                using_bref_adapter=bool(all(bref_paths)),
+                unresolved_identity_rows=int(
+                    risk_set_quality["unresolved_identity_rows"]
+                ),
+            ),
+            "model_eligible_rows": int(len(risk_set_snapshots)),
+            "quality": risk_set_quality,
+            "label_quality": risk_set_label_quality,
+            "inputs": risk_set_input_evidence,
+        }
     coverage = (
         labels.merge(snapshots[["snapshot_id", "edition", "role"]], on="snapshot_id")
         .groupby(["edition", "role"], dropna=False)
@@ -832,6 +1134,14 @@ def main() -> None:
             "FanGraphs editions have a year label but no evidenced exact publication timestamp.",
             "The cohort contains ranked/scouted prospects, not a complete affiliated-player roster census.",
             "The baseline is therefore conditional on appearing on a FanGraphs board.",
+            *(
+                [
+                    "Canonical MiLB census inputs are content-hashed but are not yet "
+                    "verified by the acquisition source lock."
+                ]
+                if risk_set_manifest is not None
+                else []
+            ),
         ],
         "source_lock": {
             "path": str(source_lock.relative_to(ROOT)),
@@ -844,12 +1154,38 @@ def main() -> None:
                 Path(__file__),
                 ROOT / "modeling/contracts.py",
                 ROOT / "modeling/provenance.py",
+                ROOT / "modeling/risk_set.py",
                 ROOT / "modeling/requirements.lock",
             ],
             {
                 "raw_root": portable_path(args.raw_root),
                 "output_dir": portable_path(args.output_dir),
                 "acquisition_manifest": acquisition_evidence["path"],
+                "milb_census_metadata": portable_path(args.milb_census_metadata)
+                if args.milb_census_metadata
+                else None,
+                "milb_roster_census": portable_path(args.milb_roster_census)
+                if args.milb_roster_census
+                else None,
+                "milb_player_seasons": portable_path(args.milb_player_seasons)
+                if args.milb_player_seasons
+                else None,
+                "bref_player_team_seasons": portable_path(
+                    args.bref_player_team_seasons
+                )
+                if args.bref_player_team_seasons
+                else None,
+                "bref_quality": portable_path(args.bref_quality)
+                if args.bref_quality
+                else None,
+                "bref_teams": portable_path(args.bref_teams)
+                if args.bref_teams
+                else None,
+                "bref_team_organizations": portable_path(
+                    args.bref_team_organizations
+                )
+                if args.bref_team_organizations
+                else None,
             },
         ),
         "identity_quality": identity_quality,
@@ -861,6 +1197,7 @@ def main() -> None:
             "unmatched_landmarks": int(career_landmarks["player_id"].isna().sum()),
         },
         "coverage": coverage,
+        "affiliated_risk_set": risk_set_manifest,
         "outputs": outputs,
     }
     manifest_sha256 = json_sha256(manifest)

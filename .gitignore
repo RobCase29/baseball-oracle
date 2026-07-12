@@ -34,6 +34,7 @@ __pycache__/
 data/raw/
 data/processed/
 data/manifests/runs/
+data/manifests/archive/
 artifacts/
 *.duckdb
 *.duckdb.wal

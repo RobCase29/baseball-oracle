@@ -5,13 +5,19 @@ Status as of July 11, 2026.
 ## Verdict
 
 Baseball Oracle now has an executable, reproducible research baseline for MLB
-arrival and a clean career-model landmark panel. It is ready for feature research
-and honest forward backtests. It is not yet ready to publish player probabilities.
+arrival, a clean career-model landmark panel, and four mature historical cohorts
+drawn from the full population of recorded affiliated-season participants. It is
+ready for feature research and honest forward backtests. It is not yet ready to
+publish player probabilities.
 
-The current arrival cohort is conditional on appearing on a FanGraphs prospect
-board. It is not the complete population of affiliated minor-league players, and
-the board editions lack evidenced exact publication timestamps. Those limitations
-are stored as release blockers in the generated dataset and model manifests.
+There are now two distinct arrival research tracks. The original 2017-2026 track
+is conditional on appearing on a FanGraphs prospect board. The new 2010 and
+2017-2019 Baseball-Reference tracks include every player with a recorded appearance
+on all reconciled affiliated team pages for the season. They are broader than a
+prospect list, but they are not contract-roster censuses: players with no recorded
+game appearance can be absent. The historical statistics are effective-time safe,
+but their original knowledge time is not independently evidenced. These
+limitations are stored as release blockers in the generated dataset manifests.
 
 ## Acquired Data
 
@@ -24,20 +30,32 @@ about 162 MB:
 | SABR Lahman | 2025 release | People, batting, pitching, fielding, Hall of Fame, and source documentation through the 2025 MLB season |
 | Retrosheet | `bf5af7d40e1f0c33026074705cda8ed1c5177f95` | Independent MLB debut-date validation |
 | FanGraphs | 2017-2026 board editions | Independently acquired hitter and pitcher scouting reports plus prior-season statistics under the project's research permission |
+| Baseball-Reference Register | Complete 2010 and 2017-2019 affiliated seasons; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
 
-Every URL, byte count, license reference, and SHA-256 digest is pinned in
-`data/source-lock.json`. Requests for FanGraphs editions are rejected when the
-returned report year differs from the requested year; the endpoint silently
-falls back for some unsupported older editions, so this is a required guard.
-The lock currently proves local integrity and fails closed on upstream drift; it
-cannot recover old bytes from a mutable provider URL. Before any production model
-release, permitted raw objects must also be copied to immutable, access-controlled
-object storage keyed by the locked digest.
+For the original 44-resource acquisition, every URL, byte count, license
+reference, and SHA-256 digest is pinned in `data/source-lock.json`. Requests for
+FanGraphs editions are rejected when the returned report year differs from the
+requested year; the endpoint silently falls back for some unsupported older
+editions, so this is a required guard. Baseball-Reference lineage is pinned
+separately in the committed season archive locks. Both paths fail closed on
+upstream drift, and all permitted locked bytes are stored in the private,
+content-addressed Vercel Blob archive described in
+`docs/IMMUTABLE_RAW_ARCHIVE.md`; a rebuild therefore does not depend on a mutable
+provider URL. Vercel Blob is not a compliance WORM vault, so a future regulated
+retention requirement would still require an independent Object Lock mirror.
 
 Dataset preparation requires a complete acquisition manifest for the current
 source-lock digest and re-hashes all 44 local inputs before parsing. A raw file
 changed after acquisition therefore fails the build instead of inheriting trusted
 lineage from an earlier run.
+
+The separate Baseball-Reference backfill has archived 948 exact HTML responses
+totaling 380,489,051 bytes for 2010 and 2017-2019, plus deterministic season
+manifests and a zero-page manifest for the canceled 2020 season. Across all
+sources and preserved manifest versions, the private archive currently holds
+1,010 objects totaling 545,732,908 bytes. Details, digests, and recovery
+procedures are recorded in
+[`IMMUTABLE_RAW_ARCHIVE.md`](IMMUTABLE_RAW_ARCHIVE.md).
 
 ## Prepared Tables
 
@@ -77,6 +95,56 @@ Features and outcomes are physically separate. The feature allowlist rejects
 debut, final-career, service-time, label, and current-profile fields. A test canary
 also proves that a rolling fold cannot observe a debut that occurs after its label
 cutoff.
+
+## Affiliated Appearance Cohorts
+
+The Baseball-Reference adapter requires complete team-page reconciliation before
+admitting a season. It keeps every appearance-qualified provider ID in the
+denominator, uses only the provider's minor-league ID for Chadwick crosswalks,
+preserves every team and organization stint, and never joins on a name. Multi-level
+and multi-organization statistics are explicitly labeled as pooled; they are not
+mislabeled as the last observed level. Edition-only FanGraphs fields are excluded
+from this contract.
+
+| Season | Appearance census | Identity linked | Model eligible | 12m debuts | 60m debuts |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 2010 | 7,777 | 7,777 (100%) | 6,623 | 229 | 866 |
+| 2017 | 8,346 | 8,346 (100%) | 7,051 | 243 | 1,048 |
+| 2018 | 8,607 | 8,607 (100%) | 7,330 | 249 | 1,040 |
+| 2019 | 8,816 | 8,816 (100%) | 7,531 | 197 | 1,028 |
+
+Every 12, 24, 36, 48, and 60-month label in all four cohorts is mature as of the
+2025-12-31 outcome cutoff. Together they contain 33,546 player-season census rows:
+17,673 pitchers, 15,863 hitters, and ten genuine two-way players. The shared-role
+feature contract conservatively excludes those ten two-way snapshots while
+retaining their separate batting and pitching domains in the census.
+
+Model eligibility means MLB-naive at the season-end snapshot, exact outcome-linked,
+and supported by the current role feature contract. The adapter removed 1,151
+pre-snapshot MLB debuts and three unsupported two-way rows in 2010. It removed
+1,289 pre-snapshot debuts, five independently detected debut-source disagreements,
+and one unsupported two-way row in 2017. The 2018 exclusions are 1,264 prior MLB
+debuts, nine source disagreements, and four two-way rows; the 2019 exclusions are
+1,275 prior debuts, eight source disagreements, and two two-way rows. No unresolved
+identity is silently dropped: all four dataset manifests report 100% Chadwick
+crosswalk coverage. The combined model-analysis population is 28,535 rows with
+3,982 observed MLB debuts by 60 months.
+
+The content-addressed dataset digests are:
+
+```text
+2010  6da657a1abf2710359b735c5cb61d8460d2d5769cbf8b5aca8e514107becf3b3
+2017  1be26f899e4109cdd6a1ffddb4f7562c117498d2dcfd822f87390d50ba2d107f
+2018  345dd52c5ff9ff601ed9baa299f9e0c91299d72afaf1a4db03d02f455b706fa0
+2019  9b0ff4fd46632a62b714e955eafad82b277c5102f5da84fbd633d0b0fd506616
+```
+
+These cohorts validate the data contract and provide three consecutive
+pre-pandemic test years; they are not yet a release model. More seasons are needed
+for robust rolling folds, era diagnostics, and locked calibration. The source also
+does not establish original publication timestamps, so the manifests correctly
+set `effective_time_safe=true`, `knowledge_time_verified=false`, and
+`strict_point_in_time_features=false`.
 
 ## Arrival Baseline
 
@@ -141,26 +209,30 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
 
 ## Remaining Gates
 
-1. Acquire a dated, complete affiliated-player roster census, including inactive
-   and zero-stat players. Authorized Sports Reference history is the immediate
-   research path; SIS or a Chadwick commercial history is the production path if
-   the census is incomplete.
-2. Place every permitted locked raw payload in immutable object storage so a future
-   rebuild does not depend on mutable provider URLs.
-3. Acquire authorized historical MiLB player-season and transaction histories,
-   then normalize level, league, park, organization, workload, promotion, and
-   explicit coverage features.
-4. Evidence exact scouting publication dates or keep scouting out of strict
-   historical-information backtests.
-5. Add provider-versioned Sports Reference or FanGraphs WAR to the prepared career
+1. Acquire a dated, complete affiliated-player contract-roster census, including
+   inactive and zero-appearance players. The Baseball-Reference appearance census
+   is the broad research denominator; SIS or a Chadwick commercial history remains
+   the production path for complete roster membership.
+2. Fill the 2011-2016 history and add post-2020 cohorts for deeper rolling temporal
+   folds and regime diagnostics. Preserve 2020 as a structural zero rather than
+   inventing observations for the canceled season.
+3. Register historical season manifests in the Neon lineage catalog and add
+   periodic remote digest reconciliation. Migration `0006` and the deployment
+   registrar now catalog the original 47-member locked corpus.
+4. Normalize level, league, park, organization, workload, promotion, transaction,
+   and explicit coverage features without collapsing pooled stints into a single
+   context.
+5. Evidence original publication/knowledge times or keep reconstructed historical
+   features out of strict historical-information backtests.
+6. Add provider-versioned Sports Reference or FanGraphs WAR to the prepared career
    landmarks. Lahman supports playing time, rate, longevity, awards, and Hall of
    Fame outcomes, but does not contain WAR.
-6. Build monthly competing-risk arrival hazards, time-specific calibration,
+7. Build monthly competing-risk arrival hazards, time-specific calibration,
    confidence intervals, organization and era diagnostics, and a locked holdout.
-7. Build post-debut opportunity, performance, exit/re-entry, and WAR components,
+8. Build post-debut opportunity, performance, exit/re-entry, and WAR components,
    then simulate joint career paths. Model Hall-of-Fame-caliber performance
    separately from the later voting process.
-8. Normalize Prospect Savant's 2023+ tracking components as a challenger and test
+9. Normalize Prospect Savant's 2023+ tracking components as a challenger and test
    incremental value over the performance-only baseline.
 
 Only a candidate that beats the frozen baseline across multiple forward folds,
@@ -173,13 +245,23 @@ promoted to `ml.model_release` and published.
 npm run data:acquire
 npm run model:setup
 npm run model:all
+npm run backfill:sports-reference -- --execute --season=2017 --max-teams=250
+npm run archive:sports-reference -- --season=2017
+.venv/bin/python modeling/prepare_dataset.py \
+  --output-dir data/processed/model-v1-bref-2017 \
+  --bref-player-team-seasons data/processed/baseball-reference-register/2017/player_team_seasons.csv \
+  --bref-quality data/processed/baseball-reference-register/2017/quality.json \
+  --bref-teams data/processed/baseball-reference-register/2017/teams.csv \
+  --bref-team-organizations data/processed/baseball-reference-register/2017/team_organizations.csv
 ```
 
-Each rebuild records a stable digest over the five table hashes, preserves all five
-Parquet files under that digest, and separately addresses the build manifest,
-validation report, and model bytes. Training resolves those archived files and
-checks their hashes and row counts before fitting. The database migration
+Each default rebuild records a stable digest over the five core table hashes;
+affiliated-risk-set builds add three content-addressed tables for the census,
+eligible snapshots, and censored labels. Training resolves archived files and
+checks their hashes and row counts before fitting. Database migration
 `0005_ml_training_lineage.sql` adds immutable dataset
 manifests, feature snapshots, censored labels, temporal folds and player-cluster
 assignments, training runs, artifacts, and links from releases and predictions
-back to their exact training evidence.
+back to their exact training evidence. Migration
+`0006_private_raw_archive_catalog.sql` adds append-only private archive objects,
+manifests, and reconciled manifest membership.

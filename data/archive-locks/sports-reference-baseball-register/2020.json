@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "baseball-reference-register-archive-lock/v1",
+  "season": 2020,
+  "sourceRunManifest": {
+    "path": "data/manifests/runs/2026-07-12T015905596Z-30041-4dc99078-baseball-reference-register-2020.json",
+    "sha256": "221fd45d66ce61c9ea74e25256ce8287a32dbb907a3f73c0d53a651c28a0629e"
+  },
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "coverage": {
+    "structuralZeroSeason": true,
+    "structuralReason": "The affiliated Minor League Baseball season was canceled; zero team-season pages are expected.",
+    "declaredTeams": 0,
+    "affiliateSlots": 0,
+    "discoveredTeams": 0,
+    "completedTeams": 0,
+    "failedTeams": 0
+  },
+  "inputCount": 0,
+  "inputBytes": 0,
+  "manifest": {
+    "sha256": "107885d401f5f5a742dd245620457a0f366e96b629fedc3c9b75bb4877778049",
+    "byteLength": 5573,
+    "mediaType": "application/json",
+    "pathname": "raw/v1/sports-reference/baseball-register/sha256/10/107885d401f5f5a742dd245620457a0f366e96b629fedc3c9b75bb4877778049",
+    "storageStatus": "created",
+    "archivedAt": "2026-07-12T02:05:12.040Z"
+  }
+}

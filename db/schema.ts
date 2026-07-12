@@ -129,6 +129,148 @@ export const rawBlobs = raw.table(
   ],
 )
 
+export const rawArchiveObjects = raw.table(
+  'archive_object',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sha256: text('sha256').notNull(),
+    byteLength: bigint('byte_length', { mode: 'bigint' }).notNull(),
+    mediaType: text('media_type').notNull(),
+    contentEncoding: text('content_encoding'),
+    storageProvider: text('storage_provider').notNull(),
+    accessScope: text('access_scope').notNull(),
+    pathname: text('pathname').notNull(),
+    objectUri: text('object_uri').notNull(),
+    etag: text('etag'),
+    archivedAt: timestamp('archived_at', { withTimezone: true }).notNull(),
+    registeredAt: timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('archive_object_path_uq').on(table.pathname),
+    unique('archive_object_uri_uq').on(table.objectUri),
+    index('archive_object_sha_idx').on(table.sha256),
+    index('archive_object_archived_idx').on(table.archivedAt.desc()),
+    check('archive_object_sha_chk', sql`${table.sha256} ~ '^[0-9a-f]{64}$'`),
+    check('archive_object_length_chk', sql`${table.byteLength} >= 0`),
+    check('archive_object_media_type_chk', sql`${table.mediaType} <> ''`),
+    check('archive_object_provider_chk', sql`${table.storageProvider} = 'vercel_blob'`),
+    check('archive_object_access_chk', sql`${table.accessScope} = 'private'`),
+    check(
+      'archive_object_private_uri_chk',
+      sql`${table.objectUri} ~ '^https://[^/]+[.]private[.]blob[.]vercel-storage[.]com/'`,
+    ),
+    check(
+      'archive_object_path_chk',
+      sql`${table.pathname} ~ '^raw/v1/[a-z0-9][a-z0-9._-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}/sha256/[0-9a-f]{2}/[0-9a-f]{64}$' and split_part(${table.pathname}, '/', 6) = left(${table.sha256}, 2) and split_part(${table.pathname}, '/', 7) = ${table.sha256}`,
+    ),
+  ],
+)
+
+export const rawArchiveManifests = raw.table(
+  'archive_manifest',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    archiveObjectId: uuid('archive_object_id').notNull().references(() => rawArchiveObjects.id),
+    manifestSha256: text('manifest_sha256').notNull(),
+    schemaVersion: text('schema_version').notNull(),
+    status: text('status').notNull(),
+    sourceLockSha256: text('source_lock_sha256').notNull(),
+    acquisitionManifestPath: text('acquisition_manifest_path').notNull(),
+    acquisitionManifestSha256: text('acquisition_manifest_sha256').notNull(),
+    checkpointPath: text('checkpoint_path').notNull(),
+    checkpointSha256: text('checkpoint_sha256').notNull(),
+    memberCount: integer('member_count').notNull(),
+    memberBytes: bigint('member_bytes', { mode: 'bigint' }).notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull(),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+    registeredAt: timestamp('registered_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique('archive_manifest_object_uq').on(table.archiveObjectId),
+    unique('archive_manifest_sha_uq').on(table.manifestSha256),
+    index('archive_manifest_completed_idx').on(table.completedAt.desc()),
+    index('archive_manifest_source_lock_idx').on(
+      table.sourceLockSha256,
+      table.acquisitionManifestSha256,
+    ),
+    check('archive_manifest_sha_chk', sql`${table.manifestSha256} ~ '^[0-9a-f]{64}$'`),
+    check('archive_manifest_schema_chk', sql`${table.schemaVersion} = 'locked-corpus-archive/v1'`),
+    check('archive_manifest_status_chk', sql`${table.status} = 'complete'`),
+    check(
+      'archive_manifest_source_lock_sha_chk',
+      sql`${table.sourceLockSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      'archive_manifest_acquisition_sha_chk',
+      sql`${table.acquisitionManifestSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      'archive_manifest_checkpoint_sha_chk',
+      sql`${table.checkpointSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check('archive_manifest_member_count_chk', sql`${table.memberCount} > 0`),
+    check('archive_manifest_member_bytes_chk', sql`${table.memberBytes} >= 0`),
+    check('archive_manifest_window_chk', sql`${table.completedAt} >= ${table.startedAt}`),
+  ],
+)
+
+export const rawArchiveManifestMembers = raw.table(
+  'archive_manifest_member',
+  {
+    manifestId: uuid('manifest_id').notNull().references(() => rawArchiveManifests.id),
+    ordinal: integer('ordinal').notNull(),
+    archiveObjectId: uuid('archive_object_id').notNull().references(() => rawArchiveObjects.id),
+    memberRole: text('member_role').notNull(),
+    sourceSlug: text('source_slug').notNull(),
+    datasetKey: text('dataset_key').notNull(),
+    resourceKey: text('resource_key').notNull(),
+    sourceUri: text('source_uri'),
+    storageStatus: text('storage_status').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.manifestId, table.ordinal] }),
+    unique('archive_manifest_member_resource_uq').on(
+      table.manifestId,
+      table.sourceSlug,
+      table.datasetKey,
+      table.resourceKey,
+    ),
+    index('archive_manifest_member_object_idx').on(table.archiveObjectId),
+    index('archive_manifest_member_logical_idx').on(
+      table.sourceSlug,
+      table.datasetKey,
+      table.resourceKey,
+    ),
+    check('archive_manifest_member_ordinal_chk', sql`${table.ordinal} >= 0`),
+    check(
+      'archive_manifest_member_role_chk',
+      sql`${table.memberRole} in ('raw_payload', 'source_lock', 'acquisition_manifest', 'permission_evidence')`,
+    ),
+    check(
+      'archive_manifest_member_resource_key_chk',
+      sql`${table.resourceKey} <> '' and octet_length(${table.resourceKey}) <= 1024`,
+    ),
+    check(
+      'archive_manifest_member_source_uri_chk',
+      sql`${table.sourceUri} is null or ${table.sourceUri} ~ '^https://'`,
+    ),
+    check(
+      'archive_manifest_member_storage_status_chk',
+      sql`${table.storageStatus} in ('created', 'already-exists')`,
+    ),
+    check(
+      'archive_manifest_member_source_slug_chk',
+      sql`${table.sourceSlug} ~ '^[a-z0-9][a-z0-9._-]{0,63}$'`,
+    ),
+    check(
+      'archive_manifest_member_dataset_key_chk',
+      sql`${table.datasetKey} ~ '^[a-z0-9][a-z0-9._-]{0,63}$'`,
+    ),
+  ],
+)
+
 export const fetches = raw.table(
   'fetch',
   {

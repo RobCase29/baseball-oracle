@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "baseball-reference-register-archive-lock/v1",
+  "season": 2018,
+  "sourceRunManifest": {
+    "path": "data/manifests/runs/2026-07-12T015500211Z-29309-ffffbd22-baseball-reference-register-2018.json",
+    "sha256": "8dfef35944fce4c8d81d4a13f21a89172fcc567dfd77c5bc101c3e5f5c425e45"
+  },
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "coverage": {
+    "structuralZeroSeason": false,
+    "structuralReason": null,
+    "declaredTeams": 240,
+    "affiliateSlots": 241,
+    "discoveredTeams": 240,
+    "completedTeams": 240,
+    "failedTeams": 0
+  },
+  "inputCount": 241,
+  "inputBytes": 97840369,
+  "manifest": {
+    "sha256": "931bad5218f62b80d92d4c4a376eced68c5e6ae6256413377818027b62c7cc19",
+    "byteLength": 294735,
+    "mediaType": "application/json",
+    "pathname": "raw/v1/sports-reference/baseball-register/sha256/93/931bad5218f62b80d92d4c4a376eced68c5e6ae6256413377818027b62c7cc19",
+    "storageStatus": "created",
+    "archivedAt": "2026-07-12T02:03:40.122Z"
+  }
+}

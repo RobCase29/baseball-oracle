@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "baseball-reference-register-archive-lock/v1",
+  "season": 2010,
+  "sourceRunManifest": {
+    "path": "data/manifests/runs/2026-07-12T015113153Z-28294-4439693a-baseball-reference-register-2010.json",
+    "sha256": "e4f51fbb2087141139c2807e9269d984845af69cb875be134959131b8cb6842d"
+  },
+  "permissionEvidence": {
+    "path": "docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md",
+    "sha256": "259e254cbf7feac8c9d4f469410bd5eb2748169ee3ea4f7840265dcc12d6ba34"
+  },
+  "coverage": {
+    "structuralZeroSeason": false,
+    "structuralReason": null,
+    "declaredTeams": 228,
+    "affiliateSlots": 228,
+    "discoveredTeams": 228,
+    "completedTeams": 228,
+    "failedTeams": 0
+  },
+  "inputCount": 229,
+  "inputBytes": 88230722,
+  "manifest": {
+    "sha256": "f535646fa3029f67b60e1d0f917e733407618719bd7382817db5214346a34363",
+    "byteLength": 280335,
+    "mediaType": "application/json",
+    "pathname": "raw/v1/sports-reference/baseball-register/sha256/f5/f535646fa3029f67b60e1d0f917e733407618719bd7382817db5214346a34363",
+    "storageStatus": "created",
+    "archivedAt": "2026-07-12T02:00:51.812Z"
+  }
+}
