@@ -166,6 +166,36 @@ def test_horizon_event_after_data_cutoff_remains_censored() -> None:
         assert str(labels[f"debut_within_{months}m"].dtype) == "boolean"
 
 
+def test_missing_debut_date_keeps_datetime_schema() -> None:
+    snapshots = pd.DataFrame(
+        [
+            {
+                "snapshot_id": "snapshot-censored",
+                "player_id": "player-censored",
+                "bbref_id": "censored01",
+                "as_of": pd.Timestamp("2025-12-31"),
+            }
+        ]
+    )
+    people = pd.DataFrame(
+        [{"playerID": "censored01", "bbrefID": "censored01", "debut": None}]
+    )
+    register = pd.DataFrame(
+        [
+            {
+                "key_uuid": "player-censored",
+                "key_retro": None,
+                "mlb_played_first": None,
+            }
+        ]
+    )
+
+    labels, _ = build_labels(snapshots, people, register, {})
+
+    assert str(labels["debut_date"].dtype) == "datetime64[ns]"
+    assert pd.isna(labels.iloc[0]["debut_date"])
+
+
 def test_non_inducted_hall_of_fame_outcomes_remain_censored() -> None:
     people = pd.DataFrame(
         [

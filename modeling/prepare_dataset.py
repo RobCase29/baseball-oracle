@@ -592,6 +592,8 @@ def build_labels(
             )
         labels.append(label)
     label_frame = pd.DataFrame(labels)
+    for column in ("as_of", "debut_date", "data_cutoff"):
+        label_frame[column] = pd.to_datetime(label_frame[column])
     for months in SURVIVAL_HORIZON_MONTHS:
         label_frame[f"observed_{months}m"] = label_frame[
             f"observed_{months}m"
