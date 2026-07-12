@@ -49,7 +49,10 @@ through 2019: 69,326 eligible player-season snapshots, 24,406 players, and 9,832
 MLB debuts within 60 months. The research benchmark beats its hierarchical
 age-level-role comparator on all 35 supported forward fold-horizons, but remains
 unpublished because long-horizon and cold-start calibration, context normalization,
-and a locked prospective holdout are still pending.
+and a locked prospective holdout are still pending. A locked 2021-2025 external
+regime evaluation is complete and improves the censoring-aware baseline across
+eight sufficient role-horizon cells, but fails preregistered population-shift and
+calibration cell-fraction gates, so it is not release-eligible.
 
 Raw data, derived Parquet files, and model artifacts stay local and are ignored by
 Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the code,

@@ -30,7 +30,7 @@ about 162 MB:
 | SABR Lahman | 2025 release | People, batting, pitching, fielding, Hall of Fame, and source documentation through the 2025 MLB season |
 | Retrosheet | `bf5af7d40e1f0c33026074705cda8ed1c5177f95` | Independent MLB debut-date validation |
 | FanGraphs | 2017-2026 board editions | Independently acquired hitter and pitcher scouting reports plus prior-season statistics under the project's research permission |
-| Baseball-Reference Register | Complete 2010-2019 affiliated seasons; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
+| Baseball-Reference Register | Complete 2010-2019 affiliated seasons; locked 2021-2025 external cohorts; structural-zero 2020 season | Full season-appearance risk sets, team and organization lineage, and minor-league performance under the project's research permission |
 
 For the original 44-resource acquisition, every URL, byte count, license
 reference, and SHA-256 digest is pinned in `data/source-lock.json`. Requests for
@@ -187,6 +187,37 @@ mandatory. The artifact is marked
 `research_population_benchmark_not_release_eligible`; no forecast is written to
 product tables.
 
+## Post-2020 External Evaluation
+
+The post-pandemic regime test is now captured and scored, but it is not a
+prospective product release. The locked Baseball-Reference archive contains
+1,010 reconciled affiliated team pages across 2021-2025 with zero capture
+failures. The content-addressed external corpus contains 33,559 snapshots for
+13,976 players (15,476 hitters, 18,083 pitchers, and 9,701 repeat players).
+The five season labels contain 8,187/6,874, 8,347/6,927, 8,281/6,866,
+7,789/6,437, and 7,812/6,455 census/model-eligible rows respectively.
+
+The amended, create-only evaluation lock is
+`2a6f2b237b03045fa7b16f8d759da8bd35cd974636f1b9536bf96fe70f8587e3`.
+Predictions were archived before outcomes were read: 167,795 rows,
+`5424feaab1473d9680a966a0a2dad7066c068f25261413c73f247abf308f862d`, with
+prediction content digest
+`8dda7eb4fe18841c2ac24960d0e225f3498c3f4f5ea4a6c8d76f2dc34fb443b2`.
+The scored report is `dbdf644d4b3e8b7fecc81fc0cc568a8554d073388196e1ea94e273e78f259c69`.
+
+Across eight sufficient 12-48 month role-horizon cells, the candidate improved
+the censoring-aware baseline Brier score in all eight cells. The paired Brier
+improvement estimate was 0.01527 (95% CI 0.01330-0.01727); calibration slope
+passed all eight cells and O/E passed seven. This is useful evidence, not a
+release claim: the report status is `external_validation_fail_not_release_eligible`.
+The external admission failed its preregistered population-shift gates, and the
+cell-fraction ECE gate passed only 5/8 cells (required 6/8). The 60-month
+external labels are not mature for this evaluation; 2025 rows remain
+prediction-only. A technical monotonicity amendment was made before scoring and
+is fully bound by the successor lock; the original failed admission remains
+preserved. Because aggregate outcome QA had been inspected before the failed
+attempt, this evaluation is retrospective rather than researcher-blind.
+
 ## Trouble With The Curve Audit
 
 The referenced repository is a useful hypothesis source, not training truth. At
@@ -214,9 +245,10 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
    inactive and zero-appearance players. The Baseball-Reference appearance census
    is the broad research denominator; SIS or a Chadwick commercial history remains
    the production path for complete roster membership.
-2. Add post-2020 cohorts for regime diagnostics. Preserve 2020 as a structural
-   zero, use only mature horizons for ordinary binary metrics, and retain 2021 as
-   a predeclared reorganization and pandemic-development stress test.
+2. The 2021-2025 post-2020 cohorts are captured and externally evaluated. Preserve
+   the locked evidence, but do not promote it: distribution-shift admission and
+   pooled ECE cell-fraction gates failed. Preserve 2020 as a structural zero and
+   use only mature horizons for ordinary binary metrics.
 3. Register every historical season manifest in the Neon lineage catalog and add
    periodic remote digest reconciliation for both current and superseded evidence.
 4. Normalize level, league, park, organization, era, workload, promotion, transaction,
@@ -230,7 +262,8 @@ outcomes, entity-masked, and evaluated only as a forward-fold ablation.
 7. Build monthly competing-risk arrival hazards, IPCW survival metrics,
    chronological calibration, organization and era diagnostics, missing-feature
    stress tests, paired baseline-skill intervals, cold-start observed/expected
-   gates, and a content-locked prospective holdout.
+   gates, and a content-locked prospective 2026 holdout; the external 2021-2025
+   test is retrospective and does not satisfy this gate.
 8. Build post-debut opportunity, performance, exit/re-entry, and WAR components,
    then simulate joint career paths. Model Hall-of-Fame-caliber performance
    separately from the later voting process.
