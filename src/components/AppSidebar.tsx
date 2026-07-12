@@ -5,10 +5,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ScanSearch,
+  ShieldCheck,
   Star,
 } from 'lucide-react'
 
-export type WorkspaceView = 'Board' | 'Watchlist' | 'Model lab' | 'Data health'
+export type WorkspaceView = 'Board' | 'Watchlist' | 'Validation' | 'Model lab' | 'Data health'
 
 interface AppSidebarProps {
   activeView: WorkspaceView
@@ -21,6 +22,7 @@ interface AppSidebarProps {
 const navigation = [
   { label: 'Board' as const, icon: BarChart3 },
   { label: 'Watchlist' as const, icon: Star },
+  { label: 'Validation' as const, icon: ShieldCheck },
   { label: 'Model lab' as const, icon: FlaskConical },
   { label: 'Data health' as const, icon: Database },
 ]
@@ -66,7 +68,7 @@ export function AppSidebar({
         <span className="status-dot" aria-hidden="true" />
         <div>
           <strong>Research build</strong>
-          <span>Real data · Model pending</span>
+          <span>Real data · Research estimates</span>
         </div>
       </div>
 

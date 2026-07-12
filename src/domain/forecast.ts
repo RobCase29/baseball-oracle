@@ -76,6 +76,30 @@ export interface PlayerProvenance {
   externalIds: Record<string, string | number | null>
 }
 
+export interface ResearchArrivalHorizon {
+  months: number
+  probability: number
+  baselineProbability: number
+  externallyValidated: boolean
+}
+
+export interface ResearchArrivalEstimate {
+  status: 'research_only'
+  releaseEligible: false
+  asOf: string
+  modelVersion: string
+  snapshotId: string
+  coldStart: boolean
+  priorLevel: string
+  modelAge: number
+  currentStatusVerified: false
+  horizons: ResearchArrivalHorizon[]
+  lineage: {
+    predictionManifestSha256: string
+    evaluationReportSha256: string
+  }
+}
+
 export interface PlayerRecord {
   id: string
   name: string
@@ -94,10 +118,11 @@ export interface PlayerRecord {
   metrics: ObservedMetric[]
   coverage: PlayerCoverage
   provenance: PlayerProvenance
+  researchEstimate: ResearchArrivalEstimate | null
   forecast: PublishedForecast | null
 }
 
-export type SortKey = 'psScore' | 'psPercentile' | 'age' | 'name'
+export type SortKey = 'arrival36' | 'psScore' | 'psPercentile' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -117,8 +142,11 @@ export interface PlayersResponseMeta {
   dataAsOf: string | null
   season: number | null
   coverage: string
-  forecastStatus: 'not_published' | 'published'
+  forecastStatus: 'not_published' | 'research_only' | 'published'
   source: string
+  researchCoverage?: number | null
+  researchAsOf?: string | null
+  releaseEligible?: boolean
 }
 
 export interface PlayersResponse {

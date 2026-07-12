@@ -1,0 +1,14 @@
+.git/
+.venv/
+node_modules/
+dist/
+artifacts/
+data/raw/
+data/processed/
+data/manifests/runs/
+data/manifests/archive/
+__pycache__/
+.pytest_cache/
+*.duckdb
+*.duckdb.wal
+*.log

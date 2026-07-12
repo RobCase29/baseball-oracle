@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   CalendarDays,
@@ -19,16 +19,22 @@ import type {
   PlayersResponse,
   PlayersResponseMeta,
 } from './domain/forecast'
-import { filterAndSortPlayers, formatOrdinal } from './lib/forecast'
+import { filterAndSortPlayers } from './lib/forecast'
 
 const PAGE_SIZE = 50
 const WATCHLIST_STORAGE_KEY = 'baseball-oracle.real-watchlist.v1'
+
+const ValidationDashboard = lazy(() =>
+  import('./components/ValidationDashboard').then((module) => ({
+    default: module.ValidationDashboard,
+  })),
+)
 
 const initialFilters: BoardFilters = {
   query: '',
   playerType: 'All',
   level: 'All',
-  sort: 'psScore',
+  sort: 'arrival36',
 }
 
 const emptyPage: PlayersPage = {
@@ -42,7 +48,7 @@ const emptyMeta: PlayersResponseMeta = {
   dataAsOf: null,
   season: null,
   coverage: 'Current minor-league observed profiles',
-  forecastStatus: 'not_published',
+  forecastStatus: 'research_only',
   source: 'Prospect Savant',
 }
 
@@ -216,13 +222,6 @@ function App() {
     })
   }
 
-  const percentiles = visiblePlayers
-    .map((player) => player.psPercentile)
-    .filter((value): value is number => value !== null)
-  const averagePercentile =
-    percentiles.length > 0
-      ? percentiles.reduce((sum, value) => sum + value, 0) / percentiles.length
-      : null
   const statcastCoverage = visiblePlayers.filter((player) => player.coverage.hasStatcast).length
   const topbarStatus = loading && players.length === 0 ? 'loading' : error ? 'error' : 'live'
 
@@ -255,6 +254,11 @@ function App() {
 
         {activeView === 'Model lab' ? <ModelLab /> : null}
         {activeView === 'Data health' ? <DataHealth /> : null}
+        {activeView === 'Validation' ? (
+          <Suspense fallback={<div className="workspace-page validation-loading">Loading validation workspace</div>}>
+            <ValidationDashboard />
+          </Suspense>
+        ) : null}
 
         {activeView === 'Board' || activeView === 'Watchlist' ? (
           <main className="research-workspace">
@@ -265,7 +269,7 @@ function App() {
                 <p>
                   {isWatchlistView
                     ? 'Saved real-player profiles and their current source evidence.'
-                    : 'Current minor-league performance signals and tracking coverage. Oracle forecasts are pending.'}
+                    : 'Current minor-league evidence joined to frozen 2025 research arrival estimates where identity and role match.'}
                 </p>
               </div>
               <div className="snapshot-id">
@@ -281,9 +285,9 @@ function App() {
                 <small>{isWatchlistView ? `${watchlist.size} saved total` : meta.coverage}</small>
               </div>
               <div>
-                <span>AVG. PS PERCENTILE</span>
-                <strong>{averagePercentile === null ? '—' : formatOrdinal(averagePercentile)}</strong>
-                <small>visible profiles with percentile data</small>
+                <span>RESEARCH ESTIMATES</span>
+                <strong>{meta.researchCoverage?.toLocaleString() ?? visiblePlayers.filter((player) => player.researchEstimate).length}</strong>
+                <small>exact MLBAM and role matches</small>
               </div>
               <div>
                 <span>STATCAST COVERAGE</span>

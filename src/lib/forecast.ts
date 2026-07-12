@@ -55,6 +55,15 @@ export function filterAndSortPlayers(
       if (filters.sort === 'psPercentile') {
         return compareNullableNumber(left.psPercentile, right.psPercentile, 'descending')
       }
+      if (filters.sort === 'arrival36') {
+        const leftProbability = left.researchEstimate?.horizons.find(
+          (horizon) => horizon.months === 36,
+        )?.probability ?? null
+        const rightProbability = right.researchEstimate?.horizons.find(
+          (horizon) => horizon.months === 36,
+        )?.probability ?? null
+        return compareNullableNumber(leftProbability, rightProbability, 'descending')
+      }
       return compareNullableNumber(left.psScore, right.psScore, 'descending')
     })
 }

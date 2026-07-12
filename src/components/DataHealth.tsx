@@ -6,6 +6,16 @@ interface DatabaseHealthResponse {
   migrations?: number
 }
 
+interface PlayerHealthResponse {
+  page?: { total?: number }
+  meta?: { season?: number | null; dataAsOf?: string | null }
+}
+
+interface ModelHealthResponse {
+  coverage?: { externalSnapshots?: number; externalPlayers?: number }
+  releaseEligible?: boolean
+}
+
 const sourceRows = [
   {
     layer: 'Identity',
@@ -48,14 +58,21 @@ export function DataHealth() {
   const [databaseHealth, setDatabaseHealth] = useState<
     DatabaseHealthResponse | { status: 'checking' }
   >({ status: 'checking' })
+  const [playerHealth, setPlayerHealth] = useState<PlayerHealthResponse | null>(null)
+  const [modelHealth, setModelHealth] = useState<ModelHealthResponse | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
 
-    fetch('/api/health', { signal: controller.signal })
-      .then(async (response) => {
-        const result = (await response.json()) as DatabaseHealthResponse
-        setDatabaseHealth(result)
+    Promise.all([
+      fetch('/api/health', { signal: controller.signal }),
+      fetch('/api/players?limit=1', { signal: controller.signal }),
+      fetch('/api/model-status', { signal: controller.signal }),
+    ])
+      .then(async ([healthResponse, playersResponse, modelResponse]) => {
+        setDatabaseHealth((await healthResponse.json()) as DatabaseHealthResponse)
+        if (playersResponse.ok) setPlayerHealth((await playersResponse.json()) as PlayerHealthResponse)
+        if (modelResponse.ok) setModelHealth((await modelResponse.json()) as ModelHealthResponse)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
@@ -100,7 +117,7 @@ export function DataHealth() {
           <Link2 size={18} aria-hidden="true" />
           <span>Identity strategy</span>
           <strong>Active</strong>
-          <small>9,672 board rows resolved</small>
+          <small>{playerHealth?.page?.total?.toLocaleString() ?? '—'} current {playerHealth?.meta?.season ?? ''} profiles</small>
         </div>
         <div>
           <FileKey2 size={18} aria-hidden="true" />
@@ -110,9 +127,9 @@ export function DataHealth() {
         </div>
         <div>
           <Radio size={18} aria-hidden="true" />
-          <span>Research archive</span>
-          <strong>44 files</strong>
-          <small>162 MB pinned and hashed</small>
+          <span>External model corpus</span>
+          <strong>{modelHealth?.coverage?.externalSnapshots?.toLocaleString() ?? '—'} snapshots</strong>
+          <small>{modelHealth?.coverage?.externalPlayers?.toLocaleString() ?? '—'} identity-linked players</small>
         </div>
       </section>
 

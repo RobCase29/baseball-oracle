@@ -1,10 +1,15 @@
 import { neon } from '@neondatabase/serverless'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { z } from 'zod'
+import {
+  researchArrivalEstimate,
+  researchArrivalProbability,
+  researchPreviewSummary,
+} from './_research-arrival.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
-const playerSorts = ['psScore', 'psPercentile', 'age', 'name'] as const
+const playerSorts = ['arrival36', 'psScore', 'psPercentile', 'age', 'name'] as const
 const queryParameterNames = new Set([
   'q',
   'playerType',
@@ -346,9 +351,9 @@ function opportunity(row: PlayerRow): { label: string; value: string } | null {
 }
 
 function playerRecord(row: PlayerRow) {
-  const batsThrows = row.bats && row.throws
-    ? `${row.bats}/${row.throws}`
-    : row.bats ?? row.throws
+  const bats = row.bats && row.bats !== '0' ? row.bats : null
+  const throws = row.throws && row.throws !== '0' ? row.throws : null
+  const batsThrows = bats && throws ? `${bats}/${throws}` : bats ?? throws
 
   return {
     id: row.profile_id,
@@ -394,6 +399,7 @@ function playerRecord(row: PlayerRow) {
         fangraphsPath: row.fangraphs_path,
       },
     },
+    researchEstimate: researchArrivalEstimate(row.mlbam_id, row.player_type),
     forecast: null,
   }
 }
@@ -422,9 +428,49 @@ export default async function handler(
 
   const searchPattern = `%${escapeLike(query.q)}%`
   const offset = (query.page - 1) * query.limit
+  const rowOffset = query.sort === 'arrival36' ? 0 : offset
 
   try {
     const sql = neon(databaseUrl)
+    let researchPageIds: string[] = []
+    let researchMatched = 0
+
+    if (query.sort === 'arrival36') {
+      const candidates = await sql`
+        SELECT profile_id, mlbam_id, player_type
+        FROM app.player_directory_snapshot
+        WHERE (
+          ${query.q} = ''
+          OR display_name ILIKE ${searchPattern} ESCAPE '\\'
+          OR coalesce(organization_code, '') ILIKE ${searchPattern} ESCAPE '\\'
+          OR coalesce(organization_name, '') ILIKE ${searchPattern} ESCAPE '\\'
+          OR coalesce(position, '') ILIKE ${searchPattern} ESCAPE '\\'
+        )
+          AND (${query.playerType} = 'All' OR player_type = ${query.playerType})
+          AND (${query.level} = 'All' OR level = ${query.level})
+      ` as unknown as Array<Pick<PlayerRow, 'profile_id' | 'mlbam_id' | 'player_type'>>
+
+      const ranked = candidates
+        .map((candidate) => ({
+          ...candidate,
+          probability: researchArrivalProbability(
+            candidate.mlbam_id,
+            candidate.player_type,
+            36,
+          ),
+        }))
+        .toSorted((left, right) => {
+          if (left.probability === null && right.probability === null) {
+            return left.profile_id.localeCompare(right.profile_id)
+          }
+          if (left.probability === null) return 1
+          if (right.probability === null) return -1
+          return right.probability - left.probability || left.profile_id.localeCompare(right.profile_id)
+        })
+      researchMatched = ranked.filter((candidate) => candidate.probability !== null).length
+      researchPageIds = ranked.slice(offset, offset + query.limit).map((candidate) => candidate.profile_id)
+    }
+
     const [rowResult, countResult] = await Promise.all([
       sql`
         SELECT
@@ -503,6 +549,7 @@ export default async function handler(
         )
           AND (${query.playerType} = 'All' OR player_type = ${query.playerType})
           AND (${query.level} = 'All' OR level = ${query.level})
+          AND (${query.sort} <> 'arrival36' OR profile_id = ANY(${researchPageIds}::text[]))
         ORDER BY
           CASE WHEN ${query.sort} = 'psScore' THEN ps_score END DESC NULLS LAST,
           CASE WHEN ${query.sort} = 'psPercentile' THEN ps_percentile END DESC NULLS LAST,
@@ -511,7 +558,7 @@ export default async function handler(
           display_name ASC,
           profile_id ASC
         LIMIT ${query.limit}
-        OFFSET ${offset}
+        OFFSET ${rowOffset}
       `,
       sql`
         SELECT
@@ -531,7 +578,15 @@ export default async function handler(
       `,
     ])
 
-    const rows = rowResult as unknown as PlayerRow[]
+    let rows = rowResult as unknown as PlayerRow[]
+    if (query.sort === 'arrival36') {
+      const order = new Map(researchPageIds.map((profileId, index) => [profileId, index]))
+      rows = rows.toSorted(
+        (left, right) =>
+          (order.get(left.profile_id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(right.profile_id) ?? Number.MAX_SAFE_INTEGER),
+      )
+    }
     const [count] = countResult as unknown as CountRow[]
     const parsedTotal = Number(count?.total ?? 0)
     const total = Number.isSafeInteger(parsedTotal) && parsedTotal >= 0 ? parsedTotal : 0
@@ -556,7 +611,10 @@ export default async function handler(
           season: roundedNumber(count?.season ?? null, 0),
           dataAsOf: isoDate(count?.data_as_of ?? null),
           coverage: 'Current-season player-role profiles at each player\'s highest observed level',
-          forecastStatus: 'not_published',
+          forecastStatus: 'research_only',
+          researchCoverage: query.sort === 'arrival36' ? researchMatched : null,
+          researchAsOf: researchPreviewSummary.asOf,
+          releaseEligible: false,
         },
       },
       publicCache,

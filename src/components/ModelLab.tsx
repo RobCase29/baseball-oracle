@@ -16,13 +16,13 @@ const targets: Record<
   arrival: {
     label: 'MLB arrival',
     question: 'Will this player record an MLB appearance within a specified horizon?',
-    target: 'Discrete-time event probability at 12, 24, 36, and 60 months.',
-    model: 'Current baseline: one regularized annual hazard curve. Role ensembles and calibration remain gated.',
+    target: 'Discrete-time event probability at 12, 24, 36, 48, and 60 months.',
+    model: 'Separate hitter and pitcher annual hazards with chronological calibration and horizon-monotone probabilities.',
     evaluation: [
-      { label: 'Brier score by horizon', status: '4 of 5 mature 12-month folds beat the frozen base rate', measured: true },
-      { label: 'Calibration slope and intercept', status: 'Required before publication', measured: false },
-      { label: 'Out-of-time discrimination', status: '12m AUC 0.74-0.81 outside 2021; 0.55 in 2021', measured: true },
-      { label: 'Era stress tests', status: '2021 pandemic/reorganization failure retained', measured: true },
+      { label: 'External Brier skill', status: 'Candidate beat the censoring-aware baseline in 8 of 8 sufficient cells', measured: true },
+      { label: 'Paired skill interval', status: 'Brier improvement 0.0153; 95% CI 0.0133–0.0173', measured: true },
+      { label: 'Calibration coverage', status: 'ECE passed 5 of 8 cells; 6 were required', measured: false },
+      { label: 'Population shift', status: 'Unseen-category and stability admission gates failed', measured: false },
     ],
   },
   career: {
@@ -148,7 +148,7 @@ export function ModelLab() {
         </div>
         <ol>
           <li className="is-complete"><span>01</span><div><strong>Historical baseline</strong><small>Built and retained as the frozen benchmark</small></div></li>
-          <li className="is-current"><span>02</span><div><strong>Arrival ensemble</strong><small>Full risk set, monthly hazards, and calibration</small></div></li>
+          <li className="is-current"><span>02</span><div><strong>Arrival candidate</strong><small>External skill confirmed; calibration and drift remediation active</small></div></li>
           <li><span>03</span><div><strong>Career simulator</strong><small>Role, aging, attrition, and value paths</small></div></li>
           <li><span>04</span><div><strong>Decision layer</strong><small>Watch triggers and forecast revisions</small></div></li>
         </ol>

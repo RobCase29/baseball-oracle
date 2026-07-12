@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import {
   Activity,
+  AlertTriangle,
   CalendarClock,
   Check,
   CircleDashed,
@@ -17,6 +18,10 @@ import { ProbabilityRing } from './ProbabilityRing'
 
 const CareerArcChart = lazy(() =>
   import('./CareerArcChart').then((module) => ({ default: module.CareerArcChart })),
+)
+
+const ArrivalHorizonChart = lazy(() =>
+  import('./ArrivalHorizonChart').then((module) => ({ default: module.ArrivalHorizonChart })),
 )
 
 interface PlayerDossierProps {
@@ -131,6 +136,50 @@ function PublishedForecastPanel({ player, forecast }: { player: PlayerRecord; fo
   )
 }
 
+function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
+  const estimate = player.researchEstimate
+  if (!estimate) return null
+  const horizon36 = estimate.horizons.find((horizon) => horizon.months === 36)
+  const probability36 = (horizon36?.probability ?? 0) * 100
+  const baseline36 = (horizon36?.baselineProbability ?? 0) * 100
+
+  return (
+    <section className="research-forecast" aria-labelledby="research-arrival-title">
+      <div className="research-warning" role="note">
+        <AlertTriangle size={18} aria-hidden="true" />
+        <div>
+          <strong>Candidate research estimate · not release eligible</strong>
+          <span>Frozen Dec. 31, 2025. Current MLB status and 2026 evidence are not reconciled.</span>
+        </div>
+      </div>
+
+      <div className="research-arrival-grid">
+        <div className="research-arrival-summary">
+          <span className="eyebrow">FROZEN ARRIVAL ESTIMATE</span>
+          <h2 id="research-arrival-title">MLB arrival by horizon</h2>
+          <ProbabilityRing value={Number(probability36.toFixed(1))} label="BY 36 MONTHS" />
+          <dl>
+            <div><dt>Candidate</dt><dd>{probability36.toFixed(1)}%</dd></div>
+            <div><dt>Age-level baseline</dt><dd>{baseline36.toFixed(1)}%</dd></div>
+            <div><dt>Model cohort</dt><dd>{estimate.priorLevel}</dd></div>
+            <div><dt>Support</dt><dd>{estimate.coldStart ? 'Cold start' : 'Prior history'}</dd></div>
+          </dl>
+        </div>
+        <div>
+          <div className="chart-key" aria-hidden="true">
+            <span><i className="key-candidate" />Candidate</span>
+            <span><i className="key-baseline" />Age-level baseline</span>
+          </div>
+          <Suspense fallback={<div className="arrival-chart chart-loading">Loading research curve...</div>}>
+            <ArrivalHorizonChart horizons={estimate.horizons} />
+          </Suspense>
+          <p className="research-chart-note">The 60-month point is descriptive only; that external horizon is not mature.</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function formatRetrievedAt(value: string | null): string {
   if (!value) return 'Unavailable'
   const parsed = new Date(value)
@@ -150,6 +199,7 @@ export function PlayerDossier({
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.forecast
+  const researchEstimate = player.researchEstimate
   const organization = player.organization ?? player.organizationCode ?? 'Organization unavailable'
   const externalIds = Object.entries(player.provenance.externalIds).filter(([, value]) => value !== null)
 
@@ -163,10 +213,14 @@ export function PlayerDossier({
           <div>
             <div className="identity-line">
               <span className="eyebrow">
-                {forecast?.rank ? `#${forecast.rank} ORACLE BOARD` : 'SOURCE OBSERVATION'}
+                {forecast?.rank
+                  ? `#${forecast.rank} ORACLE BOARD`
+                  : researchEstimate
+                    ? 'RESEARCH ARRIVAL COHORT'
+                    : 'SOURCE OBSERVATION'}
               </span>
               <span className={forecast ? `risk-badge risk-badge--${forecast.risk.toLowerCase()}` : 'source-badge'}>
-                {forecast ? `${forecast.risk} risk` : 'Model pending'}
+                {forecast ? `${forecast.risk} risk` : researchEstimate ? 'Research only' : 'No model match'}
               </span>
             </div>
             <h1 id="player-name">{player.name}</h1>
@@ -199,7 +253,7 @@ export function PlayerDossier({
 
       <p className="player-summary">
         {forecast?.summary ??
-          `${player.metrics.length} observed ${player.playerType.toLowerCase()} signals from ${player.provenance.source}. Provider scores are source evidence, not Baseball Oracle predictions.`}
+          `${player.metrics.length} observed ${player.playerType.toLowerCase()} signals from ${player.provenance.source}. ${researchEstimate ? 'A frozen 2025 research estimate is available below.' : 'No exact MLBAM-and-role match exists in the frozen model cohort.'}`}
       </p>
 
       <section className="observed-metrics" aria-label="Observed source summary">
@@ -229,6 +283,18 @@ export function PlayerDossier({
 
       {forecast ? (
         <PublishedForecastPanel player={player} forecast={forecast} />
+      ) : researchEstimate ? (
+        <>
+          <ResearchArrivalPanel player={player} />
+          <section className="model-pending model-pending--compact" aria-labelledby="career-pending-title">
+            <CircleDashed size={20} aria-hidden="true" />
+            <div>
+              <span className="eyebrow">CAREER AND HALL OF FAME</span>
+              <h2 id="career-pending-title">Career model not built</h2>
+              <p>Career WAR, star, and Hall of Fame-caliber outputs remain absent until the post-debut simulator is trained and validated.</p>
+            </div>
+          </section>
+        </>
       ) : (
         <section className="model-pending" aria-labelledby="model-pending-title">
           <CircleDashed size={20} aria-hidden="true" />
@@ -303,7 +369,7 @@ export function PlayerDossier({
         <span><Layers3 size={14} aria-hidden="true" /> {player.coverage.levelsObserved.length || 1} level{player.coverage.levelsObserved.length === 1 ? '' : 's'} observed</span>
         <span><Info size={14} aria-hidden="true" /> {player.provenance.source}</span>
         <span className="footer-score">
-          {forecast ? `Oracle score ${oracleScore(forecast)}` : 'Oracle model pending'}
+          {forecast ? `Oracle score ${oracleScore(forecast)}` : researchEstimate ? 'Research estimate available' : 'No model match'}
         </span>
       </footer>
     </article>

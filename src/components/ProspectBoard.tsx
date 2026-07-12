@@ -110,6 +110,7 @@ export function ProspectBoard({
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
             }
           >
+            <option value="arrival36">Research P(MLB) · 36m</option>
             <option value="psScore">PS Score</option>
             <option value="psPercentile">PS percentile</option>
             <option value="age">Age</option>
@@ -142,6 +143,7 @@ export function ProspectBoard({
                 <th scope="col">Player</th>
                 <th scope="col">Age / level</th>
                 <th scope="col">PS Score</th>
+                <th scope="col">Research P36</th>
                 <th scope="col">Percentile</th>
                 <th scope="col">Opportunity</th>
                 <th scope="col"><span className="sr-only">Save</span></th>
@@ -153,6 +155,9 @@ export function ProspectBoard({
                 const selected = player.id === selectedId
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
+                const research36 = player.researchEstimate?.horizons.find(
+                  (horizon) => horizon.months === 36,
+                )?.probability
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -182,6 +187,16 @@ export function ProspectBoard({
                     <td>
                       <strong className="table-primary">{formatScore(player.psScore)}</strong>
                       <small>source metric</small>
+                    </td>
+                    <td>
+                      {research36 === undefined ? (
+                        <strong className="table-primary">—</strong>
+                      ) : (
+                        <span className={`probability-value tone-${probabilityTone(research36 * 100)}`}>
+                          {(research36 * 100).toFixed(1)}%
+                        </span>
+                      )}
+                      <small>{research36 === undefined ? 'no exact match' : 'frozen 2025'}</small>
                     </td>
                     <td>
                       {player.psPercentile === null ? (

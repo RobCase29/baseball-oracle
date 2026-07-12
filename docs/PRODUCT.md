@@ -11,6 +11,22 @@ The product should help a researcher move from the full player universe to a def
 
 Baseball Oracle forecasts baseball outcomes. A later market layer can compare those forecasts with collectible prices and liquidity. Player quality and investment value must remain separate concepts until market data exists.
 
+## Current MVP Checkpoint
+
+The July 2026 MVP is an arrival-only research cockpit. It joins the live 2026
+Prospect Savant directory to the frozen Dec. 31, 2025 external prediction cohort
+using exact MLBAM ID and role. This yields 4,442 matched profiles out of 6,868.
+The board can rank globally by the candidate's 36-month MLB-arrival estimate, and
+the dossier shows the cumulative 12-60 month curve, age-level baseline, as-of
+date, and research-support state.
+
+These are candidate research estimates, not published forecasts. The external
+evaluation beat the censoring-aware baseline in all eight sufficient cells, but
+failed population-shift admission and the pooled ECE cell-fraction gate. Current
+MLB status and 2026 evidence are not reconciled, and the 60-month external outcome
+is not mature. Career WAR, star, Hall of Fame, market-value, and investment-return
+outputs remain absent rather than simulated with placeholder values.
+
 ## Product Principles
 
 - **Probabilities, not promises.** Every forecast is a calibrated probability or distribution with a defined horizon.
@@ -230,4 +246,3 @@ Product quality:
 - Real-time online model inference for every page request
 - Unlicensed scraping or data whose lineage cannot be audited
 - Social feeds, gamification, or a marketing-heavy home page
-

@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       '/api/health': publicApiTarget,
       '/api/players': publicApiTarget,
+      '/api/model-status': publicApiTarget,
     },
   },
 })

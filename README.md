@@ -5,7 +5,12 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 1. The probability that a professional minor-league player reaches MLB.
 2. The distribution of that player's remaining career outcomes, updated as new minor- and major-league evidence arrives.
 
-The current repository is the product and data foundation. It ships a working React decision cockpit backed by authorized Prospect Savant observations stored in Neon. The player directory is real; Baseball Oracle forecasts remain unpublished until the historical backfill, temporal validation, and calibration gates pass.
+The repository ships a working React research cockpit backed by authorized
+Prospect Savant observations stored in Neon. The directory contains 6,868 real
+2026 player-role profiles. Exact MLBAM-and-role matches expose frozen Dec. 31,
+2025 arrival estimates for 4,442 current profiles as a research preview. These
+estimates are visibly non-release-eligible; published career and Hall of Fame
+forecasts remain absent.
 
 ## Run locally
 
@@ -59,11 +64,13 @@ Git. Their source URLs and SHA-256 hashes live in `data/source-lock.json`; the c
 environment lock, and database lineage schema are versioned. Preparation verifies
 every raw byte against a matching acquisition manifest, then archives each table,
 build manifest, validation report, and model under a content digest.
-The current model is a research baseline and is not served by the application.
+The application serves the frozen 2025 arrival candidate only through a separate
+`researchEstimate` field. The validated publication field remains `forecast: null`.
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
 results, and the gates that remain before forecasts can be published.
 
-Local Vite development proxies the public `/api/health` and `/api/players`
+Local Vite development proxies the public `/api/health`, `/api/players`, and
+`/api/model-status`
 routes to the production Vercel deployment, keeping Neon credentials server-only.
 Set `API_PROXY_TARGET` to point at another public deployment when needed.
 
@@ -118,22 +125,28 @@ the snapshot automatically; the CLI backfill refreshes once after a successful
 run.
 
 The allowlisted public endpoint supports server-side search, role and level
-filters, source-score sorting, and pagination:
+filters, source-score or research-P36 sorting, and pagination:
 
 ```text
 GET /api/players?q=jenkins&playerType=Hitter&level=AAA&sort=psScore&page=1&limit=50
+GET /api/players?playerType=Pitcher&sort=arrival36&page=1&limit=50
 ```
 
 Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Prospect board:** real-player search, role and level filtering, Prospect Savant score/percentile sorting, pagination, and a browser-local watchlist.
-- **Player dossier:** observed metrics, source coverage, identity provenance, and an explicit unpublished-model state.
-- **Model lab:** explicit targets, release gates, point-in-time rules, and model sequence.
-- **Data health:** proposed source stack, rights posture, and production-readiness state.
+- **Prospect board:** real-player search, role and level filtering, global frozen-P36 ranking, source-score sorting, pagination, and a browser-local watchlist.
+- **Player dossier:** observed metrics, identity provenance, and matched 12-60 month research arrival curves against the frozen age-level baseline.
+- **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
+- **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
+- **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.
 
-Every returned player has `forecast: null` until a validated model release is published. Provider scores and percentiles are labeled as source evidence and never presented as Baseball Oracle predictions. The domain contracts live in `src/domain/forecast.ts`.
+Every returned player has `forecast: null` until a validated model release is
+published. The separate `researchEstimate` is frozen, lineage-bound, and labeled
+with its failed release decision; its 60-month point is descriptive only. Current
+MLB status and 2026 evidence are not reconciled. Provider scores and percentiles
+remain source evidence. The domain contracts live in `src/domain/forecast.ts`.
 
 ## Design documents
 

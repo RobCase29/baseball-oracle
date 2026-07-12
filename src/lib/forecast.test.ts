@@ -47,6 +47,7 @@ function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
       cohort: { pitchQualifier: 1, minAge: 16, maxAge: 40 },
       externalIds: { prospectSavant: '1' },
     },
+    researchEstimate: null,
     forecast: null,
     ...overrides,
   }
@@ -80,6 +81,31 @@ describe('real-player board utilities', () => {
       'low',
       'missing',
     ])
+  })
+
+  it('sorts frozen research estimates while keeping unmatched profiles last', () => {
+    const estimate = (probability: number) => ({
+      status: 'research_only' as const,
+      releaseEligible: false as const,
+      asOf: '2025-12-31T00:00:00.000Z',
+      modelVersion: 'locked-model',
+      snapshotId: `snapshot-${probability}`,
+      coldStart: false,
+      priorLevel: 'AA',
+      modelAge: 21,
+      currentStatusVerified: false as const,
+      horizons: [{ months: 36, probability, baselineProbability: 0.2, externallyValidated: true }],
+      lineage: { predictionManifestSha256: 'a', evaluationReportSha256: 'b' },
+    })
+    const players = [
+      makePlayer({ id: 'unmatched' }),
+      makePlayer({ id: 'lower', researchEstimate: estimate(0.4) }),
+      makePlayer({ id: 'higher', researchEstimate: estimate(0.7) }),
+    ]
+
+    expect(
+      filterAndSortPlayers(players, { ...baseFilters, sort: 'arrival36' }).map((player) => player.id),
+    ).toEqual(['higher', 'lower', 'unmatched'])
   })
 
   it('bounds the decision score for a future published forecast', () => {
