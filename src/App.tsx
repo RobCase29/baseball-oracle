@@ -282,7 +282,7 @@ function App() {
               <div>
                 <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'PLAYER PROFILES'}</span>
                 <strong>{visiblePagination.total.toLocaleString()}</strong>
-                <small>{isWatchlistView ? `${watchlist.size} saved total` : meta.coverage}</small>
+                <small>{isWatchlistView ? `${watchlist.size} saved total` : `${meta.season ?? 'Current'} source player-role profiles`}</small>
               </div>
               <div>
                 <span>RESEARCH ESTIMATES</span>

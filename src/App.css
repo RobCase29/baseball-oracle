@@ -457,6 +457,15 @@
   grid-column: 1 / -1;
 }
 
+.board-filters .select-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.board-filters .select-field:last-child select {
+  width: 100%;
+  max-width: none;
+}
+
 .search-field {
   display: flex;
   align-items: center;
