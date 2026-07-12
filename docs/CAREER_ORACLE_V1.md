@@ -109,6 +109,31 @@ available.
 - Confidence is a coverage/support heuristic, not a frequentist coverage
   probability and never changes rank.
 
+## Relative Standing
+
+`relative-standing-v1` answers a different question from the outcome model:
+whether a player is unusually advanced relative to an explicitly matched peer
+group. It is never multiplied into or substituted for the Hall-caliber
+probability.
+
+For MLB players, the live comparison uses the research Hall-caliber probability
+within the current census at the same role, career stage, and age plus or minus
+one year. The age window expands deterministically only when the minimum cohort
+support is not met. A second historical pace comparison uses completed-season
+career WAR from the forecast feature landmark and resolved historical players at
+the same role, experience band, and adaptive age window. Current partial-season
+WAR cannot change that historical comparison.
+
+For minor leaguers, the live comparison uses the 36-month arrival probability
+within the same role, level, and age band. It is therefore labeled an arrival
+peer signal, not a Hall-track percentile. The level constraint may be relaxed
+only after the registered age expansions fail to produce sufficient support,
+and the fallback is recorded in the player warnings.
+
+Every published peer comparison records its basis, percentile, peer rank,
+cohort size, median, age window, reliability tier, and cohort label. The live
+percentile is descriptive current-census context, not historical validation.
+
 Prospect Savant's composite score, FanGraphs FV, public rankings, and other
 provider judgments are excluded from the default model and rank. Raw named
 measurements can enter future preregistered ablation challengers after provenance,
@@ -164,6 +189,10 @@ Missing results are never replaced with a heuristic that looks like a forecast.
 - confidence/support state and every withholding or release warning;
 - model, target, data, provider, feature, and actual-evidence versions/timestamps;
 - any scenario-support extension used to represent classifier tail mass.
+- current peer percentile, basis, matched cohort, support, and warnings where
+  relative standing is available;
+- completed-season historical WAR-pace percentile for MLB players where its
+  resolved landmark cohort meets the registered support floor.
 
 ## Known Limits and Next Model
 
@@ -176,6 +205,9 @@ Missing results are never replaced with a heuristic that looks like a forecast.
   coverage targets.
 - Replace completed-career-end splits with rolling debut/prediction-origin cohorts
   and censoring-aware evaluation.
+- Replace the descriptive current-census probability percentile with a
+  player-disjoint, rolling-origin ECDF of out-of-fold model lift before making a
+  validated early-identification claim.
 - Add preregistered normalized era/context features; raw calendar year is excluded
   from this version.
 - Build annual opportunity, performance, exit/re-entry, aging, and injury

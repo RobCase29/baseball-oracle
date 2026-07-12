@@ -293,6 +293,24 @@ not eventual arrival probability and not direct MiLB-to-Hall training. According
 the product assigns stage-specific MLB and MiLB ranks and excludes Prospect
 Savant's composite from the default model and sort.
 
+## Relative Standing Research Layer
+
+The deployed `relative-standing-v1` layer is intentionally separate from the
+outcome probabilities. MLB current-peer standing compares the research
+Hall-caliber estimate within role, early/established stage, and an adaptive age
+band. Historical MLB pace compares completed-season career WAR at the forecast
+landmark against resolved players in the same role, experience band, and
+adaptive age cohort. The historical reference never reads the current 2026
+partial-season value.
+
+The minor-league standing compares the 36-month arrival endpoint within current
+role, level, and age peers. It does not use Prospect Savant's composite and does
+not reinterpret the debut-age Hall bridge as a trained minor-league career
+model. Current-census percentiles are descriptive. A release claim still
+requires player-disjoint rolling prediction-origin forecasts, an out-of-fold
+reference distribution, censoring-aware outcomes, and prospective top-cohort
+precision and lift.
+
 ## Trouble With The Curve Audit
 
 The referenced repository is a useful hypothesis source, not training truth. At

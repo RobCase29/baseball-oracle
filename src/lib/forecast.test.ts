@@ -3,6 +3,7 @@ import type { BoardFilters, CareerForecast, PlayerRecord } from '../domain/forec
 import {
   filterAndSortPlayers,
   formatOrdinal,
+  formatPercentileRank,
   formatProbability,
   formatScore,
   formatSigned,
@@ -186,6 +187,64 @@ describe('Oracle Board utilities', () => {
     ])
   })
 
+  it('sorts the separate peer signal without changing the outcome rank', () => {
+    const relativeSignal = (percentile: number | null) => ({
+      version: 'relative-standing-v1' as const,
+      kind: 'hall_track' as const,
+      status: percentile === null ? 'withheld' as const : 'research' as const,
+      currentPeer: percentile === null ? null : {
+        percentile,
+        rank: percentile > 90 ? 2 : 40,
+        cohortSize: 80,
+        value: 0.08,
+        median: 0.02,
+        difference: 0.06,
+        basis: 'hof_caliber_probability' as const,
+        reliability: 'moderate' as const,
+        cohort: {
+          scope: 'current_census' as const,
+          label: 'Ages 22–24 early MLB hitters',
+          playerType: 'Hitter' as const,
+          stage: 'early_mlb' as const,
+          ageMin: 22,
+          ageMax: 24,
+          ageWindow: 1,
+          level: 'MLB',
+        },
+      },
+      historicalPace: null,
+      warnings: [],
+    })
+    const players = [
+      makePlayer({
+        id: 'higher-outcome-lower-peer',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({
+          hofCaliberProbability: 0.4,
+          relativeSignal: relativeSignal(60),
+        }),
+      }),
+      makePlayer({
+        id: 'lower-outcome-higher-peer',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({
+          hofCaliberProbability: 0.08,
+          relativeSignal: relativeSignal(98),
+        }),
+      }),
+      makePlayer({
+        id: 'peer-withheld',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({ relativeSignal: relativeSignal(null) }),
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'peerSignal' }).map((player) => player.id))
+      .toEqual(['lower-outcome-higher-peer', 'higher-outcome-lower-peer', 'peer-withheld'])
+    expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id))
+      .toEqual(['higher-outcome-lower-peer', 'lower-outcome-higher-peer', 'peer-withheld'])
+  })
+
   it('sorts frozen arrival estimates while keeping unmatched profiles last', () => {
     const estimate = (probability: number) => ({
       status: 'research_only' as const,
@@ -215,6 +274,7 @@ describe('Oracle Board utilities', () => {
     expect(formatSigned(3.2, ' pts')).toBe('+3.2 pts')
     expect(formatSigned(-1.5, ' pts')).toBe('-1.5 pts')
     expect(formatOrdinal(91.4)).toBe('91st')
+    expect(formatPercentileRank(99.8)).toBe('P99.8')
     expect(formatScore(72.25)).toBe('72.3')
     expect(formatScore(null)).toBe('—')
     expect(formatProbability(0.123)).toBe('12.3%')

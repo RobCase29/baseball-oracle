@@ -70,6 +70,34 @@ function previewFixture() {
           },
           arc: [{ age: 21, actual: null, ...quantiles }],
           warnings: ['Research only.'],
+          relativeSignal: {
+            version: 'relative-standing-v1',
+            kind: 'hall_track',
+            status: 'research',
+            currentPeer: null,
+            historicalPace: {
+              percentile: 99.2,
+              cohortSize: 850,
+              playerValue: 5.1,
+              metric: 'career_war_to_date',
+              reliability: 'high',
+              featureSeason: 2025,
+              featureAge: 22,
+              cohort: {
+                scope: 'historical_point_in_time',
+                label: 'Age 22 · first-season hitters',
+                role: 'hitter',
+                stageBand: 'first',
+                seasonNumberMin: 1,
+                seasonNumberMax: 1,
+                ageMin: 22,
+                ageMax: 22,
+                ageWindow: 0,
+                resolvedOnly: true,
+              },
+            },
+            warnings: ['completed_season_historical_pace_only'],
+          },
         },
       },
     ],
@@ -88,6 +116,11 @@ describe('Career Oracle preview loader', () => {
     expect(parsed.items[0]?.careerForecast.finalJaws?.p50).toBe(10)
     expect(parsed.items[0]?.careerForecast.confidenceScore).toBe(0.82)
     expect(parsed.items[0]?.careerForecast.releaseEligible).toBe(false)
+    expect(parsed.items[0]?.careerForecast.relativeSignal?.historicalPace).toMatchObject({
+      percentile: 99.2,
+      cohortSize: 850,
+      playerValue: 5.1,
+    })
   })
 
   it('strictly parses keyed prospect forecasts and Python field aliases', () => {
@@ -150,6 +183,10 @@ describe('Career Oracle preview loader', () => {
     const invalidExtensionFixture = previewFixture()
     invalidExtensionFixture.prospectForecasts['765432:hitter'].scenarioSupportExtensionJaws = Number.NaN
     expect(() => parseCareerOraclePreview(invalidExtensionFixture)).toThrow(/finite number/u)
+
+    const invalidRelativeFixture = previewFixture()
+    invalidRelativeFixture.players[0]!.forecast.relativeSignal.historicalPace.percentile = 101
+    expect(() => parseCareerOraclePreview(invalidRelativeFixture)).toThrow(/between 0 and 100/u)
   })
 
   it('rejects prospect keys whose role disagrees with the forecast', () => {

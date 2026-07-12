@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { CareerForecast } from './_career-oracle-types.js'
 import {
+  assignRelativeSignals,
   assignStageRanks,
   dedupeMinorCandidates,
   mergeCurrentUniverse,
+  normalizeQueryText,
   sortBoardCandidates,
   sortUnifiedCandidates,
   type UnifiedBoardCandidate,
@@ -78,6 +80,11 @@ function candidate(
 }
 
 describe('unified player ordering', () => {
+  it('normalizes browser form-encoded spaces in player search text', () => {
+    expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
+    expect(normalizeQueryText('Peña')).toBe('Peña')
+  })
+
   it('orders HOF probability, then final WAR P50, then ID without confidence', () => {
     const sorted = sortUnifiedCandidates([
       candidate('z', { careerForecast: forecast(0.2, 30, 4, 0.99) }),
@@ -134,6 +141,75 @@ describe('unified player ordering', () => {
       .toEqual(['mlb-high', 'mlb-low', 'minor-high', 'minor-low'])
     expect(sortBoardCandidates(items, { stage: 'Minors', sort: 'hofProbability' }).map((item) => item.id))
       .toEqual(['minor-high', 'mlb-high', 'mlb-low', 'minor-low'])
+  })
+
+  it('computes an age, stage, and role peer standing without changing HOF probability', () => {
+    const peers = Array.from({ length: 20 }, (_, index) => candidate(`peer-${index}`, {
+      source: 'mlb',
+      stage: 'early_mlb',
+      age: 22 + (index % 3),
+      minorProfileId: null,
+      careerForecast: forecast(index === 0 ? 0.19 : index === 1 ? 0.16 : 0.01, 20, index + 1),
+    }))
+    const enriched = assignRelativeSignals(peers)
+    const subject = enriched.find((item) => item.id === 'peer-1')!
+
+    expect(subject.careerForecast?.hofCaliberProbability).toBe(0.16)
+    expect(subject.careerForecast?.relativeSignal?.currentPeer).toMatchObject({
+      percentile: 92.5,
+      rank: 2,
+      cohortSize: 20,
+      value: 0.16,
+      median: 0.01,
+      difference: 0.15,
+      basis: 'hof_caliber_probability',
+    })
+    expect(subject.careerForecast?.relativeSignal?.currentPeer?.cohort.label)
+      .toBe('Ages 22–24 · early MLB hitters')
+  })
+
+  it('uses arrival probability, not the prospect HOF bridge, for minor peer standing', () => {
+    const peers = Array.from({ length: 12 }, (_, index) => candidate(`minor-${index}`, {
+      age: 19,
+      level: 'AA',
+      arrivalProbability36: index === 0 ? 0.9 : 0.1 + index / 100,
+      careerForecast: forecast(index === 0 ? 0.001 : 0.5, 10, index + 1),
+    }))
+    const enriched = assignRelativeSignals(peers)
+    const subject = enriched.find((item) => item.id === 'minor-0')!
+
+    expect(subject.careerForecast?.relativeSignal?.kind).toBe('arrival_track')
+    expect(subject.careerForecast?.relativeSignal?.currentPeer).toMatchObject({
+      rank: 1,
+      basis: 'arrival_probability_36',
+      value: 0.9,
+    })
+    expect(subject.careerForecast?.relativeSignal?.warnings)
+      .toContain('arrival_peer_signal_not_hall_probability')
+  })
+
+  it('sorts peer signal within stage groups and keeps unsupported cohorts last', () => {
+    const mlbPeers = Array.from({ length: 12 }, (_, index) => candidate(`mlb-peer-${index}`, {
+      source: 'mlb',
+      stage: 'early_mlb',
+      age: 23,
+      minorProfileId: null,
+      careerForecast: forecast(0.01 + index / 100, 20, index + 1),
+    }))
+    const minorPeers = Array.from({ length: 12 }, (_, index) => candidate(`minor-peer-${index}`, {
+      age: 19,
+      arrivalProbability36: 0.01 + index / 100,
+    }))
+    const supported = assignRelativeSignals([...mlbPeers, ...minorPeers])
+    const unsupported = candidate('unsupported', { age: null })
+    const sorted = sortBoardCandidates([...supported, unsupported], {
+      stage: 'All',
+      sort: 'peerSignal',
+    })
+
+    expect(sorted[0]?.id).toBe('mlb-peer-11')
+    expect(sorted[12]?.id).toBe('minor-peer-11')
+    expect(sorted.at(-1)?.id).toBe('unsupported')
   })
 })
 

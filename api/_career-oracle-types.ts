@@ -48,6 +48,66 @@ export interface CareerForecastLineage {
   [key: string]: string | number | boolean | null
 }
 
+export type RelativeSignalKind = 'hall_track' | 'arrival_track'
+export type RelativeSignalStatus = 'research' | 'withheld'
+export type RelativeSignalReliability = 'high' | 'moderate' | 'low'
+
+export interface RelativeCurrentPeerCohort {
+  scope: 'current_census'
+  label: string
+  playerType: PlayerType
+  stage: PlayerStage
+  ageMin: number
+  ageMax: number
+  ageWindow: number
+  level: string | null
+}
+
+export interface RelativeCurrentPeer {
+  percentile: number
+  rank: number
+  cohortSize: number
+  value: number
+  median: number
+  difference: number
+  basis: 'hof_caliber_probability' | 'arrival_probability_36'
+  reliability: RelativeSignalReliability
+  cohort: RelativeCurrentPeerCohort
+}
+
+export interface HistoricalPaceCohort {
+  scope: 'historical_point_in_time'
+  label: string
+  role: string
+  stageBand: string
+  seasonNumberMin: number
+  seasonNumberMax: number
+  ageMin: number
+  ageMax: number
+  ageWindow: number
+  resolvedOnly: true
+}
+
+export interface HistoricalPaceStanding {
+  percentile: number
+  cohortSize: number
+  playerValue: number
+  metric: 'career_war_to_date'
+  reliability: RelativeSignalReliability
+  featureSeason: number
+  featureAge: number
+  cohort: HistoricalPaceCohort
+}
+
+export interface RelativeSignal {
+  version: 'relative-standing-v1'
+  kind: RelativeSignalKind
+  status: RelativeSignalStatus
+  currentPeer: RelativeCurrentPeer | null
+  historicalPace: HistoricalPaceStanding | null
+  warnings: string[]
+}
+
 export interface CareerForecast {
   publicationState: PublicationState
   releaseEligible: boolean
@@ -70,4 +130,5 @@ export interface CareerForecast {
   drivers: ModelDriver[]
   warnings: string[]
   lineage: CareerForecastLineage
+  relativeSignal?: RelativeSignal | null
 }

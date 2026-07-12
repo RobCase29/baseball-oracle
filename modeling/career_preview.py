@@ -26,6 +26,7 @@ try:
         CareerTournament,
         quantile_dict,
     )
+    from modeling.relative_standing import HistoricalPaceReference
 except ModuleNotFoundError:
     from career_data import (
         build_career_landmarks,
@@ -44,6 +45,7 @@ except ModuleNotFoundError:
         CareerTournament,
         quantile_dict,
     )
+    from relative_standing import HistoricalPaceReference
 
 
 PREVIEW_SCHEMA_VERSION = "career-oracle-preview/v1"
@@ -231,6 +233,7 @@ def build_mlb_preview_players(
         scoring, peak_floor=np.asarray(forecast_peak_floors, dtype=float)
     )
     standards_by_key = standard_lookup(standards)
+    pace_reference = HistoricalPaceReference(panel)
     players: list[dict[str, Any]] = []
     for index, feature in scoring.reset_index(drop=True).iterrows():
         player_id = str(feature["bbref_id"])
@@ -458,6 +461,10 @@ def build_mlb_preview_players(
                     )
                 ),
                 "warnings": sorted(set(warnings)),
+                "relativeSignal": pace_reference.relative_signal(
+                    feature,
+                    partial_feature=bool(context["featurePartial"]),
+                ),
                 "decomposition": {
                     "arrivalProbability": 1.0,
                     "conditionalHofCaliberProbability": (

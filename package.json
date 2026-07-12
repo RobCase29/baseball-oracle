@@ -50,7 +50,7 @@
     "model:evaluation:predict:amended": "npm run model:evaluation:verify-live:amended && .venv/bin/python -m modeling.arrival_external predict --lock data/model-locks/arrival-post-pandemic-v1-amendment-001.json --external-corpus-manifest data/processed/arrival-external-v1/corpus_manifest.json --artifact-dir artifacts/arrival-external-v1-amendment-001",
     "model:evaluation:score:amended": "npm run model:evaluation:verify-live:amended && .venv/bin/python -m modeling.arrival_external evaluate --lock data/model-locks/arrival-post-pandemic-v1-amendment-001.json --external-corpus-manifest data/processed/arrival-external-v1/corpus_manifest.json --prediction-manifest artifacts/arrival-external-v1-amendment-001/prediction_manifest.json --artifact-dir artifacts/arrival-external-v1-amendment-001",
     "model:preview:export": ".venv/bin/python scripts/model/export-research-preview.py",
-    "model:career:test": ".venv/bin/python -m pytest modeling/tests/test_career_data.py modeling/tests/test_career_tournament.py modeling/tests/test_career_preview.py",
+    "model:career:test": ".venv/bin/python -m pytest modeling/tests/test_career_data.py modeling/tests/test_career_tournament.py modeling/tests/test_career_preview.py modeling/tests/test_relative_standing.py",
     "model:career:train": ".venv/bin/python -m modeling.train_career_tournament",
     "model:test": ".venv/bin/python -m pytest modeling",
     "model:all": "npm run model:test && npm run model:prepare && npm run model:train"

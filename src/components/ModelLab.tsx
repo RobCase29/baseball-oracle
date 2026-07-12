@@ -33,6 +33,7 @@ const targets: Record<
     evaluation: [
       { label: 'Historical corpus', status: 'The provider-versioned MLB player-season corpus and positional standards are source-locked', measured: true },
       { label: 'Point-in-time integrity', status: 'Active careers are masked and 2026 is scoring-only', measured: true },
+      { label: 'Relative standing layer', status: 'Completed-season historical WAR pace and current matched-peer percentiles are separated from the outcome probability', measured: true },
       { label: 'Development holdout', status: 'Player-disjoint chronological results are retrospective descriptive evidence, not a prospective test', measured: true },
       { label: 'Current scoring refit', status: 'The 2022 refit is not cross-fitted or evaluated and cannot inherit tournament metrics', measured: false },
       { label: 'Interval release gates', status: 'Final WAR, JAWS, and peak-seven interval gates have not all cleared for release', measured: false },
@@ -138,6 +139,7 @@ export function ModelLab() {
             <p><strong>Unresolved outcomes stay censored.</strong> Active careers never become convenient negatives.</p>
             <p><strong>Snapshots are append-only.</strong> Published forecasts remain reproducible after corrections.</p>
             <p><strong>Calibration ships with the score.</strong> A probability without cohort reliability is incomplete.</p>
+            <p><strong>Peer standing stays separate.</strong> A percentile provides age and experience context; it never becomes a second probability or changes the calibrated outcome.</p>
           </div>
         </section>
       </div>
@@ -155,7 +157,7 @@ export function ModelLab() {
           <li className="is-current"><span>02</span><div><strong>Arrival candidate</strong><small>Retrospective skill observed; calibration and drift remediation active</small></div></li>
           <li className="is-current"><span>03</span><div><strong>Career and JAWS baseline</strong><small>Paired terminal research distributions with active release gates</small></div></li>
           <li><span>04</span><div><strong>Annual path simulator</strong><small>Opportunity, aging, attrition, and correlated value paths</small></div></li>
-          <li><span>05</span><div><strong>Decision layer</strong><small>Watch triggers and forecast revisions</small></div></li>
+          <li><span>05</span><div><strong>Decision layer</strong><small>Peer standing, watch triggers, and forecast revisions</small></div></li>
         </ol>
       </section>
     </main>

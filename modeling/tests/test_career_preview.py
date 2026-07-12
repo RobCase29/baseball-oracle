@@ -132,6 +132,7 @@ def test_partial_2026_war_cannot_change_2025_terminal_forecast() -> None:
         "finalJaws",
         "jawsMargin",
         "scenarioSupportExtensionJaws",
+        "relativeSignal",
     ):
         assert changed[field] == baseline[field]
     assert changed["forecastAsOf"] == baseline["forecastAsOf"]

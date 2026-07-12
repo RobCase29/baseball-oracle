@@ -345,6 +345,7 @@ def main() -> None:
                 ROOT / "modeling/career_data.py",
                 ROOT / "modeling/career_tournament.py",
                 ROOT / "modeling/career_preview.py",
+                ROOT / "modeling/relative_standing.py",
             ],
             {
                 "asOf": as_of,

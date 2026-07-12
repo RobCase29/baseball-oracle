@@ -58,6 +58,33 @@ const forecast: CareerForecast = {
     dataVersion: null,
     providerVersion: null,
   },
+  relativeSignal: {
+    version: 'relative-standing-v1',
+    kind: 'arrival_track',
+    status: 'research',
+    currentPeer: {
+      percentile: 98.4,
+      rank: 4,
+      cohortSize: 512,
+      value: 0.61,
+      median: 0.22,
+      difference: 0.39,
+      basis: 'arrival_probability_36',
+      reliability: 'moderate',
+      cohort: {
+        scope: 'current_census',
+        label: 'Age 20–22 AA hitters',
+        playerType: 'Hitter',
+        stage: 'pre_debut',
+        ageMin: 20,
+        ageMax: 22,
+        ageWindow: 1,
+        level: 'AA',
+      },
+    },
+    historicalPace: null,
+    warnings: ['current_census_descriptive_only'],
+  },
 }
 
 const player: PlayerRecord = {
@@ -118,9 +145,17 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('heading', { name: 'Oracle Board' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minors' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'P(HOF caliber)' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Peer signal' })).toBeInTheDocument()
     expect(screen.getByText('8.1%')).toBeInTheDocument()
+    expect(screen.getByText('P98.4')).toHaveAccessibleName(/rank 4 of 512/u)
+    expect(screen.getByText('#4 of 512 · arrival peers · descriptive')).toBeInTheDocument()
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
     expect(screen.queryByText('99th')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Rank by' }), {
+      target: { value: 'peerSignal' },
+    })
+    expect(onChangeFilters).toHaveBeenCalledWith({ sort: 'peerSignal' })
 
     fireEvent.click(screen.getByRole('button', { name: 'MLB' }))
     expect(onChangeFilters).toHaveBeenCalledWith({ stage: 'MLB', level: 'All' })
@@ -182,6 +217,90 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText(/early-career peak-seven interval/u)).toBeInTheDocument()
     expect(screen.getByText(/retrospective development holdout/u)).toBeInTheDocument()
     expect(screen.getByText(/Prospective validation is not complete/u)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ahead of the curve' })).toBeInTheDocument()
+    expect(screen.getByText('MLB ARRIVAL · 36M')).toBeInTheDocument()
+    expect(screen.getByText('P98.4')).toBeInTheDocument()
+    expect(screen.getByText('#4 of 512 · moderate reliability')).toBeInTheDocument()
+    expect(screen.getByText(/Arrival peer signal compares the 36-month MLB arrival estimate/u)).toBeInTheDocument()
+    expect(screen.getByText(/descriptive census comparison, not historical validation/u)).toBeInTheDocument()
+  })
+
+  it('separates a current Hall-track peer comparison from completed-season historical pace', () => {
+    render(
+      <PlayerDossier
+        player={{
+          ...player,
+          stage: 'early_mlb',
+          age: 23,
+          level: 'MLB',
+          careerForecast: {
+            ...forecast,
+            hofCaliberProbability: 0.16,
+            cumulativeWar: 8.67,
+            relativeSignal: {
+              version: 'relative-standing-v1',
+              kind: 'hall_track',
+              status: 'research',
+              currentPeer: {
+                percentile: 98.4,
+                rank: 2,
+                cohortSize: 63,
+                value: 0.16,
+                median: 0.012,
+                difference: 0.148,
+                basis: 'hof_caliber_probability',
+                reliability: 'moderate',
+                cohort: {
+                  scope: 'current_census',
+                  label: 'Ages 22–24 early MLB hitters',
+                  playerType: 'Hitter',
+                  stage: 'early_mlb',
+                  ageMin: 22,
+                  ageMax: 24,
+                  ageWindow: 1,
+                  level: 'MLB',
+                },
+              },
+              historicalPace: {
+                percentile: 99.1,
+                cohortSize: 804,
+                playerValue: 5.04,
+                metric: 'career_war_to_date',
+                reliability: 'high',
+                featureSeason: 2025,
+                featureAge: 22,
+                cohort: {
+                  scope: 'historical_point_in_time',
+                  label: 'Age 21–23 first-season hitters',
+                  role: 'Hitter',
+                  stageBand: 'first',
+                  seasonNumberMin: 1,
+                  seasonNumberMax: 1,
+                  ageMin: 21,
+                  ageMax: 23,
+                  ageWindow: 1,
+                  resolvedOnly: true,
+                },
+              },
+              warnings: ['historical_pace_resolved_careers_only'],
+            },
+          },
+        }}
+        saved={false}
+        onToggleWatchlist={vi.fn()}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('HOF-CALIBER OUTCOME')).toBeInTheDocument()
+    expect(screen.getByText('16.0%')).toBeInTheDocument()
+    expect(screen.getByText('#2 of 63 · moderate reliability')).toBeInTheDocument()
+    expect(screen.getByText('1.2%')).toBeInTheDocument()
+    expect(screen.getByText('+14.8 pts vs median')).toBeInTheDocument()
+    expect(screen.getByText('COMPLETED-SEASON HISTORICAL PACE')).toBeInTheDocument()
+    expect(screen.getByText('P99.1')).toBeInTheDocument()
+    expect(screen.getByText(/5\.0 career WAR through age 22 \(2025\)/u)).toBeInTheDocument()
+    expect(screen.getByText(/uses completed-season evidence/u)).toBeInTheDocument()
   })
 
   it('distinguishes an unavailable live rank from a withheld forecast', () => {

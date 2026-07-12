@@ -9,6 +9,8 @@ import type {
   PlayerStage,
   PlayerType,
   PublicationState,
+  RelativeSignal,
+  RelativeSignalReliability,
   WarQuantiles,
 } from './_career-oracle-types.js'
 
@@ -77,11 +79,37 @@ function finiteNumber(value: unknown, label: string): number | null {
   return value
 }
 
+function requiredFiniteNumber(value: unknown, label: string): number {
+  const parsed = finiteNumber(value, label)
+  if (parsed === null) throw new Error(`${label} is required`)
+  return parsed
+}
+
+function positiveInteger(value: unknown, label: string): number {
+  const parsed = requiredFiniteNumber(value, label)
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${label} must be a positive integer`)
+  }
+  return parsed
+}
+
+function percentile(value: unknown, label: string): number {
+  const parsed = requiredFiniteNumber(value, label)
+  if (parsed < 0 || parsed > 100) throw new Error(`${label} must be between 0 and 100`)
+  return parsed
+}
+
 function probability(value: unknown, label: string): number | null {
   const parsed = finiteNumber(value, label)
   if (parsed !== null && (parsed < 0 || parsed > 1)) {
     throw new Error(`${label} must be between 0 and 1`)
   }
+  return parsed
+}
+
+function requiredProbability(value: unknown, label: string): number {
+  const parsed = probability(value, label)
+  if (parsed === null) throw new Error(`${label} is required`)
   return parsed
 }
 
@@ -275,6 +303,179 @@ function hofStandard(value: unknown): HofStandardReference | null {
   }
 }
 
+function relativeReliability(value: unknown, label: string): RelativeSignalReliability {
+  return oneOf(value, ['high', 'moderate', 'low'], label)
+}
+
+function relativeSignal(value: unknown, label: string): RelativeSignal | null {
+  if (value === null || value === undefined) return null
+  const input = record(value, label)
+  const version = oneOf(input.version, ['relative-standing-v1'], `${label}.version`)
+  const kind = oneOf(input.kind, ['hall_track', 'arrival_track'], `${label}.kind`)
+  const status = oneOf(input.status, ['research', 'withheld'], `${label}.status`)
+
+  const currentPeer = input.currentPeer === null || input.currentPeer === undefined
+    ? null
+    : (() => {
+        const peer = record(input.currentPeer, `${label}.currentPeer`)
+        const cohort = record(peer.cohort, `${label}.currentPeer.cohort`)
+        const rank = positiveInteger(peer.rank, `${label}.currentPeer.rank`)
+        const cohortSize = positiveInteger(
+          peer.cohortSize,
+          `${label}.currentPeer.cohortSize`,
+        )
+        if (rank > cohortSize) throw new Error(`${label}.currentPeer.rank exceeds cohortSize`)
+        const ageMin = requiredFiniteNumber(
+          cohort.ageMin,
+          `${label}.currentPeer.cohort.ageMin`,
+        )
+        const ageMax = requiredFiniteNumber(
+          cohort.ageMax,
+          `${label}.currentPeer.cohort.ageMax`,
+        )
+        if (ageMin > ageMax) throw new Error(`${label}.currentPeer.cohort age range is invalid`)
+        return {
+          percentile: percentile(peer.percentile, `${label}.currentPeer.percentile`),
+          rank,
+          cohortSize,
+          value: requiredProbability(peer.value, `${label}.currentPeer.value`),
+          median: requiredProbability(peer.median, `${label}.currentPeer.median`),
+          difference: requiredFiniteNumber(
+            peer.difference,
+            `${label}.currentPeer.difference`,
+          ),
+          basis: oneOf(
+            peer.basis,
+            ['hof_caliber_probability', 'arrival_probability_36'],
+            `${label}.currentPeer.basis`,
+          ),
+          reliability: relativeReliability(
+            peer.reliability,
+            `${label}.currentPeer.reliability`,
+          ),
+          cohort: {
+            scope: oneOf(
+              cohort.scope,
+              ['current_census'],
+              `${label}.currentPeer.cohort.scope`,
+            ),
+            label: requiredString(cohort.label, `${label}.currentPeer.cohort.label`),
+            playerType: playerType(
+              cohort.playerType,
+              `${label}.currentPeer.cohort.playerType`,
+            ),
+            stage: oneOf<PlayerStage>(
+              cohort.stage,
+              ['pre_debut', 'early_mlb', 'established_mlb', 'inactive'],
+              `${label}.currentPeer.cohort.stage`,
+            ),
+            ageMin,
+            ageMax,
+            ageWindow: requiredFiniteNumber(
+              cohort.ageWindow,
+              `${label}.currentPeer.cohort.ageWindow`,
+            ),
+            level: stringValue(cohort.level),
+          },
+        }
+      })()
+
+  const historicalPace = input.historicalPace === null || input.historicalPace === undefined
+    ? null
+    : (() => {
+        const pace = record(input.historicalPace, `${label}.historicalPace`)
+        const cohort = record(pace.cohort, `${label}.historicalPace.cohort`)
+        const resolvedOnly = booleanValue(
+          cohort.resolvedOnly,
+          false,
+          `${label}.historicalPace.cohort.resolvedOnly`,
+        )
+        if (!resolvedOnly) throw new Error(`${label}.historicalPace must use resolved careers`)
+        const seasonNumberMin = positiveInteger(
+          cohort.seasonNumberMin,
+          `${label}.historicalPace.cohort.seasonNumberMin`,
+        )
+        const seasonNumberMax = positiveInteger(
+          cohort.seasonNumberMax,
+          `${label}.historicalPace.cohort.seasonNumberMax`,
+        )
+        if (seasonNumberMin > seasonNumberMax) {
+          throw new Error(`${label}.historicalPace.cohort season range is invalid`)
+        }
+        const ageMin = requiredFiniteNumber(
+          cohort.ageMin,
+          `${label}.historicalPace.cohort.ageMin`,
+        )
+        const ageMax = requiredFiniteNumber(
+          cohort.ageMax,
+          `${label}.historicalPace.cohort.ageMax`,
+        )
+        if (ageMin > ageMax) throw new Error(`${label}.historicalPace.cohort age range is invalid`)
+        return {
+          percentile: percentile(pace.percentile, `${label}.historicalPace.percentile`),
+          cohortSize: positiveInteger(
+            pace.cohortSize,
+            `${label}.historicalPace.cohortSize`,
+          ),
+          playerValue: requiredFiniteNumber(
+            pace.playerValue,
+            `${label}.historicalPace.playerValue`,
+          ),
+          metric: oneOf(
+            pace.metric,
+            ['career_war_to_date'],
+            `${label}.historicalPace.metric`,
+          ),
+          reliability: relativeReliability(
+            pace.reliability,
+            `${label}.historicalPace.reliability`,
+          ),
+          featureSeason: positiveInteger(
+            pace.featureSeason,
+            `${label}.historicalPace.featureSeason`,
+          ),
+          featureAge: requiredFiniteNumber(
+            pace.featureAge,
+            `${label}.historicalPace.featureAge`,
+          ),
+          cohort: {
+            scope: oneOf(
+              cohort.scope,
+              ['historical_point_in_time'],
+              `${label}.historicalPace.cohort.scope`,
+            ),
+            label: requiredString(cohort.label, `${label}.historicalPace.cohort.label`),
+            role: requiredString(cohort.role, `${label}.historicalPace.cohort.role`),
+            stageBand: requiredString(
+              cohort.stageBand,
+              `${label}.historicalPace.cohort.stageBand`,
+            ),
+            seasonNumberMin,
+            seasonNumberMax,
+            ageMin,
+            ageMax,
+            ageWindow: requiredFiniteNumber(
+              cohort.ageWindow,
+              `${label}.historicalPace.cohort.ageWindow`,
+            ),
+            resolvedOnly: true as const,
+          },
+        }
+      })()
+
+  if (status === 'research' && currentPeer === null && historicalPace === null) {
+    throw new Error(`${label} publishes a relative signal without a supported comparison`)
+  }
+  return {
+    version,
+    kind,
+    status,
+    currentPeer,
+    historicalPace,
+    warnings: stringArray(input.warnings, `${label}.warnings`),
+  }
+}
+
 type PreviewBase = Omit<CareerOraclePreview, 'items' | 'prospectForecasts'>
 
 function parseForecast(
@@ -368,6 +569,10 @@ function parseForecast(
     summary: stringValue(forecastInput.summary ?? input.summary),
     drivers: drivers(forecastInput.drivers ?? input.drivers, `${label}.drivers`),
     warnings: stringArray(forecastInput.warnings ?? input.warnings, `${label}.warnings`),
+    relativeSignal: relativeSignal(
+      forecastInput.relativeSignal ?? input.relativeSignal,
+      `${label}.relativeSignal`,
+    ),
     lineage: {
       ...rawLineage,
       modelVersion: requiredString(

@@ -87,7 +87,7 @@ until a newly frozen forward cohort and all distribution/calibration gates pass.
 
 The first release supports one complete loop:
 
-1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, terminal career WAR, or arrival probability.
+1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, peer standing, terminal career WAR, or arrival probability.
 2. **Narrow:** Search and filter by player type, organization, position, level, age, and forecast confidence.
 3. **Compare:** Select two to four players and compare outcome distributions, timelines, drivers, and data coverage on the same scale.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
@@ -117,6 +117,7 @@ Required row fields:
 - Three-year MLB probability and expected debut window
 - Median and upper-quantile career outcome, explicitly marked conditional where needed
 - Forecast confidence/data quality
+- Peer percentile, rank, cohort size, and a concise matched-cohort label
 - Change since prior snapshot
 - Data freshness and as-of date
 
@@ -140,6 +141,8 @@ The overview should include:
 - Milestone probabilities and development archetype
 - Positive and negative drivers with direction and magnitude
 - Historical comparable cohort with stage-matched context
+- A separate current peer percentile and completed-season historical WAR-pace
+  percentile; neither is presented as another outcome probability
 - Snapshot-to-snapshot change log
 
 Supporting tabs can group normalized minor/major statistics, development trends, comparable players, and model evidence. Raw statistics should always show league, park, age, and level context where available.

@@ -79,6 +79,12 @@ artifact through explicitly research-only fields. No artifact is marked released
 The Hall target is statistical JAWS caliber, not induction probability, and the
 prospect result is an arrival-horizon lower-bound proxy composed with a debut-age
 career bridge rather than a directly trained MiLB-to-Hall model.
+The board also publishes a separate `relative-standing-v1` research layer. MLB
+players are compared with current players of the same role, career stage, and
+age band, while their completed-season WAR pace is compared with resolved
+historical landmarks. Minor leaguers receive an arrival-probability percentile
+against current players of the same role, level, and age band. These percentiles
+describe peer standing; they never replace or modify the outcome probability.
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
 results, and the gates that remain before forecasts can be published.
 
@@ -143,14 +149,15 @@ filters, research outcome sorting, and pagination:
 ```text
 GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
+GET /api/players?stage=MLB&playerType=Hitter&sort=peerSignal&page=1&limit=50
 ```
 
 Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Oracle board:** real minor and major leaguers, stage/role/level filters, stage-specific Hall-caliber and career-outcome ranks, pagination, and a browser-local watchlist.
-- **Player dossier:** observed evidence, identity provenance, actual cumulative WAR, terminal career WAR/peak-seven/JAWS distributions, Hall standard, warnings, and model lineage.
+- **Oracle board:** real minor and major leaguers, stage/role/level filters, stage-specific Hall-caliber, career-outcome, and peer-standing ranks, pagination, and a browser-local watchlist.
+- **Player dossier:** observed evidence, current peer standing, historical completed-season WAR pace, identity provenance, actual cumulative WAR, terminal career WAR/peak-seven/JAWS distributions, Hall standard, warnings, and model lineage.
 - **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
 - **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
 - **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.

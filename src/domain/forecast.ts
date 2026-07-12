@@ -52,6 +52,60 @@ export interface CareerForecastLineage {
   providerVersion: string | null
 }
 
+export type RelativeSignalReliability = 'high' | 'moderate' | 'low'
+
+export interface CurrentPeerSignal {
+  percentile: number
+  rank: number
+  cohortSize: number
+  value: number
+  median: number
+  difference: number
+  basis: 'hof_caliber_probability' | 'arrival_probability_36'
+  reliability: RelativeSignalReliability
+  cohort: {
+    scope: 'current_census'
+    label: string
+    playerType: PlayerType
+    stage: PlayerStage
+    ageMin: number
+    ageMax: number
+    ageWindow: number
+    level: string | null
+  }
+}
+
+export interface HistoricalPaceSignal {
+  percentile: number
+  cohortSize: number
+  playerValue: number
+  metric: 'career_war_to_date'
+  reliability: RelativeSignalReliability
+  featureSeason: number
+  featureAge: number
+  cohort: {
+    scope: 'historical_point_in_time'
+    label: string
+    role: string
+    stageBand: string
+    seasonNumberMin: number
+    seasonNumberMax: number
+    ageMin: number
+    ageMax: number
+    ageWindow: number
+    resolvedOnly: true
+  }
+}
+
+export interface RelativeStandingSignal {
+  version: 'relative-standing-v1'
+  kind: 'hall_track' | 'arrival_track'
+  status: 'research' | 'withheld'
+  currentPeer: CurrentPeerSignal | null
+  historicalPace: HistoricalPaceSignal | null
+  warnings: string[]
+}
+
 export interface CareerForecast {
   publicationState: PublicationState
   releaseEligible: boolean
@@ -74,6 +128,7 @@ export interface CareerForecast {
   drivers: ModelDriver[]
   warnings: string[]
   lineage: CareerForecastLineage
+  relativeSignal?: RelativeStandingSignal | null
 }
 
 export interface ObservedMetric {
@@ -161,7 +216,7 @@ export interface PlayerRecord {
   careerForecast: CareerForecast | null
 }
 
-export type SortKey = 'hofProbability' | 'finalWar' | 'arrival36' | 'age' | 'name'
+export type SortKey = 'hofProbability' | 'peerSignal' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -185,6 +240,8 @@ export interface PlayersResponseMeta {
   forecastStatus: 'not_published' | 'research_only' | 'published'
   source: string
   researchCoverage?: number | null
+  peerSignalCoverage?: number | null
+  relativeSignalVersion?: 'relative-standing-v1' | null
   researchAsOf?: string | null
   releaseEligible?: boolean
   targetVersion?: string | null

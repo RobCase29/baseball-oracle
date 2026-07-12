@@ -49,6 +49,13 @@ export function arrivalProbability36(player: PlayerRecord): number | null {
     ?.probability ?? null
 }
 
+export function peerSignalPercentile(player: PlayerRecord): number | null {
+  const signal = player.careerForecast?.relativeSignal
+  if (!signal || signal.status === 'withheld') return null
+  const percentile = signal.currentPeer?.percentile ?? null
+  return percentile !== null && Number.isFinite(percentile) ? percentile : null
+}
+
 export function filterAndSortPlayers(
   players: PlayerRecord[],
   filters: BoardFilters,
@@ -79,6 +86,21 @@ export function filterAndSortPlayers(
       if (filters.sort === 'arrival36') {
         return (
           compareNullableNumber(arrivalProbability36(left), arrivalProbability36(right), 'descending') ||
+          left.id.localeCompare(right.id)
+        )
+      }
+      if (filters.sort === 'peerSignal') {
+        return (
+          compareNullableNumber(
+            peerSignalPercentile(left),
+            peerSignalPercentile(right),
+            'descending',
+          ) ||
+          compareNullableNumber(
+            left.careerForecast?.hofCaliberProbability ?? null,
+            right.careerForecast?.hofCaliberProbability ?? null,
+            'descending',
+          ) ||
           left.id.localeCompare(right.id)
         )
       }
@@ -146,6 +168,11 @@ export function formatOrdinal(value: number): string {
 
   const suffix = rounded % 10 === 1 ? 'st' : rounded % 10 === 2 ? 'nd' : rounded % 10 === 3 ? 'rd' : 'th'
   return `${rounded}${suffix}`
+}
+
+export function formatPercentileRank(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value < 0 || value > 100) return '—'
+  return `P${value.toFixed(1)}`
 }
 
 export function formatScore(value: number | null): string {
