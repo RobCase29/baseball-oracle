@@ -760,15 +760,19 @@ def build_arrival_corpus(
     return manifest
 
 
-def discover_locked_dataset_manifests(*, root: Path = ROOT) -> list[Path]:
+def discover_locked_dataset_manifests(
+    *, root: Path = ROOT, max_season: int | None = None
+) -> list[Path]:
     lock_directory = root / "data/archive-locks/sports-reference-baseball-register"
     manifests: list[tuple[int, Path]] = []
     for lock_path in lock_directory.glob("*.json"):
         lock = _read_json(lock_path)
         season = lock.get("season")
-        if not isinstance(season, int) or lock.get("coverage", {}).get(
-            "structuralZeroSeason"
-        ) is True:
+        if (
+            not isinstance(season, int)
+            or (max_season is not None and season > max_season)
+            or lock.get("coverage", {}).get("structuralZeroSeason") is True
+        ):
             continue
         manifest_path = (
             root / "data/processed" / f"model-v1-bref-{season}" / "dataset_manifest.json"
@@ -784,6 +788,7 @@ def main() -> None:
     )
     parser.add_argument("--dataset-manifest", type=Path, action="append", default=[])
     parser.add_argument("--discover-locked-seasons", action="store_true")
+    parser.add_argument("--max-season", type=int)
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -792,7 +797,7 @@ def main() -> None:
     args = parser.parse_args()
     dataset_manifests = list(args.dataset_manifest)
     if args.discover_locked_seasons:
-        discovered = discover_locked_dataset_manifests()
+        discovered = discover_locked_dataset_manifests(max_season=args.max_season)
         known = {path.resolve() for path in dataset_manifests}
         dataset_manifests.extend(path for path in discovered if path.resolve() not in known)
     manifest = build_arrival_corpus(dataset_manifests, args.output_dir)

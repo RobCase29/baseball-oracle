@@ -31,7 +31,7 @@
     "model:setup": "python3 modeling/bootstrap.py",
     "model:prepare": ".venv/bin/python modeling/prepare_dataset.py",
     "model:train": ".venv/bin/python modeling/train_arrival_baseline.py",
-    "model:population:prepare": ".venv/bin/python modeling/arrival_corpus.py --discover-locked-seasons",
+    "model:population:prepare": ".venv/bin/python modeling/arrival_corpus.py --discover-locked-seasons --max-season=2019",
     "model:population:train": ".venv/bin/python modeling/train_arrival_population.py",
     "model:population:audit": ".venv/bin/python modeling/arrival_sufficiency.py",
     "model:population:calibrate": ".venv/bin/python modeling/train_arrival_calibration.py",

@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -303,6 +304,87 @@ def test_builds_verified_multi_season_corpus(tmp_path, monkeypatch) -> None:
     assert snapshots["edition"].tolist() == [2018, 2019]
     for output in manifest["outputs"].values():
         assert (tmp_path / output["content_addressed_path"]).is_file()
+
+
+def test_locked_dataset_discovery_respects_maximum_season(tmp_path) -> None:
+    lock_directory = (
+        tmp_path / "data/archive-locks/sports-reference-baseball-register"
+    )
+    for season in (2019, 2021, 2025):
+        _write_json(
+            lock_directory / f"{season}.json",
+            {"season": season, "coverage": {"structuralZeroSeason": False}},
+        )
+        manifest_path = (
+            tmp_path
+            / "data/processed"
+            / f"model-v1-bref-{season}"
+            / "dataset_manifest.json"
+        )
+        _write_json(manifest_path, {"season": season})
+
+    discovered = arrival_corpus.discover_locked_dataset_manifests(
+        root=tmp_path, max_season=2019
+    )
+
+    assert discovered == [
+        tmp_path / "data/processed/model-v1-bref-2019/dataset_manifest.json"
+    ]
+
+
+def test_main_passes_maximum_season_to_discovery(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    discovered_manifest = tmp_path / "dataset_manifest.json"
+    observed: dict[str, object] = {}
+
+    def fake_discovery(*, max_season: int | None) -> list[Path]:
+        observed["max_season"] = max_season
+        return [discovered_manifest]
+
+    def fake_build(dataset_manifests: list[Path], output_dir: Path) -> dict:
+        observed["dataset_manifests"] = dataset_manifests
+        observed["output_dir"] = output_dir
+        return {
+            "manifest_sha256": "manifest-hash",
+            "corpus_content_sha256": "corpus-hash",
+            "summary": {},
+        }
+
+    output_dir = tmp_path / "corpus"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "arrival_corpus.py",
+            "--discover-locked-seasons",
+            "--max-season=2019",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    monkeypatch.setattr(
+        arrival_corpus, "discover_locked_dataset_manifests", fake_discovery
+    )
+    monkeypatch.setattr(arrival_corpus, "build_arrival_corpus", fake_build)
+
+    arrival_corpus.main()
+
+    assert observed == {
+        "max_season": 2019,
+        "dataset_manifests": [discovered_manifest],
+        "output_dir": output_dir,
+    }
+    assert json.loads(capsys.readouterr().out)["manifest_sha256"] == "manifest-hash"
+
+
+def test_population_prepare_script_caps_discovery_at_2019() -> None:
+    package = json.loads((arrival_corpus.ROOT / "package.json").read_text())
+
+    assert package["scripts"]["model:population:prepare"] == (
+        ".venv/bin/python modeling/arrival_corpus.py --discover-locked-seasons "
+        "--max-season=2019"
+    )
 
 
 def test_rejects_duplicate_season(tmp_path) -> None:
