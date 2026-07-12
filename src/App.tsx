@@ -282,12 +282,12 @@ function App() {
               <div>
                 <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'PLAYER PROFILES'}</span>
                 <strong>{visiblePagination.total.toLocaleString()}</strong>
-                <small>{isWatchlistView ? `${watchlist.size} saved total` : `${meta.season ?? 'Current'} source player-role profiles`}</small>
+                <small>{isWatchlistView ? `${watchlist.size} saved total` : `${meta.season ?? 'Current'} source profiles`}</small>
               </div>
               <div>
                 <span>RESEARCH ESTIMATES</span>
                 <strong>{meta.researchCoverage?.toLocaleString() ?? visiblePlayers.filter((player) => player.researchEstimate).length}</strong>
-                <small>exact MLBAM and role matches</small>
+                <small>exact ID + role matches</small>
               </div>
               <div>
                 <span>STATCAST COVERAGE</span>
