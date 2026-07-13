@@ -96,6 +96,12 @@ describe('Player Map', () => {
 
     const joeStanding = buildStageStanding('rookie', 167, 6_455, '2025-12-31')
     expect(joeStanding).toMatchObject({
+      version: 'stage-standing-v1',
+      metric: 'prospect_career_outcome_rank',
+      method: 'frozen_model_artifact_rank',
+      direction: 'lower_is_better',
+      scope: 'declared_model_cohort',
+      isFilteredResultOrdinal: false,
       rank: 167,
       universe: 6_455,
       tailBand: 'Top 5%',
@@ -198,6 +204,8 @@ describe('Player Map', () => {
     expect(profile.state).toBe('discovery')
     expect(profile.stateLabel).toBe('Discovery')
     expect(profile.oracleScore).toEqual({
+      deprecated: true,
+      replacement: 'careerIndex',
       value: 96,
       scale: 'stage_rank_percentile',
       route: 'milb',
@@ -378,6 +386,10 @@ describe('Player Map', () => {
       status: 'research',
     })
     expect(profile.stageStanding).toMatchObject({
+      version: 'stage-standing-v1',
+      metric: 'mlb_hof_caliber_rank',
+      method: 'current_census_probability_rank',
+      target: 'hof-caliber-point-in-time-jaws-v1',
       rank: 20,
       universe: 100,
       topPercent: 20,
@@ -472,6 +484,10 @@ describe('Player Map', () => {
       asOf: '2025-12-31T00:00:00.000Z',
     })
     expect(profile.stageStanding).toMatchObject({
+      version: 'stage-standing-v1',
+      metric: 'prospect_career_outcome_rank',
+      method: 'frozen_model_artifact_rank',
+      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
       rank: 167,
       universe: 6_455,
       tailBand: 'Top 5%',
@@ -553,6 +569,13 @@ describe('Player Map', () => {
       asOf: null,
     })
     expect(profile.stageStanding).toEqual({
+      version: 'stage-standing-v1',
+      metric: 'prospect_career_outcome_rank',
+      method: 'frozen_model_artifact_rank',
+      direction: 'lower_is_better',
+      scope: 'declared_model_cohort',
+      isFilteredResultOrdinal: false,
+      target: null,
       rank: null,
       universe: null,
       topPercent: null,

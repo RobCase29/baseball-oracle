@@ -1,0 +1,870 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/player-map-feed.v3.schema.json",
+  "title": "Baseball Oracle Player Map Feed v3",
+  "description": "Compact, market-independent player intelligence response returned by GET /api/players?view=map. Career Index is a fixed career-value index; stage standing is a route-specific ordinal and Oracle Score is deprecated.",
+  "type": "object",
+  "required": ["schemaVersion", "items", "page", "meta"],
+  "properties": {
+    "schemaVersion": {
+      "const": "player-map-feed.v3"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/feedItem"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nullableDateTime": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "nullableString": {
+      "type": ["string", "null"]
+    },
+    "nullablePositiveInteger": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "route": {
+      "enum": ["milb", "rookie", "mlb"]
+    },
+    "feedItem": {
+      "type": "object",
+      "required": ["playerId", "identity", "externalIds", "context", "assessment"],
+      "properties": {
+        "playerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "identity": {
+          "$ref": "#/$defs/playerIdentity"
+        },
+        "externalIds": {
+          "$ref": "#/$defs/externalIds"
+        },
+        "context": {
+          "$ref": "#/$defs/playerContext"
+        },
+        "assessment": {
+          "$ref": "#/$defs/assessment"
+        }
+      },
+      "additionalProperties": false
+    },
+    "playerIdentity": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "externalIds": {
+      "description": "Exact provider identifiers. Values are serialized as strings; null means that provider identifier is unavailable.",
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": ["string", "null"]
+      }
+    },
+    "playerContext": {
+      "type": "object",
+      "required": [
+        "playerType",
+        "stage",
+        "age",
+        "level",
+        "organization",
+        "organizationCode",
+        "position"
+      ],
+      "properties": {
+        "playerType": {
+          "enum": ["Hitter", "Pitcher", "Two-way"]
+        },
+        "stage": {
+          "enum": ["pre_debut", "recent_callup", "early_mlb", "established_mlb", "inactive"]
+        },
+        "age": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "level": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "organization": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "organizationCode": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "position": {
+          "$ref": "#/$defs/nullableString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "assessment": {
+      "description": "The ranking-critical fields are closed below. Additional explanatory score, trait, signal, and evidence fields remain forward-compatible within v3.",
+      "type": "object",
+      "required": [
+        "version",
+        "asOf",
+        "route",
+        "mappingStatus",
+        "claimStatus",
+        "state",
+        "careerIndex",
+        "stageStanding",
+        "oracleScore",
+        "marketIndependent",
+        "marketInputsIncluded",
+        "careerIndexComparableAcrossRoutes",
+        "stageStandingComparableWithinStageOnly"
+      ],
+      "properties": {
+        "version": {
+          "const": "oracle-player-map/v2"
+        },
+        "asOf": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "mappingStatus": {
+          "enum": ["scored", "insufficient_sample", "coverage_gap", "withheld", "not_applicable"]
+        },
+        "claimStatus": {
+          "enum": ["research_only", "descriptive_only", "withheld"]
+        },
+        "state": {
+          "enum": ["conviction", "discovery", "rising", "monitor", "mapped", "evidence_building", "profile_only"]
+        },
+        "careerIndex": {
+          "$ref": "#/$defs/careerIndex"
+        },
+        "stageStanding": {
+          "$ref": "#/$defs/stageStanding"
+        },
+        "oracleScore": {
+          "$ref": "#/$defs/deprecatedOracleScore"
+        },
+        "marketIndependent": {
+          "const": true
+        },
+        "marketInputsIncluded": {
+          "const": false
+        },
+        "careerIndexComparableAcrossRoutes": {
+          "const": true
+        },
+        "stageStandingComparableWithinStageOnly": {
+          "const": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "route": {
+                "const": "milb"
+              }
+            },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "careerIndex": {
+                "properties": {
+                  "route": {
+                    "const": "milb"
+                  }
+                }
+              },
+              "oracleScore": {
+                "properties": {
+                  "route": {
+                    "const": "milb"
+                  }
+                }
+              },
+              "stageStanding": {
+                "properties": {
+                  "metric": {
+                    "const": "prospect_career_outcome_rank"
+                  },
+                  "method": {
+                    "const": "frozen_model_artifact_rank"
+                  },
+                  "cohort": {
+                    "const": "prospect_forecast"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "route": {
+                "const": "rookie"
+              }
+            },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "careerIndex": {
+                "properties": {
+                  "route": {
+                    "const": "rookie"
+                  }
+                }
+              },
+              "oracleScore": {
+                "properties": {
+                  "route": {
+                    "const": "rookie"
+                  }
+                }
+              },
+              "stageStanding": {
+                "properties": {
+                  "metric": {
+                    "const": "prospect_career_outcome_rank"
+                  },
+                  "method": {
+                    "const": "frozen_model_artifact_rank"
+                  },
+                  "cohort": {
+                    "const": "frozen_prospect_prior"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "route": {
+                "const": "mlb"
+              }
+            },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "careerIndex": {
+                "properties": {
+                  "route": {
+                    "const": "mlb"
+                  }
+                }
+              },
+              "oracleScore": {
+                "properties": {
+                  "route": {
+                    "const": "mlb"
+                  }
+                }
+              },
+              "stageStanding": {
+                "properties": {
+                  "metric": {
+                    "const": "mlb_hof_caliber_rank"
+                  },
+                  "method": {
+                    "const": "current_census_probability_rank"
+                  },
+                  "cohort": {
+                    "const": "current_mlb"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "careerIndex": {
+      "description": "Primary fixed-scale career-value magnitude. It is not a probability, percentile, confidence score, expected WAR, or market-return score.",
+      "type": "object",
+      "required": ["version", "value", "scale", "route", "status", "asOf", "definition", "forecastLineage"],
+      "properties": {
+        "version": {
+          "const": "career-index-war-v1"
+        },
+        "value": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "scale": {
+          "const": "fixed_career_value_index"
+        },
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "status": {
+          "enum": ["research", "withheld"]
+        },
+        "asOf": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "definition": {
+          "const": "Fixed career-value index from final-career WAR P50, P75, and P90 mapped to versioned WAR anchors; not a probability, percentile, confidence score, or expected WAR"
+        },
+        "forecastLineage": {
+          "$ref": "#/$defs/forecastLineage"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "status": {
+              "const": "research"
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "status": {
+              "const": "withheld"
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "forecastLineage": {
+      "type": "object",
+      "required": ["modelVersion", "targetVersion", "dataVersion", "providerVersion"],
+      "properties": {
+        "modelVersion": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "targetVersion": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "dataVersion": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "providerVersion": {
+          "$ref": "#/$defs/nullableString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stageStanding": {
+      "description": "Relative rank inside the declared route-specific model cohort. Lower rank and topPercent are better; filters never renumber this standing.",
+      "type": "object",
+      "required": [
+        "version",
+        "metric",
+        "method",
+        "direction",
+        "scope",
+        "isFilteredResultOrdinal",
+        "target",
+        "rank",
+        "universe",
+        "topPercent",
+        "tailBand",
+        "cohort",
+        "asOf"
+      ],
+      "properties": {
+        "version": {
+          "const": "stage-standing-v1"
+        },
+        "metric": {
+          "enum": ["prospect_career_outcome_rank", "mlb_hof_caliber_rank"]
+        },
+        "method": {
+          "enum": ["frozen_model_artifact_rank", "current_census_probability_rank"]
+        },
+        "direction": {
+          "const": "lower_is_better"
+        },
+        "scope": {
+          "const": "declared_model_cohort"
+        },
+        "isFilteredResultOrdinal": {
+          "const": false
+        },
+        "target": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "rank": {
+          "$ref": "#/$defs/nullablePositiveInteger"
+        },
+        "universe": {
+          "$ref": "#/$defs/nullablePositiveInteger"
+        },
+        "topPercent": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "tailBand": {
+          "type": ["string", "null"],
+          "enum": ["Top 0.1%", "Top 1%", "Top 5%", "Top 10%", "Top 25%", "Outside top 25%", null]
+        },
+        "cohort": {
+          "enum": ["prospect_forecast", "frozen_prospect_prior", "current_mlb"]
+        },
+        "asOf": {
+          "$ref": "#/$defs/nullableDateTime"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "rank": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "universe": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "topPercent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "tailBand": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "properties": {
+            "rank": {
+              "type": "null"
+            },
+            "universe": {
+              "type": "null"
+            },
+            "topPercent": {
+              "type": "null"
+            },
+            "tailBand": {
+              "type": "null"
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "deprecatedOracleScore": {
+      "description": "Deprecated v1 stage-percentile compatibility field. New consumers must use careerIndex and stageStanding.",
+      "type": "object",
+      "required": [
+        "deprecated",
+        "replacement",
+        "value",
+        "scale",
+        "route",
+        "rank",
+        "universe",
+        "target",
+        "asOf",
+        "definition"
+      ],
+      "properties": {
+        "deprecated": {
+          "const": true
+        },
+        "replacement": {
+          "const": "careerIndex"
+        },
+        "value": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "scale": {
+          "const": "stage_rank_percentile"
+        },
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "rank": {
+          "$ref": "#/$defs/nullablePositiveInteger"
+        },
+        "universe": {
+          "$ref": "#/$defs/nullablePositiveInteger"
+        },
+        "target": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "asOf": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "definition": {
+          "const": "Rounded stage-specific modeled outcome rank percentile; not a probability or composite score"
+        }
+      },
+      "additionalProperties": false
+    },
+    "page": {
+      "type": "object",
+      "required": ["page", "limit", "total", "totalPages"],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "source",
+        "dataAsOf",
+        "season",
+        "coverage",
+        "forecastStatus",
+        "playerMapVersion",
+        "playerMapCoverage",
+        "matchingPlayerCount",
+        "matchingMappedCount",
+        "snapshotId",
+        "snapshotScope",
+        "marketIndependent",
+        "marketInputsIncluded",
+        "primaryScoreSemantics",
+        "scoreSemantics",
+        "legacyScoreSemantics",
+        "scoreSemanticsDeprecated",
+        "rankingContract",
+        "ordering"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dataAsOf": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "season": {
+          "type": ["integer", "null"],
+          "minimum": 1876,
+          "maximum": 2200
+        },
+        "coverage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "forecastStatus": {
+          "enum": ["not_published", "research_only", "published"]
+        },
+        "playerMapVersion": {
+          "const": "oracle-player-map/v2"
+        },
+        "playerMapCoverage": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matchingPlayerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matchingMappedCount": {
+          "description": "Number of matching records with a non-null assessment.careerIndex.value.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshotId": {
+          "type": "string",
+          "pattern": "^oracle-ranking-snapshot/v1:[a-f0-9]{64}$"
+        },
+        "snapshotScope": {
+          "const": "ranking_and_census"
+        },
+        "marketIndependent": {
+          "const": true
+        },
+        "marketInputsIncluded": {
+          "const": false
+        },
+        "primaryScoreSemantics": {
+          "const": "fixed_career_value_index"
+        },
+        "scoreSemantics": {
+          "const": "stage_specific_ordinal_not_market_value"
+        },
+        "legacyScoreSemantics": {
+          "const": "stage_specific_ordinal_not_market_value"
+        },
+        "scoreSemanticsDeprecated": {
+          "const": true
+        },
+        "rankingContract": {
+          "$ref": "#/$defs/rankingContract"
+        },
+        "ordering": {
+          "$ref": "#/$defs/ordering"
+        },
+        "identity": {
+          "$ref": "#/$defs/identityResolution"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rankingContract": {
+      "type": "object",
+      "required": [
+        "version",
+        "primaryMetric",
+        "primarySort",
+        "primaryComparableAcrossRoutes",
+        "stageStandingMetric",
+        "stageStandingComparableWithinStageOnly",
+        "stageStandingIsFilteredResultOrdinal",
+        "legacyMetric",
+        "legacyDeprecated"
+      ],
+      "properties": {
+        "version": {
+          "const": "player-ranking-contract/v1"
+        },
+        "primaryMetric": {
+          "const": "careerIndex"
+        },
+        "primarySort": {
+          "const": "careerIndex"
+        },
+        "primaryComparableAcrossRoutes": {
+          "const": true
+        },
+        "stageStandingMetric": {
+          "const": "stageStanding"
+        },
+        "stageStandingComparableWithinStageOnly": {
+          "const": true
+        },
+        "stageStandingIsFilteredResultOrdinal": {
+          "const": false
+        },
+        "legacyMetric": {
+          "const": "oracleScore"
+        },
+        "legacyDeprecated": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "ordering": {
+      "type": "object",
+      "required": ["requestedSort", "appliedSort", "legacyAliasUsed", "metric", "field", "fieldExposed", "direction", "scope", "nulls", "tieBreakers"],
+      "properties": {
+        "requestedSort": {
+          "enum": ["careerIndex", "stageStanding", "alphaOpportunity", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
+        },
+        "appliedSort": {
+          "enum": ["careerIndex", "stageStanding", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
+        },
+        "legacyAliasUsed": {
+          "description": "True only when requestedSort=alphaOpportunity was normalized to appliedSort=stageStanding.",
+          "type": "boolean"
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "fieldExposed": {
+          "type": "boolean"
+        },
+        "direction": {
+          "enum": ["ascending", "descending"]
+        },
+        "scope": {
+          "enum": ["directory", "cross_stage", "stage"]
+        },
+        "nulls": {
+          "const": "last"
+        },
+        "tieBreakers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/orderingMetric"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "fieldExposed": { "const": true } },
+            "required": ["fieldExposed"]
+          },
+          "then": {
+            "properties": { "field": { "type": "string" } }
+          },
+          "else": {
+            "properties": { "field": { "type": "null" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "requestedSort": { "const": "alphaOpportunity" } },
+            "required": ["requestedSort"]
+          },
+          "then": {
+            "properties": {
+              "appliedSort": { "const": "stageStanding" },
+              "legacyAliasUsed": { "const": true }
+            }
+          },
+          "else": {
+            "properties": { "legacyAliasUsed": { "const": false } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "scope": { "const": "cross_stage" } },
+            "required": ["scope"]
+          },
+          "then": {
+            "properties": { "appliedSort": { "const": "careerIndex" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "scope": { "const": "directory" } },
+            "required": ["scope"]
+          },
+          "then": {
+            "properties": { "appliedSort": { "enum": ["name", "age"] } }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "orderingMetric": {
+      "type": "object",
+      "required": ["metric", "field", "fieldExposed", "direction"],
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "fieldExposed": {
+          "type": "boolean"
+        },
+        "direction": {
+          "enum": ["ascending", "descending"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "fieldExposed": { "const": true } },
+            "required": ["fieldExposed"]
+          },
+          "then": {
+            "properties": { "field": { "type": "string" } }
+          },
+          "else": {
+            "properties": { "field": { "type": "null" } }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "identityResolution": {
+      "description": "Optional census-level identity and deduplication diagnostics present on non-degraded responses.",
+      "type": "object",
+      "required": [
+        "minorRoleRows",
+        "canonicalMinorPlayers",
+        "duplicateMinorRoleRowsRemoved",
+        "crossStageDuplicatesRemoved",
+        "minorPlayersMissingMlbam",
+        "mlbPlayersMissingMlbam"
+      ],
+      "properties": {
+        "minorRoleRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonicalMinorPlayers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicateMinorRoleRowsRemoved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossStageDuplicatesRemoved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minorPlayersMissingMlbam": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mlbPlayersMissingMlbam": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

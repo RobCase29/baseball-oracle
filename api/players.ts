@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless'
+import { createHash } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { z } from 'zod'
 import {
@@ -24,6 +25,7 @@ import type {
 } from './_career-oracle-types.js'
 import {
   buildPlayerMap,
+  CAREER_INDEX_VERSION,
   careerIndexValue,
   FROZEN_PROSPECT_FORECAST_UNIVERSE,
   PLAYER_MAP_VERSION,
@@ -41,6 +43,7 @@ const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
   'careerIndex',
+  'stageStanding',
   'alphaOpportunity',
   'hofProbability',
   'nearTermImpact',
@@ -51,6 +54,9 @@ const playerSorts = [
 ] as const
 const playerViews = ['full', 'map'] as const
 const maximumPlayerIds = 50
+const playerMapFeedSchemaVersion = 'player-map-feed.v3' as const
+const rankingContractVersion = 'player-ranking-contract/v1' as const
+const rankingSnapshotVersion = 'oracle-ranking-snapshot/v1' as const
 const canonicalPlayerIdPattern = /^[A-Za-z0-9][A-Za-z0-9:._~'@/+-]{0,199}$/u
 const queryParameterNames = new Set([
   'q',
@@ -110,7 +116,7 @@ const querySchema = z.object({
     .refine((value) => value !== 'ALL')
     .nullable()
     .default(null),
-  sort: z.enum(playerSorts).default('careerIndex'),
+  sort: z.enum(playerSorts).optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   view: z.enum(playerViews).default('full'),
@@ -258,7 +264,23 @@ function setResponseHeaders(response: ServerResponse, cacheControl: string): voi
   response.setHeader('X-Frame-Options', 'DENY')
 }
 
-function sendJson(
+function weakEtagValue(value: string): string {
+  const trimmed = value.trim()
+  return trimmed.startsWith('W/') ? trimmed.slice(2).trim() : trimmed
+}
+
+export function matchesIfNoneMatch(
+  header: string | string[] | undefined,
+  etag: string,
+): boolean {
+  if (header === undefined) return false
+  const values = (Array.isArray(header) ? header : [header])
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+  return values.includes('*') || values.some((value) => weakEtagValue(value) === etag)
+}
+
+export function sendJson(
   request: IncomingMessage,
   response: ServerResponse,
   statusCode: number,
@@ -266,8 +288,17 @@ function sendJson(
   cacheControl = 'no-store',
 ): void {
   const json = JSON.stringify(body)
+  const etag = `"${createHash('sha256').update(json).digest('base64url')}"`
   response.statusCode = statusCode
   setResponseHeaders(response, cacheControl)
+  response.setHeader('ETag', etag)
+  if (statusCode === 200 && matchesIfNoneMatch(request.headers?.['if-none-match'], etag)) {
+    response.statusCode = 304
+    response.removeHeader('Content-Type')
+    response.removeHeader('Content-Length')
+    response.end()
+    return
+  }
   response.setHeader('Content-Length', Buffer.byteLength(json).toString())
   response.end(request.method === 'HEAD' ? undefined : json)
 }
@@ -324,7 +355,17 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
     const parsed = querySchema.safeParse(
       Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)),
     )
-    return parsed.success ? parsed.data : null
+    if (!parsed.success) return null
+
+    const sort = parsed.data.sort ?? (parsed.data.stage === 'All' ? 'name' : 'careerIndex')
+    if (
+      parsed.data.stage === 'All' &&
+      sort !== 'name' &&
+      sort !== 'age' &&
+      sort !== 'careerIndex'
+    ) return null
+
+    return { ...parsed.data, sort }
   } catch {
     return null
   }
@@ -706,13 +747,21 @@ interface MappedPlayerRecord extends PlayerRecord {
   playerMap: PlayerMapProfile
 }
 
+export function canonicalExternalId(value: string | number | null | undefined): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string') return value.length > 0 ? value : null
+  return Number.isSafeInteger(value) && value >= 0 ? String(value) : null
+}
+
 export function playerMapFeedItem(record: MappedPlayerRecord): PlayerMapFeedItem {
   return {
     playerId: record.id,
     identity: {
       name: record.name,
     },
-    externalIds: record.provenance.externalIds,
+    externalIds: Object.fromEntries(Object.entries(record.provenance.externalIds).map(
+      ([key, value]) => [key, canonicalExternalId(value)],
+    )),
     context: {
       playerType: record.playerType,
       stage: record.stage,
@@ -722,7 +771,14 @@ export function playerMapFeedItem(record: MappedPlayerRecord): PlayerMapFeedItem
       organizationCode: record.organizationCode,
       position: record.position,
     },
-    assessment: record.playerMap,
+    assessment: {
+      ...record.playerMap,
+      oracleScore: {
+        ...record.playerMap.oracleScore,
+        deprecated: true,
+        replacement: 'careerIndex',
+      },
+    },
   }
 }
 
@@ -872,12 +928,18 @@ function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
   return careerIndexValue(forecast?.finalCareerWar)
 }
 
+function candidatePlayerMapRoute(candidate: UnifiedBoardCandidate): 'milb' | 'rookie' | 'mlb' {
+  if (candidate.stage === 'recent_callup') return 'rookie'
+  return candidate.source === 'minor' ? 'milb' : 'mlb'
+}
+
 export function sortUnifiedCandidates(
   items: UnifiedBoardCandidate[],
   sort: PlayerSort,
 ): UnifiedBoardCandidate[] {
   return items.toSorted((left, right) => {
-    const idTie = left.id.localeCompare(right.id) || left.source.localeCompare(right.source)
+    const idTie = left.id.localeCompare(right.id) ||
+      candidatePlayerMapRoute(left).localeCompare(candidatePlayerMapRoute(right))
     if (sort === 'name') return left.name.localeCompare(right.name) || idTie
     if (sort === 'age') {
       return compareNullableNumber(left.age, right.age, 'ascending') || idTie
@@ -932,7 +994,7 @@ export function sortUnifiedCandidates(
         idTie
       )
     }
-    if (sort === 'alphaOpportunity') {
+    if (sort === 'stageStanding' || sort === 'alphaOpportunity') {
       return (
         compareNullableNumber(
           candidateOutcomeRank(left),
@@ -971,8 +1033,111 @@ export function sortBoardCandidates(
   items: UnifiedBoardCandidate[],
   query: Pick<PlayerQuery, 'stage' | 'sort'>,
 ): UnifiedBoardCandidate[] {
-  const directorySort = query.sort === 'age' ? 'age' : 'name'
-  return sortUnifiedCandidates(items, query.stage === 'All' ? directorySort : query.sort)
+  if (query.stage === 'All' && query.sort === 'careerIndex') {
+    return items.toSorted((left, right) => (
+      compareNullableNumber(candidateCareerIndex(left), candidateCareerIndex(right), 'descending') ||
+      left.name.localeCompare(right.name) ||
+      left.id.localeCompare(right.id) ||
+      candidatePlayerMapRoute(left).localeCompare(candidatePlayerMapRoute(right))
+    ))
+  }
+  if (query.stage === 'All') {
+    return sortUnifiedCandidates(items, query.sort === 'age' ? 'age' : 'name')
+  }
+  return sortUnifiedCandidates(items, query.sort)
+}
+
+export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'view'>) {
+  const appliedSort = query.sort === 'alphaOpportunity' ? 'stageStanding' : query.sort
+  const compact = query.view === 'map'
+  type Direction = 'ascending' | 'descending'
+  type Metric = {
+    metric: string
+    field: string | null
+    fieldExposed: boolean
+    direction: Direction
+  }
+  const metric = (
+    name: string,
+    direction: Direction,
+    exposedField: string | null,
+  ): Metric => ({
+    metric: name,
+    field: exposedField,
+    fieldExposed: exposedField !== null,
+    direction,
+  })
+  const careerIndexField = compact ? 'assessment.careerIndex.value' : 'playerMap.careerIndex.value'
+  const stageStandingField = compact
+    ? 'assessment.stageStanding.rank'
+    : 'playerMap.stageStanding.rank'
+  const playerIdField = compact ? 'playerId' : 'id'
+  const nameField = compact ? 'identity.name' : 'name'
+  const routeField = compact ? 'assessment.route' : 'playerMap.route'
+  const forecastField = (suffix: string): string | null => {
+    if (compact) return null
+    return query.stage === 'RC'
+      ? `recentCallup.prospectPrior.forecast.${suffix}`
+      : `careerForecast.${suffix}`
+  }
+
+  const primaryBySort: Record<typeof appliedSort, Metric> = {
+    careerIndex: metric('career_index', 'descending', careerIndexField),
+    stageStanding: metric('stage_standing', 'ascending', stageStandingField),
+    hofProbability: metric(
+      'hof_caliber_probability',
+      'descending',
+      forecastField('hofCaliberProbability'),
+    ),
+    nearTermImpact: query.stage === 'Minors'
+      ? metric('derived_arrival_probability_36', 'descending', null)
+      : metric(
+        'exceptional_trajectory_probability',
+        'descending',
+        compact ? null : 'careerForecast.careerChapter.exceptionalTrajectory.probability',
+      ),
+    finalWar: metric(
+      'final_career_war_p50',
+      'descending',
+      forecastField('finalCareerWar.p50'),
+    ),
+    arrival36: query.stage === 'Minors'
+      ? metric('milb_alpha_signal_rank', 'ascending', compact ? null : 'milbAlphaSignal.rank')
+      : metric(
+        'arrival_probability_36',
+        'descending',
+        compact ? null : 'careerForecast.arrivalProbability36',
+      ),
+    age: metric('age', 'ascending', compact ? 'context.age' : 'age'),
+    name: metric('display_name', 'ascending', nameField),
+  }
+  const primary = primaryBySort[appliedSort]
+  const scope = query.stage === 'All'
+    ? appliedSort === 'careerIndex' ? 'cross_stage' as const : 'directory' as const
+    : 'stage' as const
+  const stableIdentityTies = [
+    metric('player_id', 'ascending', playerIdField),
+    metric('player_map_route', 'ascending', routeField),
+  ]
+  const tieBreakers = appliedSort === 'careerIndex'
+    ? query.stage === 'All'
+      ? [metric('display_name', 'ascending', nameField), ...stableIdentityTies]
+      : [metric('stage_standing', 'ascending', stageStandingField), ...stableIdentityTies]
+    : appliedSort === 'hofProbability'
+      ? [metric('final_career_war_p50', 'descending', forecastField('finalCareerWar.p50')), ...stableIdentityTies]
+      : appliedSort === 'nearTermImpact'
+        ? [metric('hof_caliber_probability', 'descending', forecastField('hofCaliberProbability')), ...stableIdentityTies]
+        : stableIdentityTies
+
+  return {
+    requestedSort: query.sort,
+    appliedSort,
+    legacyAliasUsed: query.sort === 'alphaOpportunity',
+    ...primary,
+    scope,
+    nulls: 'last' as const,
+    tieBreakers,
+  }
 }
 
 export function assignStageRanks(
@@ -1316,7 +1481,71 @@ export function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
     marketInputsIncluded: false as const,
     primaryScoreSemantics: 'fixed_career_value_index' as const,
     scoreSemantics: 'stage_specific_ordinal_not_market_value' as const,
+    legacyScoreSemantics: 'stage_specific_ordinal_not_market_value' as const,
+    scoreSemanticsDeprecated: true as const,
+    rankingContract: {
+      version: rankingContractVersion,
+      primaryMetric: 'careerIndex' as const,
+      primarySort: 'careerIndex' as const,
+      primaryComparableAcrossRoutes: true as const,
+      stageStandingMetric: 'stageStanding' as const,
+      stageStandingComparableWithinStageOnly: true as const,
+      stageStandingIsFilteredResultOrdinal: false as const,
+      legacyMetric: 'oracleScore' as const,
+      legacyDeprecated: true as const,
+    },
   }
+}
+
+export function snapshotId(parts: {
+  minorDataAsOf: string | null
+  currentMlbDataAsOf: string | null
+  forecastDataVersion: string | null
+  candidates: UnifiedBoardCandidate[]
+}): string {
+  const candidateManifest = parts.candidates
+    .toSorted((left, right) => (
+      left.id.localeCompare(right.id) ||
+      candidatePlayerMapRoute(left).localeCompare(candidatePlayerMapRoute(right))
+    ))
+    .map((candidate) => {
+      const outcome = candidateOutcomeForecast(candidate)
+      return [
+        candidate.id,
+        candidatePlayerMapRoute(candidate),
+        candidate.name,
+        candidate.playerType,
+        candidate.stage,
+        candidate.age,
+        candidate.level,
+        candidate.organizationCode,
+        candidate.position,
+        candidate.mlbamId,
+        candidateCareerIndex(candidate),
+        candidateOutcomeRank(candidate),
+        outcome?.publicationState ?? null,
+        outcome?.hofCaliberProbability ?? null,
+        outcome?.finalCareerWar?.p50 ?? null,
+        outcome?.finalCareerWar?.p75 ?? null,
+        outcome?.finalCareerWar?.p90 ?? null,
+        candidate.arrivalProbability36,
+        candidate.milbAlphaSignal?.rank ?? null,
+        candidate.careerForecast?.careerChapter?.exceptionalTrajectory?.probability ?? null,
+        Object.entries(outcome?.lineage ?? {}).sort(([left], [right]) => left.localeCompare(right)),
+      ]
+    })
+  const digest = createHash('sha256').update(JSON.stringify({
+    version: rankingSnapshotVersion,
+    feedSchemaVersion: playerMapFeedSchemaVersion,
+    rankingContractVersion,
+    playerMapVersion: PLAYER_MAP_VERSION,
+    careerIndexVersion: CAREER_INDEX_VERSION,
+    minorDataAsOf: parts.minorDataAsOf,
+    currentMlbDataAsOf: parts.currentMlbDataAsOf,
+    forecastDataVersion: parts.forecastDataVersion,
+    candidates: candidateManifest,
+  })).digest('hex')
+  return `${rankingSnapshotVersion}:${digest}`
 }
 
 function responseItems(
@@ -1354,7 +1583,7 @@ function degradedStaticResponse(
     candidate.recentCallupPrior,
   ))
   sendJson(request, response, 200, {
-    schemaVersion: query.view === 'map' ? 'player-map-feed.v2' : 'players.v1',
+    schemaVersion: query.view === 'map' ? playerMapFeedSchemaVersion : 'players.v1',
     items: responseItems(records, query.view),
     page: pageDetails(candidates.length, query),
     meta: {
@@ -1393,8 +1622,17 @@ function degradedStaticResponse(
       degraded: true,
       degradedReason: reason,
       rankScope: 'stage_specific',
+      stageRankScope: 'declared_model_cohort_not_filtered_result',
       stageRankAvailability: { mlb: true, minors: false, recentCallups: recentCallups > 0 },
+      snapshotId: snapshotId({
+        minorDataAsOf: null,
+        currentMlbDataAsOf: preview.asOf,
+        forecastDataVersion: preview.dataVersion,
+        candidates: universe,
+      }),
+      snapshotScope: 'ranking_and_census' as const,
       ...playerMapResponseMeta(candidates),
+      ordering: responseOrdering(query),
       facets: buildPlayerFacets(universe, query),
     },
   }, publicCache)
@@ -1616,7 +1854,7 @@ export default async function handler(
       response,
       200,
       {
-        schemaVersion: query.view === 'map' ? 'player-map-feed.v2' : 'players.v1',
+        schemaVersion: query.view === 'map' ? playerMapFeedSchemaVersion : 'players.v1',
         items: responseItems(items, query.view),
         page: pageDetails(filtered.length, query),
         meta: {
@@ -1671,12 +1909,21 @@ export default async function handler(
             mlb: mlb.length - recentCallupCount,
           },
           rankScope: 'stage_specific',
+          stageRankScope: 'declared_model_cohort_not_filtered_result',
           stageRankAvailability: {
             mlb: careerPreview !== null,
             minors: careerPreview !== null,
             recentCallups: recentCallupCount > 0,
           },
+          snapshotId: snapshotId({
+            minorDataAsOf,
+            currentMlbDataAsOf,
+            forecastDataVersion: careerPreview?.dataVersion ?? null,
+            candidates: currentUniverse,
+          }),
+          snapshotScope: 'ranking_and_census' as const,
           ...playerMapResponseMeta(filtered),
+          ordering: responseOrdering(query),
           facets,
           identity: {
             minorRoleRows: minorDedupe.inputRoleRows,

@@ -208,7 +208,7 @@ export function filterAndSortPlayers(
           left.id.localeCompare(right.id)
         )
       }
-      if (filters.sort === 'alphaOpportunity') {
+      if (filters.sort === 'stageStanding' || filters.sort === 'alphaOpportunity') {
         return (
           compareNullableNumber(
             oracleOutcomeRank(left),

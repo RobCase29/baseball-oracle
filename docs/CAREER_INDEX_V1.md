@@ -81,12 +81,12 @@ forecast. Daily partial-season statistics cannot change it.
 
 ## Directory Policy
 
-Directory is an identity and coverage surface, not a combined ranking. It defaults
-to player-name order and permits a noncompetitive age sort. It can contain
-prospects, Rookie Track players, and MLB players, but adjacent rows do not share a
-rank target or universe. Ranked views remain stage-specific. Career Index values
-share a fixed numerical scale; forecast maturity and reliability still differ by
-route.
+Directory is an identity and coverage surface, not a combined stage ranking. It
+defaults to player-name order and permits a noncompetitive age sort. The API can
+explicitly order all routes by `sort=careerIndex` because Career Index values
+share a fixed numerical scale. That ordering does not create a shared rank target
+or universe: `stageStanding` remains stage-specific, and forecast maturity and
+reliability still differ by route.
 
 ## Research Limitations
 
@@ -124,6 +124,13 @@ assessment.stageStanding.universe
 assessment.stageStanding.topPercent
 assessment.stageStanding.tailBand
 assessment.stageStanding.cohort
+assessment.stageStanding.version
+assessment.stageStanding.metric
+assessment.stageStanding.target
+assessment.stageStanding.method
+assessment.stageStanding.direction
+assessment.stageStanding.scope
+assessment.stageStanding.isFilteredResultOrdinal
 assessment.stageStanding.asOf
 
 assessment.careerIndexComparableAcrossRoutes = true

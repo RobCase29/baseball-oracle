@@ -46,6 +46,7 @@ function filtersFromUrl(): BoardFilters {
     : defaultFilters.level
   const validSorts = new Set<BoardFilters['sort']>([
     'careerIndex',
+    'stageStanding',
     'alphaOpportunity',
     'nearTermImpact',
     'finalWar',

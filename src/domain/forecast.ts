@@ -539,7 +539,7 @@ export interface PlayerRecord {
   playerMap?: PlayerMapProfile | null
 }
 
-export type SortKey = 'careerIndex' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
+export type SortKey = 'careerIndex' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -589,6 +589,7 @@ export interface PlayersResponseMeta {
   degraded?: boolean
   degradedReason?: string
   rankScope?: 'stage_specific'
+  stageRankScope?: 'declared_model_cohort_not_filtered_result'
   stageRankAvailability?: {
     mlb: boolean
     minors: boolean
@@ -598,13 +599,53 @@ export interface PlayersResponseMeta {
   playerMapCoverage?: number
   matchingPlayerCount?: number
   matchingMappedCount?: number
+  snapshotId?: string
+  snapshotScope?: 'ranking_and_census'
   marketIndependent?: true
   marketInputsIncluded?: false
   primaryScoreSemantics?: 'fixed_career_value_index'
   scoreSemantics?: 'stage_specific_ordinal_not_market_value'
+  legacyScoreSemantics?: 'stage_specific_ordinal_not_market_value'
+  scoreSemanticsDeprecated?: true
+  rankingContract?: {
+    version: 'player-ranking-contract/v1'
+    primaryMetric: 'careerIndex'
+    primarySort: 'careerIndex'
+    primaryComparableAcrossRoutes: true
+    stageStandingMetric: 'stageStanding'
+    stageStandingComparableWithinStageOnly: true
+    stageStandingIsFilteredResultOrdinal: false
+    legacyMetric: 'oracleScore'
+    legacyDeprecated: true
+  }
+  ordering?: {
+    requestedSort: SortKey
+    appliedSort: Exclude<SortKey, 'alphaOpportunity'>
+    legacyAliasUsed: boolean
+    metric: string
+    field: string | null
+    fieldExposed: boolean
+    direction: 'ascending' | 'descending'
+    scope: 'directory' | 'cross_stage' | 'stage'
+    nulls: 'last'
+    tieBreakers: Array<{
+      metric: string
+      field: string | null
+      fieldExposed: boolean
+      direction: 'ascending' | 'descending'
+    }>
+  }
   facets?: {
     teams: PlayerFacetOption[]
     positions: PlayerFacetOption[]
+  }
+  identity?: {
+    minorRoleRows: number
+    canonicalMinorPlayers: number
+    duplicateMinorRoleRowsRemoved: number
+    crossStageDuplicatesRemoved: number
+    minorPlayersMissingMlbam: number
+    mlbPlayersMissingMlbam: number
   }
 }
 
@@ -612,6 +653,23 @@ export interface PlayerFacetOption {
   value: string
   label: string
   count: number
+}
+
+export interface PlayerMapFeedResponseMeta extends PlayersResponseMeta {
+  playerMapVersion: 'oracle-player-map/v2'
+  playerMapCoverage: number
+  matchingPlayerCount: number
+  matchingMappedCount: number
+  snapshotId: string
+  snapshotScope: 'ranking_and_census'
+  marketIndependent: true
+  marketInputsIncluded: false
+  primaryScoreSemantics: 'fixed_career_value_index'
+  scoreSemantics: 'stage_specific_ordinal_not_market_value'
+  legacyScoreSemantics: 'stage_specific_ordinal_not_market_value'
+  scoreSemanticsDeprecated: true
+  rankingContract: NonNullable<PlayersResponseMeta['rankingContract']>
+  ordering: NonNullable<PlayersResponseMeta['ordering']>
 }
 
 export interface PlayersResponse {
@@ -626,7 +684,7 @@ export interface PlayerMapFeedItem {
   identity: {
     name: string
   }
-  externalIds: Record<string, string | number | null>
+  externalIds: Record<string, string | null>
   context: {
     playerType: PlayerType
     stage: PlayerStage
@@ -640,8 +698,8 @@ export interface PlayerMapFeedItem {
 }
 
 export interface PlayerMapFeedResponse {
-  schemaVersion: 'player-map-feed.v2'
+  schemaVersion: 'player-map-feed.v3'
   items: PlayerMapFeedItem[]
   page: PlayersPage
-  meta: PlayersResponseMeta
+  meta: PlayerMapFeedResponseMeta
 }

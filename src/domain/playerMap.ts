@@ -75,6 +75,8 @@ export interface PlayerMapSignal {
 }
 
 export interface PlayerMapOracleScore {
+  deprecated: true
+  replacement: 'careerIndex'
   value: number | null
   scale: 'stage_rank_percentile'
   route: PlayerMapRoute
@@ -123,6 +125,13 @@ export type PlayerMapStageCohort =
   | 'current_mlb'
 
 export interface PlayerMapStageStanding {
+  version: 'stage-standing-v1'
+  metric: 'prospect_career_outcome_rank' | 'mlb_hof_caliber_rank'
+  method: 'frozen_model_artifact_rank' | 'current_census_probability_rank'
+  direction: 'lower_is_better'
+  scope: 'declared_model_cohort'
+  isFilteredResultOrdinal: false
+  target: string | null
   rank: number | null
   universe: number | null
   topPercent: number | null
@@ -410,6 +419,7 @@ export function buildStageStanding(
   rank: number | null,
   universe: number | null,
   asOf: string | null,
+  target: string | null = null,
 ): PlayerMapStageStanding {
   const validStanding =
     rank !== null &&
@@ -426,6 +436,13 @@ export function buildStageStanding(
       : 'current_mlb'
 
   return {
+    version: 'stage-standing-v1',
+    metric: route === 'mlb' ? 'mlb_hof_caliber_rank' : 'prospect_career_outcome_rank',
+    method: route === 'mlb' ? 'current_census_probability_rank' : 'frozen_model_artifact_rank',
+    direction: 'lower_is_better',
+    scope: 'declared_model_cohort',
+    isFilteredResultOrdinal: false,
+    target,
     rank: validStanding ? rank : null,
     universe: validStanding ? universe : null,
     topPercent,
@@ -466,6 +483,8 @@ function oracleScore(
   asOf: string | null,
 ): PlayerMapOracleScore {
   return {
+    deprecated: true,
+    replacement: 'careerIndex',
     value: roundedOracleValue(value),
     scale: 'stage_rank_percentile',
     route,
@@ -665,7 +684,13 @@ function buildMinorMap(
       career?.asOf ?? null,
     ),
     careerIndex,
-    stageStanding: buildStageStanding('milb', careerRank, careerUniverse, career?.asOf ?? null),
+    stageStanding: buildStageStanding(
+      'milb',
+      careerRank,
+      careerUniverse,
+      career?.asOf ?? null,
+      career?.lineage?.targetVersion ?? 'mlb-debut-age-mixed-final-standard-bridge-v1',
+    ),
     scores: {
       outcome: score({
         key: 'outcome',
@@ -851,6 +876,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
       supportedPrior?.rank ?? null,
       supportedPrior?.universe ?? null,
       supportedPrior?.asOf ?? null,
+      supportedPrior?.target ?? null,
     ),
     scores: {
       outcome: score({
@@ -1039,7 +1065,13 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
       forecast?.asOf ?? null,
     ),
     careerIndex,
-    stageStanding: buildStageStanding('mlb', rank, universe, forecast?.asOf ?? null),
+    stageStanding: buildStageStanding(
+      'mlb',
+      rank,
+      universe,
+      forecast?.asOf ?? null,
+      forecast?.lineage?.targetVersion ?? 'hof-caliber-point-in-time-jaws-v1',
+    ),
     scores: {
       outcome: score({
         key: 'outcome',

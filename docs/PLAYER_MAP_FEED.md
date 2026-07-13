@@ -25,27 +25,50 @@ GET /api/players?view=map&stage=All&sort=name&limit=100&page=1
 Continue until `page.totalPages` is reached. The full product response remains the
 default when `view` is omitted. This MVP feed is intended for a daily server-to-
 server pull. It does not yet provide immutable cursors or incremental changes.
+Compact responses use schema version `player-map-feed.v3`; the normative schema
+is published at
+[`/schemas/player-map-feed.v3.schema.json`](https://baseball-oracle.vercel.app/schemas/player-map-feed.v3.schema.json).
+
+For an explicit cross-stage Career Index order, request:
+
+```http
+GET /api/players?view=map&stage=All&sort=careerIndex&limit=100&page=1
+```
+
+`stage=All` without `sort` remains an alphabetical directory. An explicit
+`sort=careerIndex` is ordered descending across all scored routes, with nulls
+last and display name, player ID, and Player Map route as deterministic
+tie-breakers. The response declares the applied metric, direction, scope, null
+policy, field exposure, and ordered tie-breakers in
+`meta.ordering`; consumers should validate that object before trusting row order.
 
 The compact feed contains:
 
 - `playerId`: the current Oracle record identifier.
-- `externalIds`: exact provider identifiers. MLBAM is the preferred
-  cross-product join key.
+- `externalIds`: exact provider identifiers serialized consistently as strings.
+  Unsafe or fractional numeric inputs are rejected as unavailable rather than
+  emitting a potentially rounded identifier. MLBAM is the preferred cross-
+  product join key.
 - `context`: active career stage, role, organization, position, level, and age.
 - `assessment`: the universal Player Map vector, state, evidence, flags, target,
   comparison universe, version, and as-of dates.
 - `assessment.careerIndex`: the primary fixed-scale career-value magnitude
   signal, including version, route, research status, definition, forecast
   model/target/data/provider lineage, and as-of date.
-- `assessment.stageStanding`: exact stage rank, declared comparison universe,
-  top-share percentage, tail band, cohort, and as-of date.
+- `assessment.stageStanding`: versioned exact stage rank, metric, target,
+  methodology, direction, declared comparison universe, top-share percentage,
+  tail band, cohort, scope, and as-of date. It explicitly declares that it is not
+  a filtered-result ordinal.
 - `assessment.careerIndexComparableAcrossRoutes`: confirms that the fixed index
   scale is numerically shared across prospect, Rookie Track, and MLB routes.
 - `assessment.stageStandingComparableWithinStageOnly`: prevents ordinal ranks
   from being compared across those route-specific cohorts.
 - `assessment.oracleScore`: the legacy rounded stage-rank percentile retained
-  during the Player Map v2 migration.
-- `meta`: feed and scorecard versions plus explicit market-independence flags.
+  during the Player Map v2 migration. Its `deprecated` flag is always `true` and
+  its replacement is `careerIndex`.
+- `meta`: feed and scorecard versions, a stable snapshot fingerprint, the
+  machine-readable ranking contract, applied ordering, and explicit
+  market-independence flags.
 
 `meta.matchingMappedCount` is the number of matching records whose primary
 `assessment.careerIndex.value` is non-null. It is not generic profile coverage or
@@ -70,17 +93,39 @@ lower is better. `tailBand` is one of Top 0.1%, Top 1%, Top 5%, Top 10%, Top 25%
 or Outside top 25%. Prospect standing uses the frozen 6,455-player artifact, not
 the changing number of active directory matches. Rookie Track carries that exact
 frozen prospect standing until a supported completed-season MLB forecast exists.
+`scope=declared_model_cohort` means search, team, position, and active-stage
+filters do not renumber it. Gaps such as prospect ranks #1, #4, and #5 are valid
+when intervening frozen-cohort players have graduated to Rookie Track or are no
+longer in the current result.
 
-The Directory union is an identity and coverage feed, not a combined ranking. It
-defaults to `stage=All&sort=name`; `sort=age` is also available. Consumers must
-not treat either row order as baseball standing or compare stage ranks across
-prospect, Rookie Track, and MLB cohorts.
+The Directory union defaults to `stage=All&sort=name`; `sort=age` is also
+available. Neither directory order is baseball standing. Career Index is the
+only supported cross-stage score ordering, requested explicitly with
+`stage=All&sort=careerIndex`. It does not create a shared rank target or universe.
+Consumers must never compare `stageStanding` ranks across prospect, Rookie Track,
+and MLB cohorts.
 
 `assessment.oracleScore.value` remains available during migration. It is the old
 rounded stage-specific outcome rank percentile. For example, a legacy value of 96
 means the player ranked above approximately 96% of its declared route universe;
 it does not mean 96% confidence. Do not relabel it as Career Index. A `null` value
 in any score object means unavailable; it never means zero.
+
+Every compact response includes `meta.rankingContract` with version
+`player-ranking-contract/v1`. It declares `careerIndex` as the primary metric and
+sort, confirms that Career Index is comparable across routes, restricts stage
+standing to within-stage comparison, and marks `oracleScore` deprecated.
+
+`meta.ordering.requestedSort` records the accepted query, while
+`meta.ordering.appliedSort` resolves legacy `alphaOpportunity` requests to the
+canonical `stageStanding` name and sets `legacyAliasUsed=true` in stage-specific
+queries. Unsupported cross-stage competitive sorts, including the legacy alias
+with `stage=All`, return HTTP 400 instead of silently falling back to name order.
+`fieldExposed=false` means the selected internal metric controls row order but is
+not present in that response view. A consumer should fail closed if the schema,
+ranking-contract version, primary metric, ranking snapshot, or applied ordering
+differs from what it supports. `meta.snapshotId` must be identical across every
+page in one census pull; restart ingestion if it changes.
 
 The supporting Player Map dimensions are readiness, trajectory, best current
 trait, and evidence. They explain the forecast and how much trust to place in it;
@@ -125,11 +170,17 @@ contract should add:
 
 - immutable `snapshot_id` and canonical ordering;
 - cursor pagination bound to one snapshot;
-- `ETag` and `If-None-Match` support;
 - a versioned JSON Schema and gzipped NDJSON snapshot;
 - monotonic change sequence with `upsert`, `inactive`, and `identity_redirect`;
 - idempotent record versions and effective-dated identity redirects;
 - scoped server-to-server API keys.
+
+The current endpoint already emits a strong per-page `ETag`, honors
+`If-None-Match`, and includes a deterministic content-derived `meta.snapshotId`
+with `snapshotScope=ranking_and_census`. The fingerprint hashes canonical player
+identity, every ranking input, forecast lineage, and score-contract versions, so
+it detects ranking or census drift during a paginated pull. It does not freeze
+explanatory detail rows; immutable snapshot-bound cursors remain future work.
 
 Breaking semantic changes require a new feed version. A Career Index delta is
 comparable only when its index version, forecast route, target, and model version
@@ -139,3 +190,7 @@ universe definition. `oracle-player-map/v1` consumers may read the legacy
 `oracle-player-map/v2` and persist `careerIndex` plus `stageStanding`.
 Provider-derived fields should be included externally only when redistribution
 rights cover the intended integration.
+
+The current endpoint is intended for server-to-server use. It does not expose a
+public browser CORS policy; browser products should call it through their own
+server route.

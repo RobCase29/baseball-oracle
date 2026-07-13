@@ -206,12 +206,20 @@ The allowlisted public endpoint supports stage-aware search, role and level
 filters, research outcome sorting, and pagination:
 
 ```text
+GET /api/players?view=map&stage=All&sort=careerIndex&page=1&limit=100
 GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
-GET /api/players?stage=Minors&sort=alphaOpportunity&page=1&limit=50
-GET /api/players?stage=MLB&sort=alphaOpportunity&page=1&limit=50
+GET /api/players?stage=Minors&sort=stageStanding&page=1&limit=50
+GET /api/players?stage=MLB&sort=stageStanding&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
 ```
+
+Career Index is the primary, cross-route score. Stage standing is a separate
+declared-model-cohort rank and is never a filtered-result row number. In stage-
+specific requests, the legacy `alphaOpportunity` sort remains an alias for
+`stageStanding`; unsupported competitive sorts with `stage=All` return HTTP 400.
+Compact `player-map-feed.v3` responses declare exact requested and applied
+ordering in `meta.ordering`.
 
 Raw provider JSON and scouting prose are never returned by the public API.
 

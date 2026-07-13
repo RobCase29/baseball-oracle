@@ -92,6 +92,8 @@ export function playerMapFor(player: PlayerRecord): PlayerMapProfile {
 
   const outcome = existing.scores.outcome
   const oracleScore = existing.oracleScore ?? {
+    deprecated: true as const,
+    replacement: 'careerIndex' as const,
     value: roundedOracleValue(outcome.value),
     scale: 'stage_rank_percentile' as const,
     route: existing.route,

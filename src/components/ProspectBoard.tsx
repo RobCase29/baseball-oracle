@@ -313,7 +313,7 @@ export function ProspectBoard({
             ) : (
               <>
                 <option value="careerIndex">Career Index</option>
-                <option value="alphaOpportunity">Stage standing</option>
+                <option value="stageStanding">Stage standing</option>
                 {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
                   <option value="nearTermImpact">Next 3-year upside</option>
                 ) : null}

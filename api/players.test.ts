@@ -2,14 +2,16 @@ import { describe, expect, it } from 'vitest'
 import type { CareerForecast } from './_career-oracle-types.js'
 import type { CareerOraclePreview, CareerPreviewPlayer } from './_career-oracle-preview.js'
 import { researchMilbImpactRanking } from './_milb-impact.js'
-import { researchMilbAlphaSignal } from './_research-arrival.js'
+import { researchMilbAlphaSignal, type ResearchMilbAlphaSignal } from './_research-arrival.js'
 import {
   assignStageRanks,
   buildPlayerFacets,
+  canonicalExternalId,
   dedupeMinorCandidates,
   frozenProspectRankUniverse,
   matchesQuery,
   mergeCurrentUniverse,
+  matchesIfNoneMatch,
   mlbCandidates,
   normalizeQueryText,
   normalizeSearchText,
@@ -17,9 +19,12 @@ import {
   playerMapFeedItem,
   playerMapResponseMeta,
   playerPositionTokens,
+  responseOrdering,
   scoredMlbUniverse,
+  sendJson,
   sortBoardCandidates,
   sortUnifiedCandidates,
+  snapshotId,
   stageRelevantDataAsOf,
   shouldSuppressSlashLine,
   type PlayerQuery,
@@ -302,10 +307,219 @@ describe('unified player ordering', () => {
     const request = (url: string) => ({ url }) as Parameters<typeof parseQuery>[0]
 
     expect(parseQuery(request('/api/players'))?.view).toBe('full')
-    expect(parseQuery(request('/api/players'))?.sort).toBe('careerIndex')
+    expect(parseQuery(request('/api/players'))?.sort).toBe('name')
+    expect(parseQuery(request('/api/players?stage=Minors'))?.sort).toBe('careerIndex')
+    expect(parseQuery(request('/api/players?stage=All&sort=careerIndex'))?.sort).toBe('careerIndex')
+    expect(parseQuery(request('/api/players?stage=All&sort=stageStanding'))).toBeNull()
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=RC'))?.stage).toBe('RC')
+
+    const crossStage = parseQuery(request('/api/players?view=map&stage=All&sort=careerIndex'))
+    expect(crossStage && responseOrdering(crossStage)).toEqual({
+      requestedSort: 'careerIndex',
+      appliedSort: 'careerIndex',
+      legacyAliasUsed: false,
+      metric: 'career_index',
+      field: 'assessment.careerIndex.value',
+      fieldExposed: true,
+      direction: 'descending',
+      scope: 'cross_stage',
+      nulls: 'last',
+      tieBreakers: [
+        {
+          metric: 'display_name',
+          field: 'identity.name',
+          fieldExposed: true,
+          direction: 'ascending',
+        },
+        {
+          metric: 'player_id',
+          field: 'playerId',
+          fieldExposed: true,
+          direction: 'ascending',
+        },
+        {
+          metric: 'player_map_route',
+          field: 'assessment.route',
+          fieldExposed: true,
+          direction: 'ascending',
+        },
+      ],
+    })
+
+    const legacyAlias = parseQuery(request('/api/players?view=map&stage=MLB&sort=alphaOpportunity'))
+    expect(legacyAlias && responseOrdering(legacyAlias)).toMatchObject({
+      requestedSort: 'alphaOpportunity',
+      appliedSort: 'stageStanding',
+      legacyAliasUsed: true,
+      metric: 'stage_standing',
+      field: 'assessment.stageStanding.rank',
+      fieldExposed: true,
+      scope: 'stage',
+      tieBreakers: [
+        expect.objectContaining({ metric: 'player_id', field: 'playerId' }),
+        expect.objectContaining({ metric: 'player_map_route', field: 'assessment.route' }),
+      ],
+    })
+
+    const minorArrival = parseQuery(request('/api/players?stage=Minors&sort=arrival36'))
+    expect(minorArrival && responseOrdering(minorArrival)).toMatchObject({
+      metric: 'milb_alpha_signal_rank',
+      field: 'milbAlphaSignal.rank',
+      fieldExposed: true,
+      direction: 'ascending',
+    })
+
+    const compactMlbWar = parseQuery(request('/api/players?view=map&stage=MLB&sort=finalWar'))
+    expect(compactMlbWar && responseOrdering(compactMlbWar)).toMatchObject({
+      metric: 'final_career_war_p50',
+      field: null,
+      fieldExposed: false,
+      direction: 'descending',
+    })
+  })
+
+  it('publishes a strong ETag and honors conditional GET requests', () => {
+    function responseRecorder() {
+      const headers = new Map<string, string>()
+      let body: string | undefined
+      const response = {
+        statusCode: 0,
+        setHeader(name: string, value: string) {
+          headers.set(name.toLocaleLowerCase('en-US'), value)
+        },
+        removeHeader(name: string) {
+          headers.delete(name.toLocaleLowerCase('en-US'))
+        },
+        end(value?: string) {
+          body = value
+        },
+      } as unknown as Parameters<typeof sendJson>[1]
+      return { response, headers, get body() { return body } }
+    }
+
+    const first = responseRecorder()
+    sendJson(
+      { method: 'GET', headers: {} } as Parameters<typeof sendJson>[0],
+      first.response,
+      200,
+      { ok: true },
+      'public, max-age=60',
+    )
+    const etag = first.headers.get('etag')
+    expect(etag).toMatch(/^"[A-Za-z0-9_-]{43}"$/u)
+    expect(first.response.statusCode).toBe(200)
+    expect(first.body).toBe('{"ok":true}')
+
+    const conditional = responseRecorder()
+    sendJson(
+      { method: 'GET', headers: { 'if-none-match': etag } } as Parameters<typeof sendJson>[0],
+      conditional.response,
+      200,
+      { ok: true },
+      'public, max-age=60',
+    )
+    expect(conditional.response.statusCode).toBe(304)
+    expect(conditional.body).toBeUndefined()
+    expect(conditional.headers.has('content-type')).toBe(false)
+
+    const conditionalHead = responseRecorder()
+    sendJson(
+      { method: 'HEAD', headers: { 'if-none-match': '*' } } as Parameters<typeof sendJson>[0],
+      conditionalHead.response,
+      200,
+      { ok: true },
+      'public, max-age=60',
+    )
+    expect(conditionalHead.response.statusCode).toBe(304)
+    expect(conditionalHead.body).toBeUndefined()
+
+    expect(matchesIfNoneMatch(`W/${etag}`, etag!)).toBe(true)
+    expect(matchesIfNoneMatch(`"old", W/${etag}`, etag!)).toBe(true)
+    expect(matchesIfNoneMatch('*', etag!)).toBe(true)
+    expect(matchesIfNoneMatch(['"old"', `W/${etag}`], etag!)).toBe(true)
+    expect(matchesIfNoneMatch('"old"', etag!)).toBe(false)
+
+    const changed = responseRecorder()
+    sendJson(
+      { method: 'HEAD', headers: { 'if-none-match': etag } } as Parameters<typeof sendJson>[0],
+      changed.response,
+      200,
+      { ok: false },
+      'public, max-age=60',
+    )
+    expect(changed.response.statusCode).toBe(200)
+    expect(changed.body).toBeUndefined()
+  })
+
+  it('describes every accepted stage, sort, and view without hiding comparator direction', () => {
+    const stageSorts = [
+      'careerIndex',
+      'stageStanding',
+      'alphaOpportunity',
+      'hofProbability',
+      'nearTermImpact',
+      'finalWar',
+      'arrival36',
+      'age',
+      'name',
+    ] as const
+    const expected = (stage: 'Minors' | 'RC' | 'MLB', sort: typeof stageSorts[number]) => {
+      if (sort === 'careerIndex') return ['career_index', 'descending'] as const
+      if (sort === 'stageStanding' || sort === 'alphaOpportunity') {
+        return ['stage_standing', 'ascending'] as const
+      }
+      if (sort === 'hofProbability') return ['hof_caliber_probability', 'descending'] as const
+      if (sort === 'nearTermImpact') {
+        return [
+          stage === 'Minors' ? 'derived_arrival_probability_36' : 'exceptional_trajectory_probability',
+          'descending',
+        ] as const
+      }
+      if (sort === 'finalWar') return ['final_career_war_p50', 'descending'] as const
+      if (sort === 'arrival36') {
+        return [stage === 'Minors' ? 'milb_alpha_signal_rank' : 'arrival_probability_36', stage === 'Minors' ? 'ascending' : 'descending'] as const
+      }
+      return [sort === 'age' ? 'age' : 'display_name', 'ascending'] as const
+    }
+
+    for (const stage of ['Minors', 'RC', 'MLB'] as const) {
+      for (const sort of stageSorts) {
+        for (const view of ['full', 'map'] as const) {
+          const parsed = parseQuery({
+            url: `/api/players?stage=${stage}&sort=${sort}&view=${view}`,
+          } as Parameters<typeof parseQuery>[0])
+          expect(parsed).not.toBeNull()
+          const ordering = responseOrdering(parsed!)
+          const [metric, direction] = expected(stage, sort)
+          expect([ordering.metric, ordering.direction], `${stage}/${sort}/${view}`).toEqual([
+            metric,
+            direction,
+          ])
+          expect(ordering.appliedSort).toBe(sort === 'alphaOpportunity' ? 'stageStanding' : sort)
+          expect(ordering.legacyAliasUsed).toBe(sort === 'alphaOpportunity')
+          expect(ordering.fieldExposed).toBe(ordering.field !== null)
+          expect(ordering.tieBreakers.map((entry) => entry.metric).slice(-2)).toEqual([
+            'player_id',
+            'player_map_route',
+          ])
+        }
+      }
+    }
+
+    for (const sort of ['name', 'age', 'careerIndex'] as const) {
+      const parsed = parseQuery({
+        url: `/api/players?stage=All&sort=${sort}&view=map`,
+      } as Parameters<typeof parseQuery>[0])
+      expect(parsed).not.toBeNull()
+      expect(responseOrdering(parsed!).scope).toBe(sort === 'careerIndex' ? 'cross_stage' : 'directory')
+    }
+    for (const sort of stageSorts.filter((value) => !['name', 'age', 'careerIndex'].includes(value))) {
+      expect(parseQuery({
+        url: `/api/players?stage=All&sort=${sort}`,
+      } as Parameters<typeof parseQuery>[0])).toBeNull()
+    }
   })
 
   it('accepts a bounded exact player-ID batch and rejects malformed batches', () => {
@@ -343,6 +557,20 @@ describe('unified player ordering', () => {
     ], 'hofProbability')
 
     expect(sorted.map((item) => item.id)).toEqual(['top', 'a', 'b', 'z'])
+  })
+
+  it('orders the legacy MiLB arrival view by alpha rank ascending', () => {
+    const sorted = sortUnifiedCandidates([
+      candidate('second', { milbAlphaSignal: { rank: 2 } as ResearchMilbAlphaSignal }),
+      candidate('unranked', { milbAlphaSignal: null }),
+      candidate('first', { milbAlphaSignal: { rank: 1 } as ResearchMilbAlphaSignal }),
+    ], 'arrival36')
+
+    expect(sorted.map((item) => item.id)).toEqual(['first', 'second', 'unranked'])
+    expect(responseOrdering(query({ stage: 'Minors', sort: 'arrival36' }))).toMatchObject({
+      metric: 'milb_alpha_signal_rank',
+      direction: 'ascending',
+    })
   })
 
   it('orders Career Index by fixed career-value magnitude before stage standing', () => {
@@ -446,7 +674,7 @@ describe('unified player ordering', () => {
     expect(stageRelevantDataAsOf('All', minors, null)).toBeNull()
   })
 
-  it('treats All as a name-sorted directory while preserving explicit name and age sorts', () => {
+  it('uses All as a directory by default while honoring an explicit cross-stage Career Index sort', () => {
     const items = [
       candidate('rank-first', { name: 'Zulu Prospect', age: 18, careerForecast: forecast(0.9, 90, 1) }),
       candidate('rank-last', { name: 'Alpha Veteran', age: 30, careerForecast: forecast(0.05, 5, 3) }),
@@ -459,6 +687,8 @@ describe('unified player ordering', () => {
       .toEqual(['rank-last', 'rank-middle', 'rank-first'])
     expect(sortBoardCandidates(items, { stage: 'All', sort: 'age' }).map((item) => item.id))
       .toEqual(['rank-first', 'rank-middle', 'rank-last'])
+    expect(sortBoardCandidates(items, { stage: 'All', sort: 'careerIndex' }).map((item) => item.id))
+      .toEqual(['rank-middle', 'rank-last', 'rank-first'])
     expect(sortBoardCandidates(items, { stage: 'Minors', sort: 'alphaOpportunity' }).map((item) => item.id))
       .toEqual(['rank-first', 'rank-middle', 'rank-last'])
   })
@@ -656,7 +886,7 @@ describe('player-map feed contract', () => {
       organizationCode: 'MIA',
       position: 'SS',
       provenance: {
-        externalIds: { mlbam: '804109', prospectSavant: 'aiva-arquette' },
+        externalIds: { mlbam: 804109, prospectSavant: 'aiva-arquette' },
       },
       researchEstimate: { horizons: [{ probability: 0.73 }] },
       careerForecast: { hofCaliberProbability: 0.04 },
@@ -679,6 +909,13 @@ describe('player-map feed contract', () => {
           },
         },
         stageStanding: {
+          version: 'stage-standing-v1',
+          metric: 'prospect_career_outcome_rank',
+          method: 'frozen_model_artifact_rank',
+          direction: 'lower_is_better',
+          scope: 'declared_model_cohort',
+          isFilteredResultOrdinal: false,
+          target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
           rank: 258,
           universe: 6_455,
           topPercent: 4,
@@ -718,15 +955,32 @@ describe('player-map feed contract', () => {
       dataVersion: 'data-v1',
     })
     expect(item.assessment.stageStanding).toMatchObject({
+      version: 'stage-standing-v1',
+      metric: 'prospect_career_outcome_rank',
+      method: 'frozen_model_artifact_rank',
+      direction: 'lower_is_better',
+      scope: 'declared_model_cohort',
+      isFilteredResultOrdinal: false,
+      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
       rank: 258,
       universe: 6_455,
       tailBand: 'Top 5%',
       cohort: 'prospect_forecast',
     })
-    expect(item.assessment.oracleScore).toMatchObject({ value: 96, rank: 258, universe: 6_455 })
+    expect(item.assessment.oracleScore).toMatchObject({
+      deprecated: true,
+      replacement: 'careerIndex',
+      value: 96,
+      rank: 258,
+      universe: 6_455,
+    })
     expect(item.assessment.marketIndependent).toBe(true)
     expect(item.assessment.careerIndexComparableAcrossRoutes).toBe(true)
     expect(item.assessment.stageStandingComparableWithinStageOnly).toBe(true)
+    expect(canonicalExternalId(8_041_090)).toBe('8041090')
+    expect(canonicalExternalId('000804109')).toBe('000804109')
+    expect(canonicalExternalId(Number.MAX_SAFE_INTEGER + 1)).toBeNull()
+    expect(canonicalExternalId(12.5)).toBeNull()
     expect(JSON.stringify(item)).not.toContain('researchEstimate')
     expect(JSON.stringify(item)).not.toContain('careerForecast')
     expect(JSON.stringify(item)).not.toContain('0.73')
@@ -735,7 +989,45 @@ describe('player-map feed contract', () => {
       playerMapVersion: 'oracle-player-map/v2',
       primaryScoreSemantics: 'fixed_career_value_index',
       scoreSemantics: 'stage_specific_ordinal_not_market_value',
+      rankingContract: {
+        version: 'player-ranking-contract/v1',
+        primaryMetric: 'careerIndex',
+        primarySort: 'careerIndex',
+        primaryComparableAcrossRoutes: true,
+        stageStandingMetric: 'stageStanding',
+        stageStandingComparableWithinStageOnly: true,
+        stageStandingIsFilteredResultOrdinal: false,
+        legacyMetric: 'oracleScore',
+        legacyDeprecated: true,
+      },
     })
+
+    const snapshotCandidates = [candidate('snapshot-player')]
+    const censusSnapshot = snapshotId({
+      minorDataAsOf: '2026-07-13T00:00:00.000Z',
+      currentMlbDataAsOf: '2026-07-13T00:00:00.000Z',
+      forecastDataVersion: 'data-v1',
+      candidates: snapshotCandidates,
+    })
+    expect(censusSnapshot).toMatch(/^oracle-ranking-snapshot\/v1:[a-f0-9]{64}$/u)
+    expect(snapshotId({
+      minorDataAsOf: '2026-07-13T00:00:00.000Z',
+      currentMlbDataAsOf: '2026-07-13T00:00:00.000Z',
+      forecastDataVersion: 'data-v1',
+      candidates: snapshotCandidates,
+    })).toBe(censusSnapshot)
+    expect(snapshotId({
+      minorDataAsOf: '2026-07-14T00:00:00.000Z',
+      currentMlbDataAsOf: '2026-07-13T00:00:00.000Z',
+      forecastDataVersion: 'data-v1',
+      candidates: snapshotCandidates,
+    })).not.toBe(censusSnapshot)
+    expect(snapshotId({
+      minorDataAsOf: '2026-07-13T00:00:00.000Z',
+      currentMlbDataAsOf: '2026-07-13T00:00:00.000Z',
+      forecastDataVersion: 'data-v1',
+      candidates: [candidate('snapshot-player', { name: 'Corrected identity' })],
+    })).not.toBe(censusSnapshot)
   })
 })
 
