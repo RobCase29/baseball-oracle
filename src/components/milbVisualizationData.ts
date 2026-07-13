@@ -1,4 +1,4 @@
-import type { PlayerRecord, PlayerType } from '../domain/forecast'
+import type { PlayerMapFeedItem, PlayerRecord, PlayerType } from '../domain/forecast'
 import {
   CAREER_INDEX_WAR_ANCHORS,
   type PlayerMapStageTailBand,
@@ -15,6 +15,8 @@ export interface MilbOpportunityPoint {
   level: string
   age: number | null
   ageAdvantage: number | null
+  ageCohort: string | null
+  ageReferencePlayers: number | null
   evidenceCoverage: number
   coveredPillars: number
   totalPillars: number
@@ -47,6 +49,8 @@ export interface CareerIndexChartDomain {
   maximum: number
   ticks: number[]
 }
+
+export type CareerIndexChartScale = 'focus' | 'full'
 
 function resolveTier(player: PlayerRecord): OpportunityTier {
   const topPercent = playerMapFor(player).stageStanding.topPercent
@@ -90,23 +94,33 @@ const careerIndexAxisAnchors = [...new Set(
 
 export function careerIndexChartDomain(
   points: Pick<MilbOpportunityPoint, 'careerIndex'>[],
+  scale: CareerIndexChartScale = 'focus',
 ): CareerIndexChartDomain {
-  if (points.length === 0) return { minimum: 0, maximum: 100, ticks: careerIndexAxisAnchors }
+  if (scale === 'full' || points.length === 0) {
+    return { minimum: 0, maximum: 100, ticks: careerIndexAxisAnchors }
+  }
 
   const values = points.map((point) => point.careerIndex)
   const dataMinimum = Math.min(...values)
   const dataMaximum = Math.max(...values)
-  let minimum = careerIndexAxisAnchors.findLast((anchor) => anchor < dataMinimum) ?? 0
-  let maximum = careerIndexAxisAnchors.find((anchor) => anchor > dataMaximum) ?? 100
+  const spread = dataMaximum - dataMinimum
+  const padding = spread < 1 ? 4 : Math.max(1, spread * 0.14)
+  const rawMinimum = Math.max(0, dataMinimum - padding)
+  const rawMaximum = Math.min(100, dataMaximum + padding)
+  const targetStep = Math.max(1, (rawMaximum - rawMinimum) / 4)
+  const step = [1, 2, 5, 10, 20, 25].find((candidate) => candidate >= targetStep) ?? 25
+  let minimum = Math.max(0, Math.floor(rawMinimum / step) * step)
+  let maximum = Math.min(100, Math.ceil(rawMaximum / step) * step)
 
-  if (maximum - minimum < 20) {
-    const lower = careerIndexAxisAnchors.findLast((anchor) => anchor < minimum)
-    const upper = careerIndexAxisAnchors.find((anchor) => anchor > maximum)
-    if (lower !== undefined) minimum = lower
-    if (maximum - minimum < 20 && upper !== undefined) maximum = upper
+  if (maximum === minimum) {
+    minimum = Math.max(0, minimum - step)
+    maximum = Math.min(100, maximum + step)
   }
 
-  const ticks = careerIndexAxisAnchors.filter((anchor) => anchor >= minimum && anchor <= maximum)
+  const ticks = Array.from(
+    { length: Math.floor((maximum - minimum) / step) + 1 },
+    (_, index) => minimum + index * step,
+  )
   return { minimum, maximum, ticks }
 }
 
@@ -142,10 +156,14 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       name: player.name,
       organization: player.organizationCode ?? player.organization ?? 'Organization unavailable',
       position: player.position ?? player.playerType,
-      level: ageContext?.priorLevel ?? player.level ?? 'Level unavailable',
+      level: player.level ?? 'Level unavailable',
       age: player.age,
       ageAdvantage: validPercentile(ageContext?.youngerThanPercent)
         ? ageContext.youngerThanPercent
+        : null,
+      ageCohort: ageContext?.priorLevel ?? player.level ?? null,
+      ageReferencePlayers: validNonNegative(ageContext?.referencePlayers)
+        ? ageContext.referencePlayers
         : null,
       evidenceCoverage,
       coveredPillars,
@@ -162,6 +180,92 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       playerType: player.playerType,
       traitCorroborated: traitEvidence?.corroboration?.passesAllDescriptiveGates === true,
       tier: resolveTier(player),
+    }]
+  }).sort((left, right) => {
+    const standingDifference = left.stageRank - right.stageRank
+    if (standingDifference !== 0) return standingDifference
+    return left.name.localeCompare(right.name)
+  })
+}
+
+function feedSampleState(basis: string): MilbOpportunityPoint['sampleState'] {
+  const normalized = basis.toLocaleLowerCase('en-US')
+  if (normalized.includes('sufficient opportunity')) return 'sufficient'
+  if (normalized.includes('provisional opportunity')) return 'provisional'
+  if (normalized.includes('insufficient opportunity')) return 'insufficient'
+  return 'unavailable'
+}
+
+function feedSampleSummary(state: MilbOpportunityPoint['sampleState']): string {
+  if (state === 'sufficient') return 'Playing-time sample established'
+  if (state === 'provisional') return 'Playing-time sample building'
+  if (state === 'insufficient') return 'Limited playing-time sample'
+  return 'Current sample unavailable'
+}
+
+function feedOpportunityTier(
+  arrivalGateCleared: boolean,
+  topPercent: number,
+): OpportunityTier {
+  if (!arrivalGateCleared || topPercent > 10) return 'context'
+  if (topPercent <= 1) return 'priority'
+  if (topPercent <= 5) return 'strong'
+  return 'watch'
+}
+
+export function buildMilbOpportunityPointsFromFeed(
+  items: PlayerMapFeedItem[],
+): MilbOpportunityPoint[] {
+  return items.flatMap((item) => {
+    const { assessment, context } = item
+    if (context.stage !== 'pre_debut' || assessment.route !== 'milb') return []
+
+    const careerIndex = assessment.careerIndex.value
+    const standing = assessment.stageStanding
+    if (
+      !validPercentile(careerIndex) ||
+      standing.rank === null ||
+      standing.universe === null ||
+      standing.topPercent === null ||
+      standing.tailBand === null
+    ) return []
+
+    const trajectory = assessment.scores.trajectory
+    const evidence = assessment.scores.evidence
+    const ageAdvantage = validPercentile(trajectory.value) ? trajectory.value : null
+    const totalPillars = validNonNegative(evidence.universe) ? evidence.universe : 0
+    const evidenceCoverage = validPercentile(evidence.value) ? evidence.value : 0
+    const coveredPillars = totalPillars > 0
+      ? Math.min(totalPillars, Math.round(totalPillars * evidenceCoverage / 100))
+      : 0
+    const sampleState = feedSampleState(evidence.basis)
+    const arrivalGateCleared = assessment.signals.some((signal) => signal.code === 'dual_confirmed')
+
+    return [{
+      playerId: item.playerId,
+      name: item.identity.name,
+      organization: context.organizationCode ?? context.organization ?? 'Organization unavailable',
+      position: context.position ?? context.playerType,
+      level: context.level ?? 'Level unavailable',
+      age: context.age,
+      ageAdvantage,
+      ageCohort: context.level,
+      ageReferencePlayers: validNonNegative(trajectory.universe) ? trajectory.universe : null,
+      evidenceCoverage,
+      coveredPillars,
+      totalPillars,
+      missingPillars: assessment.missingEvidence,
+      sampleState,
+      sampleSummary: feedSampleSummary(sampleState),
+      careerIndex,
+      stageRank: standing.rank,
+      stageUniverse: standing.universe,
+      stageTopPercent: standing.topPercent,
+      stageTailBand: standing.tailBand,
+      arrivalGateCleared,
+      playerType: context.playerType,
+      traitCorroborated: assessment.signals.some((signal) => signal.code === 'trait_corroborated'),
+      tier: feedOpportunityTier(arrivalGateCleared, standing.topPercent),
     }]
   }).sort((left, right) => {
     const standingDifference = left.stageRank - right.stageRank

@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react'
+import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   CalendarDays,
@@ -11,9 +11,11 @@ import './App.css'
 import { AppSidebar, type WorkspaceView } from './components/AppSidebar'
 import { ModelLab } from './components/ModelLab'
 import { PlayerDossier } from './components/PlayerDossier'
-import { ProspectBoard } from './components/ProspectBoard'
+import { ProspectBoard, type BoardDisplayMode } from './components/ProspectBoard'
 import type {
   BoardFilters,
+  PlayerMapFeedItem,
+  PlayerMapFeedResponse,
   PlayerRecord,
   PlayersPage,
   PlayersResponse,
@@ -21,6 +23,7 @@ import type {
 } from './domain/forecast'
 
 const PAGE_SIZE = 50
+const LANDSCAPE_SIZE = 100
 
 const defaultFilters: BoardFilters = {
   query: '',
@@ -132,6 +135,19 @@ function isPlayersResponse(value: unknown): value is PlayersResponse {
   )
 }
 
+function isPlayerMapFeedResponse(value: unknown): value is PlayerMapFeedResponse {
+  if (typeof value !== 'object' || value === null) return false
+  return (
+    'schemaVersion' in value &&
+    value.schemaVersion === 'player-map-feed.v3' &&
+    'items' in value &&
+    Array.isArray(value.items) &&
+    'page' in value &&
+    typeof value.page === 'object' &&
+    value.page !== null
+  )
+}
+
 function normalizePlayerRecord(player: PlayerRecord): PlayerRecord {
   const validStages = new Set(['pre_debut', 'recent_callup', 'early_mlb', 'established_mlb', 'inactive'])
   return {
@@ -154,6 +170,15 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedPlayerRecord, setSelectedPlayerRecord] = useState<PlayerRecord | null>(null)
+  const [openingPlayerId, setOpeningPlayerId] = useState<string | null>(null)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
+  const [boardDisplayMode, setBoardDisplayMode] = useState<BoardDisplayMode>('table')
+  const [landscapeItems, setLandscapeItems] = useState<PlayerMapFeedItem[]>([])
+  const [landscapeTotal, setLandscapeTotal] = useState(0)
+  const [landscapeLoading, setLandscapeLoading] = useState(false)
+  const [landscapeError, setLandscapeError] = useState<string | null>(null)
+  const selectionRequest = useRef(0)
   const deferredQuery = useDeferredValue(filters.query)
 
   useEffect(() => {
@@ -206,6 +231,68 @@ function App() {
   ])
 
   useEffect(() => {
+    if (filters.stage !== 'Minors' || boardDisplayMode !== 'landscape') {
+      setLandscapeItems([])
+      setLandscapeTotal(0)
+      setLandscapeLoading(false)
+      setLandscapeError(null)
+      return
+    }
+
+    const controller = new AbortController()
+    const parameters = new URLSearchParams({
+      stage: 'Minors',
+      page: '1',
+      limit: LANDSCAPE_SIZE.toString(),
+      sort: 'careerIndex',
+      view: 'map',
+    })
+    const query = deferredQuery.trim()
+    if (query) parameters.set('q', query)
+    if (filters.playerType !== 'All') parameters.set('playerType', filters.playerType)
+    if (filters.level !== 'All') parameters.set('level', filters.level)
+    if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
+    if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
+
+    setLandscapeItems([])
+    setLandscapeTotal(0)
+    setLandscapeLoading(true)
+    setLandscapeError(null)
+
+    fetch(`/api/players?${parameters.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Landscape endpoint returned ${response.status}.`)
+        const result = (await response.json()) as unknown
+        if (!isPlayerMapFeedResponse(result)) {
+          throw new Error('Landscape endpoint returned an unexpected response.')
+        }
+        setLandscapeItems(result.items)
+        setLandscapeTotal(result.page.total)
+      })
+      .catch((requestError: unknown) => {
+        if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+        setLandscapeItems([])
+        setLandscapeTotal(0)
+        setLandscapeError(requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load the filtered landscape.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLandscapeLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [
+    boardDisplayMode,
+    deferredQuery,
+    filters.level,
+    filters.playerType,
+    filters.position,
+    filters.stage,
+    filters.team,
+  ])
+
+  useEffect(() => {
     const parameters = new URLSearchParams()
     if (filters.query.trim()) parameters.set('q', filters.query.trim())
     if (filters.stage !== defaultFilters.stage) parameters.set('stage', filters.stage)
@@ -220,12 +307,16 @@ function App() {
   }, [filters, page])
 
   const selectedPlayer = selectedId
-    ? players.find((player) => player.id === selectedId) ?? null
+    ? players.find((player) => player.id === selectedId) ?? selectedPlayerRecord
     : null
 
   function changeView(view: WorkspaceView) {
+    selectionRequest.current += 1
     setActiveView(view)
     setSelectedId(null)
+    setSelectedPlayerRecord(null)
+    setOpeningPlayerId(null)
+    setSelectionError(null)
   }
 
   function changeFilters(patch: Partial<BoardFilters>) {
@@ -236,14 +327,54 @@ function App() {
         : patch
     setFilters((current) => ({ ...current, ...compatiblePatch }))
     setPage(1)
+    setSelectionError(null)
   }
 
   function selectPlayer(playerId: string) {
+    const localPlayer = players.find((player) => player.id === playerId)
+    selectionRequest.current += 1
+    const requestNumber = selectionRequest.current
     setSelectedId(playerId)
+    setSelectionError(null)
+
+    if (localPlayer) {
+      setSelectedPlayerRecord(localPlayer)
+      setOpeningPlayerId(null)
+      return
+    }
+
+    setSelectedPlayerRecord(null)
+    setOpeningPlayerId(playerId)
+    const parameters = new URLSearchParams({ ids: playerId, limit: '1' })
+    fetch(`/api/players?${parameters.toString()}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Player endpoint returned ${response.status}.`)
+        const result = (await response.json()) as unknown
+        if (!isPlayersResponse(result) || result.items.length !== 1) {
+          throw new Error('The full player outlook is unavailable.')
+        }
+        if (selectionRequest.current !== requestNumber) return
+        setSelectedPlayerRecord(normalizePlayerRecord(result.items[0]))
+      })
+      .catch((requestError: unknown) => {
+        if (selectionRequest.current !== requestNumber) return
+        setSelectedId(null)
+        setSelectedPlayerRecord(null)
+        setSelectionError(requestError instanceof Error
+          ? requestError.message
+          : 'Unable to open the player outlook.')
+      })
+      .finally(() => {
+        if (selectionRequest.current === requestNumber) setOpeningPlayerId(null)
+      })
   }
 
   function returnToBoard() {
+    selectionRequest.current += 1
     setSelectedId(null)
+    setSelectedPlayerRecord(null)
+    setOpeningPlayerId(null)
+    setSelectionError(null)
     window.requestAnimationFrame(() => {
       document.getElementById('prospect-board')?.scrollIntoView({
         behavior: 'smooth',
@@ -343,13 +474,21 @@ function App() {
             ) : (
               <ProspectBoard
                 players={players}
-                selectedId={null}
+                selectedId={selectedId}
                 filters={filters}
                 pagination={pagination}
                 loading={loading}
                 error={error}
                 facets={meta.facets}
+                displayMode={boardDisplayMode}
+                landscapeItems={landscapeItems}
+                landscapeTotal={landscapeTotal}
+                landscapeLoading={landscapeLoading}
+                landscapeError={landscapeError}
+                openingPlayerId={openingPlayerId}
+                selectionError={selectionError}
                 onSelect={selectPlayer}
+                onChangeDisplayMode={setBoardDisplayMode}
                 onChangeFilters={changeFilters}
                 onChangePage={setPage}
               />

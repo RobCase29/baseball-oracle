@@ -15,6 +15,7 @@ import {
 import type {
   BoardFilters,
   PlayerFacetOption,
+  PlayerMapFeedItem,
   PlayerRecord,
   PlayersPage,
   PlayerType,
@@ -38,6 +39,8 @@ const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
 )
 
+export type BoardDisplayMode = 'table' | 'landscape'
+
 interface ProspectBoardProps {
   players: PlayerRecord[]
   selectedId: string | null
@@ -49,7 +52,15 @@ interface ProspectBoardProps {
     teams: PlayerFacetOption[]
     positions: PlayerFacetOption[]
   }
+  displayMode?: BoardDisplayMode
+  landscapeItems?: PlayerMapFeedItem[]
+  landscapeTotal?: number
+  landscapeLoading?: boolean
+  landscapeError?: string | null
+  openingPlayerId?: string | null
+  selectionError?: string | null
   onSelect: (playerId: string) => void
+  onChangeDisplayMode?: (mode: BoardDisplayMode) => void
   onChangeFilters: (patch: Partial<BoardFilters>) => void
   onChangePage: (page: number) => void
 }
@@ -106,11 +117,19 @@ export function ProspectBoard({
   loading,
   error,
   facets,
+  displayMode: controlledDisplayMode,
+  landscapeItems,
+  landscapeTotal,
+  landscapeLoading = false,
+  landscapeError = null,
+  openingPlayerId = null,
+  selectionError = null,
   onSelect,
+  onChangeDisplayMode,
   onChangeFilters,
   onChangePage,
 }: ProspectBoardProps) {
-  const [displayMode, setDisplayMode] = useState<'table' | 'landscape'>('table')
+  const [uncontrolledDisplayMode, setUncontrolledDisplayMode] = useState<BoardDisplayMode>('table')
   const [filtersExpanded, setFiltersExpanded] = useState(false)
   const hasPreviousPage = pagination.page > 1
   const hasNextPage = pagination.page < pagination.totalPages
@@ -124,11 +143,17 @@ export function ProspectBoard({
   const teamOptions = withCurrentFacet(facets?.teams ?? [], filters.team)
   const positionOptions = withCurrentFacet(facets?.positions ?? [], filters.position)
   const heading = boardHeading(filters)
+  const displayMode = controlledDisplayMode ?? uncontrolledDisplayMode
   const activeDisplayMode = filters.stage === 'Minors' ? displayMode : 'table'
   const noResults = emptyStateCopy(filters.stage)
 
+  function changeDisplayMode(mode: BoardDisplayMode) {
+    setUncontrolledDisplayMode(mode)
+    onChangeDisplayMode?.(mode)
+  }
+
   return (
-    <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading}>
+    <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading || landscapeLoading}>
       <div className="board-heading">
         <div>
           <span className="eyebrow">{heading.eyebrow}</span>
@@ -145,7 +170,7 @@ export function ProspectBoard({
                 type="button"
                 className={activeDisplayMode === 'table' ? 'is-active' : ''}
                 aria-pressed={activeDisplayMode === 'table'}
-                onClick={() => setDisplayMode('table')}
+                onClick={() => changeDisplayMode('table')}
               >
                 <Table2 size={14} aria-hidden="true" />
                 Table
@@ -154,7 +179,7 @@ export function ProspectBoard({
                 type="button"
                 className={activeDisplayMode === 'landscape' ? 'is-active' : ''}
                 aria-pressed={activeDisplayMode === 'landscape'}
-                onClick={() => setDisplayMode('landscape')}
+                onClick={() => changeDisplayMode('landscape')}
               >
                 <ChartScatter size={14} aria-hidden="true" />
                 Landscape
@@ -372,11 +397,29 @@ export function ProspectBoard({
         </div>
       ) : null}
 
-      {players.length > 0 && activeDisplayMode === 'landscape' ? (
+      {selectionError ? (
+        <div className="board-inline-error" role="alert">
+          <AlertTriangle size={15} aria-hidden="true" />
+          <span>{selectionError}</span>
+        </div>
+      ) : null}
+
+      {players.length > 0 && activeDisplayMode === 'landscape' && landscapeLoading && !landscapeItems?.length ? (
+        <div className="opportunity-map opportunity-map-loading" role="status">
+          <LoaderCircle className="spin" size={20} aria-hidden="true" />
+          <span>Building the filtered prospect landscape</span>
+        </div>
+      ) : null}
+
+      {players.length > 0 && activeDisplayMode === 'landscape' && (!landscapeLoading || Boolean(landscapeItems?.length)) ? (
         <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
           <MilbOpportunityMap
             players={players}
+            feedItems={landscapeItems?.length ? landscapeItems : undefined}
+            totalCount={landscapeItems?.length ? landscapeTotal : pagination.total}
             selectedId={selectedId}
+            openingPlayerId={openingPlayerId}
+            loadError={landscapeError}
             onSelect={onSelect}
           />
         </Suspense>
@@ -535,7 +578,7 @@ export function ProspectBoard({
         </div>
       ) : null}
 
-      {pagination.totalPages > 1 ? (
+      {activeDisplayMode === 'table' && pagination.totalPages > 1 ? (
         <nav className="board-pagination" aria-label="Player results pages">
           <button
             className="icon-button"

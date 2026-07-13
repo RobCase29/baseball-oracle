@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { PlayerRecord } from '../domain/forecast'
+import type { PlayerMapFeedItem, PlayerRecord } from '../domain/forecast'
 import {
   buildMilbEvidenceRows,
   buildMilbOpportunityPoints,
+  buildMilbOpportunityPointsFromFeed,
   careerIndexChartDomain,
 } from './milbVisualizationData'
+import { playerMapFor } from './playerMapView'
 
 function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
   return {
@@ -205,22 +207,61 @@ describe('MiLB decision visualizations', () => {
     expect(rows.map((row) => row.id)).not.toContain('career-index')
   })
 
-  it('uses fixed Career Index anchors for an adaptive, disclosed chart domain', () => {
+  it('uses a tight focus domain and retains the fixed full Career Index scale', () => {
     expect(careerIndexChartDomain([{ careerIndex: 15.3 }])).toEqual({
-      minimum: 0,
+      minimum: 10,
       maximum: 20,
-      ticks: [0, 20],
+      ticks: [10, 12, 14, 16, 18, 20],
     })
     expect(careerIndexChartDomain([{ careerIndex: 95 }])).toEqual({
-      minimum: 80,
+      minimum: 90,
       maximum: 100,
-      ticks: [80, 92, 100],
+      ticks: [90, 92, 94, 96, 98, 100],
     })
-    expect(careerIndexChartDomain([])).toEqual({
+    expect(careerIndexChartDomain([{ careerIndex: 9.5 }, { careerIndex: 22.9 }])).toEqual({
+      minimum: 5,
+      maximum: 25,
+      ticks: [5, 10, 15, 20, 25],
+    })
+    expect(careerIndexChartDomain([{ careerIndex: 15.3 }], 'full')).toEqual({
       minimum: 0,
       maximum: 100,
       ticks: [0, 20, 45, 65, 80, 92, 100],
     })
+  })
+
+  it('builds the lean landscape feed into the same age, ceiling, and evidence contract', () => {
+    const player = playerFixture()
+    const feedItem: PlayerMapFeedItem = {
+      playerId: player.id,
+      identity: { name: player.name },
+      externalIds: {},
+      context: {
+        playerType: player.playerType,
+        stage: player.stage,
+        age: player.age,
+        level: player.level,
+        organization: player.organization,
+        organizationCode: player.organizationCode,
+        position: player.position,
+      },
+      assessment: playerMapFor(player),
+    }
+
+    expect(buildMilbOpportunityPointsFromFeed([feedItem])).toEqual([
+      expect.objectContaining({
+        playerId: 'player-1',
+        name: 'Young Prospect',
+        careerIndex: 15.3,
+        ageAdvantage: 92,
+        ageReferencePlayers: 1200,
+        evidenceCoverage: 25,
+        coveredPillars: 1,
+        totalPillars: 4,
+        sampleState: 'provisional',
+        stageRank: 4,
+      }),
+    ])
   })
 
   it('rejects a career rank outside the scored universe rather than clipping it', () => {
