@@ -386,11 +386,12 @@
 
 .overview-strip small {
   min-width: 0;
+  overflow: visible;
   color: #88918e;
   font-size: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .research-grid {
@@ -3352,13 +3353,6 @@
   .overview-strip > div:last-child,
   .data-status-grid > div:last-child {
     border-bottom: 0;
-  }
-
-  .overview-strip small {
-    overflow: visible;
-    line-height: 1.35;
-    text-overflow: clip;
-    white-space: normal;
   }
 
   .identity-line {
