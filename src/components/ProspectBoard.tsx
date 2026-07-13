@@ -23,12 +23,14 @@ import type {
   StageFilter,
 } from '../domain/forecast'
 import {
+  careerWarForPlayer,
   developmentChapterLabel,
   formatWar,
   isMlbStage,
   stageLabel,
 } from '../lib/forecast'
 import { careerIndexFor, playerMapFor } from './playerMapView'
+import { currentMinorEvidence, currentMinorSignal } from './currentMinorView'
 import {
   formatRookieWar,
   formatRookieWarPercentile,
@@ -483,17 +485,19 @@ export function ProspectBoard({
                   : isRookieTrack
                     ? 'Rookie Track'
                     : developmentChapterLabel(player.level))
-                const prospectForecast = prospectPrior?.forecast ?? null
-                const careerMiddleCase = isRookieTrack
-                  ? prospectForecast?.finalCareerWar?.p50 ?? null
-                  : forecast?.finalCareerWar?.p50 ?? null
-                const careerHighCase = isRookieTrack
-                  ? prospectForecast?.finalCareerWar?.p90 ?? null
-                  : forecast?.finalCareerWar?.p90 ?? null
+                const careerWar = careerWarForPlayer(player)
+                const careerMiddleCase = careerWar?.p50 ?? null
+                const careerHighCase = careerWar?.p90 ?? null
+                const liveMinorSignal = playerMap.route === 'milb'
+                  ? currentMinorSignal(player)
+                  : null
+                const liveMinorEvidence = playerMap.route === 'milb'
+                  ? currentMinorEvidence(player)
+                  : null
                 const evidenceDisplay = isRookieTrack
                   ? rookieEvidenceLabel(player)
                   : playerMap.route === 'milb'
-                    ? playerMap.scores.evidence.display.replace('pillars', 'data areas')
+                    ? liveMinorEvidence?.label ?? playerMap.scores.evidence.display.replace('pillars', 'data areas')
                     : forecast?.confidenceState ?? 'Not available'
 
                 return (
@@ -548,7 +552,7 @@ export function ProspectBoard({
                           ? handling.summary
                           : isRookieTrack && !hasProspectPrior
                           ? 'Career projection available after the prospect prior is matched'
-                          : `Middle career WAR · high case ${formatWar(careerHighCase)}${!mlbStage && !isRookieTrack ? ` · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}` : ''}`}
+                          : `${mlbStage ? 'Middle career WAR' : 'If MLB: middle career WAR'} · high case ${formatWar(careerHighCase)}${!mlbStage && !isRookieTrack ? ` · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}` : ''}`}
                       </small>
                     </td>
                     <td className="signal-cell">
@@ -569,10 +573,10 @@ export function ProspectBoard({
                         </>
                       ) : (
                         <>
-                          <strong className="table-primary">
-                            {player.milbAlphaSignal?.rank ? `Arrival rank #${player.milbAlphaSignal.rank}` : 'Not confirmed'}
+                          <strong className={`table-primary${liveMinorSignal ? ' signal-positive' : ''}`}>
+                            {liveMinorSignal?.label ?? (player.milbAlphaSignal?.rank ? `Arrival rank #${player.milbAlphaSignal.rank}` : 'Not confirmed')}
                           </strong>
-                          <small>{playerMap.stateLabel}</small>
+                          <small>{liveMinorSignal?.detail ?? playerMap.stateLabel}</small>
                         </>
                       )}
                     </td>
@@ -584,7 +588,7 @@ export function ProspectBoard({
                             ? `${player.recentCallup.currentMlbEvidence.opportunity.value} ${player.recentCallup.currentMlbEvidence.opportunity.label} of MLB evidence`
                             : 'Awaiting MLB opportunity data'
                           : playerMap.route === 'milb'
-                            ? 'current stat coverage'
+                            ? liveMinorEvidence?.detail ?? 'current stat coverage'
                             : 'support behind the career outlook'}
                       </small>
                     </td>

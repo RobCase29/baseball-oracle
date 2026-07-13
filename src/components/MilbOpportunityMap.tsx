@@ -271,7 +271,7 @@ export function MilbOpportunityMap({
         <div className="opportunity-map-title">
           <span className="eyebrow">PROSPECT LANDSCAPE</span>
           <h3 id="opportunity-map-title">Ceiling &amp; age advantage</h3>
-          <p>Higher means more projected career value. Farther right means unusually young for the same level.</p>
+          <p>Higher means more projected career value if MLB is reached. Farther right means unusually young for the same level.</p>
         </div>
         <div className="opportunity-map-controls">
           <div className="segmented-control chart-scale-control" aria-label="Career Index chart scale">
@@ -341,7 +341,7 @@ export function MilbOpportunityMap({
             <div
               className="opportunity-map-chart"
               role="group"
-              aria-label={`${points.length} prospects plotted by Career Index and historical age advantage. Higher and farther right indicates higher projected career value at a younger relative age.`}
+              aria-label={`${points.length} prospects plotted by conditional Career Index and age advantage. Higher and farther right indicates higher projected MLB career value at a younger relative age.`}
             >
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                 <ScatterChart margin={{ top: 28, right: 28, bottom: 42, left: 4 }}>
@@ -465,7 +465,7 @@ export function MilbOpportunityMap({
           {plottedBeyondCount > 0 ? ` · ${plottedBeyondCount.toLocaleString()} filtered prospects beyond this view` : ''}
           {missingAgeCount > 0 ? ` · ${missingAgeCount.toLocaleString()} without an age comparison` : ''}
         </span>
-        <strong>Career Index remains on the same fixed 0–100 scale across career stages</strong>
+        <strong>Prospect Career Index is conditional on MLB arrival; arrival confidence remains separate</strong>
       </div>
 
       {openingPlayerId ? (

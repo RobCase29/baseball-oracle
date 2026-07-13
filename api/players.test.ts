@@ -4,6 +4,7 @@ import type { CareerOraclePreview, CareerPreviewPlayer } from './_career-oracle-
 import { researchMilbImpactRanking } from './_milb-impact.js'
 import { researchMilbAlphaSignal, type ResearchMilbAlphaSignal } from './_research-arrival.js'
 import {
+  augmentMinorCandidatesWithCurrentProfiles,
   assignStageRanks,
   buildPlayerFacets,
   canonicalExternalId,
@@ -11,9 +12,14 @@ import {
   currentMlbTeamContext,
   currentRoleForModeledPlayer,
   currentMlbMetrics,
+  currentMinorAgePercentile,
+  currentMinorStatsSnapshot,
+  currentProspectScouting,
   currentOnlyMlbCandidates,
   dedupeMinorCandidates,
   frozenProspectRankUniverse,
+  formatFanGraphsFutureValue,
+  formatProspectSavantRate,
   matchesQuery,
   mergeCurrentUniverse,
   minorTwoWayEvidenceDisplay,
@@ -38,6 +44,9 @@ import {
   shouldSuppressSlashLine,
   withholdForecastForCurrentRoleTransition,
   type PlayerQuery,
+  type CurrentFangraphsScoutingRow,
+  type CurrentMinorProfileRow,
+  type CurrentMinorStatsRow,
   type UnifiedBoardCandidate,
 } from './players.js'
 import { requireMlbIdentityCrosswalk } from './_mlb-identity-crosswalk.js'
@@ -64,6 +73,156 @@ const currentMlbRow = {
   known_at: '2026-07-13T12:00:00.000Z',
 }
 
+function currentMinorProfile(
+  patch: Partial<CurrentMinorProfileRow> = {},
+): CurrentMinorProfileRow {
+  return {
+    profile_id: 'mlb-statsapi:900000:hitter',
+    mlbam_id: 900000,
+    player_type: 'Hitter',
+    display_name: 'Official Only Prospect',
+    age: 19,
+    active: true,
+    position: 'SS',
+    bats: 'R',
+    throws: 'R',
+    organization_mlbam_id: 111,
+    organization_name: 'Boston Red Sox',
+    current_team_name: 'Salem Red Sox',
+    season: 2026,
+    current_level: 'A',
+    highest_observed_level: 'A',
+    levels_observed: ['A'],
+    known_at: '2026-07-13T20:00:00.000Z',
+    pa: 180,
+    ba: 0.3,
+    obp: 0.4,
+    slg: 0.45,
+    ops: 0.85,
+    home_runs: 5,
+    walks: 25,
+    strikeouts: 30,
+    stolen_bases: 12,
+    ip: null,
+    outs: null,
+    pitches: null,
+    era: null,
+    whip: null,
+    pitching_strikeout_rate: null,
+    pitching_walk_rate: null,
+    k_minus_bb_rate: null,
+    pitching_strikeouts: null,
+    walks_allowed: null,
+    ...patch,
+  }
+}
+
+describe('Prospect Savant rate units', () => {
+  it('keeps provider percentage-point rates from being multiplied again', () => {
+    expect(formatProspectSavantRate(17.2)).toBe('17.2%')
+    expect(formatProspectSavantRate(1.4)).toBe('1.4%')
+    expect(formatProspectSavantRate(0.7)).toBe('0.7%')
+    expect(formatProspectSavantRate(null)).toBeNull()
+  })
+})
+
+describe('FanGraphs future value display', () => {
+  it('restores plus-grade display without discarding the raw API value', () => {
+    expect(formatFanGraphsFutureValue('47')).toBe('45+')
+    expect(formatFanGraphsFutureValue('45+')).toBe('45+')
+    expect(formatFanGraphsFutureValue('50')).toBe('50')
+    expect(formatFanGraphsFutureValue(null)).toBeNull()
+  })
+})
+
+describe('Luis Arana current evidence regression', () => {
+  it('serves all-level official totals and current scouting as separate evidence', () => {
+    const stats = currentMinorStatsSnapshot({
+      mlbam_id: 829854,
+      player_type: 'Hitter',
+      season: 2026,
+      current_level: 'A',
+      highest_observed_level: 'A',
+      levels_observed: ['A', 'Rk'],
+      known_at: '2026-07-13T20:00:00.000Z',
+      pa: 208,
+      ba: 0.294117647,
+      obp: 0.413461538,
+      slg: 0.358823529,
+      ops: 0.772285067,
+      home_runs: 1,
+      walks: 34,
+      strikeouts: 36,
+      stolen_bases: 25,
+      ip: null,
+      outs: null,
+      era: null,
+      whip: null,
+      pitching_strikeout_rate: null,
+      pitching_walk_rate: null,
+      k_minus_bb_rate: null,
+      pitching_strikeouts: null,
+      walks_allowed: null,
+    } satisfies CurrentMinorStatsRow)
+    const scouting = currentProspectScouting({
+      mlbam_id: 829854,
+      source_role: 'Hitter',
+      report_season: 2026,
+      org_rank: 6,
+      overall_rank: null,
+      future_value: '47',
+      eta: 2028,
+      present_hit: 30,
+      future_hit: 55,
+      present_game_power: 20,
+      future_game_power: 45,
+      present_raw_power: 35,
+      future_raw_power: 45,
+      present_speed: 45,
+      future_speed: 45,
+      present_fielding: 45,
+      future_fielding: 55,
+      present_arm: 50,
+      future_arm: 50,
+      present_fastball: null,
+      future_fastball: null,
+      present_slider: null,
+      future_slider: null,
+      present_curveball: null,
+      future_curveball: null,
+      present_changeup: null,
+      future_changeup: null,
+      present_splitter: null,
+      future_splitter: null,
+      present_cutter: null,
+      future_cutter: null,
+      present_command: null,
+      future_command: null,
+      bat_control: 70,
+      pitch_selection: 55,
+      known_at: '2026-07-13T20:00:00.000Z',
+    } satisfies CurrentFangraphsScoutingRow)
+
+    expect(stats).toMatchObject({
+      levelsObserved: ['A', 'Rk'],
+      opportunity: { label: 'PA', value: '208' },
+      hitting: { ba: 0.294, obp: 0.413, slg: 0.359, walks: 34, strikeouts: 36 },
+    })
+    expect(scouting).toMatchObject({
+      organizationRank: 6,
+      futureValue: '45+',
+      futureValueRaw: '47',
+      eta: 2028,
+    })
+    expect(scouting?.grades).toContainEqual({
+      key: 'bat-control',
+      label: 'Bat control',
+      present: null,
+      future: 70,
+    })
+  })
+})
+
 function forecast(
   probability: number,
   finalWarP50: number,
@@ -80,6 +239,11 @@ function forecast(
     rank: artifactRank,
     hofCaliberProbability: probability,
     finalCareerWar: { ...war, p50: finalWarP50, p75: Math.max(24, finalWarP50) },
+    finalCareerWarConditionalOnArrival: {
+      ...war,
+      p50: finalWarP50,
+      p75: Math.max(24, finalWarP50),
+    },
     peakSevenWar: war,
     finalJaws: null,
     scenarioSupportExtensionJaws: null,
@@ -327,6 +491,84 @@ function joeMackPreview(): CareerOraclePreview {
     prospectForecasts,
   }
 }
+
+describe('official MiLB current universe', () => {
+  it('adds a StatsAPI-only exact-ID player and preserves the frozen model link', () => {
+    const preview = joeMackPreview()
+    const result = augmentMinorCandidatesWithCurrentProfiles(
+      [],
+      [currentMinorProfile()],
+      preview,
+      requireMlbIdentityCrosswalk(),
+    )
+
+    expect(result).toMatchObject({
+      liveProfileOverlays: 0,
+      officialOnlyRoleRows: 1,
+    })
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        id: 'mlb-statsapi:900000:hitter',
+        name: 'Official Only Prospect',
+        mlbamId: '900000',
+        minorProfileSource: 'mlbStatsApi',
+        stage: 'pre_debut',
+        level: 'A',
+        organization: 'Boston Red Sox',
+        organizationCode: 'BOS',
+        careerForecast: expect.objectContaining({ rank: 1 }),
+      }),
+    ])
+    expect(matchesQuery(
+      result.items[0]!,
+      query({ stage: 'Minors', level: 'A', team: 'BOS', position: 'SS' }),
+    )).toBe(true)
+  })
+
+  it('uses live promotion and organization fields without relabeling an old age cohort', () => {
+    const preview = joeMackPreview()
+    const frozenForecast = preview.prospectForecasts['900001:hitter']!.careerForecast
+    const existing = candidate('prospect-savant:900001', {
+      name: 'Promoted Prospect',
+      mlbamId: '900001',
+      level: 'A',
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+      careerForecast: frozenForecast,
+      minorProfileSource: 'prospectSavant',
+    })
+    const result = augmentMinorCandidatesWithCurrentProfiles(
+      [existing],
+      [currentMinorProfile({
+        profile_id: 'mlb-statsapi:900001:hitter',
+        mlbam_id: 900001,
+        display_name: 'Promoted Prospect',
+        current_level: 'AA',
+        highest_observed_level: 'AA',
+        levels_observed: ['AA', 'A'],
+        organization_mlbam_id: 111,
+        organization_name: 'Boston Red Sox',
+      })],
+      preview,
+      requireMlbIdentityCrosswalk(),
+    )
+
+    expect(result).toMatchObject({ liveProfileOverlays: 1, officialOnlyRoleRows: 0 })
+    expect(result.items[0]).toMatchObject({
+      id: 'prospect-savant:900001',
+      level: 'AA',
+      organization: 'Boston Red Sox',
+      organizationCode: 'BOS',
+      careerForecast: frozenForecast,
+    })
+    expect(matchesQuery(result.items[0]!, query({ stage: 'Minors', level: 'AA', team: 'BOS' })))
+      .toBe(true)
+    expect(matchesQuery(result.items[0]!, query({ stage: 'Minors', level: 'A', team: 'MIA' })))
+      .toBe(false)
+    expect(currentMinorAgePercentile('A', 98.4, 'AA')).toBeNull()
+    expect(currentMinorAgePercentile('AA', 98.4, 'AA')).toBe(98.4)
+  })
+})
 
 describe('unified player ordering', () => {
   it('normalizes browser form-encoded spaces in player search text', () => {
@@ -973,9 +1215,17 @@ describe('player-map feed contract', () => {
     } as unknown as Parameters<typeof playerMapFeedItem>[0]
 
     const item = playerMapFeedItem(record)
-    expect(Object.keys(item)).toEqual(['playerId', 'identity', 'externalIds', 'context', 'assessment'])
+    expect(Object.keys(item)).toEqual([
+      'playerId',
+      'identity',
+      'externalIds',
+      'context',
+      'currentEvidence',
+      'assessment',
+    ])
     expect(item.externalIds.mlbam).toBe('804109')
     expect(item.context).toMatchObject({ stage: 'pre_debut', organizationCode: 'MIA' })
+    expect(item.currentEvidence).toEqual({ minorStats: null, prospectScouting: null })
     expect(item.assessment.careerIndex).toMatchObject({
       version: 'career-index-war-v1',
       value: 42.5,
@@ -1018,7 +1268,7 @@ describe('player-map feed contract', () => {
     expect(JSON.stringify(item)).not.toContain('0.73')
 
     expect(playerMapResponseMeta([])).toMatchObject({
-      playerMapVersion: 'oracle-player-map/v2',
+      playerMapVersion: 'oracle-player-map/v3',
       primaryScoreSemantics: 'fixed_career_value_index',
       scoreSemantics: 'stage_specific_ordinal_not_market_value',
       rankingContract: {

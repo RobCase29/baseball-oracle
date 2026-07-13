@@ -234,6 +234,7 @@ export interface CareerForecast {
   rank: number | null
   hofCaliberProbability: number | null
   finalCareerWar: WarQuantiles | null
+  finalCareerWarConditionalOnArrival?: WarQuantiles | null
   peakSevenWar: WarQuantiles | null
   finalJaws: WarQuantiles | null
   scenarioSupportExtensionJaws: number | null

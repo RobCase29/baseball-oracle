@@ -221,6 +221,7 @@ export interface CareerForecast {
   rank: number | null
   hofCaliberProbability: number | null
   finalCareerWar: WarQuantiles | null
+  finalCareerWarConditionalOnArrival?: WarQuantiles | null
   peakSevenWar: WarQuantiles | null
   finalJaws: WarQuantiles | null
   scenarioSupportExtensionJaws: number | null
@@ -247,6 +248,54 @@ export interface ObservedMetric {
   value: string
   percentile: number | null
   source: string
+}
+
+export interface CurrentMinorStatsSnapshot {
+  source: 'MLB StatsAPI'
+  season: number
+  asOf: string | null
+  currentLevel: string | null
+  highestObservedLevel: string | null
+  levelsObserved: string[]
+  opportunity: PlayerOpportunity
+  hitting: {
+    pa: number
+    ba: number | null
+    obp: number | null
+    slg: number | null
+    ops: number | null
+    homeRuns: number | null
+    walks: number | null
+    strikeouts: number | null
+    stolenBases: number | null
+  } | null
+  pitching: {
+    ip: number
+    era: number | null
+    whip: number | null
+    strikeoutRate: number | null
+    walkRate: number | null
+    kMinusBbRate: number | null
+    strikeouts: number | null
+    walksAllowed: number | null
+  } | null
+}
+
+export interface CurrentProspectScouting {
+  source: 'FanGraphs'
+  reportSeason: number
+  asOf: string | null
+  organizationRank: number | null
+  overallRank: number | null
+  futureValue: string | null
+  futureValueRaw: string | null
+  eta: number | null
+  grades: Array<{
+    key: string
+    label: string
+    present: number | null
+    future: number | null
+  }>
 }
 
 export interface PlayerOpportunity {
@@ -528,6 +577,8 @@ export interface PlayerRecord {
   psScore: number | null
   psPercentile: number | null
   agePercentile?: number | null
+  currentMinorStats?: CurrentMinorStatsSnapshot | null
+  currentProspectScouting?: CurrentProspectScouting | null
   opportunity: PlayerOpportunity | null
   metrics: ObservedMetric[]
   coverage: PlayerCoverage
@@ -606,7 +657,7 @@ export interface PlayersResponseMeta {
     minors: boolean
     recentCallups?: boolean
   }
-  playerMapVersion?: 'oracle-player-map/v1' | 'oracle-player-map/v2'
+  playerMapVersion?: 'oracle-player-map/v1' | 'oracle-player-map/v2' | 'oracle-player-map/v3'
   playerMapCoverage?: number
   matchingPlayerCount?: number
   matchingMappedCount?: number
@@ -704,7 +755,7 @@ export interface PlayerFacetOption {
 }
 
 export interface PlayerMapFeedResponseMeta extends PlayersResponseMeta {
-  playerMapVersion: 'oracle-player-map/v2'
+  playerMapVersion: 'oracle-player-map/v3'
   playerMapCoverage: number
   matchingPlayerCount: number
   matchingMappedCount: number
@@ -742,11 +793,15 @@ export interface PlayerMapFeedItem {
     organizationCode: string | null
     position: string | null
   }
+  currentEvidence: {
+    minorStats: CurrentMinorStatsSnapshot | null
+    prospectScouting: CurrentProspectScouting | null
+  }
   assessment: PlayerMapProfile
 }
 
 export interface PlayerMapFeedResponse {
-  schemaVersion: 'player-map-feed.v3'
+  schemaVersion: 'player-map-feed.v4'
   items: PlayerMapFeedItem[]
   page: PlayersPage
   meta: PlayerMapFeedResponseMeta

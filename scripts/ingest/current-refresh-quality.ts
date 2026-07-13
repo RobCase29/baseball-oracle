@@ -1,7 +1,9 @@
 import type { ProspectSavantSlice } from './prospect-savant.js'
+import type { MlbStatsApiMilbSlice } from './mlb-statsapi-milb.js'
 
 export const PROSPECT_SAVANT_CURRENT_MINIMUM_ROWS = 100
 export const BASEBALL_REFERENCE_CURRENT_MINIMUM_ROWS = 200
+export const MLB_STATSAPI_MILB_CURRENT_MINIMUM_ROWS = 50
 export const CURRENT_REFRESH_MINIMUM_PREVIOUS_RETENTION = 0.6
 
 export interface CurrentRefreshCardinalityGate {
@@ -78,6 +80,26 @@ export function assertBaseballReferenceCurrentCardinality(
     throw new Error(
       `Baseball-Reference ${season} ${side} returned ${observedRows} rows; ` +
         `current refresh requires at least ${gate.requiredRows}` +
+        (previousRows === null ? '' : ` after ${previousRows} rows previously`),
+    )
+  }
+  return gate
+}
+
+export function assertMlbStatsApiMilbCurrentCardinality(
+  observedRows: number,
+  slice: MlbStatsApiMilbSlice,
+  previousRows: number | null,
+): CurrentRefreshCardinalityGate {
+  const gate = cardinalityGate(
+    observedRows,
+    MLB_STATSAPI_MILB_CURRENT_MINIMUM_ROWS,
+    previousRows,
+  )
+  if (observedRows < gate.requiredRows) {
+    throw new Error(
+      `MLB StatsAPI ${slice.season} ${slice.level} ${slice.role} returned ` +
+        `${observedRows} rows; current refresh requires at least ${gate.requiredRows}` +
         (previousRows === null ? '' : ` after ${previousRows} rows previously`),
     )
   }

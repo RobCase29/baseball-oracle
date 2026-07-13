@@ -29,6 +29,10 @@ import {
   stageLabel,
 } from '../lib/forecast'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
+import {
+  bestCurrentScoutingGrade,
+  currentMinorSlashLine,
+} from './currentMinorView'
 import { careerIndexFor, plainPlayerState, playerMapFor } from './playerMapView'
 import {
   formatRookieWar,
@@ -582,6 +586,7 @@ function ProspectCareerOutlookPanel({
   forecast: CareerForecast
 }) {
   const debutAge = forecast.decomposition.estimatedDebutAge
+  const conditionalCareer = forecast.finalCareerWarConditionalOnArrival ?? null
 
   return (
     <section className="dossier-section prospect-career-outlook" aria-labelledby="prospect-career-title">
@@ -592,7 +597,7 @@ function ProspectCareerOutlookPanel({
         </div>
       </div>
       <p className="career-chapter-note">
-        The projection carries {player.name}&apos;s expected MLB arrival age into the career outlook. A later arrival leaves fewer prime seasons to build career value.
+        Arrival and career ceiling are separate. The career outlook below describes {player.name}&apos;s modeled career if he reaches MLB; a later arrival leaves fewer prime seasons to build value.
       </p>
       <div className="forecast-metrics career-forecast-metrics" aria-label="Prospect career outlook summary">
         <div className="metric-tile">
@@ -601,27 +606,90 @@ function ProspectCareerOutlookPanel({
           <small>Age at arrival is an explicit career-ceiling input</small>
         </div>
         <div className="metric-tile">
-          <span className="metric-label">MIDDLE CAREER WAR</span>
-          <strong className="metric-number">{formatWar(forecast.finalCareerWar?.p50 ?? null)}</strong>
-          <small>Includes paths where the player does not establish an MLB career</small>
+          <span className="metric-label">IF MLB: MIDDLE CAREER WAR</span>
+          <strong className="metric-number">{formatWar(conditionalCareer?.p50 ?? null)}</strong>
+          <small>Conditional on reaching the major leagues</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">HIGH CAREER CASE</span>
-          <strong className="metric-number">{formatWar(forecast.finalCareerWar?.p90 ?? null)}</strong>
-          <small>90th-percentile research outcome, not a guarantee</small>
+          <strong className="metric-number">{formatWar(conditionalCareer?.p90 ?? null)}</strong>
+          <small>90th-percentile career WAR if MLB is reached</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">MLB WITHIN 3 YEARS</span>
           <strong className="metric-number">{formatProbability(forecast.arrivalProbability36)}</strong>
-          <small>Separate arrival estimate feeding the career bridge</small>
+          <small>Separate from the conditional career ceiling</small>
         </div>
       </div>
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
           <strong>Research bridge, not a finished career simulation</strong>
-          <span>The model connects MLB arrival and projected debut age to historical career outcomes. Early MLB quality and year-by-year aging remain the next model upgrade.</span>
+          <span>The model connects projected debut age to historical MLB career outcomes. Current minor-league evidence and scouting are shown separately until an in-season update model clears out-of-time testing.</span>
         </div>
+      </div>
+    </section>
+  )
+}
+
+function CurrentMinorEvidencePanel({ player }: { player: PlayerRecord }) {
+  const stats = player.currentMinorStats ?? null
+  const scouting = player.currentProspectScouting ?? null
+  if (!stats && !scouting) return null
+
+  const bestGrade = bestCurrentScoutingGrade(player)
+  const slashLine = currentMinorSlashLine(player)
+  const scoutingRank = scouting?.organizationRank !== null && scouting?.organizationRank !== undefined
+    ? `#${scouting.organizationRank}`
+    : scouting?.overallRank !== null && scouting?.overallRank !== undefined
+      ? `#${scouting.overallRank} overall`
+      : '--'
+  const pitchingLine = stats?.pitching
+    ? `${stats.pitching.era?.toFixed(2) ?? '--'} ERA · ${stats.pitching.whip?.toFixed(2) ?? '--'} WHIP`
+    : null
+
+  return (
+    <section className="dossier-section current-minor-evidence" aria-labelledby="current-minor-evidence-title">
+      <div className="section-heading-row">
+        <div>
+          <span className="eyebrow">LIVE PROSPECT EVIDENCE</span>
+          <h2 id="current-minor-evidence-title">Current season and scouting</h2>
+        </div>
+        <TrendingUp size={18} aria-hidden="true" />
+      </div>
+      <div className="forecast-metrics current-minor-evidence-grid">
+        {scouting ? (
+          <div className="metric-tile">
+            <span className="metric-label">FANGRAPHS ORGANIZATION RANK</span>
+            <strong className="metric-number">{scoutingRank}</strong>
+            <small>{scouting.futureValue ? `${scouting.futureValue} future-value grade` : 'Current scouting report'}{scouting.eta ? ` · ETA ${scouting.eta}` : ''}</small>
+          </div>
+        ) : null}
+        {bestGrade ? (
+          <div className="metric-tile">
+            <span className="metric-label">BEST SCOUTING GRADE</span>
+            <strong className="metric-number">{bestGrade.value}</strong>
+            <small>{bestGrade.label}</small>
+          </div>
+        ) : null}
+        {stats ? (
+          <div className="metric-tile">
+            <span className="metric-label">OFFICIAL {stats.season} WORKLOAD</span>
+            <strong className="metric-number">{stats.opportunity.value} {stats.opportunity.label}</strong>
+            <small>{stats.levelsObserved.join(', ') || stats.currentLevel || stats.highestObservedLevel || 'Minor leagues'}</small>
+          </div>
+        ) : null}
+        {stats && (slashLine || pitchingLine) ? (
+          <div className="metric-tile">
+            <span className="metric-label">OFFICIAL PERFORMANCE</span>
+            <strong className="metric-text">{slashLine ?? pitchingLine}</strong>
+            <small>
+              {stats.hitting
+                ? `${stats.hitting.walks ?? '--'} BB · ${stats.hitting.strikeouts ?? '--'} K · ${stats.hitting.stolenBases ?? '--'} SB`
+                : `${stats.pitching?.strikeouts ?? '--'} K · ${stats.pitching?.walksAllowed ?? '--'} BB`}
+            </small>
+          </div>
+        ) : null}
       </div>
     </section>
   )
@@ -659,8 +727,8 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
         </div>
         <div className="metric-tile">
           <span className="metric-label">PROSPECT HIGH CASE</span>
-          <strong className="metric-number">{formatWar(priorForecast?.finalCareerWar?.p90 ?? null)}</strong>
-          <small>{prior ? '90th-percentile career WAR carried through the call-up' : 'Available after the prospect identity match is resolved'}</small>
+          <strong className="metric-number">{formatWar(priorForecast?.finalCareerWarConditionalOnArrival?.p90 ?? null)}</strong>
+          <small>{prior ? '90th-percentile career WAR, conditional on the now-confirmed MLB arrival' : 'Available after the prospect identity match is resolved'}</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">EARLY MLB READ</span>
@@ -1056,6 +1124,8 @@ export function PlayerDossier({
           </div>
         </section>
       )}
+
+      {player.stage === 'pre_debut' ? <CurrentMinorEvidencePanel player={player} /> : null}
 
       {player.stage === 'pre_debut' ? (
         <details className="advanced-model-details">

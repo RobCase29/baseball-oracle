@@ -5,11 +5,17 @@ import {
   ingestBaseballReferenceCurrentSeason,
   type BaseballReferenceCurrentResult,
 } from '../../scripts/ingest/baseball-reference-current.js'
-import { ingestFangraphsProspects } from '../../scripts/ingest/fangraphs-prospects.js'
+import { ingestFangraphsCurrentProspects } from '../../scripts/ingest/fangraphs-prospects.js'
 import {
   refreshCurrentMlbValueSnapshot,
+  refreshCurrentMilbTraditionalSnapshot,
   refreshPlayerDirectorySnapshot,
 } from '../../scripts/ingest/player-directory.js'
+import {
+  backfillMlbStatsApiMilb,
+  buildMlbStatsApiMilbSlices,
+  type MlbStatsApiMilbBackfillResult,
+} from '../../scripts/ingest/mlb-statsapi-milb.js'
 import {
   backfillProspectSavant,
   type ProspectSavantBackfillResult,
@@ -23,9 +29,10 @@ const jobKey = 'current-baseball-source-refresh-v1'
 export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 260_000
 export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
-  prospectSavant: 105_000,
-  baseballReference: 95_000,
-  fangraphs: 10_000,
+  prospectSavant: 90_000,
+  mlbStatsApi: 55_000,
+  baseballReference: 80_000,
+  fangraphs: 25_000,
 } as const
 
 export type RefreshRunStatus = 'succeeded' | 'partial' | 'failed'
@@ -41,16 +48,11 @@ interface RefreshSourceFailure<T> {
   result?: T
 }
 
-interface RefreshSourceNotConfigured {
-  status: 'not_configured'
-}
-
 type RefreshSourceResult<T> =
   | RefreshSourceSuccess<T>
   | RefreshSourceFailure<T>
-  | RefreshSourceNotConfigured
 
-type FangraphsRefreshResult = Awaited<ReturnType<typeof ingestFangraphsProspects>>
+type FangraphsRefreshResult = Awaited<ReturnType<typeof ingestFangraphsCurrentProspects>>
 
 export interface CurrentRefreshResult {
   season: number
@@ -59,9 +61,15 @@ export interface CurrentRefreshResult {
       standardLevels: number
       rookieLevel: number
     }
+    mlbStatsApi: {
+      standardLevels: number
+      rookieLevel: number
+    }
     baseballReference: number
+    fangraphs: number
   }
   prospectSavant: RefreshSourceResult<ProspectSavantBackfillResult>
+  mlbStatsApi: RefreshSourceResult<MlbStatsApiMilbBackfillResult>
   baseballReference: RefreshSourceResult<BaseballReferenceCurrentResult>
   fangraphs: RefreshSourceResult<FangraphsRefreshResult>
 }
@@ -69,22 +77,21 @@ export interface CurrentRefreshResult {
 export interface CurrentRefreshDependencies {
   backfillProspectSavant: typeof backfillProspectSavant
   refreshPlayerDirectorySnapshot: typeof refreshPlayerDirectorySnapshot
+  backfillMlbStatsApiMilb: typeof backfillMlbStatsApiMilb
+  refreshCurrentMilbTraditionalSnapshot: typeof refreshCurrentMilbTraditionalSnapshot
   ingestBaseballReferenceCurrentSeason: typeof ingestBaseballReferenceCurrentSeason
   refreshCurrentMlbValueSnapshot: typeof refreshCurrentMlbValueSnapshot
-  ingestFangraphsProspects: typeof ingestFangraphsProspects
+  ingestFangraphsCurrentProspects: typeof ingestFangraphsCurrentProspects
 }
-
-export type FangraphsRefreshConfiguration =
-  | { status: 'not_configured' }
-  | { status: 'configured'; url: string }
-  | { status: 'invalid'; error: { message: string } }
 
 const defaultDependencies: CurrentRefreshDependencies = {
   backfillProspectSavant,
   refreshPlayerDirectorySnapshot,
+  backfillMlbStatsApiMilb,
+  refreshCurrentMilbTraditionalSnapshot,
   ingestBaseballReferenceCurrentSeason,
   refreshCurrentMlbValueSnapshot,
-  ingestFangraphsProspects,
+  ingestFangraphsCurrentProspects,
 }
 
 export function baseballSeasonForDate(date: Date): number {
@@ -107,28 +114,14 @@ function safeError(error: unknown): { message: string } {
   return { message: error instanceof Error ? error.message : 'Unknown refresh error' }
 }
 
-export function currentFangraphsConfiguration(): FangraphsRefreshConfiguration {
-  const configured = process.env.FANGRAPHS_CURRENT_PROSPECTS_URL?.trim()
-  if (!configured) return { status: 'not_configured' }
-  try {
-    const url = new URL(configured)
-    const isFangraphsHost =
-      url.hostname === 'fangraphs.com' || url.hostname.endsWith('.fangraphs.com')
-    if (url.protocol !== 'https:' || !isFangraphsHost) {
-      throw new Error('FANGRAPHS_CURRENT_PROSPECTS_URL must be an HTTPS FanGraphs URL')
-    }
-    return { status: 'configured', url: url.toString() }
-  } catch (error) {
-    return { status: 'invalid', error: safeError(error) }
-  }
-}
-
 export function deriveRefreshRunStatus(
   result: CurrentRefreshResult,
 ): RefreshRunStatus {
   const requiredStatuses = [
     result.prospectSavant.status,
+    result.mlbStatsApi.status,
     result.baseballReference.status,
+    result.fangraphs.status,
   ]
   const successes = requiredStatuses.filter((status) => status === 'succeeded').length
   if (successes === requiredStatuses.length) return 'succeeded'
@@ -140,7 +133,12 @@ function aggregateError(
   result: CurrentRefreshResult,
 ): { sources: Record<string, { message: string }> } | null {
   const sources: Record<string, { message: string }> = {}
-  for (const source of ['prospectSavant', 'baseballReference'] as const) {
+  for (const source of [
+    'prospectSavant',
+    'mlbStatsApi',
+    'baseballReference',
+    'fangraphs',
+  ] as const) {
     const outcome = result[source]
     if (outcome.status === 'failed') sources[source] = outcome.error
   }
@@ -199,6 +197,24 @@ function assertProspectSavantComplete(
   }
 }
 
+function assertMlbStatsApiComplete(
+  result: MlbStatsApiMilbBackfillResult,
+  expectedSlices: number,
+): void {
+  const completed = result.stored + result.duplicates
+  if (
+    result.attempted !== expectedSlices ||
+    result.failures.length > 0 ||
+    result.inProgress > 0 ||
+    completed !== expectedSlices
+  ) {
+    throw new Error(
+      `MLB StatsAPI refresh completed ${completed} of ${expectedSlices} slices; ` +
+        `${result.failures.length} failed and ${result.inProgress} remain in progress`,
+    )
+  }
+}
+
 function assertBaseballReferenceComplete(result: BaseballReferenceCurrentResult): void {
   const incomplete = [result.batting, result.pitching]
     .filter((side) => side.status === 'in_progress')
@@ -212,7 +228,6 @@ function assertBaseballReferenceComplete(result: BaseballReferenceCurrentResult)
 
 export async function refreshCurrentSources(
   season: number,
-  fangraphsConfiguration: FangraphsRefreshConfiguration,
   dependencies: CurrentRefreshDependencies = defaultDependencies,
   options: {
     signal?: AbortSignal
@@ -227,25 +242,50 @@ export async function refreshCurrentSources(
   const slices = buildProspectSavantCurrentSlices(prospectSavantSeason).map((slice) => (
     slice.level === 'Rk' ? { ...slice, season: prospectSavantRookieSeason } : slice
   ))
+  const mlbStatsApiSlices = buildMlbStatsApiMilbSlices({
+    season: prospectSavantSeason,
+    rookieSeason: prospectSavantRookieSeason,
+  })
   const prospectSavantSignal = sourceDeadlineSignal(
     options.signal,
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
   )
-  const prospectSavant = await attemptSource(
-    () => dependencies.backfillProspectSavant({
-      slices,
-      delayMs: 250,
-      enforceCurrentCardinality: true,
-      signal: prospectSavantSignal,
-    }),
-    async (sourceResult) => {
-      assertProspectSavantComplete(sourceResult, slices.length)
-      prospectSavantSignal.throwIfAborted()
-      await dependencies.refreshPlayerDirectorySnapshot()
-    },
-    prospectSavantSignal,
+  const mlbStatsApiSignal = sourceDeadlineSignal(
     options.signal,
+    CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
   )
+  const [prospectSavant, mlbStatsApi] = await Promise.all([
+    attemptSource(
+      () => dependencies.backfillProspectSavant({
+        slices,
+        delayMs: 250,
+        enforceCurrentCardinality: true,
+        signal: prospectSavantSignal,
+      }),
+      async (sourceResult) => {
+        assertProspectSavantComplete(sourceResult, slices.length)
+        prospectSavantSignal.throwIfAborted()
+        await dependencies.refreshPlayerDirectorySnapshot()
+      },
+      prospectSavantSignal,
+      options.signal,
+    ),
+    attemptSource(
+      () => dependencies.backfillMlbStatsApiMilb({
+        slices: mlbStatsApiSlices,
+        delayMs: 100,
+        enforceCurrentCardinality: true,
+        signal: mlbStatsApiSignal,
+      }),
+      async (sourceResult) => {
+        mlbStatsApiSignal.throwIfAborted()
+        await dependencies.refreshCurrentMilbTraditionalSnapshot()
+        assertMlbStatsApiComplete(sourceResult, mlbStatsApiSlices.length)
+      },
+      mlbStatsApiSignal,
+      options.signal,
+    ),
+  ])
 
   const baseballReferenceSignal = sourceDeadlineSignal(
     options.signal,
@@ -268,29 +308,19 @@ export async function refreshCurrentSources(
     options.signal,
   )
 
-  let fangraphs: RefreshSourceResult<FangraphsRefreshResult>
-  if (fangraphsConfiguration.status === 'not_configured') {
-    fangraphs = { status: 'not_configured' }
-  } else if (fangraphsConfiguration.status === 'invalid') {
-    fangraphs = { status: 'failed', error: fangraphsConfiguration.error }
-  } else {
-    const fangraphsSignal = sourceDeadlineSignal(
-      options.signal,
-      CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs,
-    )
-    fangraphs = await attemptSource(
-      () => dependencies.ingestFangraphsProspects({
-        signal: fangraphsSignal,
-        url: fangraphsConfiguration.url,
-      }),
-      (sourceResult) => {
-        if (sourceResult.status === 'in_progress') {
-          throw new Error('FanGraphs refresh is still in progress')
-        }
-      },
-      fangraphsSignal,
-    )
-  }
+  const fangraphsSignal = sourceDeadlineSignal(
+    options.signal,
+    CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs,
+  )
+  const fangraphs = await attemptSource(
+    () => dependencies.ingestFangraphsCurrentProspects({
+      season,
+      signal: fangraphsSignal,
+    }),
+    () => undefined,
+    fangraphsSignal,
+    options.signal,
+  )
 
   return {
     season,
@@ -299,9 +329,15 @@ export async function refreshCurrentSources(
         standardLevels: prospectSavantSeason,
         rookieLevel: prospectSavantRookieSeason,
       },
+      mlbStatsApi: {
+        standardLevels: prospectSavantSeason,
+        rookieLevel: prospectSavantRookieSeason,
+      },
       baseballReference: season,
+      fangraphs: season,
     },
     prospectSavant,
+    mlbStatsApi,
     baseballReference,
     fangraphs,
   }
@@ -380,7 +416,6 @@ export default async function handler(
 
     result = await refreshCurrentSources(
       season,
-      currentFangraphsConfiguration(),
       defaultDependencies,
       { signal: refreshController.signal, prospectSavantRookieSeason },
     )

@@ -19,6 +19,19 @@ interface ResearchSourceSeed {
 
 const sources: ResearchSourceSeed[] = [
   {
+    slug: 'mlb-statsapi',
+    name: 'MLB StatsAPI',
+    ownerUrl: 'https://statsapi.mlb.com/',
+    datasetKey: 'current-milb-season-stats',
+    description: 'Official current-season affiliated Minor League Baseball traditional statistics and workload by level and player role.',
+    grain: 'One exact-MLBAM player, role, season, and MiLB sport-level split per requested StatsAPI slice.',
+    basis: 'MLB StatsAPI public endpoint subject to MLB terms of use',
+    evidenceUri: 'https://www.mlb.com/official-information/terms-of-use',
+    rawRedistribution: false,
+    commercialUse: false,
+    notes: 'Retain exact MLBAM identity and source provenance. Raw redistribution and commercial rights are not assumed; use is limited to internal research/modeling and derived display under the applicable MLB terms.',
+  },
+  {
     slug: 'fangraphs',
     name: 'FanGraphs',
     ownerUrl: 'https://www.fangraphs.com/',

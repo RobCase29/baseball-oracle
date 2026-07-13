@@ -188,8 +188,10 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
         <strong>{map.route === 'rookie' ? 'Evidence update, not a re-score.' : 'How to read it.'}</strong>
         <span>
           {map.route === 'rookie'
-            ? 'The Career Index and stage standing remain frozen from the prospect forecast. Current MLB performance changes the evidence read, not the index.'
-            : 'Career Index maps the middle, strong, and high projected career-WAR cases to one fixed historical value scale. It is not a probability, percentile, confidence score, or expected WAR.'}
+            ? 'The Career Index remains the pre-debut career ceiling conditional on reaching MLB. Arrival is now confirmed; current MLB performance changes the evidence read, not the frozen index.'
+            : map.route === 'milb'
+              ? 'Career Index maps the middle, strong, and high career-WAR cases if the player reaches MLB. Arrival confidence is a separate reading.'
+              : 'Career Index maps the middle, strong, and high projected career-WAR cases to one fixed historical value scale. It is not a probability, percentile, confidence score, or expected WAR.'}
         </span>
       </div>
 
@@ -279,7 +281,7 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
       <div className="player-map-disclosure">
         <strong>Three separate readings.</strong>
         <span>{map.route === 'milb'
-          ? 'Career Index describes projected career magnitude. Stage standing compares frozen prospect forecasts. Evidence describes current support and uncertainty. None is a card-value estimate or guarantee.'
+          ? 'Career Index describes career magnitude conditional on MLB arrival. Arrival confidence, stage standing, and current evidence remain separate. None is a card-value estimate or guarantee.'
           : map.route === 'rookie'
             ? 'Career Index and stage standing are the frozen prospect prior. MLB evidence refreshes daily and remains separate until a supported completed-season model takes over.'
             : 'Career Index describes projected career magnitude. Stage standing compares active MLB projections. Evidence describes model support. None is a Hall of Fame election probability, card-value estimate, or guarantee.'}</span>

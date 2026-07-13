@@ -56,6 +56,7 @@ describe('Player Map', () => {
       value: 9.7,
       scale: 'fixed_career_value_index',
       route: 'rookie',
+      basis: 'conditional_on_mlb_arrival',
       status: 'research',
       asOf: '2025-12-31',
       definition: CAREER_INDEX_DEFINITION,
@@ -77,6 +78,39 @@ describe('Player Map', () => {
       '2025-12-31',
       'withheld',
     )).toMatchObject({ value: null, status: 'withheld' })
+  })
+
+  it('keeps prospect arrival confidence separate from career magnitude if MLB is reached', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Luis Arana',
+      age: 18,
+      agePercentile: 99.6,
+      level: 'A',
+      careerForecast: {
+        asOf: '2025-12-31T00:00:00.000Z',
+        rank: 194,
+        hofCaliberProbability: 0.00234748,
+        confidenceScore: 0.25,
+        confidenceState: 'Low',
+        finalCareerWar: { p10: 0, p25: 0, p50: 0, p75: 0.001, p90: 0.002 },
+        finalCareerWarConditionalOnArrival: {
+          p10: -1.08,
+          p25: -0.27,
+          p50: 0.33,
+          p75: 10.17,
+          p90: 29.425,
+        },
+        decomposition: { estimatedDebutAge: 21 },
+      },
+    }), { minorUniverse: 6_412 })
+
+    expect(profile.careerIndex).toMatchObject({
+      value: 20.1,
+      basis: 'conditional_on_mlb_arrival',
+      status: 'research',
+    })
+    expect(profile.stageStanding).toMatchObject({ rank: 194, universe: 6_412 })
+    expect(profile.scores.trajectory).toMatchObject({ value: 99.6 })
   })
 
   it('withholds both index and standing when a forecast is explicitly withheld', () => {
@@ -198,6 +232,7 @@ describe('Player Map', () => {
         confidenceScore: 0.35,
         confidenceState: 'Low',
         finalCareerWar: { p10: 0, p25: 0, p50: 1, p75: 4, p90: 12 },
+        finalCareerWarConditionalOnArrival: { p10: 0, p25: 0, p50: 1, p75: 4, p90: 12 },
         decomposition: { estimatedDebutAge: 23 },
       },
       milbAlphaSignal: {
@@ -350,6 +385,7 @@ describe('Player Map', () => {
         confidenceScore: 0.25,
         confidenceState: 'Low',
         finalCareerWar: { p10: -0.76, p25: -0.33, p50: -0.04, p75: 0.36, p90: 3.04 },
+        finalCareerWarConditionalOnArrival: { p10: -0.76, p25: -0.33, p50: -0.04, p75: 0.36, p90: 3.04 },
         decomposition: { estimatedDebutAge: 28 },
       },
       minorTraitEvidence: {
@@ -509,6 +545,13 @@ describe('Player Map', () => {
           forecast: {
             confidenceState: 'Low',
             finalCareerWar: {
+              p10: -1.034,
+              p25: -0.355,
+              p50: 0,
+              p75: 2.494,
+              p90: 12.988,
+            },
+            finalCareerWarConditionalOnArrival: {
               p10: -1.034,
               p25: -0.355,
               p50: 0,

@@ -3,10 +3,10 @@ import {
   type PlayerHandlingProfile,
 } from './playerHandling.js'
 
-export const PLAYER_MAP_VERSION = 'oracle-player-map/v2' as const
-export const CAREER_INDEX_VERSION = 'career-index-war-v1' as const
+export const PLAYER_MAP_VERSION = 'oracle-player-map/v3' as const
+export const CAREER_INDEX_VERSION = 'career-index-war-v2' as const
 export const FROZEN_PROSPECT_FORECAST_UNIVERSE = 6_455 as const
-export const CAREER_INDEX_DEFINITION = 'Fixed career-value index from final-career WAR P50, P75, and P90 mapped to versioned WAR anchors; not a probability, percentile, confidence score, or expected WAR' as const
+export const CAREER_INDEX_DEFINITION = 'Fixed career-value index from final-career WAR P50, P75, and P90 mapped to versioned WAR anchors; prospect and Rookie Track values are conditional on MLB arrival, which is scored separately; not a probability, percentile, confidence score, or expected WAR' as const
 
 export const CAREER_INDEX_WAR_ANCHORS = [
   { war: 0, value: 0 },
@@ -110,6 +110,7 @@ export interface PlayerMapCareerIndex {
   value: number | null
   scale: 'fixed_career_value_index'
   route: PlayerMapRoute
+  basis: 'conditional_on_mlb_arrival' | 'current_mlb_terminal'
   status: 'research' | 'withheld'
   asOf: string | null
   definition: typeof CAREER_INDEX_DEFINITION
@@ -194,6 +195,7 @@ export interface PlayerMapInput {
   playerType: 'Hitter' | 'Pitcher' | 'Two-way'
   stage: 'pre_debut' | 'post_debut_minors' | 'recent_callup' | 'early_mlb' | 'established_mlb' | 'inactive'
   age: number | null
+  agePercentile?: number | null
   level: string | null
   metrics: PlayerMapInputMetric[]
   provenance: {
@@ -264,6 +266,13 @@ export interface PlayerMapInput {
       p75: number
       p90: number
     } | null
+    finalCareerWarConditionalOnArrival?: {
+      p10: number
+      p25: number
+      p50: number
+      p75: number
+      p90: number
+    } | null
     decomposition?: {
       estimatedDebutAge: number | null
     } | null
@@ -299,6 +308,13 @@ export interface PlayerMapInput {
         confidenceState: string
         lineage?: PlayerMapForecastLineage
         finalCareerWar?: {
+          p10: number
+          p25: number
+          p50: number
+          p75: number
+          p90: number
+        } | null
+        finalCareerWarConditionalOnArrival?: {
           p10: number
           p25: number
           p50: number
@@ -385,6 +401,19 @@ export function careerIndexValue(
   return Math.round(value * 10) / 10
 }
 
+export function careerIndexWarQuantiles(
+  route: PlayerMapRoute,
+  forecast: {
+    finalCareerWar?: CareerIndexWarQuantiles | null
+    finalCareerWarConditionalOnArrival?: CareerIndexWarQuantiles | null
+  } | null | undefined,
+): CareerIndexWarQuantiles | null {
+  if (!forecast) return null
+  return route === 'mlb'
+    ? forecast.finalCareerWar ?? null
+    : forecast.finalCareerWarConditionalOnArrival ?? null
+}
+
 export function buildCareerIndex(
   route: PlayerMapRoute,
   quantiles: CareerIndexWarQuantiles | null | undefined,
@@ -398,6 +427,7 @@ export function buildCareerIndex(
     value,
     scale: 'fixed_career_value_index',
     route,
+    basis: route === 'mlb' ? 'current_mlb_terminal' : 'conditional_on_mlb_arrival',
     status: value === null ? 'withheld' : 'research',
     asOf,
     definition: CAREER_INDEX_DEFINITION,
@@ -594,15 +624,18 @@ function buildMinorMap(
   const careerValue = ordinalPercentile(careerRank, careerUniverse)
   const careerIndex = buildCareerIndex(
     'milb',
-    career?.finalCareerWar,
+    careerIndexWarQuantiles('milb', career),
     career?.asOf ?? null,
     career?.publicationState,
     career?.lineage,
   )
   const estimatedDebutAge = career?.decomposition?.estimatedDebutAge ?? null
-  const ageValue = validPercentile(arrival?.ageContext?.youngerThanPercent)
-    ? arrival.ageContext.youngerThanPercent
-    : null
+  const liveAgeValue = validPercentile(player.agePercentile) ? player.agePercentile : null
+  const ageValue = liveAgeValue ?? (
+    validPercentile(arrival?.ageContext?.youngerThanPercent)
+      ? arrival.ageContext.youngerThanPercent
+      : null
+  )
   const bestTrait = strengths[0] ?? traitRows.toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
   const evidenceState = traits?.opportunity.state ?? 'unavailable'
   const dualConfirmed = arrival?.eligible === true && (careerValue ?? -1) >= 90
@@ -744,14 +777,16 @@ function buildMinorMap(
         scale: 'descriptive_percentile',
         status: estimatedDebutAge === null && ageValue === null ? 'withheld' : 'research',
         basis: estimatedDebutAge === null
-          ? arrival?.ageContext
+          ? liveAgeValue !== null
+            ? `Current age advantage at ${player.level ?? 'the observed level'} from the live minor-league source`
+            : arrival?.ageContext
             ? `Younger-than percentile among historical ${arrival.ageContext.priorLevel} role peers`
             : 'Historical role-level age context unavailable'
           : `Projected debut age ${estimatedDebutAge}; later arrival leaves less time to build career value`,
         target: 'estimated_mlb_debut_age',
         rank: null,
-        universe: arrival?.ageContext?.referencePlayers ?? null,
-        asOf: arrival?.asOf ?? null,
+        universe: liveAgeValue === null ? arrival?.ageContext?.referencePlayers ?? null : null,
+        asOf: liveAgeValue === null ? arrival?.asOf ?? null : player.provenance.retrievedAt,
       }),
       bestTrait: score({
         key: 'best_trait',
@@ -809,7 +844,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     : null
   const careerIndex = buildCareerIndex(
     'rookie',
-    prior?.forecast.finalCareerWar,
+    careerIndexWarQuantiles('rookie', prior?.forecast),
     prior?.asOf ?? null,
     prior?.forecast.publicationState,
     prior?.forecast.lineage,
@@ -988,7 +1023,7 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
   const forecastSupported = forecast !== null && forecast.publicationState !== 'withheld'
   const careerIndex = buildCareerIndex(
     'mlb',
-    forecast?.finalCareerWar,
+    careerIndexWarQuantiles('mlb', forecast),
     forecast?.asOf ?? null,
     forecast?.publicationState,
     forecast?.lineage,

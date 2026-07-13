@@ -158,11 +158,15 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       position: player.position ?? player.playerType,
       level: player.level ?? 'Level unavailable',
       age: player.age,
-      ageAdvantage: validPercentile(ageContext?.youngerThanPercent)
-        ? ageContext.youngerThanPercent
+      ageAdvantage: validPercentile(map.scores.trajectory.value)
+        ? map.scores.trajectory.value
         : null,
-      ageCohort: ageContext?.priorLevel ?? player.level ?? null,
-      ageReferencePlayers: validNonNegative(ageContext?.referencePlayers)
+      ageCohort: validPercentile(player.agePercentile)
+        ? player.level
+        : ageContext?.priorLevel ?? player.level ?? null,
+      ageReferencePlayers: validPercentile(player.agePercentile)
+        ? null
+        : validNonNegative(ageContext?.referencePlayers)
         ? ageContext.referencePlayers
         : null,
       evidenceCoverage,
@@ -315,13 +319,17 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
   }
 
   const ageContext = player.milbAlphaSignal?.ageContext
-  if (ageContext && validPercentile(ageContext.youngerThanPercent)) {
+  const liveAgePercentile = validPercentile(player.agePercentile) ? player.agePercentile : null
+  if (liveAgePercentile !== null || (ageContext && validPercentile(ageContext.youngerThanPercent))) {
+    const value = liveAgePercentile ?? ageContext!.youngerThanPercent
     rows.push({
       id: 'age-context',
       label: 'Age advantage',
-      value: ageContext.youngerThanPercent,
+      value,
       kind: 'age_context',
-      detail: `Younger than ${ageContext.youngerThanPercent.toFixed(0)}% of ${ageContext.referencePlayers.toLocaleString()} historical ${ageContext.role}s at ${ageContext.priorLevel}`,
+      detail: liveAgePercentile !== null
+        ? `Current live age advantage at ${player.level ?? 'the observed level'}`
+        : `Younger than ${ageContext!.youngerThanPercent.toFixed(0)}% of ${ageContext!.referencePlayers.toLocaleString()} historical ${ageContext!.role}s at ${ageContext!.priorLevel}`,
     })
   }
 

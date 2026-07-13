@@ -305,6 +305,7 @@ const forecast: CareerForecast = {
   rank: 7,
   hofCaliberProbability: 0.081,
   finalCareerWar: { p10: 3, p25: 10, p50: 24, p75: 42, p90: 65 },
+  finalCareerWarConditionalOnArrival: { p10: 3, p25: 10, p50: 24, p75: 42, p90: 65 },
   peakSevenWar: { p10: 2, p25: 7, p50: 16, p75: 28, p90: 41 },
   finalJaws: null,
   scenarioSupportExtensionJaws: 2.4,
@@ -481,7 +482,7 @@ describe('unified Oracle Board shell', () => {
     ])
     expect(screen.getByLabelText('Career Index 61.1')).toBeInTheDocument()
     expect(screen.getByText('24.0')).toBeInTheDocument()
-    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
+    expect(screen.getByText('If MLB: middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
     expect(screen.getByText('Not confirmed')).toBeInTheDocument()
     expect(screen.getByText('Identity only')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Landscape' })).not.toBeInTheDocument()
@@ -551,6 +552,7 @@ describe('unified Oracle Board shell', () => {
             ...forecast,
             rank: 167,
             finalCareerWar: { p10: 0.2, p25: 1.5, p50: 4.8, p75: 8.4, p90: 13 },
+            finalCareerWarConditionalOnArrival: { p10: 0.2, p25: 1.5, p50: 4.8, p75: 8.4, p90: 13 },
           },
         },
         currentMlbEvidence: {
@@ -582,7 +584,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('#167')).toBeInTheDocument()
     expect(screen.getByText('Top 2.6% of 6,455 frozen prospect priors')).toBeInTheDocument()
     expect(screen.getByText('4.8')).toBeInTheDocument()
-    expect(screen.getByText('Middle career WAR · high case 13.0')).toBeInTheDocument()
+    expect(screen.getByText('If MLB: middle career WAR · high case 13.0')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
     expect(screen.getByText('1.0 WAR · P73 · 172 PA')).toBeInTheDocument()
     expect(screen.getByText('Building evidence')).toBeInTheDocument()
@@ -762,7 +764,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('#7')).toBeInTheDocument()
     expect(screen.getByText('Top 0.11% of 6,455 frozen prospect forecasts')).toBeInTheDocument()
     expect(screen.getByText('24.0')).toBeInTheDocument()
-    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
+    expect(screen.getByText('If MLB: middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
     expect(screen.getByText('Arrival rank #5')).toBeInTheDocument()
     expect(screen.getByText('Identity only')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Ceiling & age advantage' })).not.toBeInTheDocument()
@@ -838,7 +840,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('#258')).toBeInTheDocument()
     expect(screen.getByText('Top 4.0% of 6,455 frozen prospect forecasts')).toBeInTheDocument()
     expect(screen.getByText('24.0')).toBeInTheDocument()
-    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age 23')).toBeInTheDocument()
+    expect(screen.getByText('If MLB: middle career WAR · high case 65.0 · arrival age 23')).toBeInTheDocument()
     expect(screen.getByText('Not confirmed')).toBeInTheDocument()
     expect(screen.getByText('2 / 4 data areas')).toBeInTheDocument()
     expect(screen.queryByText('Not ranked')).not.toBeInTheDocument()
@@ -852,7 +854,7 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Projected career outlook' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career ceiling if MLB is reached' })).toBeInTheDocument()
     expect(screen.getByText(/A Career Index of 61\.1 summarizes Aiva Arquette's modeled career magnitude/u)).toBeInTheDocument()
     expect(screen.getByText('Not yet confirmed')).toBeInTheDocument()
     expect(screen.getAllByText('Age 23').length).toBeGreaterThan(0)
@@ -934,7 +936,7 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Prospect career projection' })).toBeInTheDocument()
-    expect(screen.getByText(/expected MLB arrival age into the career outlook/u)).toBeInTheDocument()
+    expect(screen.getByText(/Arrival and career ceiling are separate/u)).toBeInTheDocument()
     expect(screen.getByText('HIGH CAREER CASE')).toBeInTheDocument()
     expect(screen.getByText('Research bridge, not a finished career simulation')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()

@@ -3,10 +3,13 @@ import { pathToFileURL } from 'node:url'
 import postgres from 'postgres'
 import { directDatabaseUrl } from '../../db/client.js'
 import {
+  assertFangraphsCurrentEnvelope,
+  buildFangraphsCurrentProspectsUrl,
   fetchWithRetry,
   PARSER_VERSION,
   parseFangraphsEnvelope,
   sourceRecordKey,
+  type FangraphsCurrentStatsRole,
 } from './fangraphs.js'
 import { persistRawLanding } from './raw-landing.js'
 import {
@@ -27,7 +30,10 @@ const defaultUrl =
   'https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2,4,5,6,7,8,9,10,11,14,12,13,15,16,17,18,30,32,33&stats=bat&qual=0&type=0&team=&season=2021&seasonend=2021&draft=2022prospect&valueheader=prospect-new&quickleaderboard=2021all'
 
 export interface IngestFangraphsProspectsOptions {
+  enforceCurrentCardinality?: boolean
+  season?: number
   signal?: AbortSignal
+  statsRole?: FangraphsCurrentStatsRole
   url?: string
 }
 
@@ -36,6 +42,26 @@ export interface IngestFangraphsProspectsResult {
   responseHash: string
   scoutRows: number
   statsRows: number
+}
+
+export interface IngestFangraphsCurrentProspectsOptions {
+  season: number
+  signal?: AbortSignal
+}
+
+export interface IngestFangraphsCurrentProspectsResult {
+  batting: IngestFangraphsProspectsResult
+  pitching: IngestFangraphsProspectsResult
+  season: number
+  snapshotRows: number
+}
+
+export interface FangraphsCurrentSnapshotAudit {
+  battingExactMlbamRows: number
+  battingRows: number
+  pitchingExactMlbamRows: number
+  pitchingRows: number
+  totalRows: number
 }
 
 function argument(name: string): string | null {
@@ -56,14 +82,27 @@ export async function ingestFangraphsProspects(
   options: IngestFangraphsProspectsOptions = {},
 ): Promise<IngestFangraphsProspectsResult> {
   options.signal?.throwIfAborted()
+  if ((options.season === undefined) !== (options.statsRole === undefined)) {
+    throw new Error('Current FanGraphs ingestion requires both season and statsRole')
+  }
+  const currentUrl = options.season !== undefined && options.statsRole !== undefined
+    ? buildFangraphsCurrentProspectsUrl(options.season, options.statsRole)
+    : null
   const url = normalizeRequestUrl(
-    options.url ?? process.env.FANGRAPHS_PROSPECTS_URL ?? defaultUrl,
+    options.url ?? currentUrl ?? process.env.FANGRAPHS_PROSPECTS_URL ?? defaultUrl,
   )
   const response = await fetchWithRetry(url, 3, options.signal)
   const body = await response.text()
   options.signal?.throwIfAborted()
   const fetchedAt = new Date()
   const envelope = parseFangraphsEnvelope(body)
+  if (options.season !== undefined && options.statsRole !== undefined) {
+    assertFangraphsCurrentEnvelope(envelope, {
+      enforceCardinality: options.enforceCurrentCardinality,
+      season: options.season,
+      statsRole: options.statsRole,
+    })
+  }
   const responseHash = sha256(body)
   const scoutKeys = uniqueRecordKeys(envelope.dataScout, 'scout')
   const statsKeys = uniqueRecordKeys(envelope.dataStats, 'stats')
@@ -97,9 +136,18 @@ export async function ingestFangraphsProspects(
       sourceSlug: 'fangraphs',
       datasetKey: 'prospect-board',
       idempotencyKey: idempotencyKey(url, responseHash),
-      mode: 'historical_snapshot',
+      mode: options.season === undefined ? 'historical_snapshot' : 'current_snapshot',
       parserVersion: PARSER_VERSION,
-      parameters: { request: sanitizedRequest(url) },
+      parameters: {
+        request: sanitizedRequest(url),
+        ...(options.season === undefined || options.statsRole === undefined
+          ? {}
+          : {
+              refreshScope: 'current_prospect_board',
+              season: options.season,
+              statsRole: options.statsRole,
+            }),
+      },
       counts,
       fetchedAt,
       request: {
@@ -130,6 +178,99 @@ export async function ingestFangraphsProspects(
   } finally {
     await sql.end({ timeout: 5 })
   }
+}
+
+export function assertFangraphsCurrentSnapshot(
+  audit: FangraphsCurrentSnapshotAudit | undefined,
+): void {
+  if (!audit) throw new Error('Current FanGraphs scouting snapshot audit returned no result')
+  if (audit.battingRows < 250 || audit.pitchingRows < 250) {
+    throw new Error(
+      `Current FanGraphs scouting snapshot is undersized: ` +
+        `${audit.battingRows} batting and ${audit.pitchingRows} pitching rows`,
+    )
+  }
+  if (audit.battingExactMlbamRows < 200 || audit.pitchingExactMlbamRows < 200) {
+    throw new Error(
+      `Current FanGraphs scouting snapshot lacks exact MLBAM coverage: ` +
+        `${audit.battingExactMlbamRows} batting and ` +
+        `${audit.pitchingExactMlbamRows} pitching rows`,
+    )
+  }
+}
+
+export async function refreshFangraphsCurrentScoutingSnapshot(
+  season: number,
+): Promise<number> {
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
+  try {
+    return await sql.begin(async (transaction) => {
+      await transaction`
+        REFRESH MATERIALIZED VIEW app.fangraphs_current_scouting_snapshot
+      `
+      const [audit] = await transaction<{
+        batting_exact_mlbam_rows: number
+        batting_rows: number
+        pitching_exact_mlbam_rows: number
+        pitching_rows: number
+        total_rows: number
+      }[]>`
+        SELECT
+          count(*)::integer AS total_rows,
+          count(*) FILTER (WHERE source_role = 'Hitter')::integer AS batting_rows,
+          count(*) FILTER (WHERE source_role = 'Pitcher')::integer AS pitching_rows,
+          count(*) FILTER (
+            WHERE source_role = 'Hitter' AND mlbam_id IS NOT NULL
+          )::integer AS batting_exact_mlbam_rows,
+          count(*) FILTER (
+            WHERE source_role = 'Pitcher' AND mlbam_id IS NOT NULL
+          )::integer AS pitching_exact_mlbam_rows
+        FROM app.fangraphs_current_scouting_snapshot
+        WHERE report_season = ${season}
+      `
+      const normalizedAudit = audit
+        ? {
+            battingExactMlbamRows: audit.batting_exact_mlbam_rows,
+            battingRows: audit.batting_rows,
+            pitchingExactMlbamRows: audit.pitching_exact_mlbam_rows,
+            pitchingRows: audit.pitching_rows,
+            totalRows: audit.total_rows,
+          }
+        : undefined
+      assertFangraphsCurrentSnapshot(normalizedAudit)
+      return normalizedAudit?.totalRows ?? 0
+    })
+  } finally {
+    await sql.end({ timeout: 5 })
+  }
+}
+
+export async function ingestFangraphsCurrentProspects(
+  options: IngestFangraphsCurrentProspectsOptions,
+): Promise<IngestFangraphsCurrentProspectsResult> {
+  options.signal?.throwIfAborted()
+  const batting = await ingestFangraphsProspects({
+    enforceCurrentCardinality: true,
+    season: options.season,
+    signal: options.signal,
+    statsRole: 'bat',
+  })
+  options.signal?.throwIfAborted()
+  const pitching = await ingestFangraphsProspects({
+    enforceCurrentCardinality: true,
+    season: options.season,
+    signal: options.signal,
+    statsRole: 'pit',
+  })
+  options.signal?.throwIfAborted()
+
+  if (batting.status === 'in_progress' || pitching.status === 'in_progress') {
+    throw new Error('Current FanGraphs refresh is still in progress')
+  }
+
+  const snapshotRows = await refreshFangraphsCurrentScoutingSnapshot(options.season)
+  options.signal?.throwIfAborted()
+  return { batting, pitching, season: options.season, snapshotRows }
 }
 
 async function runCli(): Promise<void> {

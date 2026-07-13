@@ -25,9 +25,10 @@ GET /api/players?view=map&stage=All&sort=name&limit=100&page=1
 Continue until `page.totalPages` is reached. The full product response remains the
 default when `view` is omitted. This MVP feed is intended for a daily server-to-
 server pull. It does not yet provide immutable cursors or incremental changes.
-Compact responses use schema version `player-map-feed.v3`; the normative schema
+Compact responses use schema version `player-map-feed.v4`; the normative schema
 is published at
-[`/schemas/player-map-feed.v3.schema.json`](https://baseball-oracle.vercel.app/schemas/player-map-feed.v3.schema.json).
+[`/schemas/player-map-feed.v4.schema.json`](https://baseball-oracle.vercel.app/schemas/player-map-feed.v4.schema.json).
+The v3 schema remains published for existing consumers, but new responses use v4.
 
 For an explicit cross-stage Career Index order, request:
 
@@ -50,11 +51,14 @@ The compact feed contains:
   emitting a potentially rounded identifier. MLBAM is the preferred cross-
   product join key.
 - `context`: active career stage, role, organization, position, level, and age.
+- `currentEvidence`: exact-ID official MiLB season totals and current FanGraphs
+  scouting evidence. These fields remain separate from model scores.
 - `assessment`: the universal Player Map vector, state, evidence, flags, target,
   comparison universe, version, and as-of dates.
 - `assessment.careerIndex`: the primary fixed-scale career-value magnitude
-  signal, including version, route, research status, definition, forecast
-  model/target/data/provider lineage, and as-of date.
+  signal, including version, route, basis, research status, definition, forecast
+  model/target/data/provider lineage, and as-of date. Prospect and Rookie Track
+  values are conditional on MLB arrival; arrival confidence remains separate.
 - `assessment.stageStanding`: versioned exact stage rank, metric, target,
   methodology, direction, declared comparison universe, top-share percentage,
   tail band, cohort, scope, and as-of date. It explicitly declares that it is not

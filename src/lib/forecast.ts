@@ -7,7 +7,7 @@ import type {
   PlayerStage,
   StageFilter,
 } from '../domain/forecast'
-import { careerIndexValue } from '../domain/playerMap'
+import { careerIndexValue, careerIndexWarQuantiles } from '../domain/playerMap'
 
 function compareNullableNumber(
   left: number | null,
@@ -122,12 +122,21 @@ export function oracleOutcomeRank(player: PlayerRecord): number | null {
     : player.careerForecast?.rank ?? null
 }
 
-function playerCareerIndex(player: PlayerRecord): number | null {
+export function careerWarForPlayer(player: PlayerRecord) {
   const forecast = player.stage === 'recent_callup'
     ? player.recentCallup?.prospectPrior?.forecast
     : player.careerForecast
   if (forecast?.publicationState === 'withheld') return null
-  return careerIndexValue(forecast?.finalCareerWar)
+  const route = player.stage === 'recent_callup'
+    ? 'rookie'
+    : player.stage === 'pre_debut' || player.stage === 'post_debut_minors'
+      ? 'milb'
+      : 'mlb'
+  return careerIndexWarQuantiles(route, forecast)
+}
+
+function playerCareerIndex(player: PlayerRecord): number | null {
+  return careerIndexValue(careerWarForPlayer(player))
 }
 
 export function filterAndSortPlayers(
@@ -222,8 +231,8 @@ export function filterAndSortPlayers(
       if (filters.sort === 'finalWar') {
         return (
           compareNullableNumber(
-            left.careerForecast?.finalCareerWar?.p50 ?? null,
-            right.careerForecast?.finalCareerWar?.p50 ?? null,
+            careerWarForPlayer(left)?.p50 ?? null,
+            careerWarForPlayer(right)?.p50 ?? null,
             'descending',
           ) || left.id.localeCompare(right.id)
         )
@@ -236,8 +245,8 @@ export function filterAndSortPlayers(
           'descending',
         ) ||
         compareNullableNumber(
-          left.careerForecast?.finalCareerWar?.p50 ?? null,
-          right.careerForecast?.finalCareerWar?.p50 ?? null,
+          careerWarForPlayer(left)?.p50 ?? null,
+          careerWarForPlayer(right)?.p50 ?? null,
           'descending',
         ) ||
         left.id.localeCompare(right.id)

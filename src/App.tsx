@@ -154,7 +154,7 @@ function isPlayerMapFeedResponse(value: unknown): value is PlayerMapFeedResponse
   if (typeof value !== 'object' || value === null) return false
   return (
     'schemaVersion' in value &&
-    value.schemaVersion === 'player-map-feed.v3' &&
+    value.schemaVersion === 'player-map-feed.v4' &&
     'items' in value &&
     Array.isArray(value.items) &&
     'page' in value &&

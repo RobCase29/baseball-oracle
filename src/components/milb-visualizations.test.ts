@@ -103,6 +103,7 @@ function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
       confidenceScore: 0.35,
       confidenceState: 'Low',
       finalCareerWar: { p10: 0, p25: 0, p50: 1, p75: 5, p90: 15 },
+      finalCareerWarConditionalOnArrival: { p10: 0, p25: 0, p50: 1, p75: 5, p90: 15 },
       decomposition: { estimatedDebutAge: 21 },
     } as PlayerRecord['careerForecast'],
     ...overrides,
@@ -245,6 +246,7 @@ describe('MiLB decision visualizations', () => {
         organizationCode: player.organizationCode,
         position: player.position,
       },
+      currentEvidence: { minorStats: null, prospectScouting: null },
       assessment: playerMapFor(player),
     }
 

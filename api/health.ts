@@ -71,6 +71,7 @@ const currentRefreshJobKey = 'current-baseball-source-refresh-v1'
 const refreshSourceKeys = [
   'prospectSavant',
   'baseballReference',
+  'mlbStatsApi',
   'fangraphs',
 ] as const
 
@@ -109,6 +110,9 @@ function sourceKey(source: SourceRow): string | null {
   if (source.source === 'sports-reference' && source.dataset === 'baseball-player-records') {
     return 'baseballReference'
   }
+  if (source.source === 'mlb-statsapi' && source.dataset === 'current-milb-season-stats') {
+    return 'mlbStatsApi'
+  }
   if (source.source === 'fangraphs' && source.dataset === 'prospect-board') {
     return 'fangraphs'
   }
@@ -140,7 +144,8 @@ export default async function handler(
     const staticIdentityCrosswalk = requireMlbIdentityCrosswalk()
     const chadwickKeyMlbamLookup = requireChadwickKeyMlbamLookup()
     const [healthResult, directoryResult, sourceResult, prospectCoverageResult,
-      baseballReferenceCoverageResult, currentMlbIdentityResult, refreshResult,
+      mlbStatsApiCoverageResult, baseballReferenceCoverageResult,
+      fangraphsCoverageResult, currentMlbIdentityResult, refreshResult,
       identityOverlayResult] = await Promise.all([
       sql`
         SELECT
@@ -256,6 +261,60 @@ export default async function handler(
         HAVING count(*) > 0
       `,
       sql`
+        WITH successful_slice AS (
+          SELECT DISTINCT ON (
+            (run.parameters #>> '{slice,season}')::integer,
+            run.parameters #>> '{slice,role}',
+            run.parameters #>> '{slice,level}'
+          )
+            (run.parameters #>> '{slice,season}')::integer AS season,
+            run.parameters #>> '{slice,role}' AS role,
+            run.parameters #>> '{slice,level}' AS level,
+            source_fetch.fetched_at
+          FROM raw.ingestion_run AS run
+          JOIN raw.fetch AS source_fetch ON source_fetch.run_id = run.id
+          JOIN catalog.dataset AS dataset ON dataset.id = run.dataset_id
+          JOIN catalog.source AS source ON source.id = dataset.source_id
+          WHERE source.slug = 'mlb-statsapi'
+            AND dataset.dataset_key = 'current-milb-season-stats'
+            AND run.status = 'succeeded'
+            AND run.parser_version = 'mlb-statsapi-milb-season-v1'
+            AND run.parameters #>> '{slice,role}' IN ('hitter', 'pitcher')
+            AND run.parameters #>> '{slice,level}' IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+            AND run.parameters #>> '{slice,season}' ~ '^[0-9]{4}$'
+          ORDER BY
+            (run.parameters #>> '{slice,season}')::integer,
+            run.parameters #>> '{slice,role}',
+            run.parameters #>> '{slice,level}',
+            source_fetch.fetched_at DESC,
+            source_fetch.id DESC
+        ),
+        complete_level_season AS (
+          SELECT season, level
+          FROM successful_slice
+          GROUP BY season, level
+          HAVING count(*) = 2
+        ),
+        selected_level_season AS (
+          SELECT DISTINCT ON (level) season, level
+          FROM complete_level_season
+          ORDER BY level, season DESC
+        ),
+        latest_level AS (
+          SELECT successful_slice.*
+          FROM successful_slice
+          JOIN selected_level_season USING (season, level)
+        )
+        SELECT
+          max(season)::integer AS season,
+          min(season)::integer AS minimum_season,
+          count(*)::text AS observed_slices,
+          min(fetched_at)::text AS oldest_slice_at,
+          max(fetched_at)::text AS newest_slice_at
+        FROM latest_level
+        HAVING count(*) > 0
+      `,
+      sql`
         WITH latest_side AS (
           SELECT DISTINCT ON (
             (run.parameters ->> 'season')::integer,
@@ -285,6 +344,54 @@ export default async function handler(
         FROM latest_side
         WHERE season = (SELECT max(season) FROM latest_side)
         GROUP BY season
+      `,
+      sql`
+        WITH successful_side AS (
+          SELECT DISTINCT ON (
+            (run.parameters ->> 'season')::integer,
+            run.parameters ->> 'statsRole'
+          )
+            (run.parameters ->> 'season')::integer AS season,
+            run.parameters ->> 'statsRole' AS side,
+            source_fetch.fetched_at
+          FROM raw.ingestion_run AS run
+          JOIN raw.fetch AS source_fetch ON source_fetch.run_id = run.id
+          JOIN catalog.dataset AS dataset ON dataset.id = run.dataset_id
+          JOIN catalog.source AS source ON source.id = dataset.source_id
+          WHERE source.slug = 'fangraphs'
+            AND dataset.dataset_key = 'prospect-board'
+            AND run.status = 'succeeded'
+            AND run.parser_version = 'fangraphs-prospect-board-v2'
+            AND run.parameters ->> 'refreshScope' = 'current_prospect_board'
+            AND run.parameters ->> 'statsRole' IN ('bat', 'pit')
+            AND run.parameters ->> 'season' ~ '^[0-9]{4}$'
+          ORDER BY
+            (run.parameters ->> 'season')::integer,
+            run.parameters ->> 'statsRole',
+            source_fetch.fetched_at DESC,
+            source_fetch.id DESC
+        ),
+        selected_season AS (
+          SELECT season
+          FROM successful_side
+          GROUP BY season
+          HAVING count(*) = 2
+          ORDER BY season DESC
+          LIMIT 1
+        ),
+        latest_side AS (
+          SELECT successful_side.*
+          FROM successful_side
+          JOIN selected_season USING (season)
+        )
+        SELECT
+          max(season)::integer AS season,
+          min(season)::integer AS minimum_season,
+          count(*)::text AS observed_slices,
+          min(fetched_at)::text AS oldest_slice_at,
+          max(fetched_at)::text AS newest_slice_at
+        FROM latest_side
+        HAVING count(*) > 0
       `,
       sql`
         SELECT bbref_id, mlbam_id
@@ -320,8 +427,12 @@ export default async function handler(
     const [health] = healthResult as unknown as HealthRow[]
     const [directory] = directoryResult as unknown as DirectoryRow[]
     const [prospectCoverage] = prospectCoverageResult as unknown as SliceCoverageRow[]
+    const [mlbStatsApiCoverage] =
+      mlbStatsApiCoverageResult as unknown as SliceCoverageRow[]
     const [baseballReferenceCoverage] =
       baseballReferenceCoverageResult as unknown as SliceCoverageRow[]
+    const [fangraphsCoverage] =
+      fangraphsCoverageResult as unknown as SliceCoverageRow[]
     const currentMlbIdentityRows =
       currentMlbIdentityResult as unknown as CurrentMlbIdentityRow[]
     const identityOverlayRows = identityOverlayResult as unknown as MlbIdentityOverlayRow[]
@@ -352,6 +463,17 @@ export default async function handler(
             : false,
         },
         {
+          key: 'mlbStatsApi',
+          required: true,
+          statsChangedAt:
+            mlbStatsApiCoverage?.newest_slice_at ??
+            sourceByRefreshKey.get('mlbStatsApi')?.last_changed_at ??
+            null,
+          coverageComplete: mlbStatsApiCoverage
+            ? Number(mlbStatsApiCoverage.observed_slices) === 10
+            : false,
+        },
+        {
           key: 'baseballReference',
           required: true,
           statsChangedAt:
@@ -364,9 +486,14 @@ export default async function handler(
         },
         {
           key: 'fangraphs',
-          required: false,
-          statsChangedAt: sourceByRefreshKey.get('fangraphs')?.last_changed_at ?? null,
-          coverageComplete: null,
+          required: true,
+          statsChangedAt:
+            fangraphsCoverage?.newest_slice_at ??
+            sourceByRefreshKey.get('fangraphs')?.last_changed_at ??
+            null,
+          coverageComplete: fangraphsCoverage
+            ? Number(fangraphsCoverage.observed_slices) === 2
+            : false,
         },
       ],
     })
@@ -459,6 +586,16 @@ export default async function handler(
                 newestSliceAt: prospectCoverage.newest_slice_at,
               }
             : null,
+          mlbStatsApi: mlbStatsApiCoverage
+            ? {
+                season: mlbStatsApiCoverage.season,
+                minimumSeason: mlbStatsApiCoverage.minimum_season,
+                observedSlices: Number(mlbStatsApiCoverage.observed_slices),
+                expectedSlices: 10,
+                oldestSliceAt: mlbStatsApiCoverage.oldest_slice_at,
+                newestSliceAt: mlbStatsApiCoverage.newest_slice_at,
+              }
+            : null,
           baseballReference: baseballReferenceCoverage
             ? {
                 season: baseballReferenceCoverage.season,
@@ -466,6 +603,15 @@ export default async function handler(
                 expectedSides: 2,
                 oldestSideAt: baseballReferenceCoverage.oldest_slice_at,
                 newestSideAt: baseballReferenceCoverage.newest_slice_at,
+              }
+            : null,
+          fangraphs: fangraphsCoverage
+            ? {
+                season: fangraphsCoverage.season,
+                observedSides: Number(fangraphsCoverage.observed_slices),
+                expectedSides: 2,
+                oldestSideAt: fangraphsCoverage.oldest_slice_at,
+                newestSideAt: fangraphsCoverage.newest_slice_at,
               }
             : null,
         },

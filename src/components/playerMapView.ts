@@ -1,6 +1,7 @@
 import type { PlayerRecord } from '../domain/forecast'
 import {
   buildPlayerMap,
+  CAREER_INDEX_VERSION,
   FROZEN_PROSPECT_FORECAST_UNIVERSE,
   PLAYER_MAP_VERSION,
   type PlayerMapCareerIndex,
@@ -132,7 +133,9 @@ export function playerMapFor(player: PlayerRecord): PlayerMapProfile {
     mappingStatus: rebuilt.mappingStatus,
     claimStatus: rebuilt.claimStatus,
     oracleScore,
-    careerIndex: existing.careerIndex ?? rebuilt.careerIndex,
+    careerIndex: existing.careerIndex?.version === CAREER_INDEX_VERSION
+      ? existing.careerIndex
+      : rebuilt.careerIndex,
     stageStanding: existing.stageStanding ?? rebuilt.stageStanding,
     careerIndexComparableAcrossRoutes: true,
     stageStandingComparableWithinStageOnly: true,
@@ -160,13 +163,15 @@ export function careerIndexFor(
   const outcomeLabel = isRookieTrack
     ? 'Prospect outlook carried into MLB'
     : map.route === 'milb'
-      ? 'Projected career outlook'
+      ? 'Career ceiling if MLB is reached'
       : 'Projected career magnitude'
   const explanation = value === null
     ? 'There is not enough matched model data to calculate a Career Index yet.'
     : isRookieTrack
-      ? `A frozen Career Index of ${indexDisplay(value)} preserves ${player.name}'s pre-debut career outlook while MLB evidence accumulates separately.`
-      : `A Career Index of ${indexDisplay(value)} summarizes ${player.name}'s modeled career magnitude from the middle, strong, and high career-WAR cases on one fixed historical scale.`
+      ? `A frozen Career Index of ${indexDisplay(value)} preserves ${player.name}'s pre-debut, conditional-on-arrival career outlook while MLB evidence accumulates separately.`
+      : map.route === 'milb'
+        ? `A Career Index of ${indexDisplay(value)} summarizes ${player.name}'s modeled career magnitude if he reaches MLB. Arrival confidence is shown separately.`
+        : `A Career Index of ${indexDisplay(value)} summarizes ${player.name}'s modeled career magnitude from the middle, strong, and high career-WAR cases on one fixed historical scale.`
 
   return {
     value,

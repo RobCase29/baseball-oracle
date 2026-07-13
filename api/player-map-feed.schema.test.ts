@@ -14,7 +14,7 @@ import {
 } from './players.js'
 
 const schema = JSON.parse(readFileSync(
-  new URL('../public/schemas/player-map-feed.v3.schema.json', import.meta.url),
+  new URL('../public/schemas/player-map-feed.v4.schema.json', import.meta.url),
   'utf8',
 )) as object
 const require = createRequire(import.meta.url)
@@ -46,6 +46,7 @@ function representativeResponse(): PlayerMapFeedResponse {
       providerVersion: null,
     },
     finalCareerWar: { p10: 1, p25: 4, p50: 12, p75: 28, p90: 52 },
+    finalCareerWarConditionalOnArrival: { p10: 1, p25: 4, p50: 12, p75: 28, p90: 52 },
     decomposition: { estimatedDebutAge: 24 },
     careerChapter: null,
     alphaSignal: null,
@@ -98,7 +99,7 @@ function representativeResponse(): PlayerMapFeedResponse {
   } as unknown as UnifiedBoardCandidate
 
   return {
-    schemaVersion: 'player-map-feed.v3',
+    schemaVersion: 'player-map-feed.v4',
     items: [item],
     page: { page: 1, limit: 50, total: 1, totalPages: 1 },
     meta: {
@@ -146,7 +147,7 @@ function representativeResponse(): PlayerMapFeedResponse {
   }
 }
 
-describe('player-map-feed.v3 JSON Schema', () => {
+describe('player-map-feed.v4 JSON Schema', () => {
   it('accepts a representative response produced by the compact feed serializers', () => {
     expect(schemaErrors(representativeResponse())).toEqual([])
   })
@@ -188,5 +189,29 @@ describe('player-map-feed.v3 JSON Schema', () => {
     expect(errors).toContain('/meta/ordering/field must be null')
     expect(errors).toContain('/meta/ordering/appliedSort must be equal to constant')
     expect(errors).toContain('/meta/ordering/legacyAliasUsed must be equal to constant')
+  })
+
+  it('requires a complete, single-role official minor-league stat payload', () => {
+    const response = structuredClone(representativeResponse()) as unknown as {
+      items: Array<{
+        currentEvidence: {
+          minorStats: Record<string, unknown> | null
+        }
+      }>
+    }
+    response.items[0].currentEvidence.minorStats = {
+      source: 'MLB StatsAPI',
+      season: 2026,
+      asOf: '2026-07-13T00:00:00.000Z',
+      currentLevel: 'A',
+      highestObservedLevel: 'A',
+      levelsObserved: ['A', 'Rk'],
+      opportunity: { label: 'PA', value: '208' },
+      hitting: null,
+      pitching: null,
+    }
+
+    const errors = schemaErrors(response).join('\n')
+    expect(errors).toContain('/currentEvidence/minorStats')
   })
 })

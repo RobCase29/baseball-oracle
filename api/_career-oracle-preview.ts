@@ -1039,6 +1039,11 @@ function parseForecast(
       forecastInput.finalCareerWar ?? input.finalCareerWar,
       `${label}.finalCareerWar`,
     ),
+    finalCareerWarConditionalOnArrival: quantiles(
+      forecastInput.finalCareerWarConditionalOnArrival ??
+        input.finalCareerWarConditionalOnArrival,
+      `${label}.finalCareerWarConditionalOnArrival`,
+    ),
     peakSevenWar: quantiles(
       forecastInput.peakSevenWar ?? input.peakSevenWar,
       `${label}.peakSevenWar`,

@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { assertCurrentMlbRoleSnapshot } from './player-directory.js'
+import {
+  assertCurrentMlbRoleSnapshot,
+  assertCurrentMilbTraditionalSnapshot,
+} from './player-directory.js'
 
 const originalDirectoryView = readFileSync(
   resolve(process.cwd(), 'db/migrations/0003_real_player_directory.sql'),
@@ -13,6 +16,10 @@ const mixedSeasonDirectoryView = readFileSync(
 )
 const currentMlbSnapshotMigration = readFileSync(
   resolve(process.cwd(), 'db/migrations/0011_align_two_way_role_policy.sql'),
+  'utf8',
+)
+const currentMilbTraditionalMigration = readFileSync(
+  resolve(process.cwd(), 'db/migrations/0014_mlb_statsapi_current_milb.sql'),
   'utf8',
 )
 
@@ -84,5 +91,65 @@ describe('current MLB role snapshot audit', () => {
       identity_conflicts: 1,
     })).toThrow(/conflicting batting\/pitching MLBAM/iu)
     expect(() => assertCurrentMlbRoleSnapshot(undefined)).toThrow(/no result/u)
+  })
+})
+
+describe('current MiLB traditional-stat snapshot audit', () => {
+  const validAudit = {
+    profiles: 4_200,
+    roles: 2,
+    invalid_identity_rows: 0,
+    invalid_level_rows: 0,
+    missing_workload_rows: 0,
+  }
+
+  it('accepts a non-empty exact-ID two-role snapshot', () => {
+    expect(() => assertCurrentMilbTraditionalSnapshot(validAudit)).not.toThrow()
+  })
+
+  it('rejects incomplete universes and invalid normalized rows', () => {
+    expect(() => assertCurrentMilbTraditionalSnapshot({
+      ...validAudit,
+      profiles: 0,
+      roles: 0,
+    })).toThrow(/non-empty two-role universe/u)
+    expect(() => assertCurrentMilbTraditionalSnapshot({
+      ...validAudit,
+      invalid_identity_rows: 1,
+    })).toThrow(/invalid exact-identity/u)
+    expect(() => assertCurrentMilbTraditionalSnapshot({
+      ...validAudit,
+      invalid_level_rows: 1,
+    })).toThrow(/invalid level/u)
+    expect(() => assertCurrentMilbTraditionalSnapshot({
+      ...validAudit,
+      missing_workload_rows: 1,
+    })).toThrow(/without role workload/u)
+  })
+})
+
+describe('official current MiLB traditional-stat migration', () => {
+  it('keeps exact identity, verified current assignment, level history, and aggregation distinct', () => {
+    expect(currentMilbTraditionalMigration).toContain(
+      "app.jsonb_number(record.record_json -> 'player', 'id')::bigint AS mlbam_id",
+    )
+    expect(currentMilbTraditionalMigration).toContain(
+      'WHERE current_team_id = team_id',
+    )
+    expect(currentMilbTraditionalMigration).toContain(
+      'representative.level AS highest_observed_level',
+    )
+    expect(currentMilbTraditionalMigration).toContain(
+      'jsonb_agg(',
+    )
+    expect(currentMilbTraditionalMigration).toContain(
+      'sum(coalesce(plate_appearances, 0))',
+    )
+    expect(currentMilbTraditionalMigration).toContain(
+      'CREATE UNIQUE INDEX current_milb_traditional_profile_uidx',
+    )
+    expect(currentMilbTraditionalMigration).not.toContain(
+      'DROP MATERIALIZED VIEW',
+    )
   })
 })

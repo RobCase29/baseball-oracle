@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { BaseballReferenceCurrentResult } from '../../scripts/ingest/baseball-reference-current.js'
-import type { IngestFangraphsProspectsResult } from '../../scripts/ingest/fangraphs-prospects.js'
+import type {
+  IngestFangraphsCurrentProspectsResult,
+  IngestFangraphsProspectsResult,
+} from '../../scripts/ingest/fangraphs-prospects.js'
+import type { MlbStatsApiMilbBackfillResult } from '../../scripts/ingest/mlb-statsapi-milb.js'
 import type { ProspectSavantBackfillResult } from '../../scripts/ingest/prospect-savant-leaders.js'
 import { CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS } from '../../scripts/ingest/shared.js'
 import {
@@ -23,17 +27,33 @@ const completeProspectSavant: ProspectSavantBackfillResult = {
   failures: [],
 }
 
+const completeMlbStatsApi: MlbStatsApiMilbBackfillResult = {
+  attempted: 10,
+  stored: 10,
+  duplicates: 0,
+  inProgress: 0,
+  rows: 7_500,
+  failures: [],
+}
+
 const completeBaseballReference: BaseballReferenceCurrentResult = {
   season: 2026,
   batting: { status: 'stored', rows: 700 },
   pitching: { status: 'stored', rows: 800 },
 }
 
-const completeFangraphs: IngestFangraphsProspectsResult = {
+const completeFangraphsSide: IngestFangraphsProspectsResult = {
   status: 'stored',
   responseHash: 'a'.repeat(64),
-  scoutRows: 200,
-  statsRows: 200,
+  scoutRows: 600,
+  statsRows: 550,
+}
+
+const completeFangraphs: IngestFangraphsCurrentProspectsResult = {
+  batting: completeFangraphsSide,
+  pitching: { ...completeFangraphsSide, responseHash: 'b'.repeat(64) },
+  season: 2026,
+  snapshotRows: 1_200,
 }
 
 function dependencies(): CurrentRefreshDependencies {
@@ -44,14 +64,20 @@ function dependencies(): CurrentRefreshDependencies {
     refreshPlayerDirectorySnapshot: vi.fn<CurrentRefreshDependencies['refreshPlayerDirectorySnapshot']>(
       async () => undefined,
     ),
+    backfillMlbStatsApiMilb: vi.fn<CurrentRefreshDependencies['backfillMlbStatsApiMilb']>(
+      async () => completeMlbStatsApi,
+    ),
+    refreshCurrentMilbTraditionalSnapshot: vi.fn<CurrentRefreshDependencies['refreshCurrentMilbTraditionalSnapshot']>(
+      async () => undefined,
+    ),
     ingestBaseballReferenceCurrentSeason: vi.fn<CurrentRefreshDependencies['ingestBaseballReferenceCurrentSeason']>(
       async () => completeBaseballReference,
     ),
     refreshCurrentMlbValueSnapshot: vi.fn<CurrentRefreshDependencies['refreshCurrentMlbValueSnapshot']>(
       async () => undefined,
     ),
-    ingestFangraphsProspects: vi.fn<CurrentRefreshDependencies['ingestFangraphsProspects']>(
-      async () => completeFangraphs,
+    ingestFangraphsCurrentProspects: vi.fn<CurrentRefreshDependencies['ingestFangraphsCurrentProspects']>(
+      async (options) => ({ ...completeFangraphs, season: options.season }),
     ),
   }
 }
@@ -75,13 +101,21 @@ describe('current baseball season selection', () => {
   })
 
   it('keeps source and stale-run budgets within the Vercel execution window', () => {
-    const sourceBudget = Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS)
+    const declaredSourceBudget = Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS)
       .reduce((total, value) => total + value, 0)
+    const sourceCriticalPath =
+      Math.max(
+        CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
+        CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
+      ) +
+      CURRENT_REFRESH_SOURCE_BUDGETS_MS.baseballReference +
+      CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs
 
     expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS).toBeLessThan(300_000)
-    expect(sourceBudget).toBeLessThan(CURRENT_REFRESH_EXECUTION_BUDGET_MS)
+    expect(declaredSourceBudget).toBeLessThanOrEqual(250_000)
+    expect(sourceCriticalPath).toBeLessThan(CURRENT_REFRESH_EXECUTION_BUDGET_MS)
     expect(
-      sourceBudget + 3 * CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS + 15_000,
+      sourceCriticalPath + CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS + 15_000,
     ).toBeLessThan(300_000)
     expect(CURRENT_REFRESH_STALE_RUN_MS).toBeGreaterThan(
       CURRENT_REFRESH_EXECUTION_BUDGET_MS,
@@ -90,31 +124,32 @@ describe('current baseball season selection', () => {
 })
 
 describe('current source refresh isolation', () => {
-  it('reports success when every configured source publishes completely', async () => {
+  it('reports success when every current source publishes completely', async () => {
     const stubs = dependencies()
-
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'not_configured' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.prospectSavant.status).toBe('succeeded')
+    expect(result.mlbStatsApi.status).toBe('succeeded')
     expect(result.baseballReference.status).toBe('succeeded')
-    expect(result.fangraphs.status).toBe('not_configured')
+    expect(result.fangraphs.status).toBe('succeeded')
     expect(result.sourceSeasons).toEqual({
       prospectSavant: { standardLevels: 2026, rookieLevel: 2026 },
+      mlbStatsApi: { standardLevels: 2026, rookieLevel: 2026 },
       baseballReference: 2026,
+      fangraphs: 2026,
     })
+    expect(stubs.ingestFangraphsCurrentProspects).toHaveBeenCalledWith({
+      season: 2026,
+      signal: expect.any(AbortSignal),
+    })
+    expect(stubs.refreshCurrentMilbTraditionalSnapshot).toHaveBeenCalledOnce()
     expect(deriveRefreshRunStatus(result)).toBe('succeeded')
   })
 
-  it('refreshes MLB and the complete minor-league universe on separate season clocks', async () => {
+  it('refreshes sources on their correct season clocks', async () => {
     const stubs = dependencies()
-
     const result = await refreshCurrentSources(
       2027,
-      { status: 'not_configured' },
       stubs,
       { prospectSavantSeason: 2027, prospectSavantRookieSeason: 2026 },
     )
@@ -124,13 +159,24 @@ describe('current source refresh isolation', () => {
       .every((slice) => slice.season === 2027)).toBe(true)
     expect(prospectOptions?.slices?.filter((slice) => slice.level === 'Rk')
       .every((slice) => slice.season === 2026)).toBe(true)
+    const statsApiOptions = vi.mocked(stubs.backfillMlbStatsApiMilb).mock.calls[0]![0]
+    expect(statsApiOptions.slices.filter((slice) => slice.level !== 'Rk')
+      .every((slice) => slice.season === 2027)).toBe(true)
+    expect(statsApiOptions.slices.filter((slice) => slice.level === 'Rk')
+      .every((slice) => slice.season === 2026)).toBe(true)
     expect(stubs.ingestBaseballReferenceCurrentSeason).toHaveBeenCalledWith(
       2027,
       expect.any(Object),
     )
+    expect(stubs.ingestFangraphsCurrentProspects).toHaveBeenCalledWith({
+      season: 2027,
+      signal: expect.any(AbortSignal),
+    })
     expect(result.sourceSeasons).toEqual({
       prospectSavant: { standardLevels: 2027, rookieLevel: 2026 },
+      mlbStatsApi: { standardLevels: 2027, rookieLevel: 2026 },
       baseballReference: 2027,
+      fangraphs: 2027,
     })
   })
 
@@ -146,16 +192,11 @@ describe('current source refresh isolation', () => {
     )
 
     await expect(
-      refreshCurrentSources(
-        2026,
-        { status: 'not_configured' },
-        stubs,
-        { signal: controller.signal },
-      ),
+      refreshCurrentSources(2026, stubs, { signal: controller.signal }),
     ).rejects.toThrow('Refresh execution budget elapsed')
 
     expect(stubs.ingestBaseballReferenceCurrentSeason).not.toHaveBeenCalled()
-    expect(stubs.ingestFangraphsProspects).not.toHaveBeenCalled()
+    expect(stubs.ingestFangraphsCurrentProspects).not.toHaveBeenCalled()
   })
 
   it('retries directory publication when all Prospect Savant payloads are duplicates', async () => {
@@ -166,11 +207,7 @@ describe('current source refresh isolation', () => {
       duplicates: 10,
     })
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'not_configured' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.prospectSavant.status).toBe('succeeded')
     expect(stubs.refreshPlayerDirectorySnapshot).toHaveBeenCalledOnce()
@@ -182,23 +219,19 @@ describe('current source refresh isolation', () => {
       new Error('Prospect Savant unavailable'),
     )
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'configured', url: 'https://www.fangraphs.com/api/prospects/current' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.prospectSavant.status).toBe('failed')
+    expect(result.mlbStatsApi.status).toBe('succeeded')
     expect(result.baseballReference.status).toBe('succeeded')
     expect(result.fangraphs.status).toBe('succeeded')
     expect(stubs.refreshPlayerDirectorySnapshot).not.toHaveBeenCalled()
-    expect(stubs.ingestBaseballReferenceCurrentSeason).toHaveBeenCalledOnce()
     expect(stubs.refreshCurrentMlbValueSnapshot).toHaveBeenCalledOnce()
-    expect(stubs.ingestFangraphsProspects).toHaveBeenCalledOnce()
+    expect(stubs.ingestFangraphsCurrentProspects).toHaveBeenCalledOnce()
     expect(deriveRefreshRunStatus(result)).toBe('partial')
   })
 
-  it('does not publish the directory when any Prospect Savant slice is incomplete', async () => {
+  it('does not publish the directory when a Prospect Savant slice is incomplete', async () => {
     const stubs = dependencies()
     vi.mocked(stubs.backfillProspectSavant).mockResolvedValueOnce({
       ...completeProspectSavant,
@@ -206,11 +239,7 @@ describe('current source refresh isolation', () => {
       inProgress: 1,
     })
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'not_configured' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.prospectSavant.status).toBe('failed')
     expect(stubs.refreshPlayerDirectorySnapshot).not.toHaveBeenCalled()
@@ -218,22 +247,36 @@ describe('current source refresh isolation', () => {
     expect(deriveRefreshRunStatus(result)).toBe('partial')
   })
 
-  it('continues Prospect Savant while keeping the MLB view unchanged after a BRef failure', async () => {
+  it('publishes complete official MiLB cohorts while marking an incomplete slice', async () => {
+    const stubs = dependencies()
+    vi.mocked(stubs.backfillMlbStatsApiMilb).mockResolvedValueOnce({
+      ...completeMlbStatsApi,
+      stored: 9,
+      inProgress: 1,
+    })
+
+    const result = await refreshCurrentSources(2026, stubs)
+
+    expect(result.mlbStatsApi.status).toBe('failed')
+    expect(stubs.refreshCurrentMilbTraditionalSnapshot).toHaveBeenCalledOnce()
+    expect(result.prospectSavant.status).toBe('succeeded')
+    expect(result.baseballReference.status).toBe('succeeded')
+    expect(deriveRefreshRunStatus(result)).toBe('partial')
+  })
+
+  it('keeps the MLB view unchanged after a Baseball-Reference failure', async () => {
     const stubs = dependencies()
     vi.mocked(stubs.ingestBaseballReferenceCurrentSeason).mockRejectedValueOnce(
       new Error('Baseball-Reference unavailable'),
     )
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'not_configured' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.prospectSavant.status).toBe('succeeded')
     expect(stubs.refreshPlayerDirectorySnapshot).toHaveBeenCalledOnce()
     expect(result.baseballReference.status).toBe('failed')
     expect(stubs.refreshCurrentMlbValueSnapshot).not.toHaveBeenCalled()
+    expect(result.fangraphs.status).toBe('succeeded')
     expect(deriveRefreshRunStatus(result)).toBe('partial')
   })
 
@@ -244,88 +287,54 @@ describe('current source refresh isolation', () => {
       pitching: { status: 'in_progress', rows: 800 },
     })
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'not_configured' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.baseballReference.status).toBe('failed')
     expect(stubs.refreshCurrentMlbValueSnapshot).not.toHaveBeenCalled()
   })
 
-  it('reports total failure when no configured source succeeds', async () => {
+  it('reports total failure when no current source succeeds', async () => {
     const stubs = dependencies()
     vi.mocked(stubs.backfillProspectSavant).mockRejectedValueOnce(new Error('PS failed'))
+    vi.mocked(stubs.backfillMlbStatsApiMilb).mockRejectedValueOnce(
+      new Error('StatsAPI failed'),
+    )
     vi.mocked(stubs.ingestBaseballReferenceCurrentSeason).mockRejectedValueOnce(
       new Error('BRef failed'),
     )
-    vi.mocked(stubs.ingestFangraphsProspects).mockRejectedValueOnce(
+    vi.mocked(stubs.ingestFangraphsCurrentProspects).mockRejectedValueOnce(
       new Error('FanGraphs failed'),
     )
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'configured', url: 'https://www.fangraphs.com/api/prospects/current' },
-      stubs,
-    )
-
+    const result = await refreshCurrentSources(2026, stubs)
     expect(deriveRefreshRunStatus(result)).toBe('failed')
   })
 
-  it('keeps a core-success run successful when optional FanGraphs configuration fails', async () => {
+  it('marks the run partial when automatic FanGraphs collection fails', async () => {
     const stubs = dependencies()
-
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'invalid', error: { message: 'FanGraphs URL is invalid' } },
-      stubs,
-    )
-
-    expect(result.prospectSavant.status).toBe('succeeded')
-    expect(result.baseballReference.status).toBe('succeeded')
-    expect(result.fangraphs.status).toBe('failed')
-    expect(stubs.ingestFangraphsProspects).not.toHaveBeenCalled()
-    expect(deriveRefreshRunStatus(result)).toBe('succeeded')
-  })
-
-  it('keeps a core-success run successful when optional FanGraphs collection fails', async () => {
-    const stubs = dependencies()
-    vi.mocked(stubs.ingestFangraphsProspects).mockRejectedValueOnce(
+    vi.mocked(stubs.ingestFangraphsCurrentProspects).mockRejectedValueOnce(
       new Error('FanGraphs unavailable'),
     )
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'configured', url: 'https://www.fangraphs.com/api/prospects/current' },
-      stubs,
-    )
+    const result = await refreshCurrentSources(2026, stubs)
 
     expect(result.fangraphs.status).toBe('failed')
-    expect(deriveRefreshRunStatus(result)).toBe('succeeded')
+    expect(deriveRefreshRunStatus(result)).toBe('partial')
   })
 
-  it('preserves required-source success when the request budget expires in optional FanGraphs', async () => {
+  it('propagates the request deadline when it expires in FanGraphs', async () => {
     const stubs = dependencies()
     const controller = new AbortController()
-    vi.mocked(stubs.ingestFangraphsProspects).mockImplementationOnce(
+    vi.mocked(stubs.ingestFangraphsCurrentProspects).mockImplementationOnce(
       async (options) => {
         controller.abort(new Error('Refresh execution budget elapsed'))
-        options?.signal?.throwIfAborted()
+        options.signal?.throwIfAborted()
         return completeFangraphs
       },
     )
 
-    const result = await refreshCurrentSources(
-      2026,
-      { status: 'configured', url: 'https://www.fangraphs.com/api/prospects/current' },
-      stubs,
-      { signal: controller.signal },
-    )
-
-    expect(result.prospectSavant.status).toBe('succeeded')
-    expect(result.baseballReference.status).toBe('succeeded')
-    expect(result.fangraphs.status).toBe('failed')
-    expect(deriveRefreshRunStatus(result)).toBe('succeeded')
+    await expect(
+      refreshCurrentSources(2026, stubs, { signal: controller.signal }),
+    ).rejects.toThrow('Refresh execution budget elapsed')
   })
 })

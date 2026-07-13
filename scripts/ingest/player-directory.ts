@@ -12,6 +12,71 @@ export async function refreshPlayerDirectorySnapshot(): Promise<void> {
   }
 }
 
+export interface CurrentMilbTraditionalSnapshotAudit {
+  profiles: number
+  roles: number
+  invalid_identity_rows: number
+  invalid_level_rows: number
+  missing_workload_rows: number
+}
+
+export async function refreshCurrentMilbTraditionalSnapshot(): Promise<void> {
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
+
+  try {
+    await sql.begin(async (transaction) => {
+      await transaction`REFRESH MATERIALIZED VIEW app.current_milb_traditional_snapshot`
+      const [audit] = await transaction<CurrentMilbTraditionalSnapshotAudit[]>`
+        SELECT
+          count(*)::integer AS profiles,
+          count(DISTINCT player_type)::integer AS roles,
+          count(*) FILTER (
+            WHERE mlbam_id IS NULL OR mlbam_id <= 0 OR known_at IS NULL
+          )::integer AS invalid_identity_rows,
+          count(*) FILTER (
+            WHERE highest_observed_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+              OR (current_level IS NOT NULL AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA'))
+          )::integer AS invalid_level_rows,
+          count(*) FILTER (
+            WHERE (player_type = 'Hitter' AND pa IS NULL)
+              OR (player_type = 'Pitcher' AND outs IS NULL)
+          )::integer AS missing_workload_rows
+        FROM app.current_milb_traditional_snapshot
+      `
+      assertCurrentMilbTraditionalSnapshot(audit)
+    })
+  } finally {
+    await sql.end({ timeout: 5 })
+  }
+}
+
+export function assertCurrentMilbTraditionalSnapshot(
+  audit: CurrentMilbTraditionalSnapshotAudit | undefined,
+): void {
+  if (!audit) throw new Error('Current MiLB traditional-stat audit returned no result')
+  if (audit.profiles === 0 || audit.roles !== 2) {
+    throw new Error(
+      `Current MiLB traditional-stat snapshot has ${audit.profiles} profile(s) across ` +
+        `${audit.roles} role(s); expected a non-empty two-role universe`,
+    )
+  }
+  if (audit.invalid_identity_rows > 0) {
+    throw new Error(
+      `Current MiLB traditional-stat snapshot contains ${audit.invalid_identity_rows} invalid exact-identity row(s)`,
+    )
+  }
+  if (audit.invalid_level_rows > 0) {
+    throw new Error(
+      `Current MiLB traditional-stat snapshot contains ${audit.invalid_level_rows} invalid level row(s)`,
+    )
+  }
+  if (audit.missing_workload_rows > 0) {
+    throw new Error(
+      `Current MiLB traditional-stat snapshot contains ${audit.missing_workload_rows} row(s) without role workload`,
+    )
+  }
+}
+
 export async function refreshCurrentMlbValueSnapshot(): Promise<void> {
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 

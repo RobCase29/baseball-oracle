@@ -27,13 +27,18 @@ const baseFilters: BoardFilters = {
 }
 
 function makeForecast(overrides: Partial<CareerForecast> = {}): CareerForecast {
+  const defaultCareerWar = { p10: 2, p25: 8, p50: 20, p75: 38, p90: 62 }
   return {
     publicationState: 'research',
     releaseEligible: false,
     asOf: '2026-07-12T00:00:00.000Z',
     rank: 1,
     hofCaliberProbability: 0.08,
-    finalCareerWar: { p10: 2, p25: 8, p50: 20, p75: 38, p90: 62 },
+    finalCareerWar: defaultCareerWar,
+    finalCareerWarConditionalOnArrival:
+      overrides.finalCareerWarConditionalOnArrival ??
+      overrides.finalCareerWar ??
+      defaultCareerWar,
     peakSevenWar: { p10: 1, p25: 6, p50: 15, p75: 27, p90: 40 },
     finalJaws: null,
     scenarioSupportExtensionJaws: null,
