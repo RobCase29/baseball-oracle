@@ -954,10 +954,15 @@
         "comparableAcrossRoutes",
         "calibratedProbability",
         "currentSeasonEvidenceBlended",
+        "supportedSampleModel",
+        "thinSampleModel",
+        "thinSamplePolicy",
+        "thinSampleMappingStatus",
+        "careerRunwayGuardrailMetric",
         "status"
       ],
       "properties": {
-        "version": { "const": "prospect-score/v1" },
+        "version": { "const": "prospect-score/v2" },
         "metric": { "const": "prospectScore" },
         "route": { "const": "milb" },
         "sort": { "const": "prospectScore" },
@@ -987,6 +992,11 @@
         "comparableAcrossRoutes": { "const": false },
         "calibratedProbability": { "const": false },
         "currentSeasonEvidenceBlended": { "const": false },
+        "supportedSampleModel": { "const": "regularized_logistic" },
+        "thinSampleModel": { "const": "age_level_role_performance_prior" },
+        "thinSamplePolicy": { "const": "hierarchical_prior_rank_when_frozen_workload_is_below_minimum" },
+        "thinSampleMappingStatus": { "const": "insufficient_sample" },
+        "careerRunwayGuardrailMetric": { "const": "careerIndex" },
         "status": { "const": "research_only" }
       },
       "additionalProperties": false

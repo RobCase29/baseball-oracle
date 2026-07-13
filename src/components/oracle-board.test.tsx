@@ -185,12 +185,17 @@ const milbAlphaSignal: NonNullable<PlayerRecord['milbAlphaSignal']> = {
 const milbImpactRanking: NonNullable<PlayerRecord['milbImpactRanking']> = {
   rank: 3,
   rankPercentile: 99.969012,
+  priorRank: 7,
+  priorRankPercentile: 99.907033,
   role: 'hitter',
   status: 'research_only',
   releaseEligible: false,
   frozenAsOf: '2025-12-31T00:00:00.000Z',
   modelVersion: 'milb-impact-five-calendar-year-war-v1',
   selectedModel: 'regularized_logistic',
+  thinSampleModel: 'age_level_role_performance_prior',
+  thinSampleTieBreaker: 'regularized_logistic',
+  thinSamplePolicy: 'hierarchical_prior_rank_when_frozen_workload_is_below_minimum',
   universeRows: 6455,
   target: {
     id: 'mlb_war_next_5_ge_5',
@@ -213,6 +218,16 @@ const milbImpactRanking: NonNullable<PlayerRecord['milbImpactRanking']> = {
       folds: 5,
       validationSeasons: [2015, 2016, 2017, 2018, 2019],
     },
+  },
+  thinSampleOofRankEvidence: {
+    method: 'player-purged expanding prediction-origin out-of-fold evaluation',
+    rows: 35747,
+    players: 15326,
+    eventPlayers: 197,
+    averagePrecision: 0.0922,
+    rocAuc: 0.8655,
+    brier: 0.0092,
+    topDecileLift: 6.501,
   },
   gates: {
     tailCalibrationPassed: false,
@@ -775,7 +790,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
   })
 
-  it('never relabels a career rank as an unavailable Prospect Score rank', () => {
+  it('uses the hierarchical prior for a thin sample without borrowing a career rank', () => {
     const thinSignal = {
       ...milbAlphaSignal,
       gates: { ...milbAlphaSignal.gates, minimumRawWorkload: false },
@@ -797,9 +812,9 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getAllByText('Prospect rank unavailable or withheld')).toHaveLength(2)
-    expect(screen.queryByText('#7')).not.toBeInTheDocument()
-    expect(screen.queryByText('of 6,455 prospects · five-year impact')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Prospect rank unavailable or withheld')).toHaveLength(1)
+    expect(screen.getByText('#7')).toBeInTheDocument()
+    expect(screen.getByText('of 6,455 prospects · five-year impact')).toBeInTheDocument()
   })
 
   it('restores Prospect Score ordering whenever the user enters the prospect route', () => {

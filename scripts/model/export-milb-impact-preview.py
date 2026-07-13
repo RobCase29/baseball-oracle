@@ -25,6 +25,7 @@ OUTPUT = ROOT / "api/_data/milb-impact-2025.json"
 EXPECTED_SCHEMA = "milb-impact-tournament/v1"
 EXPECTED_MODEL_VERSION = "milb-impact-five-calendar-year-war-v1"
 EXPECTED_MODEL = "regularized_logistic"
+EXPECTED_PRIOR_MODEL = "age_level_role_performance_prior"
 EXPECTED_TARGET_COLUMN = "mlb_war_next_5_ge_5"
 EXPECTED_TARGET_SCOPE = "unconditional_mlb_war_next_five_calendar_seasons_ge_5"
 EXPECTED_FEATURE_SEASON = 2025
@@ -103,10 +104,14 @@ def main() -> None:
     scores = pd.read_parquet(CURRENT_SCORES).sort_values("rank", kind="stable").reset_index(drop=True)
     required_columns = {
         "rank",
+        "player_id",
         "mlbam_id",
         "role",
+        "age",
         "as_of",
         "selected_model",
+        f"probability__{EXPECTED_PRIOR_MODEL}",
+        f"probability__{EXPECTED_MODEL}",
         "target_window_start_season",
         "target_window_end_season",
         "target_scope",
@@ -141,11 +146,34 @@ def main() -> None:
         raise ValueError("MiLB impact scores require one frozen as-of timestamp")
     frozen_as_of = as_of_values.pop()
 
+    # Thin samples use the tournament's transparent hierarchical prior. The
+    # selected model only resolves players inside identical prior bands; it
+    # cannot move a player across an age/level/role/performance prior band.
+    prior_order = scores.sort_values(
+        [
+            f"probability__{EXPECTED_PRIOR_MODEL}",
+            f"probability__{EXPECTED_MODEL}",
+            "age",
+            "player_id",
+        ],
+        ascending=[False, False, True, True],
+        kind="stable",
+    )
+    prior_ranks = pd.Series(
+        range(1, rows + 1),
+        index=prior_order.index,
+        dtype="int64",
+    )
+    scores["prior_rank"] = prior_ranks.reindex(scores.index).astype(int)
+    if sorted(scores["prior_rank"].tolist()) != list(range(1, rows + 1)):
+        raise ValueError("MiLB impact prior ranks must be unique and contiguous")
+
     estimates: dict[str, dict[str, Any]] = {}
     for row in scores.itertuples(index=False):
         mlbam_id = str(row.mlbam_id)
         role = str(row.role)
         rank = int(row.rank)
+        prior_rank = int(row.prior_rank)
         if not re.fullmatch(r"\d+", mlbam_id):
             raise ValueError(f"Invalid MLBAM identifier: {mlbam_id}")
         if role not in {"hitter", "pitcher"}:
@@ -156,6 +184,8 @@ def main() -> None:
         estimates[key] = {
             "rank": rank,
             "rankPercentile": rank_percentile(rank, rows),
+            "priorRank": prior_rank,
+            "priorRankPercentile": rank_percentile(prior_rank, rows),
             "role": role,
         }
 
@@ -163,6 +193,7 @@ def main() -> None:
     report = primary["report"]
     evaluation = report["evaluation"]
     selected_metrics = evaluation["metrics"][EXPECTED_MODEL]
+    prior_metrics = evaluation["metrics"][EXPECTED_PRIOR_MODEL]
     folds = report["folds"]
     fold_lifts = [float(fold["metrics"][EXPECTED_MODEL]["topDecile"]["lift"]) for fold in folds]
     validation_seasons = [int(fold["validationSeason"]) for fold in folds]
@@ -170,13 +201,16 @@ def main() -> None:
         raise ValueError("MiLB impact fold evidence is incomplete or unordered")
 
     preview = {
-        "schemaVersion": "milb-impact-preview/v1",
+        "schemaVersion": "milb-impact-preview/v2",
         "status": "research_only",
         "releaseEligible": False,
         "frozenAsOf": frozen_as_of,
         "sourceRunAsOf": iso_utc(manifest["asOf"]),
         "modelVersion": EXPECTED_MODEL_VERSION,
         "selectedModel": EXPECTED_MODEL,
+        "thinSampleModel": EXPECTED_PRIOR_MODEL,
+        "thinSampleTieBreaker": EXPECTED_MODEL,
+        "thinSamplePolicy": "hierarchical_prior_rank_when_frozen_workload_is_below_minimum",
         "universeRows": rows,
         "rankPercentileMethod": "100 * (universeRows - rank) / (universeRows - 1)",
         "target": {
@@ -202,6 +236,16 @@ def main() -> None:
                 "folds": len(fold_lifts),
                 "validationSeasons": validation_seasons,
             },
+        },
+        "thinSampleOofRankEvidence": {
+            "method": "player-purged expanding prediction-origin out-of-fold evaluation",
+            "rows": int(prior_metrics["rows"]),
+            "players": int(prior_metrics["players"]),
+            "eventPlayers": int(prior_metrics["eventPlayers"]),
+            "averagePrecision": compact_metric(prior_metrics["averagePrecision"]),
+            "rocAuc": compact_metric(prior_metrics["rocAuc"]),
+            "brier": compact_metric(prior_metrics["brier"]),
+            "topDecileLift": compact_metric(prior_metrics["topDecile"]["lift"]),
         },
         "gates": {
             "tailCalibrationPassed": False,

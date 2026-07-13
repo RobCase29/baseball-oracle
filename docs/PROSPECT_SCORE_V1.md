@@ -1,6 +1,6 @@
 # Prospect Score V1
 
-Status: research-only ordinal ranking
+Status: superseded by [`prospect-score/v2`](./PROSPECT_SCORE_V2.md)
 
 Version: `prospect-score/v1`
 Model: `milb-impact-five-calendar-year-war-v1`

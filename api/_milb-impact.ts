@@ -7,17 +7,22 @@ const positiveIntegerSchema = z.number().int().positive()
 const estimateSchema = z.object({
   rank: positiveIntegerSchema,
   rankPercentile: z.number().finite().min(0).max(100),
+  priorRank: positiveIntegerSchema,
+  priorRankPercentile: z.number().finite().min(0).max(100),
   role: z.enum(['hitter', 'pitcher']),
 }).strict()
 
 const impactArtifactSchema = z.object({
-  schemaVersion: z.literal('milb-impact-preview/v1'),
+  schemaVersion: z.literal('milb-impact-preview/v2'),
   status: z.literal('research_only'),
   releaseEligible: z.literal(false),
   frozenAsOf: z.iso.datetime({ offset: true }),
   sourceRunAsOf: z.iso.datetime({ offset: true }),
   modelVersion: z.literal('milb-impact-five-calendar-year-war-v1'),
   selectedModel: z.literal('regularized_logistic'),
+  thinSampleModel: z.literal('age_level_role_performance_prior'),
+  thinSampleTieBreaker: z.literal('regularized_logistic'),
+  thinSamplePolicy: z.literal('hierarchical_prior_rank_when_frozen_workload_is_below_minimum'),
   universeRows: positiveIntegerSchema,
   rankPercentileMethod: z.literal('100 * (universeRows - rank) / (universeRows - 1)'),
   target: z.object({
@@ -41,6 +46,16 @@ const impactArtifactSchema = z.object({
       folds: positiveIntegerSchema,
       validationSeasons: z.array(z.number().int()).min(1),
     }).strict(),
+  }).strict(),
+  thinSampleOofRankEvidence: z.object({
+    method: z.literal('player-purged expanding prediction-origin out-of-fold evaluation'),
+    rows: positiveIntegerSchema,
+    players: positiveIntegerSchema,
+    eventPlayers: positiveIntegerSchema,
+    averagePrecision: z.number().finite().min(0).max(1),
+    rocAuc: z.number().finite().min(0).max(1),
+    brier: z.number().finite().nonnegative(),
+    topDecileLift: z.number().finite().positive(),
   }).strict(),
   gates: z.object({
     tailCalibrationPassed: z.literal(false),
@@ -106,6 +121,7 @@ export function validateMilbImpactArtifact(value: unknown): MilbImpactArtifact {
   }
 
   const ranks = new Set<number>()
+  const priorRanks = new Set<number>()
   for (const [key, estimate] of entries) {
     const match = /^(\d+):(hitter|pitcher)$/u.exec(key)
     if (!match || match[2] !== estimate.role) {
@@ -114,17 +130,29 @@ export function validateMilbImpactArtifact(value: unknown): MilbImpactArtifact {
     if (estimate.rank > parsed.universeRows || ranks.has(estimate.rank)) {
       throw new Error('MiLB impact ranks must be unique and within the universe')
     }
+    if (estimate.priorRank > parsed.universeRows || priorRanks.has(estimate.priorRank)) {
+      throw new Error('MiLB impact prior ranks must be unique and within the universe')
+    }
     ranks.add(estimate.rank)
+    priorRanks.add(estimate.priorRank)
     const expected = expectedRankPercentile(estimate.rank, parsed.universeRows)
     if (Math.abs(estimate.rankPercentile - expected) > PERCENTILE_TOLERANCE) {
       throw new Error(`MiLB impact rank percentile is inconsistent at rank ${estimate.rank}`)
+    }
+    const expectedPrior = expectedRankPercentile(estimate.priorRank, parsed.universeRows)
+    if (Math.abs(estimate.priorRankPercentile - expectedPrior) > PERCENTILE_TOLERANCE) {
+      throw new Error(`MiLB impact prior rank percentile is inconsistent at rank ${estimate.priorRank}`)
     }
   }
   if (ranks.size !== parsed.universeRows) {
     throw new Error('MiLB impact ranks must be contiguous')
   }
+  if (priorRanks.size !== parsed.universeRows) {
+    throw new Error('MiLB impact prior ranks must be contiguous')
+  }
   for (let rank = 1; rank <= parsed.universeRows; rank += 1) {
     if (!ranks.has(rank)) throw new Error('MiLB impact ranks must be contiguous')
+    if (!priorRanks.has(rank)) throw new Error('MiLB impact prior ranks must be contiguous')
   }
   return parsed
 }
@@ -147,9 +175,13 @@ export interface ResearchMilbImpactRanking extends MilbImpactEstimate {
   frozenAsOf: string
   modelVersion: 'milb-impact-five-calendar-year-war-v1'
   selectedModel: 'regularized_logistic'
+  thinSampleModel: 'age_level_role_performance_prior'
+  thinSampleTieBreaker: 'regularized_logistic'
+  thinSamplePolicy: 'hierarchical_prior_rank_when_frozen_workload_is_below_minimum'
   universeRows: number
   target: MilbImpactArtifact['target']
   oofRankEvidence: MilbImpactArtifact['oofRankEvidence']
+  thinSampleOofRankEvidence: MilbImpactArtifact['thinSampleOofRankEvidence']
   gates: MilbImpactArtifact['gates']
   lineage: MilbImpactArtifact['lineage']
   warnings: string[]
@@ -169,9 +201,13 @@ export function researchMilbImpactRanking(
     frozenAsOf: impactArtifact.frozenAsOf,
     modelVersion: impactArtifact.modelVersion,
     selectedModel: impactArtifact.selectedModel,
+    thinSampleModel: impactArtifact.thinSampleModel,
+    thinSampleTieBreaker: impactArtifact.thinSampleTieBreaker,
+    thinSamplePolicy: impactArtifact.thinSamplePolicy,
     universeRows: impactArtifact.universeRows,
     target: impactArtifact.target,
     oofRankEvidence: impactArtifact.oofRankEvidence,
+    thinSampleOofRankEvidence: impactArtifact.thinSampleOofRankEvidence,
     gates: impactArtifact.gates,
     lineage: impactArtifact.lineage,
     warnings: [...impactArtifact.warnings],
@@ -184,8 +220,12 @@ export const researchMilbImpactSummary = {
   frozenAsOf: impactArtifact.frozenAsOf,
   modelVersion: impactArtifact.modelVersion,
   selectedModel: impactArtifact.selectedModel,
+  thinSampleModel: impactArtifact.thinSampleModel,
+  thinSampleTieBreaker: impactArtifact.thinSampleTieBreaker,
+  thinSamplePolicy: impactArtifact.thinSamplePolicy,
   universeRows: impactArtifact.universeRows,
   target: impactArtifact.target,
   oofRankEvidence: impactArtifact.oofRankEvidence,
+  thinSampleOofRankEvidence: impactArtifact.thinSampleOofRankEvidence,
   gates: impactArtifact.gates,
 }

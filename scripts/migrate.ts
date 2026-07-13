@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import postgres from 'postgres'
 import { directDatabaseUrl } from '../db/client.js'
 
 const migrationDirectory = resolve(process.cwd(), 'db/migrations')
 const advisoryLockId = 2_026_071_101
 
-async function migrate() {
+export async function migrate() {
   const sql = postgres(directDatabaseUrl(), {
     max: 1,
     prepare: false,
@@ -58,8 +59,11 @@ async function migrate() {
   }
 }
 
-migrate().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : 'Unknown migration error'
-  process.stderr.write(`${message}\n`)
-  process.exitCode = 1
-})
+const entrypoint = process.argv[1]
+if (entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href) {
+  migrate().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : 'Unknown migration error'
+    process.stderr.write(`${message}\n`)
+    process.exitCode = 1
+  })
+}

@@ -253,11 +253,18 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
   const ceilingAlpha = eligibleMilbCeilingAlpha(player)
   const traits = player.minorTraitEvidence
   const impactWorkloadSupported = signal?.gates?.minimumRawWorkload !== false
+  const displayedImpactRank = impactWorkloadSupported ? impact?.rank ?? null : impact?.priorRank ?? null
+  const displayedImpactPercentile = impactWorkloadSupported
+    ? impact?.rankPercentile ?? null
+    : impact?.priorRankPercentile ?? null
+  const displayedRankEvidence = impactWorkloadSupported
+    ? impact?.oofRankEvidence ?? null
+    : impact?.thinSampleOofRankEvidence ?? null
   const strongestTraits = traits?.strongestMetrics.filter(
     (metric) => metric.percentile >= (traits.corroboration.strongPercentileThreshold ?? 80),
   ) ?? []
   const tierLabel = !impactWorkloadSupported
-    ? 'Five-year rank withheld: thin sample'
+    ? 'Prior-led score: thin sample'
     : ceilingAlpha
     ? `${ceilingAlpha.tier === 'priority' ? 'Priority' : ceilingAlpha.tier === 'strong' ? 'Strong' : 'Watch'} research signal`
     : impact
@@ -277,7 +284,7 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
         </div>
         <div className="alpha-radar-status">
           <span className={`alpha-tier alpha-tier--${statusTier}`}>{tierLabel}</span>
-          {impact ? <strong>{impactWorkloadSupported ? `#${impact.rank}` : `Raw #${impact.rank}, not admitted`} of {impact.universeRows.toLocaleString()}</strong> : null}
+          {impact && displayedImpactRank ? <strong>#{displayedImpactRank} of {impact.universeRows.toLocaleString()}</strong> : null}
         </div>
       </div>
 
@@ -285,11 +292,11 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
         <>
           <div className="alpha-thesis milb-alpha-thesis">
             <div className="alpha-thesis-edge">
-              <span>{impactWorkloadSupported ? 'FIVE-YEAR IMPACT RANK' : 'RAW FIVE-YEAR RANK'}</span>
-              <strong>{impactWorkloadSupported ? `#${impact.rank}` : 'Not admitted'}</strong>
+              <span>{impactWorkloadSupported ? 'FIVE-YEAR IMPACT RANK' : 'HIERARCHICAL PRIOR RANK'}</span>
+              <strong>{displayedImpactRank ? `#${displayedImpactRank}` : 'Not mapped'}</strong>
               <small>{impactWorkloadSupported
                 ? `${formatTopRankPercent(impact.rank, impact.universeRows)} of ${impact.universeRows.toLocaleString()} scoreable completed-2025 MiLB snapshots`
-                : `Raw rank #${impact.rank}; the completed-2025 workload gate failed`}</small>
+                : `Age, level, role, and performance prior; volatile full-model rank #${impact.rank} is not used`}</small>
             </div>
             <div>
               <span>ARRIVAL CONFIRMATION</span>
@@ -314,7 +321,7 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
               {ceilingAlpha
                 ? `The direct impact challenger ranks this player #${impact.rank} on the path to at least 5 MLB WAR from 2026–2030, and the separate young-for-level arrival signal also cleared. No probabilities were blended.`
                 : !impactWorkloadSupported
-                  ? `The raw direct-impact rank is #${impact.rank}, but it is withheld because the completed-season input did not meet the minimum workload. Tiny samples cannot qualify as model evidence.`
+                  ? `The full model did not meet its completed-season workload gate, so Prospect Score uses the transparent hierarchical prior at #${impact.priorRank}. Career Index remains the separate age- and runway-adjusted ceiling.`
                   : `The direct impact challenger ranks this player #${impact.rank}, but the research signal is withheld until both the impact top-decile and young-for-level arrival gates clear.`}
             </span>
           </div>
@@ -323,12 +330,14 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
             <span>
               Target: at least 5 total MLB WAR in 2026–2030 · unconditional on MLB arrival
             </span>
-            <small>{impact.oofRankEvidence.topDecileLift.toFixed(2)}x model-wide top-decile lift · {impact.oofRankEvidence.rows.toLocaleString()} player-purged OOF rows · raw probability withheld</small>
+            {displayedRankEvidence ? (
+              <small>{displayedRankEvidence.topDecileLift.toFixed(2)}x model-wide top-decile lift · {displayedRankEvidence.rows.toLocaleString()} player-purged OOF rows · raw probability withheld</small>
+            ) : null}
           </div>
 
           <div className="alpha-gates" aria-label="MiLB ceiling research and release gates">
             {([
-              ['Impact top decile', impact.rankPercentile >= 90],
+              ['Impact top decile', (displayedImpactPercentile ?? -1) >= 90],
               ['Stable model sample', impactWorkloadSupported],
               ['Arrival signal cleared', signal?.eligible === true],
               ['Young for level', signal?.gates.youngForRoleAndLevel === true],

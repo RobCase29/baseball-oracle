@@ -205,6 +205,8 @@ export interface PlayerMapInput {
   milbImpactRanking?: {
     rank: number
     rankPercentile: number
+    priorRank?: number
+    priorRankPercentile?: number
     universeRows: number
     frozenAsOf: string
     target: { id: string }
@@ -614,8 +616,18 @@ function buildMinorMap(
   const totalPillars = traits?.coverage.totalPillarCount ?? 0
   const evidenceValue = totalPillars > 0 ? 100 * coveredPillars / totalPillars : null
   const impactWorkloadSupported = arrival?.gates?.minimumRawWorkload !== false
-  const rawImpactValue = validPercentile(impact?.rankPercentile) ? impact.rankPercentile : null
-  const impactValue = impactWorkloadSupported ? rawImpactValue : null
+  const impactUsesPrior = Boolean(
+    impact &&
+    !impactWorkloadSupported &&
+    Number.isInteger(impact.priorRank) &&
+    validPercentile(impact.priorRankPercentile),
+  )
+  const impactRank = impactUsesPrior ? impact?.priorRank ?? null : impactWorkloadSupported ? impact?.rank ?? null : null
+  const impactValue = impactUsesPrior
+    ? impact?.priorRankPercentile ?? null
+    : impactWorkloadSupported && validPercentile(impact?.rankPercentile)
+      ? impact?.rankPercentile ?? null
+      : null
   const careerSupported = career !== null && career.publicationState !== 'withheld'
   const careerRank = careerSupported ? career?.rank ?? null : null
   const careerUniverse = 'minorUniverse' in context
@@ -692,7 +704,7 @@ function buildMinorMap(
 
   const outlookText = impactValue === null
     ? 'does not yet have a supported Prospect Score'
-    : `has a Prospect Score of ${impactValue.toFixed(1)} (${rankDisplay(impact?.rank ?? null, impact?.universeRows ?? null)}) for 2026-2030 MLB impact`
+    : `has a ${impactUsesPrior ? 'prior-led ' : ''}Prospect Score of ${impactValue.toFixed(1)} (${rankDisplay(impactRank, impact?.universeRows ?? null)}) for 2026-2030 MLB impact`
   const runwayText = estimatedDebutAge === null
     ? ''
     : ` Projected MLB arrival age is ${estimatedDebutAge}, which shapes the remaining career runway.`
@@ -707,8 +719,10 @@ function buildMinorMap(
     version: PLAYER_MAP_VERSION,
     asOf: career?.asOf ?? impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
     route: 'milb',
-    mappingStatus: impactValue !== null || careerIndex.value !== null
-      ? 'scored'
+    mappingStatus: impactUsesPrior
+      ? 'insufficient_sample'
+      : impactValue !== null || careerIndex.value !== null
+        ? 'scored'
       : evidenceState === 'insufficient' || evidenceState === 'provisional'
         ? 'insufficient_sample'
         : 'coverage_gap',
@@ -741,16 +755,18 @@ function buildMinorMap(
         value: impactValue,
         display: !impact
           ? 'Unmapped'
-          : !impactWorkloadSupported
+          : impactValue === null
             ? 'Needs more data'
-            : impactValue === null ? 'Unmapped' : percentileDisplay(impactValue),
+            : percentileDisplay(impactValue),
         scale: 'ordinal_percentile',
-        status: impact && impactWorkloadSupported ? 'research' : 'withheld',
-        basis: impact && !impactWorkloadSupported
-          ? 'The completed-season model input did not clear its minimum workload gate'
+        status: impactValue !== null ? 'research' : 'withheld',
+        basis: impactUsesPrior
+          ? 'Thin-sample rank from the transparent hierarchical age, level, role, and performance prior; the full model did not clear its frozen workload gate'
+          : impact && !impactWorkloadSupported
+            ? 'The completed-season model input did not clear its minimum workload gate and no hierarchical prior rank is available'
           : `Individualized frozen rank for reaching at least 5 total MLB WAR during 2026-2030; age, level, role, and performance are modeled together${player.level === 'Rk' ? '; Rookie-level calibration remains thin and should be read with extra caution' : ''}`,
         target: impact?.target?.id ?? null,
-        rank: impactWorkloadSupported ? impact?.rank ?? null : null,
+        rank: impactRank,
         universe: impact?.universeRows ?? null,
         asOf: impact?.frozenAsOf ?? null,
       }),
@@ -1232,9 +1248,7 @@ export function buildPlayerMap(
   player: PlayerMapInput,
   context: PlayerMapBuildContext = {},
 ): PlayerMapProfile {
-  if (player.stage === 'pre_debut' || player.stage === 'post_debut_minors') {
-    return buildMinorMap(player, context)
-  }
+  if (player.stage === 'pre_debut') return buildMinorMap(player, context)
   if (player.stage === 'recent_callup') return buildRookieMap(player)
   return buildMlbMap(player, context)
 }

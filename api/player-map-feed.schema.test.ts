@@ -157,6 +157,7 @@ describe('player-map-feed.v4 JSON Schema', () => {
     response.meta.prospectScoreContract = playerMapResponseMeta([], {
       stage: 'Minors',
       sort: 'prospectScore',
+      view: 'map',
     }).prospectScoreContract
     const drifted = structuredClone(response) as unknown as {
       items: Array<{

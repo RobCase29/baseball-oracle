@@ -4,12 +4,14 @@ import type { CareerOraclePreview, CareerPreviewPlayer } from './_career-oracle-
 import { researchMilbImpactRanking } from './_milb-impact.js'
 import { researchMilbAlphaSignal, type ResearchMilbAlphaSignal } from './_research-arrival.js'
 import {
+  augmentMinorCandidatesWithCurrentFangraphs,
   augmentMinorCandidatesWithCurrentProfiles,
   assignStageRanks,
   buildPlayerFacets,
   canonicalExternalId,
   currentMlbComparisonRole,
   currentMlbTeamContext,
+  currentFangraphsCandidateLevel,
   currentRoleForModeledPlayer,
   currentMlbMetrics,
   currentMinorAgePercentile,
@@ -33,6 +35,7 @@ import {
   playerMapResponseMeta,
   playerHandlingAudit,
   playerPositionTokens,
+  prospectSavantCandidateProfileIds,
   responseOrdering,
   searchRecovery,
   scoredMlbUniverse,
@@ -44,6 +47,7 @@ import {
   shouldSuppressSlashLine,
   withholdForecastForCurrentRoleTransition,
   type PlayerQuery,
+  type CurrentFangraphsCandidateRow,
   type CurrentFangraphsScoutingRow,
   type CurrentMinorProfileRow,
   type CurrentMinorStatsRow,
@@ -113,6 +117,29 @@ function currentMinorProfile(
     k_minus_bb_rate: null,
     pitching_strikeouts: null,
     walks_allowed: null,
+    ...patch,
+  }
+}
+
+function currentFangraphsCandidate(
+  patch: Partial<CurrentFangraphsCandidateRow> = {},
+): CurrentFangraphsCandidateRow {
+  return {
+    mlbam_id: 805795,
+    fangraphs_id: 'sa3022609',
+    minor_master_id: 'sa3022609',
+    source_role: 'Hitter',
+    player_name: 'Aidan Miller',
+    organization_code: 'PHI',
+    position: 'SS',
+    age: 22.0472222,
+    report_season: 2026,
+    stats_season: 2025,
+    stats_level: 'AA,AAA,ST',
+    stats_pa: 540,
+    stats_ip: null,
+    fangraphs_path: '/players/aidan-miller/sa3022609/stats/batting',
+    known_at: '2026-07-13T20:00:00.000Z',
     ...patch,
   }
 }
@@ -570,6 +597,200 @@ describe('official MiLB current universe', () => {
   })
 })
 
+describe('FanGraphs exact-ID current prospect census', () => {
+  it('seeds a missing exact-ID player and attaches the existing frozen impact rank', () => {
+    const result = augmentMinorCandidatesWithCurrentFangraphs(
+      [],
+      [
+        currentFangraphsCandidate(),
+        currentFangraphsCandidate({
+          mlbam_id: 806964,
+          fangraphs_id: 'sa3021069',
+          minor_master_id: 'sa3021069',
+          player_name: 'Sebastian Walcott',
+          organization_code: 'TEX',
+          age: 20.2833333,
+          stats_level: 'AA,ST',
+          stats_pa: 562,
+          fangraphs_path: '/players/sebastian-walcott/sa3021069/stats/batting',
+        }),
+        currentFangraphsCandidate({
+          mlbam_id: 703186,
+          fangraphs_id: 'sa3018808',
+          minor_master_id: 'sa3018808',
+          source_role: 'Pitcher',
+          player_name: 'Jarlin Susana',
+          organization_code: 'WSN',
+          position: 'SP',
+          age: 22.2583333,
+          stats_level: 'A+,AA,ST',
+          stats_pa: null,
+          stats_ip: 59.1,
+          fangraphs_path: '/players/jarlin-susana/sa3018808/stats/pitching',
+        }),
+        currentFangraphsCandidate({
+          mlbam_id: 805809,
+          fangraphs_id: 'sa3023557',
+          minor_master_id: 'sa3023557',
+          source_role: 'Pitcher',
+          player_name: 'Travis Sykora',
+          organization_code: 'WSN',
+          position: 'SP',
+          age: 22.1611111,
+          stats_level: 'A,A+,AA,CPX',
+          stats_pa: null,
+          stats_ip: 45.1,
+          fangraphs_path: '/players/travis-sykora/sa3023557/stats/pitching',
+        }),
+        currentFangraphsCandidate({
+          mlbam_id: null,
+          fangraphs_id: 'unresolved-aidan-miller',
+          minor_master_id: 'unresolved-aidan-miller',
+        }),
+      ],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+
+    expect(result).toMatchObject({
+      exactIdentityRoleRows: 4,
+      liveProfileOverlays: 0,
+      fangraphsOnlyRoleRows: 4,
+      rowsWithoutExactMlbam: 1,
+    })
+    expect(result.items).toHaveLength(4)
+    expect(result.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'fangraphs:805795:hitter',
+        name: 'Aidan Miller',
+        mlbamId: '805795',
+        minorProfileSource: 'fangraphs',
+        stage: 'pre_debut',
+        age: 22,
+        level: 'AAA',
+        organization: 'Philadelphia Phillies',
+        milbImpactRanking: expect.objectContaining({ rank: 4 }),
+      }),
+      expect.objectContaining({
+        id: 'fangraphs:806964:hitter',
+        name: 'Sebastian Walcott',
+        milbImpactRanking: expect.objectContaining({ rank: 10 }),
+      }),
+      expect.objectContaining({
+        id: 'fangraphs:703186:pitcher',
+        name: 'Jarlin Susana',
+        level: 'AA',
+        milbImpactRanking: expect.objectContaining({ rank: 82 }),
+      }),
+      expect.objectContaining({
+        id: 'fangraphs:805809:pitcher',
+        name: 'Travis Sykora',
+        level: 'AA',
+        milbImpactRanking: expect.objectContaining({ rank: 30 }),
+      }),
+    ]))
+  })
+
+  it('overlays only an exact role identity and never recovers a null ID by name', () => {
+    const existing = candidate('prospect-savant:805795', {
+      name: 'Aidan Miller',
+      mlbamId: '805795',
+      organization: 'Old organization',
+      organizationCode: 'OLD',
+      minorProfileSource: 'prospectSavant',
+    })
+    const exact = augmentMinorCandidatesWithCurrentFangraphs(
+      [existing],
+      [currentFangraphsCandidate()],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+    const unresolved = augmentMinorCandidatesWithCurrentFangraphs(
+      [existing],
+      [currentFangraphsCandidate({ mlbam_id: null })],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+
+    expect(exact).toMatchObject({ liveProfileOverlays: 1, fangraphsOnlyRoleRows: 0 })
+    expect(exact.items[0]).toMatchObject({
+      id: existing.id,
+      minorProfileSource: 'prospectSavant',
+      organization: 'Philadelphia Phillies',
+      organizationCode: 'PHI',
+    })
+    expect(unresolved).toMatchObject({
+      liveProfileOverlays: 0,
+      fangraphsOnlyRoleRows: 0,
+      rowsWithoutExactMlbam: 1,
+    })
+    expect(unresolved.items).toEqual([existing])
+  })
+
+  it('keeps Prospect Savant, FanGraphs, and StatsAPI overlays on one exact player', () => {
+    const existing = candidate('prospect-savant:805795', {
+      name: 'Aidan Miller',
+      mlbamId: '805795',
+      minorProfileSource: 'prospectSavant',
+    })
+    const fangraphs = augmentMinorCandidatesWithCurrentFangraphs(
+      [existing],
+      [currentFangraphsCandidate()],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+    const statsApi = augmentMinorCandidatesWithCurrentProfiles(
+      fangraphs.items,
+      [currentMinorProfile({
+        profile_id: 'mlb-statsapi:805795:hitter',
+        mlbam_id: 805795,
+        display_name: 'Aidan Miller',
+        organization_mlbam_id: 143,
+        organization_name: 'Philadelphia Phillies',
+        current_level: 'AAA',
+        highest_observed_level: 'AAA',
+        levels_observed: ['AAA', 'AA'],
+      })],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+    const deduped = dedupeMinorCandidates(statsApi.items)
+
+    expect(fangraphs).toMatchObject({ liveProfileOverlays: 1, fangraphsOnlyRoleRows: 0 })
+    expect(statsApi).toMatchObject({ liveProfileOverlays: 1, officialOnlyRoleRows: 0 })
+    expect(deduped).toMatchObject({
+      inputRoleRows: 1,
+      canonicalPlayers: 1,
+      duplicateRoleRowsRemoved: 0,
+    })
+    expect(deduped.items[0]).toMatchObject({
+      id: existing.id,
+      mlbamId: '805795',
+      minorProfileSource: 'prospectSavant',
+      level: 'AAA',
+    })
+  })
+
+  it('normalizes completed-stat level history and isolates Prospect Savant lookups', () => {
+    expect(currentFangraphsCandidateLevel('A,A+,AA,CPX')).toBe('AA')
+    expect(currentFangraphsCandidateLevel('DSL')).toBe('Rk')
+    expect(prospectSavantCandidateProfileIds([
+      candidate('prospect-savant:1', {
+        minorProfileId: 'prospect-savant:1',
+        minorProfileSource: 'prospectSavant',
+      }),
+      candidate('mlb-statsapi:2:hitter', {
+        minorProfileId: 'mlb-statsapi:2:hitter',
+        minorProfileSource: 'mlbStatsApi',
+      }),
+      candidate('fangraphs:3:hitter', {
+        minorProfileId: 'fangraphs:3:hitter',
+        minorProfileSource: 'fangraphs',
+      }),
+    ])).toEqual(['prospect-savant:1'])
+  })
+})
+
 describe('unified player ordering', () => {
   it('normalizes browser form-encoded spaces in player search text', () => {
     expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
@@ -828,6 +1049,17 @@ describe('unified player ordering', () => {
 
     expect(matchesQuery(player, query({ ids: ['bbref:judgeaa01'] }))).toBe(true)
     expect(matchesQuery(player, query({ ids: ['bbref:troutmi01'] }))).toBe(false)
+  })
+
+  it('keeps a post-debut minor assignment on the MLB career-stage board', () => {
+    const optioned = candidate('optioned', {
+      source: 'minor',
+      stage: 'post_debut_minors',
+    })
+
+    expect(matchesQuery(optioned, query({ stage: 'Minors' }))).toBe(false)
+    expect(matchesQuery(optioned, query({ stage: 'RC' }))).toBe(false)
+    expect(matchesQuery(optioned, query({ stage: 'MLB' }))).toBe(true)
   })
 
   it('matches player search without requiring diacritics', () => {
@@ -1322,9 +1554,14 @@ describe('player-map feed contract', () => {
       },
     })
     expect(playerMapResponseMeta([]).prospectScoreContract).toBeUndefined()
-    expect(playerMapResponseMeta([], query({ stage: 'Minors', sort: 'prospectScore' }))).toMatchObject({
+    expect(playerMapResponseMeta([], query({
+      stage: 'All',
+      sort: 'careerIndex',
+      view: 'map',
+    })).prospectScoreContract?.version).toBe('prospect-score/v2')
+    expect(playerMapResponseMeta([], query({ stage: 'Minors', sort: 'prospectScore', view: 'map' }))).toMatchObject({
       prospectScoreContract: {
-        version: 'prospect-score/v1',
+        version: 'prospect-score/v2',
         metric: 'prospectScore',
         route: 'milb',
         sort: 'prospectScore',
@@ -1341,6 +1578,11 @@ describe('player-map feed contract', () => {
         scale: 'ordinal_percentile',
         calibratedProbability: false,
         currentSeasonEvidenceBlended: false,
+        supportedSampleModel: 'regularized_logistic',
+        thinSampleModel: 'age_level_role_performance_prior',
+        thinSamplePolicy: 'hierarchical_prior_rank_when_frozen_workload_is_below_minimum',
+        thinSampleMappingStatus: 'insufficient_sample',
+        careerRunwayGuardrailMetric: 'careerIndex',
       },
     })
 
@@ -1566,7 +1808,7 @@ describe('minor identity dedupe', () => {
     expect(result.crossStageDuplicatesRemoved).toBe(1)
   })
 
-  it('prefers current post-debut minor evidence over an MLB model row without current stats', () => {
+  it('keeps career stage on the MLB path when a player is assigned to the minors', () => {
     const result = mergeCurrentUniverse(
       [candidate('model-only-mlb', {
         source: 'mlb',
@@ -1582,9 +1824,9 @@ describe('minor identity dedupe', () => {
     )
 
     expect(result.items).toEqual([
-      expect.objectContaining({ id: 'optioned-minor', stage: 'post_debut_minors' }),
+      expect.objectContaining({ id: 'model-only-mlb', stage: 'early_mlb' }),
     ])
-    expect(result.canonicalMinors.map((item) => item.id)).toEqual(['optioned-minor'])
+    expect(result.canonicalMinors).toEqual([])
     expect(result.crossStageDuplicatesRemoved).toBe(1)
   })
 

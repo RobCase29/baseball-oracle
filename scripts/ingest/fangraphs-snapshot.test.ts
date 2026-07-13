@@ -9,6 +9,13 @@ const migration = readFileSync(
   ),
   'utf8',
 )
+const candidateCensusMigration = readFileSync(
+  resolve(
+    process.cwd(),
+    'db/migrations/0016_fangraphs_current_candidate_census.sql',
+  ),
+  'utf8',
+)
 
 describe('current FanGraphs scouting snapshot migration', () => {
   it('selects only validated v2 landings from the newest complete two-role season', () => {
@@ -52,5 +59,18 @@ describe('current FanGraphs scouting snapshot migration', () => {
     expect(migration).toContain(
       'CREATE UNIQUE INDEX fangraphs_current_scouting_role_mlbam_uidx',
     )
+  })
+
+  it('adds point-in-time fields needed to seed an exact-ID candidate census', () => {
+    for (const column of ['age', 'fangraphs_path', 'stats_season', 'stats_level']) {
+      expect(candidateCensusMigration).toContain(column)
+    }
+    expect(candidateCensusMigration).toContain(
+      'LEFT JOIN statistics USING (stats_side, fangraphs_id, minor_master_id)',
+    )
+    expect(candidateCensusMigration).toContain(
+      'names are display fields and never identity keys',
+    )
+    expect(candidateCensusMigration).not.toMatch(/JOIN[^\n]+player_name/iu)
   })
 })

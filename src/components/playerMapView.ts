@@ -180,6 +180,7 @@ export function prospectScoreFor(
   const value = score?.scale === 'ordinal_percentile' ? score.value : null
   const rank = score?.rank ?? null
   const universe = score?.universe ?? null
+  const priorLed = map.route === 'milb' && map.mappingStatus === 'insufficient_sample' && value !== null
   const rankLabel = rank === null
     ? 'Prospect rank unavailable'
     : universe === null
@@ -196,7 +197,9 @@ export function prospectScoreFor(
     targetLabel: 'At least 5 MLB WAR during 2026-2030',
     explanation: value === null
       ? 'There is not enough supported model data to calculate a Prospect Score yet.'
-      : `${player.name}'s Prospect Score is an individualized rank built from age, level, role, and performance for reaching at least 5 MLB WAR during 2026-2030. It is a research ranking, not a probability.${player.level === 'Rk' ? ' Rookie-level calibration is thin, so treat this score as an early signal.' : ''}`,
+      : priorLed
+        ? `${player.name}'s Prospect Score is prior-led because the frozen full-model sample was thin. It uses the transparent age, level, role, and performance prior; Career Index separately reflects age-adjusted career runway.`
+        : `${player.name}'s Prospect Score is an individualized rank built from age, level, role, and performance for reaching at least 5 MLB WAR during 2026-2030. It is a research ranking, not a probability.${player.level === 'Rk' ? ' Rookie-level calibration is thin, so treat this score as an early signal.' : ''}`,
     tone: prospectScoreTone(value),
     status: score?.status === 'research' ? 'research' : 'withheld',
   }

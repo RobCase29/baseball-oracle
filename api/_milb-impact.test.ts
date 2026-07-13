@@ -13,10 +13,14 @@ describe('MiLB impact research artifact', () => {
     expect(ranking).toMatchObject({
       rank: 1,
       rankPercentile: 100,
+      priorRank: 1,
+      priorRankPercentile: 100,
       role: 'hitter',
       universeRows: 6455,
       frozenAsOf: '2025-12-31T00:00:00.000Z',
       selectedModel: 'regularized_logistic',
+      thinSampleModel: 'age_level_role_performance_prior',
+      thinSampleTieBreaker: 'regularized_logistic',
       releaseEligible: false,
       gates: {
         tailCalibrationPassed: false,
@@ -47,6 +51,15 @@ describe('MiLB impact research artifact', () => {
         validationSeasons: [2015, 2016, 2017, 2018, 2019],
       },
     })
+    expect(researchMilbImpactSummary.thinSampleOofRankEvidence).toMatchObject({
+      rows: 35747,
+      players: 15326,
+      eventPlayers: 197,
+      averagePrecision: 0.09218755,
+      rocAuc: 0.86554195,
+      brier: 0.00922001,
+      topDecileLift: 6.5010009,
+    })
     expect(researchMilbImpactSummary.gates.prospectiveValidationPassed).toBe(false)
   })
 
@@ -58,5 +71,9 @@ describe('MiLB impact research artifact', () => {
     const probabilityLeak = structuredClone(impactPreviewJson) as Record<string, any>
     probabilityLeak.estimates['804606:hitter'].impactProbability = 0.96
     expect(() => validateMilbImpactArtifact(probabilityLeak)).toThrow(/cannot expose a probability value/iu)
+
+    const priorRankDrift = structuredClone(impactPreviewJson) as Record<string, any>
+    priorRankDrift.estimates['804606:hitter'].priorRank = 2
+    expect(() => validateMilbImpactArtifact(priorRankDrift)).toThrow(/prior rank/iu)
   })
 })

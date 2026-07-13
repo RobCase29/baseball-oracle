@@ -142,13 +142,16 @@ standing to within-stage comparison, and marks `oracleScore` deprecated.
 The unparameterized `stage=Minors` API remains Career Index ordered for backward
 compatibility. MiLB consumers opt into the route-primary score with
 `sort=prospectScore`; those responses also include
-`meta.prospectScoreContract`. It declares the full and compact value, rank,
+`meta.prospectScoreContract` (`prospect-score/v2`). It declares the full and compact value, rank,
 universe, target, status, and as-of field paths; the fixed 2026-2030 target
 window; the 2025-12-31 feature cutoff; the exact percentile formula; comparison
 scope; and research status. It also confirms that the score is neither a
-calibrated probability nor blended with current-season evidence. This is an
-additive opt-in extension to v4, so previously captured v4 payloads remain valid
-under the current schema.
+calibrated probability nor blended with current-season evidence. V2 also declares
+the transparent hierarchical prior used below the frozen workload threshold,
+the `insufficient_sample` marker for those prior-led rows, and Career Index as the
+separate age/runway guardrail. This remains an additive opt-in extension to the
+v4 feed shape; consumers must validate the score-contract version before using
+its ordering semantics.
 
 `meta.ordering.requestedSort` records the accepted query, while
 `meta.ordering.appliedSort` resolves legacy `alphaOpportunity` requests to the

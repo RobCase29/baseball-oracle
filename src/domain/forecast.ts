@@ -454,12 +454,17 @@ export interface MilbAlphaSignal {
 export interface MilbImpactRanking {
   rank: number
   rankPercentile: number
+  priorRank: number
+  priorRankPercentile: number
   role: 'hitter' | 'pitcher'
   status: 'research_only'
   releaseEligible: false
   frozenAsOf: string
   modelVersion: 'milb-impact-five-calendar-year-war-v1'
   selectedModel: 'regularized_logistic'
+  thinSampleModel: 'age_level_role_performance_prior'
+  thinSampleTieBreaker: 'regularized_logistic'
+  thinSamplePolicy: 'hierarchical_prior_rank_when_frozen_workload_is_below_minimum'
   universeRows: number
   target: {
     id: 'mlb_war_next_5_ge_5'
@@ -482,6 +487,16 @@ export interface MilbImpactRanking {
       folds: number
       validationSeasons: number[]
     }
+  }
+  thinSampleOofRankEvidence: {
+    method: 'player-purged expanding prediction-origin out-of-fold evaluation'
+    rows: number
+    players: number
+    eventPlayers: number
+    averagePrecision: number
+    rocAuc: number
+    brier: number
+    topDecileLift: number
   }
   gates: {
     tailCalibrationPassed: false
@@ -681,7 +696,7 @@ export interface PlayersResponseMeta {
     legacyDeprecated: true
   }
   prospectScoreContract?: {
-    version: 'prospect-score/v1'
+    version: 'prospect-score/v2'
     metric: 'prospectScore'
     route: 'milb'
     sort: 'prospectScore'
@@ -711,6 +726,11 @@ export interface PlayersResponseMeta {
     comparableAcrossRoutes: false
     calibratedProbability: false
     currentSeasonEvidenceBlended: false
+    supportedSampleModel: 'regularized_logistic'
+    thinSampleModel: 'age_level_role_performance_prior'
+    thinSamplePolicy: 'hierarchical_prior_rank_when_frozen_workload_is_below_minimum'
+    thinSampleMappingStatus: 'insufficient_sample'
+    careerRunwayGuardrailMetric: 'careerIndex'
     status: 'research_only'
   }
   ordering?: {

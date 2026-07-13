@@ -27,13 +27,13 @@ function makePlayer(overrides: Partial<PlayerMapInput> = {}): PlayerMapInput {
 }
 
 describe('Player Map', () => {
-  it('keeps current minor data after MLB experience on an unranked minor route', () => {
+  it('keeps a post-debut assignment on the MLB career route', () => {
     const profile = buildPlayerMap(makePlayer({
       stage: 'post_debut_minors',
       careerForecast: null,
     }), { minorUniverse: 6_412, mlbUniverse: 1_000 })
 
-    expect(profile.route).toBe('milb')
+    expect(profile.route).toBe('mlb')
     expect(profile.careerIndex.value).toBeNull()
     expect(profile.stageStanding).toMatchObject({ rank: null, universe: null })
     expect(profile.handling.primary?.code).toBe('post_debut_minor_assignment')
@@ -409,7 +409,7 @@ describe('Player Map', () => {
     expect(JSON.stringify(profile)).not.toContain('arrivalProbability')
   })
 
-  it('uses projected debut age for career ceiling and withholds a fragile Carson-like impact rank', () => {
+  it('uses projected debut age for career ceiling and shrinks a fragile Carson-like impact rank', () => {
     const profile = buildPlayerMap(makePlayer({
       name: 'Carson Taylor',
       age: 27,
@@ -417,6 +417,8 @@ describe('Player Map', () => {
       milbImpactRanking: {
         rank: 8,
         rankPercentile: 99.891534,
+        priorRank: 1_052,
+        priorRankPercentile: 83.715525,
         universeRows: 6_455,
         frozenAsOf: '2025-12-31T00:00:00.000Z',
         target: { id: 'mlb_war_next_5_ge_5' },
@@ -472,13 +474,15 @@ describe('Player Map', () => {
       target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
     })
     expect(profile.careerIndex).toMatchObject({ value: 2.9, status: 'research' })
-    expect(profile.state).toBe('mapped')
+    expect(profile.mappingStatus).toBe('insufficient_sample')
+    expect(profile.state).toBe('monitor')
     expect(profile.scores.outcome).toMatchObject({
-      display: 'Needs more data',
-      status: 'withheld',
-      value: null,
-      rank: null,
+      display: 'P84',
+      status: 'research',
+      value: 83.715525,
+      rank: 1_052,
     })
+    expect(profile.scores.outcome.basis).toContain('hierarchical age, level, role, and performance prior')
     expect(profile.scores.trajectory).toMatchObject({
       display: 'Age 28',
       target: 'estimated_mlb_debut_age',
