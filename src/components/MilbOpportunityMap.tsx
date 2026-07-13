@@ -48,7 +48,7 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
     <div className="chart-tooltip opportunity-map-tooltip">
       <strong>{point.name}</strong>
       <span>{point.organization} · {point.position} · {point.playerType} · {point.level}</span>
-      <span>Oracle Score: {formatPercentile(point.impactPercentile).slice(1)} · rank #{point.impactRank.toLocaleString()} of {point.impactUniverse.toLocaleString()}</span>
+      <span>Oracle Score: {formatPercentile(point.oraclePercentile).slice(1)} · rank #{point.oracleRank.toLocaleString()} of {point.oracleUniverse.toLocaleString()}</span>
       <span>Current data: {point.coveredPillars} of {point.totalPillars} areas ({point.evidenceCoverage.toFixed(0)}%)</span>
       <span>Playing time: {point.sampleSummary} · {point.sampleState}</span>
       {point.missingPillars.length > 0 ? <span>Data still needed: {point.missingPillars.join(', ')}</span> : null}
@@ -87,7 +87,7 @@ function OpportunityDot({
     <g
       role="button"
       tabIndex={0}
-      aria-label={`${payload.name}, ${payload.playerType}, Oracle Score ${formatPercentile(payload.impactPercentile).slice(1)}, ${payload.evidenceCoverage.toFixed(0)} percent current data coverage, ${ageContext}`}
+      aria-label={`${payload.name}, ${payload.playerType}, Oracle Score ${formatPercentile(payload.oraclePercentile).slice(1)}, ${payload.evidenceCoverage.toFixed(0)} percent current data coverage, ${ageContext}`}
       onClick={selectPoint}
       onKeyDown={handleKeyDown}
       style={{ cursor: 'pointer' }}
@@ -129,7 +129,7 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
   const omittedCount = Math.max(0, minorCount - points.length)
   const selectedPoint = points.find((point) => point.playerId === selectedId) ?? null
   const minimumImpact = points.length > 0
-    ? Math.min(...points.map((point) => point.impactPercentile))
+    ? Math.min(...points.map((point) => point.oraclePercentile))
     : 0
   const impactDomainMinimum = minimumImpact >= 95
     ? Math.max(90, Math.floor(minimumImpact) - 1)
@@ -201,7 +201,7 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
               />
               <YAxis
                 type="number"
-                dataKey="impactPercentile"
+                dataKey="oraclePercentile"
                 domain={[impactDomainMinimum, 100]}
                 ticks={impactTicks}
                 axisLine={false}
@@ -230,7 +230,7 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
         <div className="opportunity-map-selection" aria-live="polite">
           <strong>{selectedPoint.name}</strong>
           <span>
-            Oracle Score {formatPercentile(selectedPoint.impactPercentile).slice(1)} · rank #{selectedPoint.impactRank.toLocaleString()} · {selectedPoint.coveredPillars}/{selectedPoint.totalPillars} data areas
+            Oracle Score {formatPercentile(selectedPoint.oraclePercentile).slice(1)} · rank #{selectedPoint.oracleRank.toLocaleString()} · {selectedPoint.coveredPillars}/{selectedPoint.totalPillars} data areas
             {selectedPoint.ageAdvantage === null ? '' : ` · younger than ${selectedPoint.ageAdvantage.toFixed(0)}% of similar players at ${selectedPoint.level}`}
           </span>
         </div>

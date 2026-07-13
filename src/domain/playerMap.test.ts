@@ -25,6 +25,15 @@ describe('Player Map', () => {
         frozenAsOf: '2025-12-31T00:00:00.000Z',
         target: { id: 'mlb_war_next_5_ge_5' },
       },
+      careerForecast: {
+        asOf: '2025-12-31T00:00:00.000Z',
+        rank: 258,
+        hofCaliberProbability: 0.001,
+        confidenceScore: 0.35,
+        confidenceState: 'Low',
+        finalCareerWar: { p10: 0, p25: 0, p50: 1, p75: 4, p90: 12 },
+        decomposition: { estimatedDebutAge: 23 },
+      },
       milbAlphaSignal: {
         eligible: false,
         rank: null,
@@ -95,9 +104,9 @@ describe('Player Map', () => {
       route: 'milb',
       rank: 258,
       universe: 6_455,
-      target: 'mlb_war_next_5_ge_5',
+      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
       asOf: '2025-12-31T00:00:00.000Z',
-      definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+      definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
     })
     expect(profile.scores.outcome).toMatchObject({
       value: 96.017973,
@@ -120,6 +129,82 @@ describe('Player Map', () => {
     expect(profile.marketInputsIncluded).toBe(false)
     expect(JSON.stringify(profile)).not.toContain('primaryProbability')
     expect(JSON.stringify(profile)).not.toContain('arrivalProbability')
+  })
+
+  it('uses projected debut age for career ceiling and withholds a fragile Carson-like impact rank', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Carson Taylor',
+      age: 27,
+      level: 'AAA',
+      milbImpactRanking: {
+        rank: 8,
+        rankPercentile: 99.891534,
+        universeRows: 6_455,
+        frozenAsOf: '2025-12-31T00:00:00.000Z',
+        target: { id: 'mlb_war_next_5_ge_5' },
+      },
+      milbAlphaSignal: {
+        eligible: false,
+        rank: null,
+        asOf: '2025-12-31T00:00:00.000Z',
+        ageContext: {
+          youngerThanPercent: 2,
+          referencePlayers: 1_499,
+          priorLevel: 'AAA',
+        },
+        gates: {
+          supportedHistoricalContext: true,
+          youngForRoleAndLevel: false,
+          minimumRawWorkload: false,
+          minimumPrimaryProbability: true,
+          positivePrimaryModelEdge: true,
+          positiveLongHorizonModelEdge: false,
+        },
+      },
+      careerForecast: {
+        asOf: '2025-12-31T00:00:00.000Z',
+        rank: 2_121,
+        hofCaliberProbability: 0.00012714,
+        confidenceScore: 0.25,
+        confidenceState: 'Low',
+        finalCareerWar: { p10: -0.76, p25: -0.33, p50: -0.04, p75: 0.36, p90: 3.04 },
+        decomposition: { estimatedDebutAge: 28 },
+      },
+      minorTraitEvidence: {
+        opportunity: {
+          state: 'sufficient',
+          observed: { plateAppearances: 226, inningsPitched: null, pitches: null },
+          thresholds: [{ unit: 'PA', provisional: 75, sufficient: 150 }],
+        },
+        coverage: {
+          coveredPillarCount: 4,
+          totalPillarCount: 4,
+          missingPillars: [],
+        },
+        corroboration: { passesAllDescriptiveGates: false },
+        strongestMetrics: [],
+      },
+    }), { minorUniverse: 6_179 })
+
+    expect(profile.oracleScore).toMatchObject({
+      value: 66,
+      rank: 2_121,
+      universe: 6_179,
+      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+    })
+    expect(profile.state).toBe('mapped')
+    expect(profile.scores.outcome).toMatchObject({
+      display: 'Needs more data',
+      status: 'withheld',
+      value: null,
+      rank: null,
+    })
+    expect(profile.scores.trajectory).toMatchObject({
+      display: 'Age 28',
+      target: 'estimated_mlb_debut_age',
+    })
+    expect(profile.summary).toContain('Projected MLB arrival age is 28')
+    expect(profile.signals.map((signal) => signal.code)).not.toContain('ceiling_readiness_split')
   })
 
   it('maps an MLB player without comparing the rank to the MiLB universe', () => {

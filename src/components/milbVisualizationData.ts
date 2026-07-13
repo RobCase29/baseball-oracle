@@ -1,4 +1,5 @@
 import type { PlayerRecord, PlayerType } from '../domain/forecast'
+import { playerMapFor } from './playerMapView'
 
 export type OpportunityTier = 'priority' | 'strong' | 'watch' | 'context'
 
@@ -16,9 +17,9 @@ export interface MilbOpportunityPoint {
   missingPillars: string[]
   sampleState: 'unavailable' | 'insufficient' | 'provisional' | 'sufficient'
   sampleSummary: string
-  impactPercentile: number
-  impactRank: number
-  impactUniverse: number
+  oraclePercentile: number
+  oracleRank: number
+  oracleUniverse: number
   arrivalGateCleared: boolean
   playerType: PlayerType
   traitCorroborated: boolean
@@ -36,12 +37,12 @@ export interface MilbEvidenceRow {
 }
 
 function resolveTier(player: PlayerRecord): OpportunityTier {
-  const impactPercentile = player.milbImpactRanking?.rankPercentile ?? 0
+  const oraclePercentile = playerMapFor(player).oracleScore.value ?? 0
   const arrival = player.milbAlphaSignal
 
-  if (!arrival?.eligible || impactPercentile < 90) return 'context'
-  if (arrival.tier === 'priority' && impactPercentile >= 99) return 'priority'
-  if (impactPercentile >= 95) return 'strong'
+  if (!arrival?.eligible || oraclePercentile < 90) return 'context'
+  if (arrival.tier === 'priority' && oraclePercentile >= 99) return 'priority'
+  if (oraclePercentile >= 95) return 'strong'
   return 'watch'
 }
 
@@ -75,9 +76,13 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
   return players.flatMap((player) => {
     if (player.stage !== 'pre_debut') return []
 
-    const impact = player.milbImpactRanking
+    const oracle = playerMapFor(player).oracleScore
     const ageContext = player.milbAlphaSignal?.ageContext
-    if (!impact || !validPercentile(impact.rankPercentile)) return []
+    if (
+      oracle.rank === null ||
+      oracle.universe === null ||
+      !validPercentile(oracle.value)
+    ) return []
 
     const traitEvidence = player.minorTraitEvidence
     const totalPillars = validNonNegative(traitEvidence?.coverage.totalPillarCount)
@@ -106,17 +111,17 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       missingPillars: traitEvidence?.coverage.missingPillars ?? [],
       sampleState: traitEvidence?.opportunity.state ?? 'unavailable',
       sampleSummary: sampleSummary(player),
-      impactPercentile: impact.rankPercentile,
-      impactRank: impact.rank,
-      impactUniverse: impact.universeRows,
+      oraclePercentile: oracle.value,
+      oracleRank: oracle.rank,
+      oracleUniverse: oracle.universe,
       arrivalGateCleared: player.milbAlphaSignal?.eligible === true,
       playerType: player.playerType,
       traitCorroborated: traitEvidence?.corroboration?.passesAllDescriptiveGates === true,
       tier: resolveTier(player),
     }]
   }).sort((left, right) => {
-    const impactDifference = left.impactRank - right.impactRank
-    if (impactDifference !== 0) return impactDifference
+    const oracleDifference = left.oracleRank - right.oracleRank
+    if (oracleDifference !== 0) return oracleDifference
     return left.name.localeCompare(right.name)
   })
 }
@@ -125,8 +130,23 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
   if (player.stage !== 'pre_debut') return []
 
   const rows: MilbEvidenceRow[] = []
+  const oracle = playerMapFor(player).oracleScore
+  if (
+    oracle.rank !== null &&
+    oracle.universe !== null &&
+    validPercentile(oracle.value)
+  ) {
+    rows.push({
+      id: 'career-ceiling-rank',
+      label: 'Career ceiling',
+      value: oracle.value,
+      kind: 'model_rank',
+      detail: `#${oracle.rank.toLocaleString()} of ${oracle.universe.toLocaleString()} in the runway-adjusted prospect career ranking`,
+    })
+  }
   const impact = player.milbImpactRanking
-  if (impact && validPercentile(impact.rankPercentile)) {
+  const impactWorkloadSupported = player.milbAlphaSignal?.gates?.minimumRawWorkload !== false
+  if (impact && impactWorkloadSupported && validPercentile(impact.rankPercentile)) {
     rows.push({
       id: 'impact-rank',
       label: '5Y impact rank',

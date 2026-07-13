@@ -317,6 +317,7 @@ const forecast: CareerForecast = {
     hofCaliberGivenMlbProbability: 0.106,
     noMlbProbability: 0.24,
     observedCumulativeWar: null,
+    estimatedDebutAge: null,
   },
   hofStandard: null,
   summary: 'Research fixture.',
@@ -434,7 +435,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('columnheader', { name: 'What the score ranks' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Why it stands out' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Player / Oracle Score' })).toBeInTheDocument()
-    expect(screen.getByText('5+ MLB WAR in 5 years')).toBeInTheDocument()
+    expect(screen.getByText('Runway-adjusted career ceiling')).toBeInTheDocument()
     expect(screen.getByText('Stage rank, not a probability')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
     expect(screen.getAllByText('Stats only').length).toBeGreaterThan(0)
@@ -577,13 +578,13 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Prospect Rankings' })).toBeInTheDocument()
-    expect(screen.getByText('Top <0.1%')).toBeInTheDocument()
-    expect(screen.getByText('High upside, more proof needed')).toBeInTheDocument()
-    expect(screen.getByLabelText('Oracle Score 100')).toBeInTheDocument()
-    expect(screen.getByText('#3')).toBeInTheDocument()
+    expect(screen.getByText('Top 0.1%')).toBeInTheDocument()
+    expect(screen.getByText('High career upside, more proof needed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Oracle Score 99.9')).toBeInTheDocument()
+    expect(screen.getByText('#7')).toBeInTheDocument()
     expect(screen.getByText('of 6,455')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Prospect landscape' })).toBeInTheDocument()
-    expect(screen.getByText(/Five-year rank #3 · MLB arrival rank #5/u)).toBeInTheDocument()
+    expect(screen.getByText(/Career ceiling rank #7 · five-year impact #3/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
   })
 
@@ -625,6 +626,11 @@ describe('unified Oracle Board shell', () => {
       opportunity: { label: 'PA', value: '122' },
       milbAlphaSignal: aivaSignal,
       milbImpactRanking: aivaImpact,
+      careerForecast: {
+        ...forecast,
+        rank: 258,
+        decomposition: { ...forecast.decomposition, estimatedDebutAge: 23 },
+      },
       minorTraitEvidence: aivaTraits,
     }
 
@@ -646,9 +652,9 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getAllByText('Aiva Arquette').length).toBeGreaterThan(0)
     expect(screen.getByText('Top 4.0%')).toBeInTheDocument()
-    expect(screen.getByText('High upside, more proof needed')).toBeInTheDocument()
+    expect(screen.getByText('High career upside, more proof needed')).toBeInTheDocument()
     expect(screen.getByLabelText('Oracle Score 96')).toBeInTheDocument()
-    expect(screen.getByText('Five-year rank #258 · MLB arrival not yet confirmed')).toBeInTheDocument()
+    expect(screen.getByText('Career ceiling rank #258 · five-year impact #258')).toBeInTheDocument()
     expect(screen.queryByText('Not ranked')).not.toBeInTheDocument()
     expect(screen.queryByText('Not triggered')).not.toBeInTheDocument()
 
@@ -662,11 +668,10 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Five-year MLB impact' })).toBeInTheDocument()
-    expect(screen.getByText('A score of 96 puts Aiva Arquette above about 96% of scored minor-league players for five-year MLB impact.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Runway-adjusted career ceiling' })).toBeInTheDocument()
+    expect(screen.getByText('A score of 96 puts Aiva Arquette above about 96% of scored minor-league players for runway-adjusted career ceiling.')).toBeInTheDocument()
     expect(screen.getByText('Not yet confirmed')).toBeInTheDocument()
-    expect(screen.getByText('84th percentile')).toBeInTheDocument()
-    expect(screen.getByText('91st percentile')).toBeInTheDocument()
+    expect(screen.getAllByText('Age 23').length).toBeGreaterThan(0)
     expect(screen.getByText('2 / 4 data areas')).toBeInTheDocument()
     expect(screen.getByText('High upside, longer path')).toBeInTheDocument()
     expect(screen.getByText('Early signal')).toBeInTheDocument()
@@ -686,8 +691,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
-    expect(screen.getByText('#3 of 6,455 impact rank')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Five-Year Impact Radar' })).toBeInTheDocument()
+    expect(screen.getByText('#3 of 6,455')).toBeInTheDocument()
     expect(screen.getByText(/8\.10x model-wide top-decile lift/u)).toBeInTheDocument()
     expect(screen.getByText('88%')).toBeInTheDocument()
     expect(screen.getByText('Impact top decile')).toBeInTheDocument()
@@ -740,7 +745,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getAllByText('Not passed')).toHaveLength(3)
   })
 
-  it('keeps a full prospect career arc withheld until the direct model is ready', () => {
+  it('shows the runway-adjusted prospect bridge without presenting a full simulated arc', () => {
     render(
       <PlayerDossier
         player={player}
@@ -750,15 +755,14 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getAllByText('Stage rank unavailable').length).toBeGreaterThan(0)
-    expect(screen.getByText('ORACLE SCORE PENDING')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Full career model in development' })).toBeInTheDocument()
-    expect(screen.getByText(/Oracle Score ranks projected five-year MLB impact/u)).toBeInTheDocument()
-    expect(screen.getByText(/do not show a Hall of Fame percentage or full career arc/u)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Runway-adjusted career outlook' })).toBeInTheDocument()
+    expect(screen.getByText(/projected MLB arrival age into the second leg/u)).toBeInTheDocument()
+    expect(screen.getByText('HIGH CAREER CASE')).toBeInTheDocument()
+    expect(screen.getByText('Research bridge, not a finished career simulation')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()
     expect(screen.queryByText('FINAL CAREER WAR')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Projected career arc' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Five-Year Impact Radar' })).toBeInTheDocument()
     expect(screen.getByText('Impact rank unavailable')).toBeInTheDocument()
   })
 

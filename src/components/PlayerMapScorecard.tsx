@@ -24,8 +24,9 @@ function ordinalLabel(value: number): string {
 }
 
 function supportingLabel(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
+  if (score.key === 'outcome') return route === 'milb' ? 'Five-year MLB impact' : score.label
   if (score.key === 'readiness') return route === 'milb' ? 'MLB readiness' : 'Next 3-year upside'
-  if (score.key === 'trajectory') return route === 'milb' ? 'Age advantage' : 'Career pace'
+  if (score.key === 'trajectory') return route === 'milb' ? 'Projected MLB arrival' : 'Career pace'
   if (score.key === 'best_trait') return route === 'milb' ? 'Best current skill' : 'Current season performance'
   return route === 'milb' ? 'Current data coverage' : 'Model evidence'
 }
@@ -38,6 +39,7 @@ function supportingDisplay(
   if (score.key === 'readiness' && route === 'milb') {
     return score.rank === null ? 'Not yet confirmed' : `Arrival rank #${score.rank.toLocaleString()}`
   }
+  if (score.key === 'trajectory' && route === 'milb') return score.display
   if ((score.key === 'trajectory' || score.key === 'best_trait') && score.value !== null) {
     return ordinalLabel(score.value)
   }
@@ -57,9 +59,10 @@ function supportingBasis(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
       ? 'A separate model checks whether an MLB arrival is close enough to confirm.'
       : 'Chance of reaching the model’s elite production line over the next three seasons.'
   }
+  if (score.key === 'outcome') return score.basis
   if (score.key === 'trajectory') {
     return route === 'milb'
-      ? 'Age compared with historical players at a similar level and role.'
+      ? 'Projected MLB arrival age is carried into the career outlook; later arrivals have less runway.'
       : 'Career value to date compared with similar players at the same age and experience.'
   }
   if (score.key === 'best_trait') {
@@ -73,12 +76,12 @@ function supportingBasis(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
 function plainSignal(signal: PlayerMapSignal): { label: string; detail: string } {
   const copy: Record<PlayerMapSignal['code'], { label: string; detail: string }> = {
     dual_confirmed: {
-      label: 'Upside and MLB readiness agree',
-      detail: 'Both the five-year impact model and the separate MLB arrival check rate this player highly.',
+      label: 'Career upside and MLB readiness agree',
+      detail: 'Both the runway-adjusted career model and the separate MLB arrival check rate this player highly.',
     },
     ceiling_readiness_split: {
       label: 'High upside, longer path',
-      detail: 'The long-term impact score is high, but a near-term MLB arrival is not confirmed yet.',
+      detail: 'The career ceiling rank is high, but a near-term MLB arrival is not confirmed yet.',
     },
     thin_data_upside: {
       label: 'Early signal',
@@ -125,12 +128,9 @@ function plainNextStep(step: string): string {
 export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   const map = playerMapFor(player)
   const oracleScore = oracleScoreFor(player)
-  const supportingScores = [
-    map.scores.readiness,
-    map.scores.trajectory,
-    map.scores.bestTrait,
-    map.scores.evidence,
-  ]
+  const supportingScores = map.route === 'milb'
+    ? [map.scores.outcome, map.scores.readiness, map.scores.trajectory, map.scores.evidence]
+    : [map.scores.readiness, map.scores.trajectory, map.scores.bestTrait, map.scores.evidence]
   const hasTraitProfile = map.strengths.length > 0 || map.risks.length > 0
 
   return (
@@ -155,11 +155,13 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
       <div className="oracle-score-definition">
         <strong>Start here.</strong>
         <span>
-          Higher is better. Oracle Score converts this player’s exact rank among all scored {map.route === 'milb' ? 'minor-league' : 'major-league'} players to a 0–100 scale.
+          {map.route === 'milb'
+            ? 'Higher is better. The minor-league score carries projected MLB arrival age into the career ceiling rank, so remaining career runway matters.'
+            : 'Higher is better. Oracle Score converts this player’s exact rank among all scored major-league players to a 0–100 scale.'}
         </span>
       </div>
 
-      <div className="player-map-scores" aria-label="What supports the Oracle Score">
+      <div className="player-map-scores" aria-label="Context behind the Oracle Score">
         {supportingScores.map((score) => {
           const width = scoreWidth(score)
           return (
@@ -244,7 +246,9 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
 
       <div className="player-map-disclosure">
         <strong>Rank, not a guarantee.</strong>
-        <span>Oracle Score is a stage-specific percentile, not a probability, blended composite, or card-value estimate. Current stats refresh daily; the score changes with a tested model release.</span>
+        <span>{map.route === 'milb'
+          ? 'This is a research rank from an MLB-arrival and debut-age career bridge, not a Hall of Fame probability, blended composite, or card-value estimate. Current stats refresh daily; model ranks change with a tested release.'
+          : 'Oracle Score is a stage-specific percentile, not a probability, blended composite, or card-value estimate. Current stats refresh daily; the score changes with a tested model release.'}</span>
       </div>
     </section>
   )

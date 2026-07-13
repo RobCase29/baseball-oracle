@@ -815,12 +815,8 @@ export function sortUnifiedCandidates(
     if (sort === 'alphaOpportunity') {
       return (
         compareNullableNumber(
-          left.source === 'minor'
-            ? left.milbImpactRanking?.rank ?? null
-            : left.careerForecast?.rank ?? null,
-          right.source === 'minor'
-            ? right.milbImpactRanking?.rank ?? null
-            : right.careerForecast?.rank ?? null,
+          left.careerForecast?.rank ?? null,
+          right.careerForecast?.rank ?? null,
           'ascending',
         ) ||
         idTie
@@ -1157,6 +1153,14 @@ export function scoredMlbUniverse(candidates: UnifiedBoardCandidate[]): number {
   )).length
 }
 
+export function scoredMinorForecastUniverse(candidates: UnifiedBoardCandidate[]): number {
+  return candidates.filter((candidate) => (
+    candidate.source === 'minor' &&
+    candidate.careerForecast?.rank !== null &&
+    candidate.careerForecast?.rank !== undefined
+  )).length
+}
+
 export function stageRelevantDataAsOf(
   stage: PlayerStage,
   minorDataAsOf: string | null,
@@ -1348,7 +1352,7 @@ export default async function handler(
     const pageCandidates = filtered.slice(offset, offset + query.limit)
     const playerMapContext = {
       mlbUniverse: scoredMlbUniverse(mlb),
-      minorUniverse: canonicalMinors.length,
+      minorUniverse: scoredMinorForecastUniverse(currentUniverse),
     }
     const minorPageIds = pageCandidates
       .map((candidate) => candidate.minorProfileId)

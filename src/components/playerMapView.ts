@@ -20,7 +20,7 @@ export interface OracleScoreView {
 
 const plainStateLabels: Record<PlayerMapState, string> = {
   conviction: 'Strong model signal',
-  discovery: 'High upside, more proof needed',
+  discovery: 'High career upside, more proof needed',
   rising: 'Career trending up',
   monitor: 'Worth monitoring',
   mapped: 'Outlook available',
@@ -64,7 +64,7 @@ export function playerMapFor(player: PlayerRecord): PlayerMapProfile {
       universe: outcome.universe,
       target: outcome.target,
       asOf: outcome.asOf,
-      definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+      definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
     },
   }
 }
@@ -78,7 +78,7 @@ export function oracleScoreFor(player: PlayerRecord): OracleScoreView {
   const value = map.oracleScore.value
   const isMinor = map.route === 'milb'
   const comparisonLabel = isMinor ? 'scored minor-league players' : 'scored major-league players'
-  const outcomeLabel = isMinor ? 'Five-year MLB impact' : 'Hall of Fame career outlook'
+  const outcomeLabel = isMinor ? 'Runway-adjusted career ceiling' : 'Hall of Fame career outlook'
   const rankLabel = map.oracleScore.rank === null
     ? 'Stage rank unavailable'
     : map.oracleScore.universe === null

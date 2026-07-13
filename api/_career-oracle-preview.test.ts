@@ -29,6 +29,7 @@ function previewFixture() {
         decomposition: {
           arrivalProbability: 0.7,
           conditionalHofCaliberProbability: 0.03,
+          estimatedDebutAge: 24,
         },
         standardReference: {
           key: 'CF',
@@ -234,6 +235,7 @@ describe('Career Oracle preview loader', () => {
     expect(prospect?.canonicalPlayerId).toBe('mlbam:765432:hitter')
     expect(prospect?.playerType).toBe('Hitter')
     expect(prospect?.careerForecast.decomposition.hofCaliberGivenMlbProbability).toBe(0.03)
+    expect(prospect?.careerForecast.decomposition.estimatedDebutAge).toBe(24)
     expect(prospect?.careerForecast.scenarioSupportExtensionJaws).toBe(2.4)
     expect(prospect?.careerForecast.hofStandard).toMatchObject({
       label: 'CF',
@@ -287,6 +289,10 @@ describe('Career Oracle preview loader', () => {
     const invalidExtensionFixture = previewFixture()
     invalidExtensionFixture.prospectForecasts['765432:hitter'].scenarioSupportExtensionJaws = Number.NaN
     expect(() => parseCareerOraclePreview(invalidExtensionFixture)).toThrow(/finite number/u)
+
+    const invalidDebutAgeFixture = previewFixture()
+    invalidDebutAgeFixture.prospectForecasts['765432:hitter'].decomposition.estimatedDebutAge = 8
+    expect(() => parseCareerOraclePreview(invalidDebutAgeFixture)).toThrow(/between 16 and 50/u)
 
     const invalidRelativeFixture = previewFixture()
     invalidRelativeFixture.players[0]!.forecast.relativeSignal.historicalPace.percentile = 101

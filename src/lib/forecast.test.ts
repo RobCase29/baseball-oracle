@@ -48,6 +48,7 @@ function makeForecast(overrides: Partial<CareerForecast> = {}): CareerForecast {
       hofCaliberGivenMlbProbability: 0.1,
       noMlbProbability: 0.2,
       observedCumulativeWar: null,
+      estimatedDebutAge: null,
     },
     hofStandard: null,
     summary: null,
@@ -400,33 +401,30 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-alpha', 'lower-alpha', 'failed-ceiling-gate', 'minor-discovery'])
   })
 
-  it('sorts MiLB players by the five-year impact rank behind Oracle Score', () => {
-    const milbSignal = (rank: number) => ({
-      status: 'research',
-      eligible: true,
-      tier: 'priority',
-      rank,
-    }) as NonNullable<PlayerRecord['milbAlphaSignal']>
+  it('sorts MiLB players by the career-ceiling rank behind Oracle Score', () => {
     const impactRanking = (rank: number, rankPercentile: number) => ({
       rank,
       rankPercentile,
     }) as NonNullable<PlayerRecord['milbImpactRanking']>
     const players = [
-      makePlayer({ id: 'minor-untriggered' }),
       makePlayer({
-        id: 'minor-impact-second',
-        milbAlphaSignal: milbSignal(1),
-        milbImpactRanking: impactRanking(3, 99.9),
+        id: 'minor-without-career-rank',
+        milbImpactRanking: impactRanking(2, 99.9),
       }),
       makePlayer({
-        id: 'minor-impact-first',
-        milbAlphaSignal: milbSignal(10),
+        id: 'minor-career-second',
+        careerForecast: makeForecast({ rank: 2 }),
         milbImpactRanking: impactRanking(1, 100),
       }),
       makePlayer({
-        id: 'minor-outside-top-decile',
-        milbAlphaSignal: milbSignal(2),
+        id: 'minor-career-first',
+        careerForecast: makeForecast({ rank: 1 }),
         milbImpactRanking: impactRanking(900, 86),
+      }),
+      makePlayer({
+        id: 'minor-career-third',
+        careerForecast: makeForecast({ rank: 3 }),
+        milbImpactRanking: impactRanking(3, 99.9),
       }),
     ]
 
@@ -435,18 +433,19 @@ describe('Oracle Board utilities', () => {
       stage: 'Minors',
       sort: 'alphaOpportunity',
     }).map((player) => player.id)).toEqual([
-      'minor-impact-first',
-      'minor-impact-second',
-      'minor-outside-top-decile',
-      'minor-untriggered',
+      'minor-career-first',
+      'minor-career-second',
+      'minor-career-third',
+      'minor-without-career-rank',
     ])
   })
 
-  it('uses direct impact rank for a mapped MiLB watchlist player without an arrival trigger', () => {
+  it('uses career-ceiling rank for a mapped MiLB watchlist player without an arrival trigger', () => {
     const players = [
       makePlayer({ id: 'unmapped' }),
       makePlayer({
         id: 'aiva-like',
+        careerForecast: makeForecast({ rank: 258 }),
         milbAlphaSignal: {
           status: 'research',
           eligible: false,

@@ -291,6 +291,13 @@ function arrivalProbability36(input: JsonRecord): number | null {
 
 function decomposition(value: unknown, forecast: JsonRecord): CareerForecastDecomposition {
   const input = value === null || value === undefined ? {} : record(value, 'decomposition')
+  const estimatedDebutAge = finiteNumber(
+    input.estimatedDebutAge,
+    'decomposition.estimatedDebutAge',
+  )
+  if (estimatedDebutAge !== null && (estimatedDebutAge < 16 || estimatedDebutAge > 50)) {
+    throw new Error('decomposition.estimatedDebutAge must be between 16 and 50')
+  }
   return {
     arrivalProbability: probability(
       input.arrivalProbability ?? forecast.arrivalProbability,
@@ -309,6 +316,7 @@ function decomposition(value: unknown, forecast: JsonRecord): CareerForecastDeco
       input.observedCumulativeWar ?? forecast.cumulativeWar ?? forecast.actualCumulativeWar,
       'decomposition.observedCumulativeWar',
     ),
+    estimatedDebutAge,
   }
 }
 

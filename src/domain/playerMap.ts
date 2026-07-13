@@ -61,7 +61,7 @@ export interface PlayerMapOracleScore {
   universe: number | null
   target: string | null
   asOf: string | null
-  definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score'
+  definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score'
 }
 
 export interface PlayerMapProfile {
@@ -169,6 +169,16 @@ export interface PlayerMapInput {
     hofCaliberProbability: number | null
     confidenceScore: number | null
     confidenceState: string
+    finalCareerWar?: {
+      p10: number
+      p25: number
+      p50: number
+      p75: number
+      p90: number
+    } | null
+    decomposition?: {
+      estimatedDebutAge: number | null
+    } | null
     careerChapter?: {
       status: 'research' | 'withheld'
       label: string
@@ -251,7 +261,7 @@ function oracleScore(
     universe,
     target,
     asOf,
-    definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+    definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
   }
 }
 
@@ -314,9 +324,13 @@ function minorArchetype(strengths: PlayerMapTrait[], risks: PlayerMapTrait[]): s
   return `${strength} / ${risk}`
 }
 
-function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
+function buildMinorMap(
+  player: PlayerMapInput,
+  context: PlayerMapBuildContext,
+): PlayerMapProfile {
   const impact = player.milbImpactRanking
   const arrival = player.milbAlphaSignal
+  const career = player.careerForecast
   const traits = player.minorTraitEvidence
   const traitInputs = traits?.strongestMetrics ?? player.metrics
   const traitRows = uniqueTraits(traitInputs)
@@ -329,22 +343,28 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
   const coveredPillars = traits?.coverage.coveredPillarCount ?? 0
   const totalPillars = traits?.coverage.totalPillarCount ?? 0
   const evidenceValue = totalPillars > 0 ? 100 * coveredPillars / totalPillars : null
-  const impactValue = validPercentile(impact?.rankPercentile) ? impact.rankPercentile : null
+  const impactWorkloadSupported = arrival?.gates?.minimumRawWorkload !== false
+  const rawImpactValue = validPercentile(impact?.rankPercentile) ? impact.rankPercentile : null
+  const impactValue = impactWorkloadSupported ? rawImpactValue : null
+  const careerRank = career?.rank ?? null
+  const careerUniverse = context.minorUniverse ?? impact?.universeRows ?? null
+  const careerValue = ordinalPercentile(careerRank, careerUniverse)
+  const estimatedDebutAge = career?.decomposition?.estimatedDebutAge ?? null
   const ageValue = validPercentile(arrival?.ageContext?.youngerThanPercent)
     ? arrival.ageContext.youngerThanPercent
     : null
   const bestTrait = strengths[0] ?? traitRows.toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
   const evidenceState = traits?.opportunity.state ?? 'unavailable'
-  const dualConfirmed = arrival?.eligible === true && (impactValue ?? -1) >= 90
+  const dualConfirmed = arrival?.eligible === true && (careerValue ?? -1) >= 90
   const traitConfirmed = traits?.corroboration.passesAllDescriptiveGates === true
 
   const state: PlayerMapState = dualConfirmed && traitConfirmed
     ? 'conviction'
-    : (impactValue ?? -1) >= 90
+    : (careerValue ?? -1) >= 90
       ? 'discovery'
-      : (impactValue ?? -1) >= 75 || traitConfirmed
+      : (careerValue ?? -1) >= 75 || traitConfirmed
         ? 'monitor'
-        : impactValue !== null
+        : careerValue !== null
           ? 'mapped'
           : traitRows.length > 0
             ? 'evidence_building'
@@ -355,21 +375,21 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
     signals.push({
       code: 'dual_confirmed',
       label: 'Dual-confirmed upside',
-      detail: 'The five-year impact rank and separate arrival anomaly gate both cleared.',
+      detail: 'The runway-adjusted career rank and separate MLB arrival gate both cleared.',
     })
   }
-  if ((impactValue ?? -1) >= 90 && arrival?.eligible !== true) {
+  if ((careerValue ?? -1) >= 90 && arrival?.eligible !== true) {
     signals.push({
       code: 'ceiling_readiness_split',
       label: 'Ceiling / readiness split',
-      detail: 'The impact route is top decile, while the separate arrival confirmation did not clear.',
+      detail: 'The career ceiling route is top decile, while the separate arrival confirmation did not clear.',
     })
   }
-  if ((impactValue ?? -1) >= 90 && evidenceState !== 'sufficient') {
+  if ((careerValue ?? -1) >= 90 && evidenceState !== 'sufficient') {
     signals.push({
       code: 'thin_data_upside',
       label: 'Thin-data upside',
-      detail: `The outcome rank is high while current evidence remains ${evidenceState}.`,
+      detail: `The career rank is high while current evidence remains ${evidenceState}.`,
     })
   }
   if (traitConfirmed) {
@@ -387,9 +407,12 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
     })
   }
 
-  const outlookText = impactValue === null
-    ? 'does not have an exact frozen five-year impact rank'
-    : `sits ${percentileDisplay(impactValue)} on the frozen five-year impact route`
+  const outlookText = careerValue === null
+    ? 'does not yet have a matched runway-adjusted career rank'
+    : `ranks ${rankDisplay(careerRank, careerUniverse)} on the runway-adjusted career ceiling route`
+  const runwayText = estimatedDebutAge === null
+    ? ''
+    : ` Projected MLB arrival age is ${estimatedDebutAge}, which shapes the remaining career runway.`
   const strengthText = strengths[0]
     ? ` Best observed strength: ${strengths[0].label} ${percentileDisplay(strengths[0].percentile)}.`
     : ''
@@ -399,37 +422,43 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
 
   return {
     version: PLAYER_MAP_VERSION,
-    asOf: impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
+    asOf: career?.asOf ?? impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
     route: 'milb',
-    mappingStatus: impact
+    mappingStatus: careerRank !== null && careerValue !== null
       ? 'scored'
       : evidenceState === 'insufficient' || evidenceState === 'provisional'
         ? 'insufficient_sample'
         : 'coverage_gap',
-    claimStatus: impact ? 'research_rank_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
+    claimStatus: careerRank !== null ? 'research_rank_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
     archetype: minorArchetype(strengths, risks),
-    summary: `${player.name} ${outlookText}. Current evidence is ${evidenceState}.${strengthText}${riskText}`,
+    summary: `${player.name} ${outlookText}.${runwayText} Current data coverage is ${evidenceState}.${strengthText}${riskText}`,
     oracleScore: oracleScore(
       'milb',
-      impactValue,
-      impact?.rank ?? null,
-      impact?.universeRows ?? null,
-      impact?.target.id ?? null,
-      impact?.frozenAsOf ?? null,
+      careerValue,
+      careerRank,
+      careerUniverse,
+      'mlb-debut-age-mixed-final-standard-bridge-v1',
+      career?.asOf ?? null,
     ),
     scores: {
       outcome: score({
         key: 'outcome',
-        label: 'Five-year impact outlook',
+        label: 'Five-year MLB impact',
         value: impactValue,
-        display: impactValue === null ? 'Unmapped' : percentileDisplay(impactValue),
+        display: !impact
+          ? 'Unmapped'
+          : !impactWorkloadSupported
+            ? 'Needs more data'
+            : impactValue === null ? 'Unmapped' : percentileDisplay(impactValue),
         scale: 'ordinal_percentile',
-        status: impact ? 'research' : 'withheld',
-        basis: 'Frozen direct five-calendar-year impact rank',
-        target: impact?.target.id ?? null,
-        rank: impact?.rank ?? null,
+        status: impact && impactWorkloadSupported ? 'research' : 'withheld',
+        basis: impact && !impactWorkloadSupported
+          ? 'The completed-season model input did not clear its minimum workload gate'
+          : 'Separate frozen five-calendar-year MLB impact rank',
+        target: impact?.target?.id ?? null,
+        rank: impactWorkloadSupported ? impact?.rank ?? null : null,
         universe: impact?.universeRows ?? null,
         asOf: impact?.frozenAsOf ?? null,
       }),
@@ -448,15 +477,19 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
       }),
       trajectory: score({
         key: 'trajectory',
-        label: 'Age / level runway',
+        label: 'Projected MLB arrival age',
         value: ageValue,
-        display: ageValue === null ? `Age ${player.age ?? '-'} / ${player.level ?? '-'}` : percentileDisplay(ageValue),
+        display: estimatedDebutAge === null
+          ? ageValue === null ? `Age ${player.age ?? '-'} / ${player.level ?? '-'}` : percentileDisplay(ageValue)
+          : `Age ${estimatedDebutAge}`,
         scale: 'descriptive_percentile',
-        status: ageValue === null ? 'withheld' : 'research',
-        basis: arrival?.ageContext
-          ? `Younger-than percentile among historical ${arrival.ageContext.priorLevel} role peers`
-          : 'Historical role-level age context unavailable',
-        target: null,
+        status: estimatedDebutAge === null && ageValue === null ? 'withheld' : 'research',
+        basis: estimatedDebutAge === null
+          ? arrival?.ageContext
+            ? `Younger-than percentile among historical ${arrival.ageContext.priorLevel} role peers`
+            : 'Historical role-level age context unavailable'
+          : `Projected debut age ${estimatedDebutAge}; later arrival leaves less time to build career value`,
+        target: 'estimated_mlb_debut_age',
         rank: null,
         universe: arrival?.ageContext?.referencePlayers ?? null,
         asOf: arrival?.asOf ?? null,
@@ -493,7 +526,9 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
     signals,
     missingEvidence: [
       ...(traits?.coverage.missingPillars ?? []),
+      ...(careerRank === null ? ['Runway-adjusted career estimate'] : []),
       ...(!impact ? ['Frozen five-year impact rank'] : []),
+      ...(impact && !impactWorkloadSupported ? ['Stable completed-season impact sample'] : []),
       ...(!arrival?.ageContext ? ['Historical role-level age context'] : []),
     ],
     nextEvidence: minorNextEvidence(player),
@@ -680,6 +715,6 @@ export function buildPlayerMap(
   context: PlayerMapBuildContext = {},
 ): PlayerMapProfile {
   return player.stage === 'pre_debut'
-    ? buildMinorMap(player)
+    ? buildMinorMap(player, context)
     : buildMlbMap(player, context)
 }

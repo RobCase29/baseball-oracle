@@ -90,7 +90,12 @@ export interface MilbCeilingAlpha {
 export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha | null {
   const arrivalSignal = eligibleMilbAlphaSignal(player)
   const impactRanking = player.stage === 'pre_debut' ? player.milbImpactRanking : null
-  if (!arrivalSignal || !impactRanking || impactRanking.rankPercentile < 90) return null
+  if (
+    !arrivalSignal ||
+    !impactRanking ||
+    arrivalSignal.gates?.minimumRawWorkload === false ||
+    impactRanking.rankPercentile < 90
+  ) return null
   const tier = impactRanking.rankPercentile >= 99 && arrivalSignal.tier === 'priority'
     ? 'priority'
     : impactRanking.rankPercentile >= 95
@@ -100,9 +105,7 @@ export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha
 }
 
 export function oracleOutcomeRank(player: PlayerRecord): number | null {
-  return player.stage === 'pre_debut'
-    ? player.milbImpactRanking?.rank ?? null
-    : player.careerForecast?.rank ?? null
+  return player.careerForecast?.rank ?? null
 }
 
 export function filterAndSortPlayers(

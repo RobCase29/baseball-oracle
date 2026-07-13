@@ -113,7 +113,7 @@ export function ProspectBoard({
         <div>
           <span className="eyebrow">
             {minorAlphaView
-              ? 'FIVE-YEAR MLB IMPACT RANKING'
+              ? 'RUNWAY-ADJUSTED CAREER CEILING RANKING'
               : mlbAlphaView
                 ? 'HALL-LEVEL CAREER RANKING'
                 : alphaView
@@ -330,6 +330,7 @@ export function ProspectBoard({
                 const playerMap = playerMapFor(player)
                 const oracleScore = oracleScoreFor(player)
                 const impact = !mlbStage ? player.milbImpactRanking ?? null : null
+                const impactReliable = player.milbAlphaSignal?.gates?.minimumRawWorkload !== false
                 const rawAlpha = forecast?.alphaSignal
                 const chapterLabel = mlbStage
                   ? chapter?.status === 'research'
@@ -390,7 +391,7 @@ export function ProspectBoard({
                     </td>
                     <td>
                       <strong className="table-primary">
-                        {mlbStage ? 'Hall-level career stats' : '5+ MLB WAR in 5 years'}
+                        {mlbStage ? 'Hall-level career stats' : 'Runway-adjusted career ceiling'}
                       </strong>
                       <small>Stage rank, not a probability</small>
                     </td>
@@ -409,19 +410,18 @@ export function ProspectBoard({
                         <>
                           <div className="alpha-cell-lead">
                             <strong className="alpha-edge-value">
-                              {formatTopRankPercent(
-                                impact.rank,
-                                impact.universeRows,
-                              )}
+                              {oracleScore.rank && oracleScore.universe
+                                ? formatTopRankPercent(oracleScore.rank, oracleScore.universe)
+                                : 'Mapped'}
                             </strong>
                             <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
                               {plainPlayerState(playerMap.state)}
                             </span>
                           </div>
                           <small>
-                            Five-year rank #{impact.rank.toLocaleString()} · {player.milbAlphaSignal?.eligible
-                              ? `MLB arrival rank #${player.milbAlphaSignal.rank?.toLocaleString() ?? '—'}`
-                              : 'MLB arrival not yet confirmed'}
+                            Career ceiling rank {oracleScore.rank ? `#${oracleScore.rank.toLocaleString()}` : 'pending'} · {impactReliable
+                              ? `five-year impact #${impact.rank.toLocaleString()}`
+                              : 'five-year impact needs a stable sample'}
                           </small>
                         </>
                       ) : (
@@ -456,8 +456,12 @@ export function ProspectBoard({
                         </>
                       ) : (
                         <>
-                          <strong className="table-primary">In development</strong>
-                          <small>Direct minor-to-career model is not ready</small>
+                          <strong className="table-primary">
+                            {formatWar(forecast?.finalCareerWar?.p90 ?? null)}
+                          </strong>
+                          <small>
+                            High case · projected MLB arrival age {forecast?.decomposition.estimatedDebutAge ?? '—'}
+                          </small>
                         </>
                       )}
                     </td>

@@ -232,10 +232,13 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
   const impact = player.milbImpactRanking
   const ceilingAlpha = eligibleMilbCeilingAlpha(player)
   const traits = player.minorTraitEvidence
+  const impactWorkloadSupported = signal?.gates?.minimumRawWorkload !== false
   const strongestTraits = traits?.strongestMetrics.filter(
     (metric) => metric.percentile >= (traits.corroboration.strongPercentileThreshold ?? 80),
   ) ?? []
-  const tierLabel = ceilingAlpha
+  const tierLabel = !impactWorkloadSupported
+    ? 'Five-year rank withheld: thin sample'
+    : ceilingAlpha
     ? `${ceilingAlpha.tier === 'priority' ? 'Priority' : ceilingAlpha.tier === 'strong' ? 'Strong' : 'Watch'} research signal`
     : impact
       ? 'Two-model gate not cleared'
@@ -250,11 +253,11 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
       <div className="section-heading-row alpha-radar-heading">
         <div>
           <span className="eyebrow">ARRIVAL CONFIRMATION + FIVE-YEAR IMPACT RANK</span>
-          <h2 id="milb-alpha-radar-title">Early Ceiling Radar</h2>
+          <h2 id="milb-alpha-radar-title">Five-Year Impact Radar</h2>
         </div>
         <div className="alpha-radar-status">
           <span className={`alpha-tier alpha-tier--${statusTier}`}>{tierLabel}</span>
-          {impact ? <strong>#{impact.rank} of {impact.universeRows.toLocaleString()} impact rank</strong> : null}
+          {impact ? <strong>{impactWorkloadSupported ? `#${impact.rank}` : `Raw #${impact.rank}, not admitted`} of {impact.universeRows.toLocaleString()}</strong> : null}
         </div>
       </div>
 
@@ -262,9 +265,11 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
         <>
           <div className="alpha-thesis milb-alpha-thesis">
             <div className="alpha-thesis-edge">
-              <span>FIVE-YEAR IMPACT RANK</span>
-              <strong>#{impact.rank}</strong>
-              <small>{formatTopRankPercent(impact.rank, impact.universeRows)} of {impact.universeRows.toLocaleString()} scoreable completed-2025 MiLB snapshots</small>
+              <span>{impactWorkloadSupported ? 'FIVE-YEAR IMPACT RANK' : 'RAW FIVE-YEAR RANK'}</span>
+              <strong>{impactWorkloadSupported ? `#${impact.rank}` : 'Not admitted'}</strong>
+              <small>{impactWorkloadSupported
+                ? `${formatTopRankPercent(impact.rank, impact.universeRows)} of ${impact.universeRows.toLocaleString()} scoreable completed-2025 MiLB snapshots`
+                : `Raw rank #${impact.rank}; the completed-2025 workload gate failed`}</small>
             </div>
             <div>
               <span>ARRIVAL CONFIRMATION</span>
@@ -288,7 +293,9 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
             <span>
               {ceilingAlpha
                 ? `The direct impact challenger ranks this player #${impact.rank} on the path to at least 5 MLB WAR from 2026–2030, and the separate young-for-level arrival signal also cleared. No probabilities were blended.`
-                : `The direct impact challenger ranks this player #${impact.rank}, but Early Ceiling Alpha is withheld until both the impact top-decile and young-for-level arrival gates clear.`}
+                : !impactWorkloadSupported
+                  ? `The raw direct-impact rank is #${impact.rank}, but it is withheld because the completed-season input did not meet the minimum workload. Tiny samples cannot qualify as model evidence.`
+                  : `The direct impact challenger ranks this player #${impact.rank}, but the research signal is withheld until both the impact top-decile and young-for-level arrival gates clear.`}
             </span>
           </div>
 
@@ -302,6 +309,7 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
           <div className="alpha-gates" aria-label="MiLB ceiling research and release gates">
             {([
               ['Impact top decile', impact.rankPercentile >= 90],
+              ['Stable model sample', impactWorkloadSupported],
               ['Arrival signal cleared', signal?.eligible === true],
               ['Young for level', signal?.gates.youngForRoleAndLevel === true],
               ['Historical support', signal?.gates.supportedHistoricalContext === true],
@@ -550,6 +558,59 @@ function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; foreca
           {chapter.warnings.map((warning) => <li key={warning}>{chapterWarningLabel(warning)}</li>)}
         </ul>
       ) : null}
+    </section>
+  )
+}
+
+function ProspectCareerOutlookPanel({
+  player,
+  forecast,
+}: {
+  player: PlayerRecord
+  forecast: CareerForecast
+}) {
+  const debutAge = forecast.decomposition.estimatedDebutAge
+
+  return (
+    <section className="dossier-section prospect-career-outlook" aria-labelledby="prospect-career-title">
+      <div className="section-heading-row">
+        <div>
+          <span className="eyebrow">ARRIVAL AGE + CAREER RUNWAY</span>
+          <h2 id="prospect-career-title">Runway-adjusted career outlook</h2>
+        </div>
+      </div>
+      <p className="career-chapter-note">
+        {player.name}&apos;s career rank now carries the projected MLB arrival age into the second leg of the outlook. A later arrival leaves fewer prime seasons to build career value.
+      </p>
+      <div className="forecast-metrics career-forecast-metrics" aria-label="Prospect career outlook summary">
+        <div className="metric-tile metric-tile--reach">
+          <span className="metric-label">PROJECTED MLB ARRIVAL</span>
+          <strong className="metric-number">{debutAge === null ? '—' : `Age ${debutAge}`}</strong>
+          <small>Age at arrival is an explicit career-ceiling input</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">MIDDLE CAREER WAR</span>
+          <strong className="metric-number">{formatWar(forecast.finalCareerWar?.p50 ?? null)}</strong>
+          <small>Includes paths where the player does not establish an MLB career</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">HIGH CAREER CASE</span>
+          <strong className="metric-number">{formatWar(forecast.finalCareerWar?.p90 ?? null)}</strong>
+          <small>90th-percentile research outcome, not a guarantee</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">MLB WITHIN 3 YEARS</span>
+          <strong className="metric-number">{formatProbability(forecast.arrivalProbability36)}</strong>
+          <small>Separate arrival estimate feeding the career bridge</small>
+        </div>
+      </div>
+      <div className="research-warning" role="note">
+        <AlertTriangle size={18} aria-hidden="true" />
+        <div>
+          <strong>Research bridge, not a finished career simulation</strong>
+          <span>The model connects MLB arrival and projected debut age to historical career outcomes. Early MLB quality and year-by-year aging remain the next model upgrade.</span>
+        </div>
+      </div>
     </section>
   )
 }
@@ -869,13 +930,15 @@ export function PlayerDossier({
 
       {forecast && isMlbStage(player.stage) ? (
         <CareerForecastPanel player={player} forecast={forecast} />
+      ) : forecast && player.stage === 'pre_debut' ? (
+        <ProspectCareerOutlookPanel player={player} forecast={forecast} />
       ) : player.stage === 'pre_debut' ? (
         <section className="model-pending" aria-labelledby="prospect-career-model-title">
           <CircleDashed size={20} aria-hidden="true" />
           <div>
             <span className="eyebrow">LONG-TERM OUTLOOK</span>
-            <h2 id="prospect-career-model-title">Full career model in development</h2>
-            <p>Oracle Score ranks projected five-year MLB impact. We do not show a Hall of Fame percentage or full career arc until a direct minor-to-career model passes forward tests.</p>
+            <h2 id="prospect-career-model-title">Career outlook not matched yet</h2>
+            <p>This player does not yet have the matched arrival and debut-age evidence required for a runway-adjusted career rank.</p>
           </div>
         </section>
       ) : (

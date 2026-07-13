@@ -29,11 +29,13 @@ const targets: Record<
     label: 'Career arc',
     question: 'How much MLB value could this player produce from here?',
     target: 'A range of remaining career WAR, the player’s current career phase, and the chance of a standout next three seasons.',
-    model: 'Compares age, role, playing time, and WAR history with past careers, then builds a range of outcomes.',
+    model: 'MLB careers use age, role, playing time, and WAR history. Prospect ranks connect MLB arrival and projected debut age to historical career outcomes.',
     evaluation: [
       { label: 'Historical data', status: 'We save the exact MLB seasons and Hall-level standards used in every test', measured: true },
       { label: 'No future data', status: 'The model cannot see statistics that happened after the date being predicted', measured: true },
       { label: 'Career phases', status: 'Hitters, starters, and relievers have separate development, peak, and decline patterns', measured: true },
+      { label: 'Prospect career runway', status: 'Projected MLB debut age now changes the minor-league career ceiling rank', measured: true },
+      { label: 'Prospect quality after arrival', status: 'A direct minor-league to early-MLB quality model is still required', measured: false },
       { label: 'Three-year upside', status: 'A separate model estimates a standout next three seasons; it is not a Hall probability', measured: true },
       { label: 'Standout-player test', status: 'The historical screen found only four qualifying players, too few for a reliable edge claim', measured: true },
       { label: 'New forward test', status: 'A newly frozen group is required before claiming early identification or market edge', measured: false },
@@ -79,7 +81,7 @@ export function ModelLab() {
           <span>CURRENT VERDICT</span>
           <strong>Useful ranking signal, not the final model</strong>
         </div>
-        <p>The prospect model identifies early impact candidates well in historical tests, but its highest scores overstate the chances. The career model also misses too many true Hall-level endings. Oracle Score is therefore shown as a rank, not a guaranteed probability.</p>
+        <p>The prospect impact model identifies candidates well in historical tests, but tiny samples can distort its highest ranks. The minor-league Oracle Score therefore uses the separate arrival-and-debut-age career route, while fragile impact ranks are withheld. The full career model still misses too many rare Hall-level endings.</p>
       </section>
 
       <div className="target-tabs" role="tablist" aria-label="Prediction target">

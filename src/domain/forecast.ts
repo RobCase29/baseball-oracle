@@ -45,6 +45,7 @@ export interface CareerForecastDecomposition {
   hofCaliberGivenMlbProbability: number | null
   noMlbProbability: number | null
   observedCumulativeWar: number | null
+  estimatedDebutAge: number | null
 }
 
 export interface CareerForecastLineage {

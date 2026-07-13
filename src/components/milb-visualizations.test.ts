@@ -90,13 +90,21 @@ function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
         },
       }],
     } as PlayerRecord['minorTraitEvidence'],
-    careerForecast: null,
+    careerForecast: {
+      asOf: '2025-12-31T00:00:00.000Z',
+      rank: 4,
+      hofCaliberProbability: 0.01,
+      confidenceScore: 0.35,
+      confidenceState: 'Low',
+      finalCareerWar: { p10: 0, p25: 0, p50: 1, p75: 5, p90: 15 },
+      decomposition: { estimatedDebutAge: 21 },
+    } as PlayerRecord['careerForecast'],
     ...overrides,
   }
 }
 
 describe('MiLB decision visualizations', () => {
-  it('plots every impact-ranked minor leaguer without requiring an eligible alpha or age context', () => {
+  it('plots every career-ranked minor leaguer without requiring an eligible alpha or age context', () => {
     const defaultEvidence = playerFixture().minorTraitEvidence!
     const points = buildMilbOpportunityPoints([
       playerFixture(),
@@ -109,6 +117,10 @@ describe('MiLB decision visualizations', () => {
           rankPercentile: 96.02,
           universeRows: 6455,
         } as PlayerRecord['milbImpactRanking'],
+        careerForecast: {
+          ...playerFixture().careerForecast!,
+          rank: 258,
+        },
         minorTraitEvidence: {
           ...defaultEvidence,
           opportunity: {
@@ -133,16 +145,16 @@ describe('MiLB decision visualizations', () => {
     expect(points).toHaveLength(2)
     expect(points[0]).toEqual(expect.objectContaining({
       playerId: 'player-1',
-      impactRank: 4,
-      impactPercentile: 99.94,
+      oracleRank: 4,
+      oraclePercentile: 100,
       ageAdvantage: 92,
       evidenceCoverage: 25,
       tier: 'priority',
     }))
     expect(points[1]).toEqual(expect.objectContaining({
       playerId: 'aiva-like',
-      impactRank: 258,
-      impactPercentile: 96.02,
+      oracleRank: 258,
+      oraclePercentile: 96,
       ageAdvantage: null,
       evidenceCoverage: 50,
       coveredPillars: 2,
@@ -154,7 +166,7 @@ describe('MiLB decision visualizations', () => {
     }))
   })
 
-  it('keeps an impact-ranked player on the map when current trait evidence is unavailable', () => {
+  it('keeps a career-ranked player on the map when current trait evidence is unavailable', () => {
     const points = buildMilbOpportunityPoints([
       playerFixture({ milbAlphaSignal: null, minorTraitEvidence: null }),
     ])
@@ -170,24 +182,24 @@ describe('MiLB decision visualizations', () => {
     })])
   })
 
-  it('keeps direct rank, age context, and raw traits as separate rows', () => {
+  it('keeps career ceiling, direct impact, age context, and raw traits as separate rows', () => {
     const rows = buildMilbEvidenceRows(playerFixture())
 
     expect(rows.map((row) => [row.id, row.kind, row.value])).toEqual([
+      ['career-ceiling-rank', 'model_rank', 100],
       ['impact-rank', 'model_rank', 99.94],
       ['age-context', 'age_context', 92],
       ['trait-contact', 'descriptive_trait', 95],
     ])
   })
 
-  it('rejects out-of-range percentile inputs rather than clipping them', () => {
+  it('rejects a career rank outside the scored universe rather than clipping it', () => {
     const points = buildMilbOpportunityPoints([
       playerFixture({
-        milbImpactRanking: {
-          rank: 4,
-          rankPercentile: 104,
-          universeRows: 6455,
-        } as PlayerRecord['milbImpactRanking'],
+        careerForecast: {
+          ...playerFixture().careerForecast!,
+          rank: 7_000,
+        },
       }),
     ])
 

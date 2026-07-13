@@ -13,6 +13,7 @@ import {
   parseQuery,
   playerMapFeedItem,
   playerPositionTokens,
+  scoredMinorForecastUniverse,
   scoredMlbUniverse,
   sortBoardCandidates,
   sortUnifiedCandidates,
@@ -54,6 +55,7 @@ function forecast(
       hofCaliberGivenMlbProbability: 0.1,
       noMlbProbability: 0.5,
       observedCumulativeWar: null,
+      estimatedDebutAge: null,
     },
     hofStandard: null,
     summary: null,
@@ -295,6 +297,24 @@ describe('unified player ordering', () => {
     expect(scoredMlbUniverse([scored, unscored, candidate('minor')])).toBe(1)
   })
 
+  it('uses only scored minor forecasts as the Oracle Score rank universe', () => {
+    const scored = candidate('scored')
+    const unscored = candidate('unscored', {
+      careerForecast: { ...forecast(0.1, 10, 50), rank: null },
+    })
+    const impactOnly = candidate('impact-only', {
+      careerForecast: null,
+      milbImpactRanking: researchMilbImpactRanking('804606', 'Hitter'),
+    })
+    const mlb = candidate('mlb', {
+      source: 'mlb',
+      stage: 'established_mlb',
+      minorProfileId: null,
+    })
+
+    expect(scoredMinorForecastUniverse([scored, unscored, impactOnly, mlb])).toBe(1)
+  })
+
   it('reports a source-relevant stats clock and is conservative for All players', () => {
     const minors = '2026-07-13T12:00:00.000Z'
     const mlb = '2026-07-12T12:00:00.000Z'
@@ -370,7 +390,7 @@ describe('unified player ordering', () => {
       .toEqual(['mlb-high-impact', 'mlb-low-impact-high-hof', 'mlb-withheld-impact'])
   })
 
-  it('orders each stage by the exact outcome rank behind Oracle Score', () => {
+  it('orders each stage by the career outcome rank behind Oracle Score', () => {
     const ineligible = forecast(0.9, 60, 3, 0.5, 0.95, 0.8)
     if (ineligible.alphaSignal) {
       ineligible.alphaSignal.eligible = false
@@ -394,10 +414,12 @@ describe('unified player ordering', () => {
     const items = [
       candidate('minor-discovery', { arrivalProbability36: 0.99 }),
       candidate('minor-second-alpha', {
+        careerForecast: forecast(0.2, 20, 2),
         milbAlphaSignal: jesusArrival,
         milbImpactRanking: jesusImpact,
       }),
       candidate('minor-first-alpha', {
+        careerForecast: forecast(0.3, 30, 1),
         milbAlphaSignal: konnorArrival,
         milbImpactRanking: konnorImpact,
       }),
@@ -439,7 +461,7 @@ describe('unified player ordering', () => {
       .toEqual(['minor-first-alpha', 'minor-second-alpha', 'minor-discovery'])
   })
 
-  it('uses direct MiLB impact rank whether or not the arrival signal cleared', () => {
+  it('uses the minor career forecast rank instead of direct MiLB impact rank', () => {
     const aivaArrival = researchMilbAlphaSignal('804109', 'Hitter')
     const aivaImpact = researchMilbImpactRanking('804109', 'Hitter')
     expect(aivaArrival?.eligible).toBe(false)
@@ -456,9 +478,14 @@ describe('unified player ordering', () => {
         milbImpactRanking: aivaImpact,
         careerForecast: null,
       }),
+      candidate('career-ranked', {
+        milbAlphaSignal: null,
+        milbImpactRanking: null,
+        careerForecast: forecast(0.01, 2, 10),
+      }),
     ], 'alphaOpportunity')
 
-    expect(sorted.map((item) => item.id)).toEqual(['aiva-like', 'unmapped-profile'])
+    expect(sorted.map((item) => item.id)).toEqual(['career-ranked', 'aiva-like', 'unmapped-profile'])
   })
 })
 
@@ -488,9 +515,9 @@ describe('player-map feed contract', () => {
           route: 'milb',
           rank: 258,
           universe: 6_455,
-          target: 'mlb_war_next_5_ge_5',
+          target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
           asOf: '2025-12-31T00:00:00.000Z',
-          definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+          definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
         },
         marketIndependent: true,
         marketInputsIncluded: false,
