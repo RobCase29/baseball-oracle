@@ -101,8 +101,6 @@ describe('current baseball season selection', () => {
   })
 
   it('keeps source and stale-run budgets within the Vercel execution window', () => {
-    const declaredSourceBudget = Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS)
-      .reduce((total, value) => total + value, 0)
     const sourceCriticalPath =
       Math.max(
         CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
@@ -112,7 +110,9 @@ describe('current baseball season selection', () => {
       CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs
 
     expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS).toBeLessThan(300_000)
-    expect(declaredSourceBudget).toBeLessThanOrEqual(250_000)
+    expect(Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS).every(
+      (budget) => budget < CURRENT_REFRESH_EXECUTION_BUDGET_MS,
+    )).toBe(true)
     expect(sourceCriticalPath).toBeLessThan(CURRENT_REFRESH_EXECUTION_BUDGET_MS)
     expect(
       sourceCriticalPath + CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS + 15_000,

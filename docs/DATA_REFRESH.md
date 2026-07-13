@@ -34,28 +34,31 @@ opportunity when an upstream source was unavailable in the first window. The end
 1. Fails closed unless the request bears the exact `CRON_SECRET` value.
 2. Claims one job-level operational run so overlapping invocations do not duplicate
    work.
-3. Fetches all ten current Prospect Savant role and level slices.
+3. Fetches all ten current Prospect Savant role and level slices in parallel with
+   the ten official MLB StatsAPI MiLB hitter/pitcher level slices.
 4. Rejects every Prospect Savant payload unless at least 95% of rows retain a
    supported player identifier, the requested cohort, and role-specific core
    fields. Scheduled slices must also keep at least 60% of their prior row count
    and contain at least 100 rows.
-5. Refreshes `app.player_directory_snapshot` only after every slice succeeds.
+5. Refreshes `app.player_directory_snapshot` only after every Prospect Savant
+   slice succeeds. Complete official level cohorts publish independently, so one
+   unavailable Rookie slice cannot stale valid A through AAA data.
 6. Fetches the authorized Baseball-Reference current value batting and pitching
    pages serially with the registered user agent, 3.2-second crawl delay, and at
    most two attempts per page for transient HTTP or network failures.
 7. Strictly parses both pages before landing immutable response bytes and rows.
 8. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
-9. Optionally lands a current FanGraphs board when
-   `FANGRAPHS_CURRENT_PROSPECTS_URL` is explicitly configured.
-10. Enforces a 260-second request deadline below Vercel's 300-second function
-    limit. Prospect Savant, Baseball-Reference, and optional FanGraphs receive
-    bounded 105-, 95-, and 10-second windows. HTTP work and crawl delays stop on
+9. Fetches and validates both current FanGraphs prospect-board sides, then
+   publishes the newest season only when both hitters and pitchers are present.
+10. Enforces a 270-second request deadline below Vercel's 300-second function
+    limit. Prospect Savant, MLB StatsAPI, Baseball-Reference, and FanGraphs receive
+    bounded 130-, 130-, 80-, and 40-second windows. The first two run in parallel,
+    keeping the declared critical path at 250 seconds. HTTP work and crawl delays stop on
     abort, while PostgreSQL statements, lock waits, and idle transactions have
     server-side limits. One stalled provider therefore cannot consume the other
     required provider's opportunity or strand the operational receipt.
-11. Treats Prospect Savant and Baseball-Reference as the two required providers.
-    An optional FanGraphs failure remains visible in source results but does not
-    turn a complete required-source run into a partial run.
+11. Treats all four current sources as required and reports sanitized per-source
+    failure messages through the health endpoint.
 12. Records success, failure, partial results, code commit, season, and timestamps in
    `ops.refresh_run` even when source bytes have not changed.
 

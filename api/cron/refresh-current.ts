@@ -26,13 +26,13 @@ import { hasValidCronAuthorization, sendJson } from '../_admin.js'
 
 const jobKey = 'current-baseball-source-refresh-v1'
 
-export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 260_000
+export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 270_000
 export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
-  prospectSavant: 90_000,
-  mlbStatsApi: 55_000,
+  prospectSavant: 130_000,
+  mlbStatsApi: 130_000,
   baseballReference: 80_000,
-  fangraphs: 25_000,
+  fangraphs: 40_000,
 } as const
 
 export type RefreshRunStatus = 'succeeded' | 'partial' | 'failed'
