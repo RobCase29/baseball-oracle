@@ -726,7 +726,7 @@ function formatCount(value: DatabaseNumber, digits = 0): string | null {
 export function currentMlbComparisonRole(input: {
   plateAppearances: DatabaseNumber
   pitchingOuts: DatabaseNumber
-}): 'Hitter' | 'Pitcher' | 'Two-way' {
+}): 'Hitter' | 'Pitcher' {
   const plateAppearances = Math.max(numberOrNull(input.plateAppearances) ?? 0, 0)
   const pitchingOuts = Math.max(numberOrNull(input.pitchingOuts) ?? 0, 0)
   const battingWorkload = plateAppearances / 600
@@ -736,7 +736,7 @@ export function currentMlbComparisonRole(input: {
     ? Math.min(battingWorkload, pitchingWorkload) / largerWorkload
     : 0
   if (plateAppearances >= 60 && pitchingOuts >= 60 && workloadRatio >= 0.25) {
-    return 'Two-way'
+    return 'Hitter'
   }
   return pitchingWorkload > battingWorkload ? 'Pitcher' : 'Hitter'
 }
@@ -744,13 +744,14 @@ export function currentMlbComparisonRole(input: {
 export function currentRoleForModeledPlayer(
   modeledRole: 'Hitter' | 'Pitcher' | 'Two-way',
   row: CurrentMlbValueRow | null,
-): 'Hitter' | 'Pitcher' | 'Two-way' {
-  if (row === null || modeledRole === 'Two-way') return modeledRole
+): 'Hitter' | 'Pitcher' {
+  if (modeledRole === 'Two-way') return 'Hitter'
+  if (row === null) return modeledRole
   const comparisonRole = currentMlbComparisonRole({
     plateAppearances: row.b_pa,
     pitchingOuts: row.p_ip_outs,
   })
-  if (comparisonRole === modeledRole || comparisonRole === 'Two-way') return comparisonRole
+  if (comparisonRole === modeledRole) return comparisonRole
 
   const comparisonOpportunity = comparisonRole === 'Hitter'
     ? Math.max(numberOrNull(row.b_pa) ?? 0, 0)
@@ -1442,7 +1443,7 @@ function isMlbPreviewPlayer(
 }
 
 function prospectRole(playerType: 'Hitter' | 'Pitcher' | 'Two-way'): 'hitter' | 'pitcher' | null {
-  if (playerType === 'Hitter') return 'hitter'
+  if (playerType === 'Hitter' || playerType === 'Two-way') return 'hitter'
   if (playerType === 'Pitcher') return 'pitcher'
   return null
 }
@@ -1937,18 +1938,7 @@ export function dedupeMinorCandidates(
       ? preferredMinorRoleRow(hitter, pitcher)
       : battingScale > pitchingScale ? hitter : pitcher
     if (!substantiveMinorTwoWay(workload)) return representative
-
-    return {
-      ...representative,
-      playerType: 'Two-way' as const,
-      position: 'TWO_WAY',
-      minorRoleWorkload: workload,
-      careerForecast: null,
-      milbAlphaSignal: null,
-      milbImpactRanking: null,
-      arrivalProbability36: null,
-      recentCallupPrior: null,
-    }
+    return { ...hitter, minorRoleWorkload: workload }
   })
   return {
     items,
@@ -2045,18 +2035,15 @@ export function mlbCandidates(
       level: 'MLB',
       organization: teamContext.organization,
       organizationCode: teamContext.organizationCode,
-      position: currentRole === 'Two-way'
-        ? 'TWO_WAY'
+      position: currentStats?.observed_role === 'Two-way'
+        ? 'DH'
         : currentStats?.position ?? player.position,
       mlbamId,
       opportunityScore: currentStats === null
         ? 0
         : currentRole === 'Pitcher'
           ? Math.max(numberOrNull(currentStats.p_ip_outs) ?? 0, 0)
-          : currentRole === 'Two-way'
-            ? Math.max(numberOrNull(currentStats.b_pa) ?? 0, 0) +
-              Math.max(numberOrNull(currentStats.p_ip_outs) ?? 0, 0)
-            : Math.max(numberOrNull(currentStats.b_pa) ?? 0, 0),
+          : Math.max(numberOrNull(currentStats.b_pa) ?? 0, 0),
       careerForecast,
       milbAlphaSignal: null,
       milbImpactRanking: null,
@@ -2112,17 +2099,15 @@ export function currentOnlyMlbCandidates(
         level: 'MLB',
         organization: teamContext.organization,
         organizationCode: teamContext.organizationCode,
-        position: playerType === 'Pitcher'
+        position: row.observed_role === 'Two-way'
+          ? 'DH'
+          : playerType === 'Pitcher'
           ? row.position ?? 'P'
-          : playerType === 'Two-way'
-            ? 'TWO_WAY'
-            : row.position,
+          : row.position,
         mlbamId,
         opportunityScore: playerType === 'Pitcher'
         ? Math.max(numberOrNull(row.p_ip_outs) ?? 0, 0)
-        : playerType === 'Two-way'
-          ? Math.max(numberOrNull(row.b_pa) ?? 0, 0) + Math.max(numberOrNull(row.p_ip_outs) ?? 0, 0)
-          : Math.max(numberOrNull(row.b_pa) ?? 0, 0),
+        : Math.max(numberOrNull(row.b_pa) ?? 0, 0),
         careerForecast: null,
         milbAlphaSignal: null,
         milbImpactRanking: null,

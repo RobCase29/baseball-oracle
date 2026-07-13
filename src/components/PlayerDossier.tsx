@@ -82,6 +82,10 @@ function warningLabel(warning: string, forecast: CareerForecast): string {
       'The player is on the 40-man roster but not on the active or injured list at snapshot time.',
     two_way_target_not_preregistered_forecast_withheld:
       'The forecast is withheld because a two-way Hall-caliber standard has not been preregistered.',
+    two_way_scored_as_hitter_from_batting_war:
+      'This two-way player is ranked on the hitter track using batting WAR.',
+    pitching_value_excluded_from_hitter_track_score:
+      'Pitching results remain visible as evidence but do not increase the hitter-track score.',
     broad_role_switch_target_not_supported_forecast_withheld:
       'The forecast is withheld because a career spanning meaningful hitting and pitching roles cannot use a single-role Hall benchmark.',
     synthetic_hall_standard_forecast_withheld:

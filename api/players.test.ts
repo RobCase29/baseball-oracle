@@ -1449,7 +1449,7 @@ describe('minor identity dedupe', () => {
     expect(deduped.missingMlbam).toBe(2)
   })
 
-  it('withholds single-role scoring for a balanced substantive minor two-way player', () => {
+  it('routes a balanced substantive minor two-way player through the hitter track', () => {
     const result = dedupeMinorCandidates([
       candidate('balanced-hitter', {
         mlbamId: '700003',
@@ -1466,14 +1466,15 @@ describe('minor identity dedupe', () => {
 
     expect(result.items).toEqual([
       expect.objectContaining({
-        playerType: 'Two-way',
-        position: 'TWO_WAY',
-        careerForecast: null,
+        playerType: 'Hitter',
+        position: 'CF',
+        careerForecast: expect.objectContaining({ publicationState: 'research' }),
         milbAlphaSignal: null,
         milbImpactRanking: null,
+        minorRoleWorkload: { plateAppearances: 180, pitchingOuts: 180 },
       }),
     ])
-    expect(result.twoWayPlayers).toBe(1)
+    expect(result.twoWayPlayers).toBe(0)
   })
 
   it('discloses combined opportunity and representative metrics for a minor two-way record', () => {
@@ -1653,11 +1654,11 @@ describe('minor identity dedupe', () => {
       .map((candidate) => candidate.id)).toEqual(['bbref:mackjo02', 'bbref:coverage01'])
   })
 
-  it('requires meaningful opportunity before assigning a current two-way comparison role', () => {
+  it('routes players with meaningful two-way opportunity through the hitter track', () => {
     expect(currentMlbComparisonRole({ plateAppearances: 0, pitchingOuts: 120 })).toBe('Pitcher')
     expect(currentMlbComparisonRole({ plateAppearances: 300, pitchingOuts: 3 })).toBe('Hitter')
-    expect(currentMlbComparisonRole({ plateAppearances: 400, pitchingOuts: 255 })).toBe('Two-way')
-    expect(currentMlbComparisonRole({ plateAppearances: 70, pitchingOuts: 75 })).toBe('Two-way')
+    expect(currentMlbComparisonRole({ plateAppearances: 400, pitchingOuts: 255 })).toBe('Hitter')
+    expect(currentMlbComparisonRole({ plateAppearances: 70, pitchingOuts: 75 })).toBe('Hitter')
     expect(currentMlbComparisonRole({ plateAppearances: 70, pitchingOuts: 750 })).toBe('Pitcher')
   })
 
@@ -1676,7 +1677,7 @@ describe('minor identity dedupe', () => {
       ...currentMlbRow,
       b_pa: 400,
       p_ip_outs: 0,
-    })).toBe('Two-way')
+    })).toBe('Hitter')
   })
 
   it('does not present multi-team value aggregates as a current club', () => {
@@ -1704,7 +1705,7 @@ describe('minor identity dedupe', () => {
     }).organization).toBe('Miami Marlins')
   })
 
-  it('removes a stale single-role score when live usage establishes a new role', () => {
+  it('keeps a hitter score when live usage establishes a two-way role', () => {
     const preview = joeMackPreview()
     preview.items[0]!.careerForecast = forecast(0.35, 42, 8, 0.7)
     const liveTwoWayRow = {
@@ -1731,27 +1732,23 @@ describe('minor identity dedupe', () => {
     )
 
     expect(candidate).toMatchObject({
-      playerType: 'Two-way',
+      playerType: 'Hitter',
       organization: 'Los Angeles Dodgers',
       organizationCode: 'LAD',
-      position: 'TWO_WAY',
+      position: 'DH',
       age: 24,
       recentCallupPrior: null,
       currentStats: liveTwoWayRow,
       careerForecast: {
-        publicationState: 'withheld',
-        rank: null,
-        hofCaliberProbability: null,
-        finalCareerWar: null,
-        confidenceState: 'Withheld',
-        warnings: ['current_role_transition_forecast_withheld'],
+        publicationState: 'research',
+        rank: 8,
+        hofCaliberProbability: 0.35,
+        finalCareerWar: expect.objectContaining({ p50: 42 }),
+        confidenceState: 'Moderate',
       },
     })
-    expect(assignStageRanks([candidate!])[0]!.careerForecast?.rank).toBeNull()
-    expect(playerHandlingAudit([candidate!]).byCode).toMatchObject({
-      two_way_model_scope: 1,
-      role_transition_model_scope: 1,
-    })
+    expect(assignStageRanks([candidate!])[0]!.careerForecast?.rank).toBe(1)
+    expect(playerHandlingAudit([candidate!]).byCode).toEqual({})
   })
 
   it('does not clone or withhold a forecast when live and modeled roles agree', () => {

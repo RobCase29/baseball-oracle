@@ -152,6 +152,41 @@ def _current_scoring_rows(
     return scoring.reset_index(drop=True), context, current_season
 
 
+def _apply_two_way_hitter_policy(
+    scoring: pd.DataFrame,
+    contexts: Mapping[str, Mapping[str, Any]],
+    standards: pd.DataFrame,
+) -> pd.DataFrame:
+    """Score two-way players from their batting record on the hitter track."""
+    adjusted = scoring.copy()
+    standards_by_key = standard_lookup(standards)
+    hitter_standard = standards_by_key["HITTER_FALLBACK"]
+    for index, feature in adjusted.loc[adjusted["role"].eq("two_way")].iterrows():
+        history = contexts[str(feature["bbref_id"])]["history"]
+        history = history.loc[history["season"].le(int(feature["season"]))]
+        war_values = history["b_war"].fillna(0.0).to_numpy(dtype=float)
+        current_peak = peak_seven(war_values)
+        cumulative_war = float(war_values.sum())
+        adjusted.loc[index, "role"] = "hitter"
+        adjusted.loc[index, "position"] = "DH"
+        adjusted.loc[index, "standard_key"] = "HITTER_FALLBACK"
+        adjusted.loc[index, "standard_jaws"] = float(hitter_standard["jaws_standard"])
+        # This is an explicit product policy, not an accidental position fallback.
+        adjusted.loc[index, "standard_fallback"] = False
+        adjusted.loc[index, "standard_warning"] = None
+        adjusted.loc[index, "broad_role_switch"] = False
+        adjusted.loc[index, "season_war"] = float(war_values[-1])
+        adjusted.loc[index, "career_war_to_date"] = cumulative_war
+        adjusted.loc[index, "peak_seven_war_to_date"] = current_peak
+        adjusted.loc[index, "jaws_to_date"] = (cumulative_war + current_peak) / 2.0
+        adjusted.loc[index, "war_last_three"] = float(war_values[-3:].mean())
+        adjusted.loc[index, "war_best_to_date"] = float(war_values.max())
+        adjusted.loc[index, "war_positive_seasons"] = int((war_values > 0).sum())
+        adjusted.loc[index, "career_war_per_season"] = cumulative_war / len(war_values)
+        contexts[str(feature["bbref_id"])]["twoWayHitterPolicy"] = True
+    return adjusted
+
+
 def _career_arc(
     history: pd.DataFrame,
     role: str,
@@ -235,6 +270,7 @@ def build_mlb_preview_players(
     scoring, contexts, current_season = _current_scoring_rows(
         panel, seasons, standards, roster
     )
+    scoring = _apply_two_way_hitter_policy(scoring, contexts, standards)
     forecast_peak_floors: list[float] = []
     for row in scoring.to_dict("records"):
         history = contexts[str(row["bbref_id"])]["history"]
@@ -264,6 +300,7 @@ def build_mlb_preview_players(
         current = context["current"]
         roster_row = context.get("roster") or {}
         role = str(feature["role"])
+        two_way_hitter_policy = bool(context.get("twoWayHitterPolicy"))
         withheld_two_way = role == "two_way"
         withheld_role_switch = bool(feature["broad_role_switch"])
         withheld_standard_fallback = bool(feature["standard_fallback"])
@@ -321,6 +358,9 @@ def build_mlb_preview_players(
         if not (withheld_two_way or withheld_role_switch or withheld_standard_fallback):
             warnings.append("hof_target_rebaselines_if_career_to_date_standard_changes")
         warnings.append("confidence_is_heuristic_not_coverage_probability")
+        if two_way_hitter_policy:
+            warnings.append("two_way_scored_as_hitter_from_batting_war")
+            warnings.append("pitching_value_excluded_from_hitter_track_score")
         if context["partialSeason"]:
             warnings.append("partial_season_input")
             if context["featurePartial"]:
@@ -573,6 +613,11 @@ def build_mlb_preview_players(
                         scoring_bundle.lineage.get("fullPlayerCrossFit", False)
                     ),
                     "inheritsTournamentMetrics": False,
+                    "twoWayPolicy": (
+                        "hitter_track_batting_war"
+                        if two_way_hitter_policy
+                        else None
+                    ),
                 },
             }
         )

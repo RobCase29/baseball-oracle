@@ -309,7 +309,7 @@ def test_roster_census_includes_player_without_current_season_appearance() -> No
     assert "rostered_without_2026_mlb_appearance" in rostered["warnings"]
 
 
-def test_two_way_forecast_is_withheld_without_preregistered_standard() -> None:
+def test_two_way_forecast_uses_hitter_track() -> None:
     two_way = season(
         "twoway99", 2026, 5.0, position="8/1", role="two_way", state="in_season", age=25
     )
@@ -325,15 +325,16 @@ def test_two_way_forecast_is_withheld_without_preregistered_standard() -> None:
         panel, seasons, standards(), scoring_bundle()
     )
 
-    assert players[0]["publicationState"] == "withheld"
-    assert players[0]["rank"] is None
-    assert players[0]["hofCaliberProbability"] is None
-    assert players[0]["finalCareerWar"] is None
-    assert "two_way_target_not_preregistered_forecast_withheld" in players[0]["warnings"]
-    assert "hof_target_rebaselines_if_career_to_date_standard_changes" not in players[0][
-        "warnings"
-    ]
-    assert "single_scenario_jaws_tail_support_extension" not in players[0]["warnings"]
+    assert players[0]["publicationState"] == "research"
+    assert players[0]["rank"] == 1
+    assert players[0]["playerType"] == "hitter"
+    assert players[0]["position"] == "DH"
+    assert players[0]["cumulativeWar"] == 3.0
+    assert players[0]["hofCaliberProbability"] is not None
+    assert players[0]["finalCareerWar"] is not None
+    assert "two_way_scored_as_hitter_from_batting_war" in players[0]["warnings"]
+    assert "pitching_value_excluded_from_hitter_track_score" in players[0]["warnings"]
+    assert players[0]["lineage"]["twoWayPolicy"] == "hitter_track_batting_war"
 
 
 def test_synthetic_hall_standard_forecast_is_withheld() -> None:
