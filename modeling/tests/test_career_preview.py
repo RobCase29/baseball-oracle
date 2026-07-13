@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from types import SimpleNamespace
 
 import numpy as np
@@ -221,6 +222,46 @@ def test_prospect_forecasts_are_unconditional_and_keyed_for_join() -> None:
     assert "bridge_baseline_not_direct_milb_to_hof_training" in forecast["warnings"]
 
 
+def test_prospect_age_outside_bridge_support_is_preserved_and_withheld() -> None:
+    arrival = {
+        "horizons": [12, 24, 36, 48, 60],
+        "asOf": "2025-12-31",
+        "status": "external_validation_failed_research_only",
+        "estimates": {
+            "456:hitter": {
+                "age": 33.96,
+                "probabilities": [0.0, 0.0, 0.0, 0.0, 0.0],
+                "coldStart": False,
+                "snapshotId": "snapshot-456",
+            }
+        },
+    }
+    bridge = [
+        {
+            "role": "hitter",
+            "estimatedDebutAge": 32,
+            "conditionalHofCaliberProbability": 0.01,
+            "finalCareerWar": {"p10": 0, "p25": 1, "p50": 2, "p75": 3, "p90": 4},
+            "peakSevenWar": {"p10": 0, "p25": 1, "p50": 2, "p75": 3, "p90": 4},
+        }
+    ]
+
+    forecast = build_prospect_forecasts(arrival, bridge)["456:hitter"]
+
+    debut_age = forecast["decomposition"]["estimatedDebutAge"]
+    assert debut_age >= math.ceil(33.96)
+    assert debut_age != 32
+    assert forecast["publicationState"] == "withheld"
+    assert forecast["rank"] is None
+    assert forecast["hofCaliberProbability"] is None
+    assert forecast["finalCareerWar"] is None
+    assert (
+        "bridge_debut_age_outside_supported_range_forecast_withheld"
+        in forecast["warnings"]
+    )
+    assert "arrival_age_projection_not_clipped_to_bridge_support" in forecast["warnings"]
+
+
 def test_roster_census_includes_player_without_current_season_appearance() -> None:
     seasons, panel = active_inputs()
     inactive_row = season("roster001", 2025, 1.0, age=27)
@@ -288,6 +329,61 @@ def test_two_way_forecast_is_withheld_without_preregistered_standard() -> None:
         "warnings"
     ]
     assert "single_scenario_jaws_tail_support_extension" not in players[0]["warnings"]
+
+
+def test_synthetic_hall_standard_forecast_is_withheld() -> None:
+    rows = [
+        season("dhactive1", 2025, 2.0, position="DH", age=28),
+        season(
+            "dhactive1",
+            2026,
+            1.0,
+            position="DH",
+            state="in_season",
+            age=29,
+        ),
+    ]
+    seasons = pd.DataFrame(rows)
+    panel = build_career_landmarks(seasons, standards(), as_of_year=2026)
+
+    players, _ = build_mlb_preview_players(
+        panel, seasons, standards(), scoring_bundle()
+    )
+
+    assert players[0]["publicationState"] == "withheld"
+    assert players[0]["rank"] is None
+    assert players[0]["hofCaliberProbability"] is None
+    assert "synthetic_hall_standard_forecast_withheld" in players[0]["warnings"]
+
+
+def test_broad_role_switch_forecast_is_withheld() -> None:
+    rows = [
+        season("swapactive", 2024, 2.0, position="6", role="hitter", age=26),
+        season("swapactive", 2025, 2.0, position="1", role="pitcher", age=27),
+        season(
+            "swapactive",
+            2026,
+            1.0,
+            position="1",
+            role="pitcher",
+            state="in_season",
+            age=28,
+        ),
+    ]
+    seasons = pd.DataFrame(rows)
+    panel = build_career_landmarks(seasons, standards(), as_of_year=2026)
+
+    players, _ = build_mlb_preview_players(
+        panel, seasons, standards(), scoring_bundle()
+    )
+
+    assert players[0]["publicationState"] == "withheld"
+    assert players[0]["rank"] is None
+    assert players[0]["hofCaliberProbability"] is None
+    assert (
+        "broad_role_switch_target_not_supported_forecast_withheld"
+        in players[0]["warnings"]
+    )
 
 
 def test_named_sanity_rejects_collapsed_young_star_interval() -> None:

@@ -27,7 +27,9 @@ read-model clocks separately.
 
 ## Automatic refresh now defined
 
-Vercel invokes `GET /api/cron/refresh-current` daily at 10:17 UTC. The endpoint:
+Vercel invokes `GET /api/cron/refresh-current` twice daily, at 10:17 and 22:17
+UTC. The second window is both a fresher in-season update and an idempotent recovery
+opportunity when an upstream source was unavailable in the first window. The endpoint:
 
 1. Fails closed unless the request bears the exact `CRON_SECRET` value.
 2. Claims one job-level operational run so overlapping invocations do not duplicate
@@ -39,7 +41,8 @@ Vercel invokes `GET /api/cron/refresh-current` daily at 10:17 UTC. The endpoint:
    and contain at least 100 rows.
 5. Refreshes `app.player_directory_snapshot` only after every slice succeeds.
 6. Fetches the authorized Baseball-Reference current value batting and pitching
-   pages serially with the registered user agent and 3.2-second crawl delay.
+   pages serially with the registered user agent, 3.2-second crawl delay, and at
+   most two attempts per page for transient HTTP or network failures.
 7. Strictly parses both pages before landing immutable response bytes and rows.
 8. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
 9. Optionally lands a current FanGraphs board when
@@ -49,8 +52,9 @@ Vercel invokes `GET /api/cron/refresh-current` daily at 10:17 UTC. The endpoint:
 11. Records success, failure, partial results, code commit, season, and timestamps in
    `ops.refresh_run` even when source bytes have not changed.
 
-Vercel does not retry failed Cron invocations. The raw collectors are content
-idempotent, and the next daily invocation resumes safely. Source evidence remains
+Vercel does not retry failed Cron invocations. The collectors make only bounded
+request-level retries, are content idempotent, and the next twice-daily invocation
+resumes safely. Source evidence remains
 immutable in `raw.ingestion_run`, `raw.fetch`, `raw.blob`, and `raw.record`; the
 operational receipt is deliberately separate.
 
@@ -59,14 +63,43 @@ operational receipt is deliberately separate.
 `app.current_mlb_value_snapshot` selects the latest season for which both current
 value pages exist, merges two-way rows by exact Baseball-Reference ID, and exposes
 current WAR, PA, IP, starts, retrieval time, and a descriptive within-role WAR
-percentile. `/api/players` joins only the requested MLB page against that identifier.
-These values are current evidence, not model inputs, until a new point-in-time
-feature and scoring pipeline is promoted.
+percentile. `/api/players` also treats every row in that complete current snapshot
+as active MLB evidence, so a player can enter Rookie Track before the next frozen
+model census is trained. These values are current evidence, not model inputs, until
+a new point-in-time feature and scoring pipeline is promoted.
+
+Cross-source lifecycle transitions are exact-ID only. The build includes a pinned
+Chadwick/Baseball-Reference identity artifact with unique MLBAM and Baseball-
+Reference keys plus source hashes. A current-season debut is removed from the
+pre-debut board and enters Rookie Track; its frozen prospect prior is retained only
+when the MLB record resolves to that prior through an exact identifier. A player
+with earlier MLB experience who is currently represented by a minor-league row is
+kept searchable as `MLB experience, now in minors`, but is excluded from both the
+prospect ranking and active-MLB ranking. Names, accents, and approximate matches are
+never used to manufacture a lifecycle join or score.
+
+Regenerate the identity artifact with `npm run data:mlb-identity:export` only after
+updating the pinned source inputs. `npm run data:mlb-identity:test` verifies source
+hashes, identifier uniqueness, and loader behavior before publication.
 
 The expanded `/api/health` response reads latest attempts and successful fetches
-from Neon, reports 10-slice MiLB and two-side MLB coverage, includes the most recent
-scheduled-job receipt, and publishes a small build-generated manifest for all three
-committed model artifacts.
+from Neon, reports 10-slice MiLB and two-side MLB coverage, includes scheduled and
+manual job receipts, and publishes a small build-generated manifest for all three
+committed model artifacts. It intentionally separates two clocks:
+
+- `statsChangedAt` is when new source bytes were stored. It may remain old when a
+  source is checked successfully but its content is unchanged.
+- `lastCheckedAt` is operational proof that the source was checked, including an
+  idempotent duplicate response. This clock determines current-data freshness.
+
+Health is `ok`, `degraded`, or `stale` and includes machine-readable reason codes.
+`CRON_SECRET` being configured is not treated as proof that scheduling works;
+`scheduledRefresh.cronProof` becomes true only after `ops.refresh_run` contains a
+receipt whose `trigger_kind` is `vercel_cron`. The response also identifies the
+latest scheduled success, latest authenticated-manual success, and the next due
+time. A successful scheduled check is considered stale after 26 hours, which gives
+the two daily windows room for normal execution delay while detecting two missed
+opportunities.
 
 ## Remaining blockers to genuinely live forecasts
 
@@ -81,9 +114,10 @@ committed model artifacts.
 5. **FanGraphs is raw-only.** Its original default URL requests a 2021 season and
    2022 prospect-board edition. Scheduled collection is disabled until an explicit
    current URL is configured, and no normalized scouting-grade join exists yet.
-6. **Roster refresh is not scheduled.** The current Baseball-Reference roster
-   collector writes a local ignored artifact and must move to durable object storage
-   or Neon before it can safely run outside a deployment build.
+6. **The separate roster artifact is not scheduled.** Complete current value pages
+   now bridge newly active MLB players into the product twice daily, but a durable
+   30-team transaction/roster snapshot is still needed for authoritative assignment
+   changes before a player records new value-page statistics.
 7. **No freshness alert destination.** Health is observable by API, but failures do
    not yet page, email, or open an incident.
 8. **No prospective evaluation stream.** Predictions are not persisted before new
@@ -93,8 +127,8 @@ committed model artifacts.
 
 | Process | In season | Offseason | Publication rule |
 | --- | --- | --- | --- |
-| Prospect Savant current slices | Daily | Weekly | Publish directory only with 10/10 slices |
-| Baseball-Reference current value pair | Daily | Weekly | Publish current MLB evidence only with 2/2 sides |
+| Prospect Savant current slices | Twice daily | Weekly | Publish directory only with 10/10 slices |
+| Baseball-Reference current value pair | Twice daily | Weekly | Publish current MLB evidence only with 2/2 sides |
 | MLB roster census | Daily | Weekly and after transaction bursts | Atomic complete 30-team snapshot |
 | FanGraphs board and grades | Weekly and after known board releases | Weekly | Normalize and reconcile identities before serving |
 | Point-in-time feature build and score | Weekly | Monthly | Atomic batch after coverage, leakage, drift, and movement checks |
@@ -104,7 +138,8 @@ committed model artifacts.
 ## Required production setup
 
 Create a random `CRON_SECRET` of at least 16 characters in the Vercel Production
-environment before deploying the cron configuration. Do not reuse
+environment before deploying the cron configuration. Verify the first production
+run through `/api/health`; environment configuration alone is not cron proof. Do not reuse
 `INGESTION_SECRET`. Configure `FANGRAPHS_CURRENT_PROSPECTS_URL` only after verifying
 the current board request; the historical `FANGRAPHS_PROSPECTS_URL` is not used by
 the scheduled current-data job.

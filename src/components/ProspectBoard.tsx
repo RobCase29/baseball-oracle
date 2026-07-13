@@ -18,6 +18,7 @@ import type {
   PlayerMapFeedItem,
   PlayerRecord,
   PlayersPage,
+  PlayersResponseMeta,
   PlayerType,
   StageFilter,
 } from '../domain/forecast'
@@ -52,6 +53,7 @@ interface ProspectBoardProps {
     teams: PlayerFacetOption[]
     positions: PlayerFacetOption[]
   }
+  searchRecovery?: PlayersResponseMeta['searchRecovery']
   displayMode?: BoardDisplayMode
   landscapeItems?: PlayerMapFeedItem[]
   landscapeTotal?: number
@@ -117,6 +119,7 @@ export function ProspectBoard({
   loading,
   error,
   facets,
+  searchRecovery,
   displayMode: controlledDisplayMode,
   landscapeItems,
   landscapeTotal,
@@ -404,6 +407,25 @@ export function ProspectBoard({
         </div>
       ) : null}
 
+      {!loading && players.length === 0 && searchRecovery?.outsideFilterMatches.length ? (
+        <div className="search-recovery" role="status">
+          <Search size={18} aria-hidden="true" />
+          <div>
+            <strong>Found outside the current filters</strong>
+            <span>Open the player directly without changing your board setup.</span>
+          </div>
+          <div className="search-recovery-results">
+            {searchRecovery.outsideFilterMatches.map((match) => (
+              <button key={match.id} type="button" onClick={() => onSelect(match.id)}>
+                <span>{match.name}</span>
+                <small>{match.organizationCode ?? match.organization ?? 'Team unavailable'} · {stageLabel(match.stage)}</small>
+                <ChevronRight size={15} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {players.length > 0 && activeDisplayMode === 'landscape' && landscapeLoading && !landscapeItems?.length ? (
         <div className="opportunity-map opportunity-map-loading" role="status">
           <LoaderCircle className="spin" size={20} aria-hidden="true" />
@@ -444,6 +466,7 @@ export function ProspectBoard({
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const forecast = player.careerForecast
                 const playerMap = playerMapFor(player)
+                const handling = playerMap.handling?.primary ?? null
                 const careerIndex = careerIndexFor(player, playerMap)
                 const isRookieTrack = player.stage === 'recent_callup' && player.recentCallup !== null
                 const rawProspectPrior = player.recentCallup?.prospectPrior ?? null
@@ -453,13 +476,13 @@ export function ProspectBoard({
                 const hasProspectPrior = prospectPrior !== null
                 const mlbStage = isMlbStage(player.stage) && !isRookieTrack
                 const chapter = forecast?.careerChapter
-                const chapterLabel = mlbStage
-                  ? chapter?.status === 'research'
+                const chapterLabel = handling?.label ?? (mlbStage
+                  ? (chapter?.status === 'research'
                     ? chapter.label
-                    : 'MLB career in progress'
+                    : 'MLB career in progress')
                   : isRookieTrack
                     ? 'Rookie Track'
-                    : developmentChapterLabel(player.level)
+                    : developmentChapterLabel(player.level))
                 const prospectForecast = prospectPrior?.forecast ?? null
                 const careerMiddleCase = isRookieTrack
                   ? prospectForecast?.finalCareerWar?.p50 ?? null
@@ -498,6 +521,7 @@ export function ProspectBoard({
                           <span className={`stage-badge stage-badge--${player.stage}`}>
                             {stageLabel(player.stage)}
                           </span>
+                          {handling ? <span className="handling-badge">{handling.label}</span> : null}
                         </span>
                         <ChevronRight className="row-chevron" size={16} aria-hidden="true" />
                       </button>
@@ -517,10 +541,12 @@ export function ProspectBoard({
                     </td>
                     <td>
                       <strong className="table-primary">
-                        {formatWar(careerMiddleCase)}
+                        {careerMiddleCase === null && handling ? 'Not scored' : formatWar(careerMiddleCase)}
                       </strong>
                       <small>
-                        {isRookieTrack && !hasProspectPrior
+                        {handling && careerMiddleCase === null
+                          ? handling.summary
+                          : isRookieTrack && !hasProspectPrior
                           ? 'Career projection available after the prospect prior is matched'
                           : `Middle career WAR · high case ${formatWar(careerHighCase)}${!mlbStage && !isRookieTrack ? ` · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}` : ''}`}
                       </small>

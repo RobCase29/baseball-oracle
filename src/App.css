@@ -515,6 +515,69 @@
   color: var(--ink);
 }
 
+.search-recovery {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) minmax(280px, 1.5fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--green-dark);
+  background: #f2f8f5;
+  border-bottom: 1px solid #cfe2da;
+}
+
+.search-recovery > div:first-of-type {
+  display: grid;
+  gap: 2px;
+}
+
+.search-recovery strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.search-recovery span,
+.search-recovery small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.search-recovery-results {
+  display: grid;
+  gap: 5px;
+}
+
+.search-recovery-results button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 8px 9px;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid #cfe2da;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.search-recovery-results button > span {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-recovery-results button > small {
+  grid-column: 1;
+}
+
+.search-recovery-results button > svg {
+  grid-row: 1 / 3;
+  grid-column: 2;
+}
+
 .board-filters .search-field {
   grid-row: 1;
   grid-column: 1 / 5;
@@ -1377,6 +1440,11 @@
   background: #e6f0f3;
 }
 
+.stage-badge--post_debut_minors {
+  color: #66511f;
+  background: #f4edd9;
+}
+
 .signal-positive {
   color: var(--green-dark);
 }
@@ -1580,6 +1648,25 @@
 .career-index-badge--unavailable {
   background: #f1f3f2;
   border-color: #dde2e0;
+}
+
+.handling-badge {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 3px 0 0 5px;
+  padding: 2px 5px;
+  overflow: hidden;
+  color: #80571a;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 750;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+  background: #fff7e8;
+  border: 1px solid #ead9b8;
+  border-radius: 3px;
 }
 
 .career-index-badge--large {
@@ -2418,6 +2505,94 @@
   color: #786b50;
   font-size: 9px;
   line-height: 1.55;
+}
+
+.special-handling-panel {
+  color: #75551e;
+  background: #fbf7ec;
+  border-bottom: 1px solid #eadcb9;
+}
+
+.special-handling-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 17px 20px 15px;
+}
+
+.special-handling-heading > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.special-handling-heading .eyebrow {
+  color: #8c681f;
+}
+
+.special-handling-heading h2 {
+  margin: 3px 0 4px;
+  color: var(--ink);
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.special-handling-heading p {
+  max-width: 780px;
+  margin: 0;
+  color: #786b50;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.special-handling-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: rgba(255, 255, 255, 0.45);
+  border-top: 1px solid #eadcb9;
+}
+
+.special-handling-evidence > div {
+  display: flex;
+  min-height: 96px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 13px 20px;
+  border-right: 1px solid #eadcb9;
+}
+
+.special-handling-evidence > div:last-child {
+  border-right: 0;
+}
+
+.special-handling-evidence span {
+  color: #8c681f;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.special-handling-evidence strong {
+  margin-top: 6px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 17px;
+}
+
+.special-handling-evidence small {
+  margin-top: 5px;
+  color: #786b50;
+  font-size: 8px;
+}
+
+.special-handling-notes {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 11px 20px 13px 46px;
+  color: #786b50;
+  font-size: 9px;
+  line-height: 1.5;
+  border-top: 1px solid #eadcb9;
 }
 
 .probability-withheld {
@@ -4421,6 +4596,20 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .special-handling-evidence {
+    grid-template-columns: 1fr;
+  }
+
+  .special-handling-evidence > div {
+    min-height: 72px;
+    border-right: 0;
+    border-bottom: 1px solid #eadcb9;
+  }
+
+  .special-handling-evidence > div:last-child {
+    border-bottom: 0;
+  }
+
   .rookie-evidence-meter {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -4752,6 +4941,15 @@
   .degraded-source-banner span {
     width: 100%;
     padding-left: 24px;
+  }
+
+  .search-recovery {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .search-recovery-results {
+    grid-column: 1 / -1;
   }
 
   .segmented-control {

@@ -7,19 +7,25 @@ import {
   assignStageRanks,
   buildPlayerFacets,
   canonicalExternalId,
+  currentMlbComparisonRole,
+  currentMlbMetrics,
+  currentOnlyMlbCandidates,
   dedupeMinorCandidates,
   frozenProspectRankUniverse,
   matchesQuery,
   mergeCurrentUniverse,
   matchesIfNoneMatch,
   mlbCandidates,
+  minorCandidates,
   normalizeQueryText,
   normalizeSearchText,
   parseQuery,
   playerMapFeedItem,
   playerMapResponseMeta,
+  playerHandlingAudit,
   playerPositionTokens,
   responseOrdering,
+  searchRecovery,
   scoredMlbUniverse,
   sendJson,
   sortBoardCandidates,
@@ -30,8 +36,28 @@ import {
   type PlayerQuery,
   type UnifiedBoardCandidate,
 } from './players.js'
+import { requireMlbIdentityCrosswalk } from './_mlb-identity-crosswalk.js'
 
 const war = { p10: 1, p25: 5, p50: 12, p75: 24, p90: 40 }
+const currentMlbRow = {
+  bbref_id: 'example01',
+  player_name: 'Example Player',
+  season: 2026,
+  observed_role: 'Hitter' as const,
+  team: 'EX',
+  position: 'CF',
+  age: 24,
+  b_pa: 300,
+  b_war: 2.5,
+  p_ip: null,
+  p_ip_outs: 0,
+  p_games: 0,
+  p_games_started: 0,
+  p_war: null,
+  total_war: 2.5,
+  current_war_percentile: 80,
+  known_at: '2026-07-13T12:00:00.000Z',
+}
 
 function forecast(
   probability: number,
@@ -1226,6 +1252,15 @@ describe('minor identity dedupe', () => {
     expect(rookie?.recentCallupPrior).toMatchObject({ rank: 167, universe: 6_455 })
   })
 
+  it('excludes fail-closed prospect forecasts from the supported rank universe', () => {
+    const preview = joeMackPreview()
+    const entries = Object.values(preview.prospectForecasts)
+    entries.at(-1)!.careerForecast.publicationState = 'withheld'
+    entries.at(-1)!.careerForecast.rank = null
+
+    expect(frozenProspectRankUniverse(preview)).toBe(6_454)
+  })
+
   it('requires first-season partial-only state but keeps unmatched players in Rookie Track', () => {
     const laterCareer = joeMackPreview()
     const player = laterCareer.items[0]!
@@ -1269,5 +1304,157 @@ describe('minor identity dedupe', () => {
     expect(rookieCohort.filter((candidate) => candidate.stage === 'recent_callup')).toHaveLength(2)
     expect(sortBoardCandidates(rookieCohort, { stage: 'RC', sort: 'alphaOpportunity' })
       .map((candidate) => candidate.id)).toEqual(['bbref:mackjo02', 'bbref:coverage01'])
+  })
+
+  it('requires meaningful opportunity before assigning a current two-way comparison role', () => {
+    expect(currentMlbComparisonRole({ plateAppearances: 0, pitchingOuts: 120 })).toBe('Pitcher')
+    expect(currentMlbComparisonRole({ plateAppearances: 300, pitchingOuts: 3 })).toBe('Hitter')
+    expect(currentMlbComparisonRole({ plateAppearances: 400, pitchingOuts: 255 })).toBe('Two-way')
+  })
+
+  it('suppresses nominal cross-page components from current MLB evidence', () => {
+    const pitcher = {
+      ...currentMlbRow,
+      observed_role: 'Pitcher' as const,
+      b_pa: 0,
+      b_war: 0,
+      p_ip: '40.0',
+      p_ip_outs: 120,
+      p_games: 30,
+      p_games_started: 0,
+      p_war: 1.2,
+      total_war: 1.2,
+    }
+    const pitcherKeys = currentMlbMetrics(pitcher, 'Pitcher').map((metric) => metric.key)
+    expect(pitcherKeys).toContain('current-season-pitching-war')
+    expect(pitcherKeys).not.toContain('current-season-batting-war')
+    expect(pitcherKeys).not.toContain('current-season-pa')
+
+    const mopUpHitter = {
+      ...currentMlbRow,
+      p_ip: '1.0',
+      p_ip_outs: 3,
+      p_games: 1,
+      p_games_started: 0,
+      p_war: 0,
+    }
+    const hitterKeys = currentMlbMetrics(mopUpHitter, 'Hitter').map((metric) => metric.key)
+    expect(hitterKeys).toContain('current-season-batting-war')
+    expect(hitterKeys).not.toContain('current-season-pitching-war')
+    expect(hitterKeys).not.toContain('current-season-ip')
+
+    const ohtani = {
+      ...currentMlbRow,
+      observed_role: 'Two-way' as const,
+      p_ip: '85.2',
+      p_ip_outs: 257,
+      p_games: 14,
+      p_games_started: 14,
+      p_war: 2.9,
+      total_war: 6.1,
+      current_war_percentile: null,
+    }
+    const twoWayKeys = currentMlbMetrics(ohtani, 'Two-way').map((metric) => metric.key)
+    expect(twoWayKeys).toContain('current-season-batting-war')
+    expect(twoWayKeys).toContain('current-season-pitching-war')
+  })
+
+  it('surfaces current MLB players outside the completed-season census without inventing a score', () => {
+    const [candidate] = currentOnlyMlbCandidates([currentMlbRow], null)
+    expect(candidate).toMatchObject({
+      id: 'bbref:example01',
+      name: 'Example Player',
+      stage: 'recent_callup',
+      careerForecast: null,
+      recentCallupPrior: null,
+      mlbamId: null,
+    })
+    expect(playerHandlingAudit([candidate!])).toMatchObject({
+      activePlayers: 1,
+      specialHandlingPlayers: 1,
+      byCode: {
+        rookie_prior_unmatched: 1,
+        identity_link_missing: 1,
+        forecast_not_available: 1,
+      },
+    })
+  })
+
+  it('bridges a new MLB appearance back to its exact frozen prospect prior', () => {
+    const preview = joeMackPreview()
+    preview.items = []
+    const [candidate] = currentOnlyMlbCandidates([
+      { ...currentMlbRow, bbref_id: 'mackjo02', player_name: 'Joe Mack' },
+    ], preview)
+
+    expect(candidate).toMatchObject({
+      id: 'bbref:mackjo02',
+      mlbamId: '691788',
+      stage: 'recent_callup',
+      recentCallupPrior: { rank: 167, universe: 6_455 },
+    })
+  })
+
+  it('uses exact debut history to remove current debuts from the prospect cohort', () => {
+    const baseRow = {
+      profile_id: 'prospect-savant:682445',
+      source_player_id: '682445',
+      player_type: 'Hitter' as const,
+      display_name: 'Domingo Gonzalez',
+      organization_code: 'ATL',
+      organization_name: 'Atlanta Braves',
+      position: 'OF',
+      age: 26,
+      level: 'AAA',
+      season: 2026,
+      mlbam_id: null,
+      known_at: '2026-07-13T12:00:00.000Z',
+      pa: 200,
+      ip: null,
+      pitches: null,
+    }
+    const result = minorCandidates([
+      baseRow,
+      {
+        ...baseRow,
+        profile_id: 'prospect-savant:660271',
+        source_player_id: '660271',
+        display_name: 'Verified Veteran',
+      },
+    ], null, requireMlbIdentityCrosswalk())
+
+    expect(result).toMatchObject({
+      experiencedRowsExcludedFromProspectRankings: 2,
+      currentSeasonDebutRowsSuppressed: 1,
+      idsRecoveredFromExactCrosswalk: 2,
+    })
+    expect(result.items).toHaveLength(1)
+    expect(result.items[0]).toMatchObject({
+      mlbamId: '660271',
+      stage: 'post_debut_minors',
+      careerForecast: null,
+      milbAlphaSignal: null,
+      milbImpactRanking: null,
+    })
+  })
+
+  it('recovers punctuation-insensitive matches outside active board filters', () => {
+    const ohtani = candidate('ohtani', {
+      source: 'mlb',
+      name: 'Shohei Ohtani',
+      playerType: 'Two-way',
+      stage: 'established_mlb',
+      minorProfileId: null,
+    })
+    const recovery = searchRecovery(
+      [ohtani],
+      [],
+      query({ q: 'two way', stage: 'RC' }),
+    )
+    expect(recovery?.outsideFilterMatches).toEqual([
+      expect.objectContaining({ id: 'ohtani', name: 'Shohei Ohtani' }),
+    ])
+    expect(normalizeSearchText("O'Neill")).toBe(normalizeSearchText('oneill'))
+    expect(normalizeSearchText('Crow-Armstrong')).toBe(normalizeSearchText('crow armstrong'))
   })
 })

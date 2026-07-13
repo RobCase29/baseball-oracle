@@ -208,7 +208,7 @@ def main() -> None:
         as_of_year=as_of_year,
         inactivity_years=args.inactivity_years,
     )
-    excluded_two_way_players = tuple(
+    excluded_target_players = tuple(
         sorted(
             panel.loc[
                 panel["resolved_career"]
@@ -217,7 +217,7 @@ def main() -> None:
             ].unique()
         )
     )
-    model_panel = panel.loc[~panel["bbref_id"].isin(excluded_two_way_players)].reset_index(
+    model_panel = panel.loc[~panel["bbref_id"].isin(excluded_target_players)].reset_index(
         drop=True
     )
     split = chronological_player_split(
@@ -225,9 +225,23 @@ def main() -> None:
         minimum_players_per_split=args.minimum_players_per_split,
     )
     tournament = run_career_tournament(model_panel, split)
+    exclusion_reasons = (
+        panel.loc[
+            panel["resolved_career"] & ~panel["target_eligible"].eq(True),
+            ["bbref_id", "target_eligibility_reason"],
+        ]
+        .drop_duplicates("bbref_id")
+        ["target_eligibility_reason"]
+        .value_counts()
+    )
     tournament.report["targetExclusions"] = {
-        "twoWayPlayers": len(excluded_two_way_players),
-        "policy": "excluded_from_v1_training_and_withheld_from_current_ranking_until_a_preregistered_two_way_standard_exists",
+        "players": len(excluded_target_players),
+        "twoWayPlayers": int(exclusion_reasons.get("two_way_role_path", 0)),
+        "broadRoleSwitchPlayers": int(exclusion_reasons.get("broad_role_switch", 0)),
+        "syntheticStandardFallbackPlayers": int(
+            exclusion_reasons.get("synthetic_standard_fallback", 0)
+        ),
+        "policy": "excluded_from_training_and_current_ranking_when_the_career_role_path_or_exact_hall_standard_is_unsupported",
     }
     scoring_bundle = fit_final_scoring_bundle(
         model_panel,

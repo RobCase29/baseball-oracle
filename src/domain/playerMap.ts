@@ -1,3 +1,8 @@
+import {
+  classifyPlayerHandling,
+  type PlayerHandlingProfile,
+} from './playerHandling.js'
+
 export const PLAYER_MAP_VERSION = 'oracle-player-map/v2' as const
 export const CAREER_INDEX_VERSION = 'career-index-war-v1' as const
 export const FROZEN_PROSPECT_FORECAST_UNIVERSE = 6_455 as const
@@ -153,6 +158,7 @@ export interface PlayerMapProfile {
   oracleScore: PlayerMapOracleScore
   careerIndex: PlayerMapCareerIndex
   stageStanding: PlayerMapStageStanding
+  handling: PlayerHandlingProfile
   scores: {
     outcome: PlayerMapScore
     readiness: PlayerMapScore
@@ -186,12 +192,13 @@ interface PlayerMapInputTrait extends PlayerMapInputMetric {
 export interface PlayerMapInput {
   name: string
   playerType: 'Hitter' | 'Pitcher' | 'Two-way'
-  stage: 'pre_debut' | 'recent_callup' | 'early_mlb' | 'established_mlb' | 'inactive'
+  stage: 'pre_debut' | 'post_debut_minors' | 'recent_callup' | 'early_mlb' | 'established_mlb' | 'inactive'
   age: number | null
   level: string | null
   metrics: PlayerMapInputMetric[]
   provenance: {
     retrievedAt: string | null
+    externalIds?: Record<string, string | number | null>
   }
   milbImpactRanking?: {
     rank: number
@@ -276,11 +283,12 @@ export interface PlayerMapInput {
       status: 'research' | 'withheld'
       eligible: boolean
     } | null
+    warnings?: string[]
   } | null
   recentCallup?: {
     version: 'rookie-track-v1'
     status: 'monitoring'
-    reason: 'first_mlb_season_partial_only'
+    reason: 'first_mlb_season_partial_only' | 'current_mlb_record_not_in_model_census'
     prospectPrior: {
       rank: number
       universe: number
@@ -559,6 +567,7 @@ function buildMinorMap(
   player: PlayerMapInput,
   context: PlayerMapBuildContext,
 ): PlayerMapProfile {
+  const handling = classifyPlayerHandling(player)
   const impact = player.milbImpactRanking
   const arrival = player.milbAlphaSignal
   const career = player.careerForecast
@@ -577,7 +586,7 @@ function buildMinorMap(
   const impactWorkloadSupported = arrival?.gates?.minimumRawWorkload !== false
   const rawImpactValue = validPercentile(impact?.rankPercentile) ? impact.rankPercentile : null
   const impactValue = impactWorkloadSupported ? rawImpactValue : null
-  const careerSupported = career?.publicationState !== 'withheld'
+  const careerSupported = career !== null && career.publicationState !== 'withheld'
   const careerRank = careerSupported ? career?.rank ?? null : null
   const careerUniverse = 'minorUniverse' in context
     ? context.minorUniverse ?? null
@@ -691,6 +700,7 @@ function buildMinorMap(
       career?.asOf ?? null,
       career?.lineage?.targetVersion ?? 'mlb-debut-age-mixed-final-standard-bridge-v1',
     ),
+    handling,
     scores: {
       outcome: score({
         key: 'outcome',
@@ -789,6 +799,7 @@ function buildMinorMap(
 }
 
 function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
+  const handling = classifyPlayerHandling(player)
   const rookie = player.recentCallup
   const prior = rookie?.prospectPrior ?? null
   const evidence = rookie?.currentMlbEvidence ?? null
@@ -878,6 +889,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
       supportedPrior?.asOf ?? null,
       supportedPrior?.target ?? null,
     ),
+    handling,
     scores: {
       outcome: score({
         key: 'outcome',
@@ -971,8 +983,9 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
 }
 
 function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): PlayerMapProfile {
+  const handling = classifyPlayerHandling(player)
   const forecast = player.careerForecast
-  const forecastSupported = forecast?.publicationState !== 'withheld'
+  const forecastSupported = forecast !== null && forecast.publicationState !== 'withheld'
   const careerIndex = buildCareerIndex(
     'mlb',
     forecast?.finalCareerWar,
@@ -1044,7 +1057,10 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
   const paceText = paceValue === null ? '' : ` Historical WAR pace is ${percentileDisplay(paceValue)}.`
   const currentText = bestCurrentTrait === null
     ? ''
-    : ` Current ${bestCurrentTrait.label.toLocaleLowerCase('en-US')} is ${percentileDisplay(bestCurrentTrait.percentile)}.`
+    : ` ${bestCurrentTrait.label} is ${percentileDisplay(bestCurrentTrait.percentile)}.`
+  const handlingSummary = handling.primary === null
+    ? null
+    : `${handling.primary.label}. ${handling.primary.handling}`
 
   return {
     version: PLAYER_MAP_VERSION,
@@ -1054,8 +1070,10 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     claimStatus: careerIndex.value !== null ? 'research_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
-    archetype: chapter ? `${chapter.label} / ${chapter.trajectoryState}` : 'MLB profile',
-    summary: `${player.name} ${outlookText}.${paceText}${currentText} Evidence confidence remains ${forecast?.confidenceState ?? 'withheld'}.`,
+    archetype: handling.primary?.label ?? (chapter ? `${chapter.label} / ${chapter.trajectoryState}` : 'MLB profile'),
+    summary: handlingSummary
+      ? `${player.name}: ${handlingSummary}${paceText}${currentText}`
+      : `${player.name} ${outlookText}.${paceText}${currentText} Evidence confidence remains ${forecast?.confidenceState ?? 'withheld'}.`,
     oracleScore: oracleScore(
       'mlb',
       outlookValue,
@@ -1072,6 +1090,7 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
       forecast?.asOf ?? null,
       forecast?.lineage?.targetVersion ?? 'hof-caliber-point-in-time-jaws-v1',
     ),
+    handling,
     scores: {
       outcome: score({
         key: 'outcome',
@@ -1145,7 +1164,11 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     risks: currentRisks,
     signals,
     missingEvidence: [
-      ...(!forecast ? ['Supported terminal forecast'] : []),
+      ...(!forecastSupported ? [
+        handling.primary?.code === 'two_way_model_scope'
+          ? 'Validated two-way career target and forecast'
+          : 'Supported terminal forecast',
+      ] : []),
       ...(!bestCurrentTrait ? ['Current MLB performance'] : []),
     ],
     nextEvidence: [

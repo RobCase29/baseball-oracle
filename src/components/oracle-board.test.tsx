@@ -646,7 +646,7 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByLabelText('Career Index --')).toBeInTheDocument()
     expect(screen.getByText('Prospect prior not matched')).toBeInTheDocument()
-    expect(screen.getByText('Career projection available after the prospect prior is matched')).toBeInTheDocument()
+    expect(screen.getByText('The MLB record could not be joined exactly to a frozen pre-debut forecast.')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
 
     unmount()
@@ -715,7 +715,12 @@ describe('unified Oracle Board shell', () => {
           ...player,
           stage: 'early_mlb',
           level: 'MLB',
-          careerForecast: { ...forecast, careerChapter: chapter, alphaSignal },
+          careerForecast: {
+            ...forecast,
+            careerChapter: chapter,
+            alphaSignal,
+            warnings: ['exceptional_trajectory_not_hall_probability'],
+          },
         }]}
         selectedId={player.id}
         filters={{ query: '', stage: 'MLB', playerType: 'All', level: 'All', sort: 'alphaOpportunity' }}

@@ -20,6 +20,7 @@
     "db/**/*.ts",
     "scripts/**/*.ts",
     "src/domain/forecast.ts",
-    "src/domain/playerMap.ts"
+    "src/domain/playerMap.ts",
+    "src/domain/playerHandling.ts"
   ]
 }

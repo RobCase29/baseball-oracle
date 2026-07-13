@@ -100,7 +100,7 @@
           "enum": ["Hitter", "Pitcher", "Two-way"]
         },
         "stage": {
-          "enum": ["pre_debut", "recent_callup", "early_mlb", "established_mlb", "inactive"]
+          "enum": ["pre_debut", "post_debut_minors", "recent_callup", "early_mlb", "established_mlb", "inactive"]
         },
         "age": {
           "type": ["number", "null"],
@@ -164,6 +164,9 @@
         },
         "stageStanding": {
           "$ref": "#/$defs/stageStanding"
+        },
+        "handling": {
+          "$ref": "#/$defs/playerHandling"
         },
         "oracleScore": {
           "$ref": "#/$defs/deprecatedOracleScore"
@@ -307,6 +310,66 @@
         }
       ],
       "additionalProperties": true
+    },
+    "playerHandling": {
+      "description": "Versioned treatment for unusual role, lifecycle, freshness, identity, or model-coverage cases. A special status explains why a score is pending or withheld without substituting observed value for a forecast.",
+      "type": "object",
+      "required": ["version", "status", "primary", "notes", "unclassifiedWithheld"],
+      "properties": {
+        "version": {
+          "const": "player-handling/v1"
+        },
+        "status": {
+          "enum": ["standard", "special"]
+        },
+        "primary": {
+          "oneOf": [
+            { "$ref": "#/$defs/playerHandlingNote" },
+            { "type": "null" }
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/playerHandlingNote" }
+        },
+        "unclassifiedWithheld": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "playerHandlingNote": {
+      "type": "object",
+      "required": ["code", "category", "label", "summary", "handling", "scoreTreatment"],
+      "properties": {
+        "code": {
+          "enum": [
+            "two_way_model_scope",
+            "role_transition_model_scope",
+            "hall_standard_model_scope",
+            "debut_age_model_scope",
+            "post_debut_minor_assignment",
+            "rookie_model_pending",
+            "rookie_prior_unmatched",
+            "young_elite_model_scope",
+            "stale_return_features",
+            "current_opportunity_missing",
+            "identity_link_missing",
+            "forecast_not_available",
+            "forecast_withheld_other"
+          ]
+        },
+        "category": {
+          "enum": ["model_scope", "career_transition", "data_freshness", "identity", "coverage"]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "handling": { "type": "string", "minLength": 1 },
+        "scoreTreatment": {
+          "enum": ["withheld", "pending", "unaffected"]
+        }
+      },
+      "additionalProperties": false
     },
     "careerIndex": {
       "description": "Primary fixed-scale career-value magnitude. It is not a probability, percentile, confidence score, expected WAR, or market-return score.",

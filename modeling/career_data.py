@@ -51,6 +51,7 @@ TARGET_ONLY_COLUMNS = (
     "target_standard_jaws",
     "target_standard_fallback",
     "target_eligible",
+    "target_eligibility_reason",
     "career_end_year",
     "resolved_career",
 )
@@ -306,6 +307,15 @@ def normalize_jaws_standards(frame: pd.DataFrame) -> pd.DataFrame:
     standards = standards.loc[standards["position"].isin(EXACT_STANDARD_KEYS)].copy()
     if standards.empty or standards["position"].duplicated().any():
         raise CareerDataError("JAWS standards require unique supported position rows")
+    missing_positions = [
+        position
+        for position in EXACT_STANDARD_KEYS
+        if position not in set(standards["position"])
+    ]
+    if missing_positions:
+        raise CareerDataError(
+            f"JAWS standards are missing required exact positions: {missing_positions}"
+        )
     required_values = standards[
         ["career_war_standard", "peak_seven_war_standard", "jaws_standard"]
     ].to_numpy(dtype=float)
@@ -434,9 +444,25 @@ def build_career_landmarks(
         )
         resolved = career_end <= as_of - inactivity_years and not has_later_partial
         debut_year = int(complete["season"].min())
+        role_path = tuple(
+            _point_in_time_role(complete.iloc[:landmark])
+            for landmark in range(1, len(complete) + 1)
+        )
+        broad_roles = {role for role, _ in role_path if role in {"hitter", "pitcher"}}
+        has_two_way_role = any(role == "two_way" for role, _ in role_path)
+        broad_role_switch = len(broad_roles) > 1
         target_role, target_position = _point_in_time_role(complete)
         target_standard_key, target_fallback, _ = _resolve_standard_key(
             target_role, target_position, lookup
+        )
+        target_eligibility_reason = (
+            "two_way_role_path"
+            if has_two_way_role
+            else "broad_role_switch"
+            if broad_role_switch
+            else "synthetic_standard_fallback"
+            if target_fallback
+            else "eligible"
         )
         target_standard = lookup[target_standard_key]
         target_value_column = (
@@ -451,9 +477,10 @@ def build_career_landmarks(
         stable_final_peak = peak_seven(target_final_values)
         stable_final_jaws = (stable_final_war + stable_final_peak) / 2.0
 
-        for season_number, (_, current) in enumerate(complete.iterrows(), start=1):
-            history = complete.loc[complete["season"] <= int(current["season"])]
-            role, position = _point_in_time_role(history)
+        for season_number, ((_, current), (role, position)) in enumerate(
+            zip(complete.iterrows(), role_path, strict=True), start=1
+        ):
+            history = complete.iloc[:season_number]
             standard_key, fallback, fallback_warning = _resolve_standard_key(
                 role, position, lookup
             )
@@ -485,6 +512,14 @@ def build_career_landmarks(
                     "standard_fallback": fallback,
                     "standard_warning": fallback_warning,
                     "warnings": warnings,
+                    "broad_role_switch": len(
+                        {
+                            landmark_role
+                            for landmark_role, _ in role_path[:season_number]
+                            if landmark_role in {"hitter", "pitcher"}
+                        }
+                    )
+                    > 1,
                     "season_war": float(current[value_column]),
                     "season_b_war": float(current["b_war"]),
                     "season_p_war": float(current["p_war"]),
@@ -533,7 +568,10 @@ def build_career_landmarks(
                     ),
                     "target_standard_fallback": target_fallback if resolved else pd.NA,
                     "target_eligible": (
-                        target_role != "two_way" if resolved else pd.NA
+                        target_eligibility_reason == "eligible" if resolved else pd.NA
+                    ),
+                    "target_eligibility_reason": (
+                        target_eligibility_reason if resolved else pd.NA
                     ),
                 }
             )
@@ -554,6 +592,7 @@ def validate_landmark_panel(panel: pd.DataFrame) -> None:
         *NUMERIC_FEATURES,
         *CATEGORICAL_FEATURES,
         *TARGET_ONLY_COLUMNS,
+        "broad_role_switch",
     }
     missing = sorted(required - set(panel.columns))
     if missing:
@@ -602,11 +641,23 @@ def validate_landmark_panel(panel: pd.DataFrame) -> None:
         "target_standard_jaws",
         "target_standard_fallback",
         "target_eligible",
+        "target_eligibility_reason",
     ]
     if panel.loc[resolved, target_columns].isna().any(axis=None):
         raise CareerDataError("Resolved careers require complete outcome targets")
     if panel.loc[~resolved, target_columns].notna().any(axis=None):
         raise CareerDataError("Unresolved careers cannot expose final outcome targets")
+    resolved_targets = panel.loc[resolved]
+    if (
+        resolved_targets["target_eligible"].eq(True)
+        & resolved_targets["target_standard_fallback"].eq(True)
+    ).any():
+        raise CareerDataError("Synthetic JAWS standards cannot produce eligible targets")
+    reason_matches = resolved_targets["target_eligible"].eq(True) == resolved_targets[
+        "target_eligibility_reason"
+    ].eq("eligible")
+    if not reason_matches.all():
+        raise CareerDataError("Target eligibility reason is inconsistent with eligibility")
     label_counts = panel.loc[resolved].groupby("bbref_id")[
         "hof_caliber_completed_standard"
     ].nunique()

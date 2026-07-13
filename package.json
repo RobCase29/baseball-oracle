@@ -55,6 +55,8 @@
     "model:milb:impact:export:test": "vitest run api/_milb-impact.test.ts",
     "model:milb:impact:test": ".venv/bin/python -m pytest modeling/tests/test_milb_alpha_targets.py modeling/tests/test_milb_impact_tournament.py",
     "model:milb:impact:train": ".venv/bin/python -m modeling.train_milb_impact",
+    "data:mlb-identity:export": "python3 scripts/model/export_mlb_identity_crosswalk.py",
+    "data:mlb-identity:test": ".venv/bin/python -m pytest modeling/tests/test_mlb_identity_crosswalk.py && vitest run api/_mlb-identity-crosswalk.test.ts",
     "model:career:test": ".venv/bin/python -m pytest modeling/tests/test_career_data.py modeling/tests/test_career_tournament.py modeling/tests/test_career_preview.py modeling/tests/test_relative_standing.py modeling/tests/test_career_chapters.py modeling/tests/test_alpha_signal.py modeling/tests/test_milb_alpha_signal.py",
     "model:career:train": ".venv/bin/python -m modeling.train_career_tournament",
     "model:test": ".venv/bin/python -m pytest modeling",

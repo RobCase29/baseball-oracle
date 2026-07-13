@@ -1,6 +1,14 @@
 import { neon } from '@neondatabase/serverless'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import artifactStatus from './_data/artifact-status.json' with { type: 'json' }
+import {
+  assessCurrentDataFreshness,
+  CURRENT_REFRESH_DAILY_MINUTES_UTC,
+  CURRENT_REFRESH_SCHEDULE_UTC,
+  type FreshnessRun,
+  type RefreshRunStatus,
+  type RefreshSourceStatus,
+} from './_freshness.js'
 
 interface HealthRow {
   database_time: string
@@ -41,6 +49,55 @@ interface RefreshRow {
   started_at: string
   finished_at: string | null
   trigger_kind: string
+  result: Record<string, unknown> | null
+}
+
+const currentRefreshJobKey = 'current-baseball-source-refresh-v1'
+const refreshSourceKeys = [
+  'prospectSavant',
+  'baseballReference',
+  'fangraphs',
+] as const
+
+function refreshSourceStatuses(
+  result: Record<string, unknown> | null,
+): Record<string, RefreshSourceStatus> | undefined {
+  if (!result) return undefined
+  const statuses: Record<string, RefreshSourceStatus> = {}
+  for (const key of refreshSourceKeys) {
+    const sourceResult = result[key]
+    if (!sourceResult || typeof sourceResult !== 'object') continue
+    const status = (sourceResult as { status?: unknown }).status
+    if (status === 'succeeded' || status === 'failed' || status === 'not_configured') {
+      statuses[key] = status
+    }
+  }
+  return Object.keys(statuses).length > 0 ? statuses : undefined
+}
+
+function freshnessRun(row: RefreshRow): FreshnessRun {
+  return {
+    jobKey: row.job_key,
+    triggerKind: row.trigger_kind,
+    status: row.status as RefreshRunStatus,
+    season: row.season,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    sourceStatuses: refreshSourceStatuses(row.result),
+  }
+}
+
+function sourceKey(source: SourceRow): string | null {
+  if (source.source === 'prospect-savant' && source.dataset === 'minor-league-leaders') {
+    return 'prospectSavant'
+  }
+  if (source.source === 'sports-reference' && source.dataset === 'baseball-player-records') {
+    return 'baseballReference'
+  }
+  if (source.source === 'fangraphs' && source.dataset === 'prospect-board') {
+    return 'fangraphs'
+  }
+  return null
 }
 
 export default async function handler(
@@ -193,15 +250,18 @@ export default async function handler(
         GROUP BY season
       `,
       sql`
-        SELECT DISTINCT ON (job_key)
+        SELECT
           job_key,
           status,
           season,
           started_at::text AS started_at,
           finished_at::text AS finished_at,
-          trigger_kind
+          trigger_kind,
+          result
         FROM ops.refresh_run
-        ORDER BY job_key, started_at DESC, id DESC
+        WHERE job_key = ${currentRefreshJobKey}
+        ORDER BY started_at DESC, id DESC
+        LIMIT 200
       `,
     ])
     const [health] = healthResult as unknown as HealthRow[]
@@ -209,35 +269,91 @@ export default async function handler(
     const [prospectCoverage] = prospectCoverageResult as unknown as SliceCoverageRow[]
     const [baseballReferenceCoverage] =
       baseballReferenceCoverageResult as unknown as SliceCoverageRow[]
+    const sourceRows = sourceResult as unknown as SourceRow[]
+    const refreshRows = refreshResult as unknown as RefreshRow[]
+    const refreshRuns = refreshRows.map(freshnessRun)
+    const sourceByRefreshKey = new Map(
+      sourceRows
+        .map((source) => [sourceKey(source), source] as const)
+        .filter((entry): entry is [string, SourceRow] => entry[0] !== null),
+    )
+    const freshness = assessCurrentDataFreshness({
+      now: new Date(health.database_time),
+      cronConfigured: Boolean(process.env.CRON_SECRET?.trim()),
+      runs: refreshRuns,
+      scheduleMinutesUtc: CURRENT_REFRESH_DAILY_MINUTES_UTC,
+      sources: [
+        {
+          key: 'prospectSavant',
+          required: true,
+          statsChangedAt:
+            prospectCoverage?.newest_slice_at ??
+            sourceByRefreshKey.get('prospectSavant')?.last_changed_at ??
+            null,
+          coverageComplete: prospectCoverage
+            ? Number(prospectCoverage.observed_slices) === 10
+            : false,
+        },
+        {
+          key: 'baseballReference',
+          required: true,
+          statsChangedAt:
+            baseballReferenceCoverage?.newest_slice_at ??
+            sourceByRefreshKey.get('baseballReference')?.last_changed_at ??
+            null,
+          coverageComplete: baseballReferenceCoverage
+            ? Number(baseballReferenceCoverage.observed_slices) === 2
+            : false,
+        },
+        {
+          key: 'fangraphs',
+          required: false,
+          statsChangedAt: sourceByRefreshKey.get('fangraphs')?.last_changed_at ?? null,
+          coverageComplete: null,
+        },
+      ],
+    })
 
     response.statusCode = 200
     response.setHeader('Cache-Control', 'no-store')
     response.setHeader('Content-Type', 'application/json')
     response.end(
       JSON.stringify({
-        status: 'ok',
+        status: freshness.status,
+        reasonCodes: freshness.reasonCodes,
         databaseTime: health.database_time,
         migrations: Number(health.migration_count),
+        freshness,
         directory: {
           rows: Number(directory.rows),
           season: directory.season,
           oldestSourceAt: directory.oldest_source_at,
           newestSourceAt: directory.newest_source_at,
         },
-        sources: (sourceResult as unknown as SourceRow[]).map((source) => ({
-          source: source.source,
-          dataset: source.dataset,
-          lastAttemptStatus: source.last_attempt_status,
-          lastAttemptStartedAt: source.last_attempt_started_at,
-          lastAttemptFinishedAt: source.last_attempt_finished_at,
-          lastSuccessFinishedAt: source.last_success_finished_at,
-          lastChangedAt: source.last_changed_at,
-          parserVersion: source.parser_version,
-          requestedSeason: source.requested_season === null
-            ? null
-            : Number(source.requested_season),
-          counts: source.counts,
-        })),
+        sources: sourceRows.map((source) => {
+          const key = sourceKey(source)
+          const refreshStatus = key ? freshness.sources[key] : null
+          const statsChangedAt = refreshStatus?.statsChangedAt ?? source.last_changed_at
+          return {
+            source: source.source,
+            dataset: source.dataset,
+            lastAttemptStatus: source.last_attempt_status,
+            lastAttemptStartedAt: source.last_attempt_started_at,
+            lastAttemptFinishedAt: source.last_attempt_finished_at,
+            lastSuccessFinishedAt: source.last_success_finished_at,
+            statsChangedAt,
+            // Backward-compatible alias. Consumers should use statsChangedAt.
+            lastChangedAt: statsChangedAt,
+            lastCheckedAt: refreshStatus?.lastCheckedAt ?? null,
+            lastSuccessfulCheckAt: refreshStatus?.lastSuccessfulCheckAt ?? null,
+            lastCheckStatus: refreshStatus?.lastCheckStatus ?? null,
+            parserVersion: source.parser_version,
+            requestedSeason: source.requested_season === null
+              ? null
+              : Number(source.requested_season),
+            counts: source.counts,
+          }
+        }),
         currentCoverage: {
           prospectSavant: prospectCoverage
             ? {
@@ -260,8 +376,15 @@ export default async function handler(
         },
         scheduledRefresh: {
           configured: Boolean(process.env.CRON_SECRET?.trim()),
-          scheduleUtc: '17 10 * * *',
-          jobs: (refreshResult as unknown as RefreshRow[]).map((job) => ({
+          scheduleUtc: '17 10,22 * * *',
+          schedulesUtc: CURRENT_REFRESH_SCHEDULE_UTC,
+          nextDueAt: freshness.nextDueAt,
+          cronProof: freshness.cronProof,
+          latestScheduledRun: freshness.runs.latestScheduled,
+          latestScheduledSuccess: freshness.runs.latestScheduledSuccess,
+          latestManualRun: freshness.runs.latestManual,
+          latestManualSuccess: freshness.runs.latestManualSuccess,
+          jobs: refreshRows.map((job) => ({
             job_key: job.job_key,
             status: job.status,
             season: job.season,

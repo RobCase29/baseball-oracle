@@ -1,9 +1,11 @@
 import type { PlayerMapProfile } from './playerMap.js'
+import type { PlayerHandlingCode } from './playerHandling.js'
 
 export type PlayerType = 'Hitter' | 'Pitcher' | 'Two-way'
 
 export type PlayerStage =
   | 'pre_debut'
+  | 'post_debut_minors'
   | 'recent_callup'
   | 'early_mlb'
   | 'established_mlb'
@@ -255,7 +257,7 @@ export interface PlayerOpportunity {
 export interface RecentCallupContext {
   version: 'rookie-track-v1'
   status: 'monitoring'
-  reason: 'first_mlb_season_partial_only'
+  reason: 'first_mlb_season_partial_only' | 'current_mlb_record_not_in_model_census'
   prospectPrior: {
     rank: number
     universe: number
@@ -564,6 +566,14 @@ export interface PlayersResponseMeta {
   coverage: string
   forecastStatus: 'not_published' | 'research_only' | 'published'
   source: string
+  currentDataFreshness?: {
+    status: 'ok' | 'degraded' | 'stale'
+    reasonCodes: string[]
+    statsChangedAt: string | null
+    lastCheckedAt: string | null
+    nextDueAt: string
+    cronObserved: boolean
+  }
   researchCoverage?: number | null
   careerChapterCoverage?: number | null
   careerChapterVersion?: 'career-chapter-v1' | null
@@ -583,6 +593,7 @@ export interface PlayersResponseMeta {
   targetVersion?: string | null
   stageCoverage?: {
     minors: number
+    experiencedMinors?: number
     recentCallups?: number
     mlb: number
   } | null
@@ -646,6 +657,33 @@ export interface PlayersResponseMeta {
     crossStageDuplicatesRemoved: number
     minorPlayersMissingMlbam: number
     mlbPlayersMissingMlbam: number
+    currentMlbProfilesOutsideModelCensus?: number
+    experiencedMinorRowsSuppressed?: number
+    currentSeasonDebutMinorRowsSuppressed?: number
+    minorIdsRecoveredFromExactCrosswalk?: number
+    identityPolicy?: 'exact_mlbam_bbref_only_no_name_matching'
+    identityCrosswalkAsOf?: string
+    identityCrosswalkRecords?: number
+  }
+  searchRecovery?: {
+    query: string
+    outsideFilterMatches: Array<{
+      id: string
+      name: string
+      stage: PlayerStage
+      playerType: PlayerType
+      organization: string | null
+      organizationCode: string | null
+      position: string | null
+    }>
+  }
+  handlingAudit?: {
+    version: 'player-handling/v1'
+    activePlayers: number
+    specialHandlingPlayers: number
+    withheldForecasts: number
+    unclassifiedWithheld: number
+    byCode: Partial<Record<PlayerHandlingCode, number>>
   }
 }
 

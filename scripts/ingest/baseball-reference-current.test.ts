@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ValueSeasonRow } from '../backfill/baseball-reference-mlb-war.js'
 import {
+  BASEBALL_REFERENCE_CURRENT_FETCH_ATTEMPTS,
   baseballReferenceCurrentValueUrl,
   currentValueSourceRecordKey,
 } from './baseball-reference-current.js'
@@ -10,6 +11,10 @@ import {
 } from './current-refresh-quality.js'
 
 describe('current Baseball-Reference ingestion contract', () => {
+  it('uses one bounded retry for transient current-page failures', () => {
+    expect(BASEBALL_REFERENCE_CURRENT_FETCH_ATTEMPTS).toBe(2)
+  })
+
   it('builds the allowlisted current value page URLs', () => {
     expect(baseballReferenceCurrentValueUrl(2026, 'batting')).toBe(
       'https://www.baseball-reference.com/leagues/majors/2026-value-batting.shtml',

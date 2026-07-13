@@ -24,6 +24,7 @@ import type {
 
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
+const CLIENT_REVALIDATE_MS = 15 * 60 * 1_000
 
 const defaultFilters: BoardFilters = {
   query: '',
@@ -119,6 +120,20 @@ function formatDataDate(value: string | null): string {
   }).format(parsed)
 }
 
+function formatDataTimestamp(value: string | null): string {
+  if (!value) return 'awaiting first refresh'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  }).format(parsed)
+}
+
 function isPlayersResponse(value: unknown): value is PlayersResponse {
   if (typeof value !== 'object' || value === null) return false
   return (
@@ -149,7 +164,7 @@ function isPlayerMapFeedResponse(value: unknown): value is PlayerMapFeedResponse
 }
 
 function normalizePlayerRecord(player: PlayerRecord): PlayerRecord {
-  const validStages = new Set(['pre_debut', 'recent_callup', 'early_mlb', 'established_mlb', 'inactive'])
+  const validStages = new Set(['pre_debut', 'post_debut_minors', 'recent_callup', 'early_mlb', 'established_mlb', 'inactive'])
   return {
     ...player,
     // players.v1 predates the unified artifact and contains only minor-league records.
@@ -178,8 +193,24 @@ function App() {
   const [landscapeTotal, setLandscapeTotal] = useState(0)
   const [landscapeLoading, setLandscapeLoading] = useState(false)
   const [landscapeError, setLandscapeError] = useState<string | null>(null)
+  const [refreshTick, setRefreshTick] = useState(0)
   const selectionRequest = useRef(0)
   const deferredQuery = useDeferredValue(filters.query)
+
+  useEffect(() => {
+    const refresh = () => setRefreshTick((current) => current + 1)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    const timer = window.setInterval(refresh, CLIENT_REVALIDATE_MS)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -228,6 +259,7 @@ function App() {
     filters.stage,
     filters.team,
     page,
+    refreshTick,
   ])
 
   useEffect(() => {
@@ -290,6 +322,7 @@ function App() {
     filters.position,
     filters.stage,
     filters.team,
+    refreshTick,
   ])
 
   useEffect(() => {
@@ -387,7 +420,7 @@ function App() {
     ? 'loading'
     : error
       ? 'error'
-      : meta.degraded
+      : meta.degraded || meta.currentDataFreshness?.status !== 'ok'
         ? 'degraded'
         : 'live'
   const modelVintage = selectedPlayer
@@ -404,6 +437,22 @@ function App() {
     : filters.stage === 'MLB' || filters.stage === 'RC'
       ? 'MLB stats checked'
       : 'All stats checked'
+  const statsCheckedAt = meta.currentDataFreshness?.lastCheckedAt ?? meta.dataAsOf
+  const sourceStatusLabel = topbarStatus === 'loading'
+    ? 'Connecting'
+    : topbarStatus === 'error'
+      ? 'Source unavailable'
+      : meta.degraded
+        ? 'Partial source data'
+        : meta.currentDataFreshness?.reasonCodes.some((reason) => (
+            reason === 'cron_not_configured' || reason === 'scheduled_run_not_observed'
+          ))
+          ? 'Refresh verification pending'
+          : meta.currentDataFreshness?.status === 'stale'
+          ? 'Stats refresh overdue'
+          : meta.currentDataFreshness?.status === 'degraded'
+            ? 'Refresh verification pending'
+            : 'Updated twice daily'
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -421,19 +470,13 @@ function App() {
             <span>Professional baseball · projected career upside</span>
           </div>
           <div className="topbar-meta">
-            <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataDate(meta.dataAsOf)}</span>
+            <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataTimestamp(statsCheckedAt)}</span>
             <span><History size={14} aria-hidden="true" /> Career Index data through {formatDataDate(modelVintage)}</span>
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'live' ? <DatabaseZap size={13} aria-hidden="true" /> : null}
-              {topbarStatus === 'loading'
-                ? 'Connecting'
-                : topbarStatus === 'error'
-                  ? 'Source unavailable'
-                  : topbarStatus === 'degraded'
-                    ? 'Partial source data'
-                    : 'Sources connected'}
+              {sourceStatusLabel}
             </span>
           </div>
         </div>
@@ -480,6 +523,7 @@ function App() {
                 loading={loading}
                 error={error}
                 facets={meta.facets}
+                searchRecovery={meta.searchRecovery}
                 displayMode={boardDisplayMode}
                 landscapeItems={landscapeItems}
                 landscapeTotal={landscapeTotal}

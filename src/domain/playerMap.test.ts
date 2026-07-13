@@ -87,6 +87,38 @@ describe('Player Map', () => {
     expect(profile.claimStatus).toBe('withheld')
   })
 
+  it('handles a two-way player explicitly while retaining observed career value', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Shohei Ohtani',
+      playerType: 'Two-way',
+      stage: 'established_mlb',
+      level: 'MLB',
+      provenance: {
+        retrievedAt: '2026-07-13T12:00:00.000Z',
+        externalIds: { mlbam: '660271', bbref: 'ohtansh01' },
+      },
+      careerForecast: {
+        publicationState: 'withheld',
+        asOf: '2025-12-31T00:00:00.000Z',
+        rank: null,
+        hofCaliberProbability: null,
+        confidenceScore: null,
+        confidenceState: 'Withheld',
+        finalCareerWar: null,
+        warnings: ['two_way_target_not_preregistered_forecast_withheld'],
+      },
+    }), { mlbUniverse: 948 })
+
+    expect(profile.handling.primary).toMatchObject({
+      code: 'two_way_model_scope',
+      label: 'Two-way model pending',
+    })
+    expect(profile.summary.toLocaleLowerCase()).toContain('two-way')
+    expect(profile.missingEvidence).toContain('Validated two-way career target and forecast')
+    expect(profile.careerIndex.value).toBeNull()
+    expect(profile.stageStanding.rank).toBeNull()
+  })
+
   it('expresses stage rank as an exact top-share band without changing the career index', () => {
     expect(stageTailBand(0.1)).toBe('Top 0.1%')
     expect(stageTailBand(0.11)).toBe('Top 1%')

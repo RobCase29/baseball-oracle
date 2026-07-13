@@ -78,6 +78,14 @@ function warningLabel(warning: string, forecast: CareerForecast): string {
       'The player is on the 40-man roster but not on the active or injured list at snapshot time.',
     two_way_target_not_preregistered_forecast_withheld:
       'The forecast is withheld because a two-way Hall-caliber standard has not been preregistered.',
+    broad_role_switch_target_not_supported_forecast_withheld:
+      'The forecast is withheld because a career spanning meaningful hitting and pitching roles cannot use a single-role Hall benchmark.',
+    synthetic_hall_standard_forecast_withheld:
+      'The forecast is withheld because no exact supported Hall benchmark maps to this player role.',
+    bridge_debut_age_outside_supported_range_forecast_withheld:
+      'The career forecast is withheld because projected MLB arrival falls outside the debut-age range learned by the bridge.',
+    bridge_debut_age_cell_missing_forecast_withheld:
+      'The career forecast is withheld because this role and projected debut age do not have a supported bridge estimate.',
     mixed_position_target_bridge_no_single_standard:
       'The prospect bridge mixes historical positions, so no single positional JAWS reference applies.',
     not_eventual_arrival_probability_lower_bound_proxy:
@@ -687,6 +695,53 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
   )
 }
 
+function SpecialHandlingPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
+  const handling = playerMapFor(player).handling
+  const primary = handling?.primary
+  if (!primary) return null
+  const mlbStage = isMlbStage(player.stage)
+  const currentWar = player.metrics.find((metric) => metric.key === 'current-season-war')?.value ?? 'Not available'
+
+  return (
+    <section className="special-handling-panel" aria-labelledby="special-handling-title">
+      <div className="special-handling-heading">
+        <AlertTriangle size={19} aria-hidden="true" />
+        <div>
+          <span className="eyebrow">SPECIAL HANDLING</span>
+          <h2 id="special-handling-title">{primary.label}</h2>
+          <p>{primary.summary} {primary.handling}</p>
+        </div>
+      </div>
+      <div className="special-handling-evidence" aria-label="Observed evidence retained while forecast is withheld">
+        <div>
+          <span>{mlbStage ? 'RECORDED CAREER WAR' : '36-MONTH MLB ARRIVAL'}</span>
+          <strong>{mlbStage
+            ? formatWar(forecast.cumulativeWar)
+            : formatProbability(forecast.arrivalProbability36)}</strong>
+          <small>{mlbStage ? 'Observed value, not a projection' : 'Arrival model only; career ceiling withheld'}</small>
+        </div>
+        <div>
+          <span>{mlbStage ? 'CURRENT-SEASON WAR' : 'PROJECTED ARRIVAL AGE'}</span>
+          <strong>{mlbStage ? currentWar : forecast.decomposition.estimatedDebutAge ?? 'Not available'}</strong>
+          <small>{player.opportunity
+            ? `${player.opportunity.value} ${player.opportunity.label}`
+            : mlbStage ? 'Current workload unavailable' : 'Current minor-league workload unavailable'}</small>
+        </div>
+        <div>
+          <span>CAREER INDEX</span>
+          <strong>Withheld</strong>
+          <small>Excluded from score-based ranking</small>
+        </div>
+      </div>
+      {handling.notes.length > 1 ? (
+        <ul className="special-handling-notes">
+          {handling.notes.slice(1).map((note) => <li key={note.code}><strong>{note.label}:</strong> {note.handling}</li>)}
+        </ul>
+      ) : null}
+    </section>
+  )
+}
+
 function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
   const stageValue = isMlbStage(player.stage)
     ? formatWar(forecast.finalJaws?.p50 ?? null)
@@ -949,7 +1004,7 @@ export function PlayerDossier({
                     : `${careerIndex.rankLabel.toLocaleUpperCase()}${careerIndex.topLabel ? ` · ${careerIndex.topLabel.toLocaleUpperCase()}` : ''}`}
               </span>
               <span className="source-badge">
-                {plainPlayerState(playerMap.state)}
+                {playerMap.handling?.primary?.label ?? plainPlayerState(playerMap.state)}
               </span>
             </div>
             <h2 id="player-name">{player.name}</h2>
@@ -976,6 +1031,8 @@ export function PlayerDossier({
 
       {player.stage === 'recent_callup' ? (
         <RookieTrackPanel player={player} />
+      ) : forecast?.publicationState === 'withheld' ? (
+        <SpecialHandlingPanel player={player} forecast={forecast} />
       ) : forecast && isMlbStage(player.stage) ? (
         <CareerForecastPanel player={player} forecast={forecast} />
       ) : forecast && player.stage === 'pre_debut' ? (

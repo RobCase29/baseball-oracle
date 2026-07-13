@@ -27,6 +27,7 @@ import {
 
 export const BASEBALL_REFERENCE_CURRENT_PARSER_VERSION =
   'baseball-reference-current-value/v1'
+export const BASEBALL_REFERENCE_CURRENT_FETCH_ATTEMPTS = 2
 
 type ValueSide = 'batting' | 'pitching'
 
@@ -57,7 +58,7 @@ async function ingestSide(
 ): Promise<{ status: 'duplicate' | 'in_progress' | 'stored'; rows: number }> {
   const url = normalizeRequestUrl(baseballReferenceCurrentValueUrl(season, side))
   const response = await fetchWithRetry(url, {
-    attempts: 1,
+    attempts: BASEBALL_REFERENCE_CURRENT_FETCH_ATTEMPTS,
     sourceName: 'Baseball-Reference',
     timeoutMs: 60_000,
     headers: {

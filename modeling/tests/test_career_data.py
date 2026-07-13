@@ -13,6 +13,7 @@ from modeling.career_data import (
     assert_feature_frame,
     build_career_landmarks,
     chronological_player_split,
+    normalize_jaws_standards,
     normalize_position,
     peak_seven,
     read_records,
@@ -88,6 +89,15 @@ def test_baseball_reference_compact_positions_prefer_real_defense() -> None:
     assert normalize_position("SS") == "SS"
 
 
+def test_jaws_standards_require_every_exact_supported_position() -> None:
+    incomplete = standards().loc[lambda frame: ~frame["position"].eq("CF")]
+
+    with pytest.raises(
+        CareerDataError, match=r"missing required exact positions: \['CF'\]"
+    ):
+        normalize_jaws_standards(incomplete)
+
+
 def test_peak_seven_and_jaws_are_exact_and_point_in_time() -> None:
     rows = [season("alpha01", 1990 + index, float(index + 1)) for index in range(8)]
     panel = build_career_landmarks(pd.DataFrame(rows), standards(), as_of_year=2020)
@@ -134,6 +144,46 @@ def test_pitcher_target_rebaselines_from_relief_to_starting_standard() -> None:
     assert panel["standard_key"].tolist() == ["RP", "P"]
     assert panel["standard_jaws"].tolist() == [30.0, 55.0]
     assert panel["hof_caliber"].astype(int).tolist() == [1, 0]
+    assert panel["target_eligible"].eq(True).all()
+    assert not panel["broad_role_switch"].any()
+
+
+@pytest.mark.parametrize("position", ["DH", "UNKNOWN"])
+def test_synthetic_hitter_standard_is_not_target_eligible(position: str) -> None:
+    panel = build_career_landmarks(
+        pd.DataFrame([season(f"fallback-{position}", 1990, 50.0, position=position)]),
+        standards(),
+        as_of_year=2020,
+    )
+
+    assert panel["standard_key"].tolist() == ["HITTER_FALLBACK"]
+    assert panel["target_standard_fallback"].eq(True).all()
+    assert panel["target_eligible"].eq(False).all()
+    assert panel["target_eligibility_reason"].tolist() == [
+        "synthetic_standard_fallback"
+    ]
+
+
+@pytest.mark.parametrize("first_role", ["hitter", "pitcher"])
+def test_broad_hitter_pitcher_role_switch_is_not_target_eligible(
+    first_role: str,
+) -> None:
+    if first_role == "hitter":
+        first = season("roleswap1", 1990, 3.0, position="6", role="hitter")
+        second = season("roleswap1", 1991, 3.0, position="1", role="pitcher")
+    else:
+        first = season("roleswap1", 1990, 3.0, position="1", role="pitcher")
+        first["p_ip_outs"] = 270
+        second = season("roleswap1", 1991, 3.0, position="6", role="hitter")
+
+    panel = build_career_landmarks(
+        pd.DataFrame([first, second]), standards(), as_of_year=2020
+    )
+
+    assert set(panel["role"]) == {"hitter", "pitcher"}
+    assert panel["broad_role_switch"].tolist() == [False, True]
+    assert panel["target_eligible"].eq(False).all()
+    assert panel["target_eligibility_reason"].eq("broad_role_switch").all()
 
 
 def test_unresolved_and_in_season_careers_are_strictly_masked() -> None:
@@ -216,6 +266,9 @@ def test_pitcher_batting_appearances_do_not_create_false_two_way_career() -> Non
 
     assert set(panel.loc[panel["bbref_id"].eq("pitchbat01"), "role"]) == {"pitcher"}
     assert set(panel.loc[panel["bbref_id"].eq("twoway01"), "role"]) == {"two_way"}
+    two_way_panel = panel.loc[panel["bbref_id"].eq("twoway01")]
+    assert two_way_panel["target_eligible"].eq(False).all()
+    assert two_way_panel["target_eligibility_reason"].eq("two_way_role_path").all()
 
 
 def test_feature_contract_rejects_target_fields() -> None:

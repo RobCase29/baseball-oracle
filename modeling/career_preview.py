@@ -260,6 +260,8 @@ def build_mlb_preview_players(
         roster_row = context.get("roster") or {}
         role = str(feature["role"])
         withheld_two_way = role == "two_way"
+        withheld_role_switch = bool(feature["broad_role_switch"])
+        withheld_standard_fallback = bool(feature["standard_fallback"])
         season_number = int(feature["season_number"])
         stage_key = (
             "first"
@@ -292,6 +294,8 @@ def build_mlb_preview_players(
         withheld_no_current_appearance = bool(context["noCurrentSeasonAppearance"])
         withheld_forecast = (
             withheld_two_way
+            or withheld_role_switch
+            or withheld_standard_fallback
             or withheld_young_elite
             or withheld_early_mlb
             or withheld_partial_only
@@ -309,7 +313,7 @@ def build_mlb_preview_players(
         warnings = ["research_only", "retrospective_validation_only"]
         warnings.append("final_scoring_refit_uses_frozen_held_out_calibration")
         warnings.append("current_scoring_refit_not_cross_fitted_or_evaluated")
-        if not withheld_two_way:
+        if not (withheld_two_way or withheld_role_switch or withheld_standard_fallback):
             warnings.append("hof_target_rebaselines_if_career_to_date_standard_changes")
         warnings.append("confidence_is_heuristic_not_coverage_probability")
         if context["partialSeason"]:
@@ -329,6 +333,10 @@ def build_mlb_preview_players(
             warnings.append(str(feature["standard_warning"] or "standard_fallback"))
         if withheld_two_way:
             warnings.append("two_way_target_not_preregistered_forecast_withheld")
+        if withheld_role_switch:
+            warnings.append("broad_role_switch_target_not_supported_forecast_withheld")
+        if withheld_standard_fallback:
+            warnings.append("synthetic_hall_standard_forecast_withheld")
         if withheld_young_elite:
             warnings.append("young_elite_distribution_gate_failed_forecast_withheld")
         if withheld_early_mlb:
@@ -342,7 +350,7 @@ def build_mlb_preview_players(
         if withheld_no_current_appearance:
             warnings.append("current_opportunity_unobserved_forecast_withheld")
         if (
-            not withheld_two_way
+            not (withheld_two_way or withheld_role_switch or withheld_standard_fallback)
             and abs(float(scenario_support_shifts[index])) > 1e-12
         ):
             warnings.append("single_scenario_jaws_tail_support_extension")
@@ -610,13 +618,16 @@ def _weighted_mixture_quantiles(
 
 
 def _expected_debut_age(age: float, probabilities: Sequence[float]) -> int:
+    if not math.isfinite(age):
+        raise ValueError("Prospect age must be finite")
     cumulative = np.maximum.accumulate(np.asarray(probabilities, dtype=float))
     masses = np.diff(np.concatenate([[0.0], cumulative]))
     if cumulative[-1] <= 1e-9:
         expected_months = 60.0
     else:
         expected_months = float(np.dot(masses, [6, 18, 30, 42, 54]) / cumulative[-1])
-    return int(np.clip(round(age + expected_months / 12.0), 16, 32))
+    projected_age = int(round(age + expected_months / 12.0))
+    return max(int(math.ceil(age)), projected_age)
 
 
 def build_prospect_forecasts(
@@ -633,6 +644,9 @@ def build_prospect_forecasts(
     bridge_index = {
         (str(row["role"]), int(row["estimatedDebutAge"])): row for row in bridge
     }
+    bridge_ages_by_role: dict[str, list[int]] = {}
+    for role, debut_age in bridge_index:
+        bridge_ages_by_role.setdefault(role, []).append(debut_age)
     forecasts: dict[str, dict[str, Any]] = {}
     for key, estimate in sorted(dict(arrival_preview.get("estimates", {})).items()):
         try:
@@ -642,11 +656,77 @@ def build_prospect_forecasts(
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"Malformed arrival estimate: {key}") from error
         debut_age = _expected_debut_age(age, probabilities)
-        bridge_row = bridge_index.get((role, debut_age))
-        if bridge_row is None:
-            continue
         arrival36 = float(np.clip(probabilities[index36], 0.0, 1.0))
         arrival60 = float(np.clip(probabilities[index60], 0.0, 1.0))
+        bridge_row = bridge_index.get((role, debut_age))
+        if bridge_row is None:
+            supported_ages = sorted(bridge_ages_by_role.get(role, []))
+            support_min = supported_ages[0] if supported_ages else None
+            support_max = supported_ages[-1] if supported_ages else None
+            outside_support = bool(
+                support_min is not None
+                and support_max is not None
+                and (debut_age < support_min or debut_age > support_max)
+            )
+            warning = (
+                "bridge_debut_age_outside_supported_range_forecast_withheld"
+                if outside_support
+                else "bridge_debut_age_cell_missing_forecast_withheld"
+            )
+            forecasts[key] = {
+                "canonicalPlayerId": f"mlbam:{key}",
+                "asOf": arrival_preview.get("asOf"),
+                "modelVersion": "arrival-post-pandemic-v1-amendment-001+mlb-debut-age-bridge-v1",
+                "targetVersion": PROSPECT_BRIDGE_TARGET_VERSION,
+                "stage": "pre_debut",
+                "playerType": role,
+                "publicationState": "withheld",
+                "rank": None,
+                "rankScope": "prospect_arrival_bridge",
+                "hofCaliberProbability": None,
+                "arrivalProbability36": round(arrival36, 8),
+                "arrivalProbability60": round(arrival60, 8),
+                "finalCareerWar": None,
+                "peakSevenWar": None,
+                "finalCareerWarConditionalOnArrival": None,
+                "peakSevenWarConditionalOnArrival": None,
+                "standardReference": None,
+                "hofStandard": None,
+                "probabilityScope": "arrival_only_bridge_forecast_withheld",
+                "confidence": {
+                    "score": None,
+                    "state": "withheld",
+                    "rankIndependent": True,
+                },
+                "warnings": sorted(
+                    [
+                        "research_only",
+                        "arrival_external_validation_failed",
+                        "arrival_age_projection_not_clipped_to_bridge_support",
+                        warning,
+                    ]
+                ),
+                "milbAlphaSignal": estimate.get("milbAlphaSignal"),
+                "decomposition": {
+                    "arrivalHorizonMonths": 60,
+                    "arrivalProbability": round(arrival60, 8),
+                    "conditionalHofCaliberProbability": None,
+                    "hofCaliberGivenMlbProbability": None,
+                    "unconditionalHofCaliberProbability": None,
+                    "noMlbProbability": round(1.0 - arrival60, 8),
+                    "estimatedDebutAge": debut_age,
+                },
+                "lineage": {
+                    "arrivalSnapshotId": estimate.get("snapshotId"),
+                    "arrivalAsOf": arrival_preview.get("asOf"),
+                    "arrivalStatus": arrival_preview.get("status"),
+                    "bridgeVersion": "mlb-debut-age-bridge-v1",
+                    "targetVersion": PROSPECT_BRIDGE_TARGET_VERSION,
+                    "bridgeSupportedAgeMinimum": support_min,
+                    "bridgeSupportedAgeMaximum": support_max,
+                },
+            }
+            continue
         conditional_hof = float(bridge_row["conditionalHofCaliberProbability"])
         unconditional_hof = arrival60 * conditional_hof
         conditional_war = dict(bridge_row["finalCareerWar"])
@@ -709,7 +789,11 @@ def build_prospect_forecasts(
             },
         }
     ranked = sorted(
-        forecasts.values(),
+        (
+            forecast
+            for forecast in forecasts.values()
+            if forecast["publicationState"] != "withheld"
+        ),
         key=lambda forecast: (
             -float(forecast["hofCaliberProbability"]),
             -float(forecast["finalCareerWar"]["p50"]),
