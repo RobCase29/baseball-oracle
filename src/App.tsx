@@ -29,7 +29,7 @@ const defaultFilters: BoardFilters = {
   level: 'All',
   team: 'All',
   position: 'All',
-  sort: 'alphaOpportunity',
+  sort: 'careerIndex',
 }
 
 function filtersFromUrl(): BoardFilters {
@@ -45,6 +45,7 @@ function filtersFromUrl(): BoardFilters {
     ? level
     : defaultFilters.level
   const validSorts = new Set<BoardFilters['sort']>([
+    'careerIndex',
     'alphaOpportunity',
     'nearTermImpact',
     'finalWar',
@@ -55,17 +56,19 @@ function filtersFromUrl(): BoardFilters {
   const resolvedSort = sort && validSorts.has(sort as BoardFilters['sort'])
     ? sort as BoardFilters['sort']
     : defaultFilters.sort
-  const stageSort = (resolvedStage === 'Minors' && (
-    resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
-  )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36') || (
-    resolvedStage === 'RC' && (
-      resolvedSort === 'nearTermImpact' ||
-      resolvedSort === 'finalWar' ||
-      resolvedSort === 'arrival36'
-    )
-  )
-    ? defaultFilters.sort
-    : resolvedSort
+  const stageSort = resolvedStage === 'All'
+    ? 'name'
+    : (resolvedStage === 'Minors' && (
+        resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
+      )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36') || (
+        resolvedStage === 'RC' && (
+          resolvedSort === 'nearTermImpact' ||
+          resolvedSort === 'finalWar' ||
+          resolvedSort === 'arrival36'
+        )
+      )
+      ? defaultFilters.sort
+      : resolvedSort
 
   return {
     query: parameters.get('q') ?? defaultFilters.query,
@@ -225,9 +228,11 @@ function App() {
   }
 
   function changeFilters(patch: Partial<BoardFilters>) {
-    const compatiblePatch = patch.stage === 'MLB' || patch.stage === 'RC'
-      ? { ...patch, level: 'All' }
-      : patch
+    const compatiblePatch = patch.stage === 'All'
+      ? { ...patch, level: 'All', sort: 'name' as const }
+      : patch.stage === 'MLB' || patch.stage === 'RC'
+        ? { ...patch, level: 'All' }
+        : patch
     setFilters((current) => ({ ...current, ...compatiblePatch }))
     setPage(1)
   }
@@ -285,7 +290,7 @@ function App() {
           </div>
           <div className="topbar-meta">
             <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataDate(meta.dataAsOf)}</span>
-            <span><History size={14} aria-hidden="true" /> Score data through {formatDataDate(modelVintage)}</span>
+            <span><History size={14} aria-hidden="true" /> Career Index data through {formatDataDate(modelVintage)}</span>
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
@@ -309,8 +314,10 @@ function App() {
               <header className="workspace-header board-workspace-header">
                 <div>
                   <span className="eyebrow">PLAYER FORECASTS</span>
-                  <h1>Player Rankings</h1>
-                  <p>Scan the table, compare players at the same career stage, and open any row for the full outlook.</p>
+                  <h1>{filters.stage === 'All' ? 'Player Directory' : 'Player Rankings'}</h1>
+                  <p>{filters.stage === 'All'
+                    ? 'Search every active player, then use stage standing and evidence to make a fair comparison.'
+                    : 'Compare projected career magnitude, exact stage standing, and evidence, then open any row for the full outlook.'}</p>
                 </div>
                 <div className="snapshot-id">
                   <span>MODEL STATUS</span>

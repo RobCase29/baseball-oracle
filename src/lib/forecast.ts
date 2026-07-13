@@ -7,6 +7,7 @@ import type {
   PlayerStage,
   StageFilter,
 } from '../domain/forecast'
+import { careerIndexValue } from '../domain/playerMap'
 
 function compareNullableNumber(
   left: number | null,
@@ -110,7 +111,22 @@ export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha
 }
 
 export function oracleOutcomeRank(player: PlayerRecord): number | null {
-  return player.recentCallup?.prospectPrior?.rank ?? player.careerForecast?.rank ?? null
+  if (player.stage === 'recent_callup') {
+    return player.recentCallup?.prospectPrior?.forecast.publicationState === 'withheld'
+      ? null
+      : player.recentCallup?.prospectPrior?.rank ?? null
+  }
+  return player.careerForecast?.publicationState === 'withheld'
+    ? null
+    : player.careerForecast?.rank ?? null
+}
+
+function playerCareerIndex(player: PlayerRecord): number | null {
+  const forecast = player.stage === 'recent_callup'
+    ? player.recentCallup?.prospectPrior?.forecast
+    : player.careerForecast
+  if (forecast?.publicationState === 'withheld') return null
+  return careerIndexValue(forecast?.finalCareerWar)
 }
 
 export function filterAndSortPlayers(
@@ -177,6 +193,21 @@ export function filterAndSortPlayers(
           left.id.localeCompare(right.id)
         )
       }
+      if (filters.sort === 'careerIndex') {
+        return (
+          compareNullableNumber(
+            playerCareerIndex(left),
+            playerCareerIndex(right),
+            'descending',
+          ) ||
+          compareNullableNumber(
+            oracleOutcomeRank(left),
+            oracleOutcomeRank(right),
+            'ascending',
+          ) ||
+          left.id.localeCompare(right.id)
+        )
+      }
       if (filters.sort === 'alphaOpportunity') {
         return (
           compareNullableNumber(
@@ -212,19 +243,9 @@ export function filterAndSortPlayers(
       )
     })
 
-  if (filters.stage !== 'All' || filters.sort === 'age' || filters.sort === 'name') {
-    return sortPlayers(filtered)
-  }
-  const sourceOrder = filters.sort === 'arrival36'
-    ? (['minor', 'rookie', 'mlb'] as const)
-    : (['rookie', 'mlb', 'minor'] as const)
-  return sourceOrder.flatMap((source) => sortPlayers(filtered.filter((player) =>
-    source === 'minor'
-      ? player.stage === 'pre_debut'
-      : source === 'rookie'
-        ? player.stage === 'recent_callup'
-        : player.stage === 'early_mlb' || player.stage === 'established_mlb',
-  )))
+  if (filters.stage !== 'All') return sortPlayers(filtered)
+  if (filters.sort === 'age') return sortPlayers(filtered)
+  return filtered.toSorted((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id))
 }
 
 export function normalizeSearchText(value: string): string {
@@ -293,8 +314,10 @@ export function formatTopRankPercent(rank: number | null, universe: number | nul
   ) return '—'
   const topPercent = rank / universe * 100
   if (topPercent < 0.1) return 'Top <0.1%'
-  if (topPercent < 10) return `Top ${topPercent.toFixed(1)}%`
-  return `Top ${Math.round(topPercent)}%`
+  const digits = topPercent < 1 ? 2 : topPercent < 10 ? 1 : 0
+  const factor = 10 ** digits
+  const conservativePercent = Math.ceil(topPercent * factor) / factor
+  return `Top ${conservativePercent.toFixed(digits)}%`
 }
 
 export function formatScore(value: number | null): string {

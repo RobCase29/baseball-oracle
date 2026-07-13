@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { buildPlayerMap, PLAYER_MAP_VERSION, type PlayerMapInput } from './playerMap'
+import {
+  buildCareerIndex,
+  buildPlayerMap,
+  buildStageStanding,
+  CAREER_INDEX_DEFINITION,
+  CAREER_INDEX_VERSION,
+  careerIndexValue,
+  careerIndexValueForWar,
+  PLAYER_MAP_VERSION,
+  stageTailBand,
+  type PlayerMapInput,
+} from './playerMap'
 
 function makePlayer(overrides: Partial<PlayerMapInput> = {}): PlayerMapInput {
   return {
@@ -16,6 +27,94 @@ function makePlayer(overrides: Partial<PlayerMapInput> = {}): PlayerMapInput {
 }
 
 describe('Player Map', () => {
+  it('maps career WAR scenarios to a fixed, roster-independent career index', () => {
+    expect(careerIndexValueForWar(-2)).toBe(0)
+    expect(careerIndexValueForWar(5)).toBe(20)
+    expect(careerIndexValueForWar(10)).toBeCloseTo(28.333, 3)
+    expect(careerIndexValueForWar(60)).toBe(80)
+    expect(careerIndexValueForWar(120)).toBe(100)
+    expect(careerIndexValueForWar(Number.NaN)).toBeNull()
+
+    expect(careerIndexValue({ p50: 0, p75: 2.494, p90: 12.988 })).toBe(9.7)
+    expect(careerIndexValue({ p50: 20, p75: 40, p90: 60 })).toBe(58)
+    expect(careerIndexValue({ p50: 20, p75: 10, p90: 60 })).toBeNull()
+
+    expect(buildCareerIndex('rookie', { p50: 0, p75: 2.494, p90: 12.988 }, '2025-12-31')).toEqual({
+      version: CAREER_INDEX_VERSION,
+      value: 9.7,
+      scale: 'fixed_career_value_index',
+      route: 'rookie',
+      status: 'research',
+      asOf: '2025-12-31',
+      definition: CAREER_INDEX_DEFINITION,
+      forecastLineage: {
+        modelVersion: null,
+        targetVersion: null,
+        dataVersion: null,
+        providerVersion: null,
+      },
+    })
+    expect(buildCareerIndex('mlb', null, '2025-12-31')).toMatchObject({
+      value: null,
+      status: 'withheld',
+      asOf: '2025-12-31',
+    })
+    expect(buildCareerIndex(
+      'mlb',
+      { p50: 40, p75: 60, p90: 80 },
+      '2025-12-31',
+      'withheld',
+    )).toMatchObject({ value: null, status: 'withheld' })
+  })
+
+  it('withholds both index and standing when a forecast is explicitly withheld', () => {
+    const profile = buildPlayerMap(makePlayer({
+      stage: 'early_mlb',
+      careerForecast: {
+        publicationState: 'withheld',
+        asOf: '2025-12-31T00:00:00.000Z',
+        rank: 1,
+        hofCaliberProbability: 0.5,
+        confidenceScore: 0.5,
+        confidenceState: 'Withheld',
+        finalCareerWar: { p10: 10, p25: 20, p50: 40, p75: 60, p90: 80 },
+      },
+    }), { mlbUniverse: 100 })
+
+    expect(profile.careerIndex).toMatchObject({ value: null, status: 'withheld' })
+    expect(profile.stageStanding).toMatchObject({ rank: null, universe: null, topPercent: null })
+    expect(profile.mappingStatus).toBe('withheld')
+    expect(profile.claimStatus).toBe('withheld')
+  })
+
+  it('expresses stage rank as an exact top-share band without changing the career index', () => {
+    expect(stageTailBand(0.1)).toBe('Top 0.1%')
+    expect(stageTailBand(0.11)).toBe('Top 1%')
+    expect(stageTailBand(5)).toBe('Top 5%')
+    expect(stageTailBand(25.01)).toBe('Outside top 25%')
+    expect(stageTailBand(null)).toBeNull()
+
+    const joeStanding = buildStageStanding('rookie', 167, 6_455, '2025-12-31')
+    expect(joeStanding).toMatchObject({
+      rank: 167,
+      universe: 6_455,
+      tailBand: 'Top 5%',
+      cohort: 'frozen_prospect_prior',
+      asOf: '2025-12-31',
+    })
+    expect(joeStanding.topPercent).toBeCloseTo(2.5871, 4)
+    const boundaryStanding = buildStageStanding('milb', 323, 6_455, null)
+    expect(boundaryStanding.topPercent).toBeCloseTo(5.0039, 4)
+    expect(boundaryStanding.tailBand).toBe('Top 10%')
+    expect(buildStageStanding('milb', null, 6_455, null)).toMatchObject({
+      rank: null,
+      universe: null,
+      topPercent: null,
+      tailBand: null,
+      cohort: 'prospect_forecast',
+    })
+  })
+
   it('turns an Aiva-like ceiling and readiness disagreement into a useful discovery profile', () => {
     const profile = buildPlayerMap(makePlayer({
       milbImpactRanking: {
@@ -95,7 +194,7 @@ describe('Player Map', () => {
 
     expect(profile.version).toBe(PLAYER_MAP_VERSION)
     expect(profile.mappingStatus).toBe('scored')
-    expect(profile.claimStatus).toBe('research_rank_only')
+    expect(profile.claimStatus).toBe('research_only')
     expect(profile.state).toBe('discovery')
     expect(profile.stateLabel).toBe('Discovery')
     expect(profile.oracleScore).toEqual({
@@ -108,6 +207,20 @@ describe('Player Map', () => {
       asOf: '2025-12-31T00:00:00.000Z',
       definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
     })
+    expect(profile.careerIndex).toMatchObject({
+      version: CAREER_INDEX_VERSION,
+      value: 13.1,
+      route: 'milb',
+      status: 'research',
+    })
+    expect(profile.stageStanding).toMatchObject({
+      rank: 258,
+      universe: 6_455,
+      tailBand: 'Top 5%',
+      cohort: 'prospect_forecast',
+      asOf: '2025-12-31T00:00:00.000Z',
+    })
+    expect(profile.stageStanding.topPercent).toBeCloseTo(3.9969, 4)
     expect(profile.scores.outcome).toMatchObject({
       value: 96.017973,
       display: 'P96',
@@ -192,6 +305,7 @@ describe('Player Map', () => {
       universe: 6_179,
       target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
     })
+    expect(profile.careerIndex).toMatchObject({ value: 2.9, status: 'research' })
     expect(profile.state).toBe('mapped')
     expect(profile.scores.outcome).toMatchObject({
       display: 'Needs more data',
@@ -228,6 +342,7 @@ describe('Player Map', () => {
         hofCaliberProbability: 0.04,
         confidenceScore: 0.72,
         confidenceState: 'Moderate',
+        finalCareerWar: { p10: 5, p25: 10, p50: 20, p75: 40, p90: 60 },
         careerChapter: {
           status: 'research',
           label: 'Foundation',
@@ -257,6 +372,18 @@ describe('Player Map', () => {
       universe: 100,
       target: 'hof-caliber-point-in-time-jaws-v1',
     })
+    expect(profile.careerIndex).toMatchObject({
+      value: 58,
+      route: 'mlb',
+      status: 'research',
+    })
+    expect(profile.stageStanding).toMatchObject({
+      rank: 20,
+      universe: 100,
+      topPercent: 20,
+      tailBand: 'Top 25%',
+      cohort: 'current_mlb',
+    })
     expect(profile.scores.readiness).toMatchObject({ value: 25, display: '25.0%' })
     expect(profile.scores.evidence).toMatchObject({ value: 72, display: '72 / 100' })
     expect(profile.scores.bestTrait).toMatchObject({
@@ -271,7 +398,8 @@ describe('Player Map', () => {
     })
     expect(profile.signals.map((signal) => signal.code)).toContain('trait_corroborated')
     expect(profile.missingEvidence).not.toContain('Current MLB performance')
-    expect(profile.comparableWithinStageOnly).toBe(true)
+    expect(profile.careerIndexComparableAcrossRoutes).toBe(true)
+    expect(profile.stageStandingComparableWithinStageOnly).toBe(true)
   })
 
   it('keeps a Joe-like prospect prior while showing MLB confirmation separately', () => {
@@ -336,6 +464,21 @@ describe('Player Map', () => {
       target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
       asOf: '2025-12-31T00:00:00.000Z',
     })
+    expect(profile.careerIndex).toMatchObject({
+      version: CAREER_INDEX_VERSION,
+      value: 9.7,
+      route: 'rookie',
+      status: 'research',
+      asOf: '2025-12-31T00:00:00.000Z',
+    })
+    expect(profile.stageStanding).toMatchObject({
+      rank: 167,
+      universe: 6_455,
+      tailBand: 'Top 5%',
+      cohort: 'frozen_prospect_prior',
+      asOf: '2025-12-31T00:00:00.000Z',
+    })
+    expect(profile.stageStanding.topPercent).toBeCloseTo(2.5871, 4)
     expect(profile.scores.outcome).toMatchObject({
       display: 'P97',
       rank: 167,
@@ -401,6 +544,20 @@ describe('Player Map', () => {
       rank: null,
       universe: null,
       target: null,
+      asOf: null,
+    })
+    expect(profile.careerIndex).toMatchObject({
+      value: null,
+      route: 'rookie',
+      status: 'withheld',
+      asOf: null,
+    })
+    expect(profile.stageStanding).toEqual({
+      rank: null,
+      universe: null,
+      topPercent: null,
+      tailBand: null,
+      cohort: 'frozen_prospect_prior',
       asOf: null,
     })
     expect(profile.scores.outcome).toMatchObject({

@@ -1,8 +1,6 @@
 import type { KeyboardEvent } from 'react'
 import {
   CartesianGrid,
-  ReferenceArea,
-  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -13,6 +11,7 @@ import {
 import type { PlayerRecord } from '../domain/forecast'
 import {
   buildMilbOpportunityPoints,
+  careerIndexChartDomain,
   type MilbOpportunityPoint,
 } from './milbVisualizationData'
 
@@ -35,9 +34,15 @@ interface OpportunityDotProps {
   onSelect: (playerId: string) => void
 }
 
-function formatPercentile(value: number): string {
-  const digits = value >= 99.9 ? 2 : value >= 99 ? 1 : 0
-  return `P${value.toFixed(digits)}`
+function formatCareerIndex(value: number): string {
+  return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)
+}
+
+function formatTopPercent(value: number): string {
+  const digits = value < 0.1 ? 2 : value < 10 ? 1 : 0
+  const factor = 10 ** digits
+  const conservativeValue = Math.ceil(value * factor) / factor
+  return `Top ${conservativeValue.toFixed(digits)}%`
 }
 
 function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
@@ -48,7 +53,8 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
     <div className="chart-tooltip opportunity-map-tooltip">
       <strong>{point.name}</strong>
       <span>{point.organization} · {point.position} · {point.playerType} · {point.level}</span>
-      <span>Oracle Score: {formatPercentile(point.oraclePercentile).slice(1)} · rank #{point.oracleRank.toLocaleString()} of {point.oracleUniverse.toLocaleString()}</span>
+      <span>Career Index: {formatCareerIndex(point.careerIndex)}</span>
+      <span>Stage standing: #{point.stageRank.toLocaleString()} of {point.stageUniverse.toLocaleString()} · {formatTopPercent(point.stageTopPercent)} ({point.stageTailBand})</span>
       <span>Current data: {point.coveredPillars} of {point.totalPillars} areas ({point.evidenceCoverage.toFixed(0)}%)</span>
       <span>Playing time: {point.sampleSummary} · {point.sampleState}</span>
       {point.missingPillars.length > 0 ? <span>Data still needed: {point.missingPillars.join(', ')}</span> : null}
@@ -57,7 +63,7 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
         : <span>Younger than {point.ageAdvantage.toFixed(0)}% of similar historical players</span>}
       <span>MLB readiness: {point.arrivalGateCleared ? 'confirmed by the separate model' : 'not yet confirmed'}</span>
       <span>Current stats support outlook: {point.traitCorroborated ? 'yes' : 'not yet'}</span>
-      <small>Data coverage measures completeness and does not change the Oracle Score.</small>
+      <small>Data coverage measures completeness and does not change the Career Index.</small>
     </div>
   )
 }
@@ -87,7 +93,7 @@ function OpportunityDot({
     <g
       role="button"
       tabIndex={0}
-      aria-label={`${payload.name}, ${payload.playerType}, Oracle Score ${formatPercentile(payload.oraclePercentile).slice(1)}, ${payload.evidenceCoverage.toFixed(0)} percent current data coverage, ${ageContext}`}
+      aria-label={`${payload.name}, ${payload.playerType}, Career Index ${formatCareerIndex(payload.careerIndex)}, ${payload.stageTailBand} stage standing, ${payload.evidenceCoverage.toFixed(0)} percent current data coverage, ${ageContext}`}
       onClick={selectPoint}
       onKeyDown={handleKeyDown}
       style={{ cursor: 'pointer' }}
@@ -128,27 +134,14 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
   const minorCount = players.filter((player) => player.stage === 'pre_debut').length
   const omittedCount = Math.max(0, minorCount - points.length)
   const selectedPoint = points.find((point) => point.playerId === selectedId) ?? null
-  const minimumImpact = points.length > 0
-    ? Math.min(...points.map((point) => point.oraclePercentile))
-    : 0
-  const impactDomainMinimum = minimumImpact >= 95
-    ? Math.max(90, Math.floor(minimumImpact) - 1)
-    : minimumImpact >= 90
-      ? 90
-      : Math.max(0, Math.floor(minimumImpact / 10) * 10)
-  const impactTicks = [
-    impactDomainMinimum,
-    impactDomainMinimum + (100 - impactDomainMinimum) / 3,
-    impactDomainMinimum + (100 - impactDomainMinimum) * 2 / 3,
-    100,
-  ]
+  const careerIndexDomain = careerIndexChartDomain(points)
   const evidenceTicks = [0, 25, 50, 75, 100]
 
   return (
     <section className="opportunity-map" aria-labelledby="opportunity-map-title">
       <div className="opportunity-map-heading">
         <div>
-          <span className="eyebrow">ORACLE SCORE + CURRENT DATA</span>
+          <span className="eyebrow">CAREER INDEX + CURRENT DATA</span>
           <h3 id="opportunity-map-title">Prospect landscape</h3>
         </div>
         <div className="opportunity-map-legend" aria-label="Plot legend">
@@ -161,28 +154,19 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
 
       {points.length === 0 ? (
         <div className="opportunity-map-empty" role="status">
-          <strong>No scored prospects in these results</strong>
+          <strong>No prospects with a Career Index in these results</strong>
           <span>Adjust the filters or choose a player with a matched model record.</span>
         </div>
       ) : (
         <div
           className="opportunity-map-chart"
           role="group"
-          aria-label="Prospect Oracle Score plotted against current data coverage in the loaded results"
+          aria-label="Prospect Career Index plotted against current data coverage in the loaded results"
           style={{ width: '100%', height: 330 }}
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={260}>
             <ScatterChart margin={{ top: 16, right: 18, bottom: 32, left: 2 }}>
               <CartesianGrid stroke="var(--line)" strokeDasharray="2 5" />
-              <ReferenceArea y1={Math.max(90, impactDomainMinimum)} y2={100} fill="var(--green-soft)" fillOpacity={0.52} />
-              {impactDomainMinimum <= 90 ? (
-                <ReferenceLine
-                  y={90}
-                  stroke="var(--green)"
-                  strokeDasharray="4 4"
-                  label={{ value: 'ORACLE SCORE 90+', position: 'insideTopLeft', fill: 'var(--muted)', fontSize: 9 }}
-                />
-              ) : null}
               <XAxis
                 type="number"
                 dataKey="evidenceCoverage"
@@ -201,14 +185,21 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
               />
               <YAxis
                 type="number"
-                dataKey="oraclePercentile"
-                domain={[impactDomainMinimum, 100]}
-                ticks={impactTicks}
+                dataKey="careerIndex"
+                domain={[careerIndexDomain.minimum, careerIndexDomain.maximum]}
+                ticks={careerIndexDomain.ticks}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'var(--muted)', fontSize: 10 }}
-                width={35}
-                tickFormatter={(value: number) => value >= 99 ? value.toFixed(1) : `${Math.round(value)}`}
+                width={42}
+                tickFormatter={(value: number) => `${Math.round(value)}`}
+                label={{
+                  value: 'CAREER INDEX',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: 'var(--muted)',
+                  fontSize: 9,
+                }}
               />
               <Tooltip content={<OpportunityTooltip />} cursor={{ stroke: 'var(--line-strong)', strokeDasharray: '3 3' }} />
               <Scatter
@@ -222,15 +213,15 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
       )}
 
       <div className="opportunity-map-footer">
-        <span>{points.length.toLocaleString()} scored prospect{points.length === 1 ? '' : 's'} in these results{omittedCount > 0 ? ` · ${omittedCount.toLocaleString()} still need matched model data` : ''}</span>
-        <strong>Showing scores {impactDomainMinimum.toFixed(0)}–100 · data coverage does not change the score</strong>
+        <span>{points.length.toLocaleString()} prospect{points.length === 1 ? '' : 's'} with a Career Index in these results{omittedCount > 0 ? ` · ${omittedCount.toLocaleString()} still need matched model data` : ''}</span>
+        <strong>Career Index axis {careerIndexDomain.minimum}–{careerIndexDomain.maximum} · data coverage does not change the index</strong>
       </div>
 
       {selectedPoint ? (
         <div className="opportunity-map-selection" aria-live="polite">
           <strong>{selectedPoint.name}</strong>
           <span>
-            Oracle Score {formatPercentile(selectedPoint.oraclePercentile).slice(1)} · rank #{selectedPoint.oracleRank.toLocaleString()} · {selectedPoint.coveredPillars}/{selectedPoint.totalPillars} data areas
+            Career Index {formatCareerIndex(selectedPoint.careerIndex)} · stage #{selectedPoint.stageRank.toLocaleString()} of {selectedPoint.stageUniverse.toLocaleString()} ({selectedPoint.stageTailBand}) · {selectedPoint.coveredPillars}/{selectedPoint.totalPillars} data areas
             {selectedPoint.ageAdvantage === null ? '' : ` · younger than ${selectedPoint.ageAdvantage.toFixed(0)}% of similar players at ${selectedPoint.level}`}
           </span>
         </div>

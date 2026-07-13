@@ -34,9 +34,22 @@ The compact feed contains:
 - `context`: active career stage, role, organization, position, level, and age.
 - `assessment`: the universal Player Map vector, state, evidence, flags, target,
   comparison universe, version, and as-of dates.
-- `assessment.oracleScore`: the primary 0-100 stage-specific outcome score, plus
-  its exact rank, universe, target, route, and model as-of date.
+- `assessment.careerIndex`: the primary fixed-scale career-value magnitude
+  signal, including version, route, research status, definition, forecast
+  model/target/data/provider lineage, and as-of date.
+- `assessment.stageStanding`: exact stage rank, declared comparison universe,
+  top-share percentage, tail band, cohort, and as-of date.
+- `assessment.careerIndexComparableAcrossRoutes`: confirms that the fixed index
+  scale is numerically shared across prospect, Rookie Track, and MLB routes.
+- `assessment.stageStandingComparableWithinStageOnly`: prevents ordinal ranks
+  from being compared across those route-specific cohorts.
+- `assessment.oracleScore`: the legacy rounded stage-rank percentile retained
+  during the Player Map v2 migration.
 - `meta`: feed and scorecard versions plus explicit market-independence flags.
+
+`meta.matchingMappedCount` is the number of matching records whose primary
+`assessment.careerIndex.value` is non-null. It is not generic profile coverage or
+five-year-impact-rank coverage.
 
 Names are display fields, not identity keys. Never auto-merge two records only by
 normalized player name. Use MLBAM first, another exact provider ID second, and a
@@ -44,18 +57,35 @@ reviewed identity-resolution queue otherwise.
 
 ## Score Semantics
 
-`assessment.oracleScore.value` is the primary product score. It is the rounded
-stage-specific outcome rank percentile, not a probability or a weighted composite.
-The top percentile retains one decimal so the highest-ranked players do not all
-collapse to the same display value.
-For example, a score of 96 means the player ranks above approximately 96% of the
-declared comparison universe for that route and target. Always retain its `rank`,
-`universe`, `route`, `target`, and `asOf` fields. A `null` score means unavailable;
-it never means zero.
+`assessment.careerIndex.value` is the primary Player Map v2 product score. It is
+the weighted P50/P75/P90 summary of the player's final-career WAR distribution
+mapped onto frozen career-value anchors. It is not a probability, percentile,
+confidence score, expected WAR, or investment-return estimate. The exact formula,
+anchors, missing-value policy, and stage transitions are defined in
+[`CAREER_INDEX_V1.md`](./CAREER_INDEX_V1.md).
+
+`assessment.stageStanding` carries relative rarity separately. `topPercent` is
+the player's rank divided by the declared universe, expressed as a percentage;
+lower is better. `tailBand` is one of Top 0.1%, Top 1%, Top 5%, Top 10%, Top 25%,
+or Outside top 25%. Prospect standing uses the frozen 6,455-player artifact, not
+the changing number of active directory matches. Rookie Track carries that exact
+frozen prospect standing until a supported completed-season MLB forecast exists.
+
+The Directory union is an identity and coverage feed, not a combined ranking. It
+defaults to `stage=All&sort=name`; `sort=age` is also available. Consumers must
+not treat either row order as baseball standing or compare stage ranks across
+prospect, Rookie Track, and MLB cohorts.
+
+`assessment.oracleScore.value` remains available during migration. It is the old
+rounded stage-specific outcome rank percentile. For example, a legacy value of 96
+means the player ranked above approximately 96% of its declared route universe;
+it does not mean 96% confidence. Do not relabel it as Career Index. A `null` value
+in any score object means unavailable; it never means zero.
 
 The supporting Player Map dimensions are readiness, trajectory, best current
-trait, and evidence. They explain the primary score and how much trust to place in
-it; they are not blended into it. Every numeric value carries a scale and basis.
+trait, and evidence. They explain the forecast and how much trust to place in it;
+they are not blended into Career Index or stage standing. Every numeric value
+carries a scale and basis.
 
 Ordinal percentiles are comparable only inside their declared stage and universe.
 For example, MiLB five-year impact percentile 96 means top 4% of the frozen MiLB
@@ -74,17 +104,20 @@ Backstop should persist this lineage with every derived card recommendation:
 - Oracle record ID;
 - Player Map version;
 - signal target and model as-of timestamp;
-- ordinal value, rank, and comparison-universe size;
+- Career Index value, version, route, status, and as-of date;
+- stage rank, universe, top-share percentage, tail band, cohort, and as-of date;
+- legacy Oracle Score only where migration compatibility requires it;
 - mapping and evidence state.
 
 Backstop should calculate card opportunity independently. A useful first design is
-to retain Oracle outcome, readiness, trajectory, and evidence as separate features,
-then combine them with market price percentile, recent comparable sales, bid/ask
-depth, sell-through, population, card scarcity, condition, and total transaction
-cost. Do not collapse the Oracle vector into an unexplained talent number before
-testing which dimensions add out-of-sample market value.
+to retain Career Index, stage standing, readiness, trajectory, and evidence as
+separate features, then combine them with market price percentile, recent
+comparable sales, bid/ask depth, sell-through, population, card scarcity,
+condition, and total transaction cost. Do not collapse the Oracle vector into an
+unexplained talent number before testing which dimensions add out-of-sample
+market value.
 
-## Durable V1 Contract
+## Durable Feed Contract
 
 The production integration should graduate to `/api/v1/player-signals` after the
 canonical `core.player` UUID is populated for the complete active census. That
@@ -98,7 +131,11 @@ contract should add:
 - idempotent record versions and effective-dated identity redirects;
 - scoped server-to-server API keys.
 
-Breaking semantic changes require a new feed version. A score delta is comparable
-only when its target, definition, model, and universe versions are unchanged.
+Breaking semantic changes require a new feed version. A Career Index delta is
+comparable only when its index version, forecast route, target, and model version
+are unchanged. A stage-standing delta also requires an unchanged cohort and
+universe definition. `oracle-player-map/v1` consumers may read the legacy
+`oracleScore` during migration, but new Backstop ingestion should bind to
+`oracle-player-map/v2` and persist `careerIndex` plus `stageStanding`.
 Provider-derived fields should be included externally only when redistribution
 rights cover the intended integration.

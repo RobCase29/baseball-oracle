@@ -1,7 +1,7 @@
 # Career Oracle Research Contract
 
 Status: implemented research MVP, not release eligible  
-Revised: 2026-07-12  
+Revised: 2026-07-13
 MLB target version: `hof-caliber-point-in-time-jaws-v1`  
 MiLB bridge target version: `mlb-debut-age-mixed-final-standard-bridge-v1`
 
@@ -16,9 +16,9 @@ training problem:
    career WAR, peak-seven WAR, JAWS, and Hall-caliber outcomes remain plausible?
 
 The product shows both populations in one research cockpit, but it maintains
-separate MiLB and MLB ranks. The All view groups those rank universes because the
-minor-league bridge and the MLB landmark model do not estimate directly
-comparable endpoints.
+separate MiLB and MLB ranks because the minor-league bridge and the MLB landmark
+model do not estimate directly comparable endpoints. Directory defaults to player
+name, permits a noncompetitive age sort, and is explicitly non-ranking.
 
 ## Statistical Hall Target
 
@@ -93,6 +93,34 @@ The arrival model's external evaluation failed registered release gates. The
 bridge therefore remains low-confidence research output even when a number is
 available.
 
+## Career Index Presentation Layer
+
+`career-index-war-v1` is a product presentation transform over the forecast
+distribution, not a new model target or calibrated learner. It maps final-career
+WAR to fixed values at 0, 5, 20, 40, 60, 80, and 100 WAR, corresponding to index
+values 0, 20, 45, 65, 80, 92, and 100. Linear interpolation is used between
+anchors. The final index weights transformed P50, P75, and P90 at 50%, 30%, and
+20%, then rounds to one decimal.
+
+The Career Index is not a probability, percentile, expected-WAR estimate,
+confidence score, or Hall induction forecast. It does not use current roster
+size, another player's score, current market data, or evidence coverage. Its
+definition is frozen in [`CAREER_INDEX_V1.md`](./CAREER_INDEX_V1.md).
+
+Stage standing remains separate. It publishes exact rank, universe, rank share,
+and tail band for the declared modeling route. The prospect reference universe is
+the frozen 6,455-player forecast artifact. Removing graduated, inactive, or
+unmatched players from the current directory cannot improve another prospect's
+standing. Directory itself is an identity and coverage union with name and age
+sorts, not a combined ranking.
+
+Rookie Track preserves the exact prospect distribution, Career Index, rank, and
+6,455-player universe through the first partial MLB season. Current MLB WAR and
+opportunity are displayed as separate evidence and cannot update the frozen
+prior. The player moves to the MLB Career Index only when a supported
+completed-season MLB forecast exists. If no exact prospect prior is available,
+both Career Index and stage standing remain null.
+
 ## Evidence and Ranking Rules
 
 - Split by player, never by player-season row.
@@ -104,8 +132,16 @@ available.
 - Keep source retrieval time, feature cutoff time, and actual-evidence time
   separate.
 - Default scoring uses the latest complete season; 2026 partial data is context.
-- Rank current MLB players only against the current MLB census.
-- Rank prospects only against the live MiLB research-proxy universe.
+- Rank current MLB players only against the declared current-MLB scoring census.
+- Preserve prospect ranks from the frozen 6,455-player research forecast
+  artifact; the active directory is a coverage subset, not a new rank universe.
+- Keep Directory name and age sorts explicitly non-ranking; player name is the
+  default. Ranked surfaces remain stage-specific rather than presenting one
+  combined leaderboard.
+- Keep Career Index, stage standing, and evidence separate. Evidence never
+  changes either score.
+- Keep Rookie Track on its frozen prospect prior until a supported
+  completed-season MLB route exists.
 - Confidence is a coverage/support heuristic, not a frequentist coverage
   probability and never changes rank.
 

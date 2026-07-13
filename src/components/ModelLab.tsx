@@ -34,7 +34,7 @@ const targets: Record<
       { label: 'Historical data', status: 'We save the exact MLB seasons and Hall-level standards used in every test', measured: true },
       { label: 'No future data', status: 'The model cannot see statistics that happened after the date being predicted', measured: true },
       { label: 'Career phases', status: 'Hitters, starters, and relievers have separate development, peak, and decline patterns', measured: true },
-      { label: 'Prospect career runway', status: 'Projected MLB debut age now changes the minor-league career ceiling rank', measured: true },
+      { label: 'Prospect career runway', status: 'Projected MLB debut age shapes the Career Index and separate prospect stage standing', measured: true },
       { label: 'Prospect quality after arrival', status: 'A direct minor-league to early-MLB quality model is still required', measured: false },
       { label: 'Three-year upside', status: 'A separate model estimates a standout next three seasons; it is not a Hall probability', measured: true },
       { label: 'Standout-player test', status: 'The historical screen found only four qualifying players, too few for a reliable edge claim', measured: true },
@@ -81,7 +81,7 @@ export function ModelLab() {
           <span>CURRENT VERDICT</span>
           <strong>Useful ranking signal, not the final model</strong>
         </div>
-        <p>The prospect impact model identifies candidates well in historical tests, but tiny samples can distort its highest ranks. The minor-league Oracle Score therefore uses the separate arrival-and-debut-age career route, while fragile impact ranks are withheld. The full career model still misses too many rare Hall-level endings.</p>
+        <p>The prospect impact model identifies candidates well in historical tests, but tiny samples can distort its highest ranks. The minor-league Career Index therefore uses a separate forecast built from arrival odds and projected debut age, while fragile impact ranks stay hidden. The full career model still misses too many rare Hall-level endings.</p>
       </section>
 
       <div className="target-tabs" role="tablist" aria-label="Prediction target">

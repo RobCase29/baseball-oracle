@@ -5,12 +5,14 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 1. Which professional minor-league players have the strongest path to meaningful MLB impact.
 2. Which active major leaguers have the strongest remaining career path toward Hall of Fame-caliber statistics.
 
-The product now leads with one **Oracle Score** from 0 to 100. It is the rounded
-percentile of a player's stage-specific outcome rank: five-year MLB impact for
-minor leaguers and Hall of Fame-caliber career outlook for major leaguers. It is
-not a probability, a blend of supporting signals, or an investment-return score.
-The exact stage rank, target, model date, current stats, strengths, risks, and data
-coverage remain available beside it.
+The product leads with the **Oracle Career Index**, a fixed 0-100 summary of the
+magnitude in a player's modeled final-career WAR distribution. It is shown beside
+the player's exact stage standing and evidence depth so absolute career value,
+relative rarity, and forecast support never collapse into one claim. Career Index
+is not a probability, percentile, confidence score, expected WAR, or
+investment-return score. The legacy stage-percentile `oracleScore` remains in the
+partner feed only for migration compatibility. See the
+[Career Index contract](docs/CAREER_INDEX_V1.md).
 
 The repository ships a working React research cockpit backed by authorized
 Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
@@ -25,7 +27,8 @@ universes because their targets are not directly comparable.
 Production defines a daily 10:17 UTC refresh for all ten current Prospect Savant
 minor-league slices and the authorized Baseball-Reference current-season batting
 and pitching value pages. New MLB WAR, workload, and role-relative WAR percentile
-reach player profiles without silently changing the completed-season Oracle Score.
+reach player profiles without silently changing the completed-season Career Index
+or a Rookie Track player's frozen prospect prior.
 `/api/health` reports the last source attempts, complete-slice coverage, scheduled
 job receipt, and separate current-data and model clocks.
 
@@ -112,8 +115,8 @@ historical WAR pace remains descriptive context and never changes an outcome
 probability. Minor-league near-term ranking continues to use the separately
 defined 36-month MLB-arrival probability.
 
-The default `alpha-signal-v1` view is an early-career anomaly detector, not a
-single opaque score. A player must have no more than six completed MLB seasons,
+The separate `alpha-signal-v1` research alert is an early-career anomaly detector,
+not a single opaque score. A player must have no more than six completed MLB seasons,
 at least two years of runway to the learned role-track prime, a supported
 post-1961 historical baseline of at least 500 resolved players, and a P90 JAWS
 ceiling above the applicable Hall-caliber standard. Eligible players are ranked
@@ -132,9 +135,10 @@ The post-hoc 36-month diagnostic selected 223 players with 110 arrivals, but the
 external calibration and population-shift gates failed, so no probability is
 presented as validated confidence.
 
-The default Minors Oracle Score orders every impact-ranked player with the
-probability-free `milb-impact-five-calendar-year-war-v1` rank; the separate MLB
-arrival check is supporting context and never controls that score. Its target is
+The Minors stage standing preserves the frozen 6,455-player prospect forecast
+universe. The separate probability-free `milb-impact-five-calendar-year-war-v1`
+rank and MLB arrival check remain supporting context and never alter Career Index.
+The direct-impact target is
 at least 5 total MLB WAR in 2026-2030. The champion produced 8.10x top-decile lift
 across player-purged forward folds, but extreme-tail calibration failed, so the
 public artifact exposes rank and comparison evidence while omitting player impact
@@ -213,11 +217,16 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Player rankings:** one primary Oracle Score, exact stage rank, real players, team/position/stage filters, current evidence, and a browser-local watchlist.
-- **Player dossier:** score explanation, current strengths and risks, current stats, an MLB career arc where supported, an honest prospect long-term-model status, and collapsible advanced details.
-- **Accuracy:** historical test results and failed checks, published without hiding weak spots.
-- **Model review:** a plain-language verdict, target-by-target evidence, testing rules, and the path to a champion model.
-- **Data updates:** daily-job status, MiLB and MLB completeness, source dates, and the completed season powering each score.
+- **Rankings:** Career Index, exact stage rank and tail band, real players,
+  team/position/stage filters, and current evidence in a table-first workflow.
+- **Directory:** an identity and coverage view across stages. It defaults to
+  player name, also supports age, and neither order is a baseball ranking.
+- **Rookie Track:** a frozen prospect Career Index and standing paired with
+  separate, accumulating MLB confirmation evidence.
+- **Player dossier:** index explanation, current strengths and risks, current
+  stats, an MLB career arc where supported, and honest missing-evidence states.
+- **Model review:** a plain-language verdict, target-by-target evidence, testing
+  rules, and the path to a champion model.
 
 Every model output remains lineage-bound and labeled with its publication state.
 In-season 2026 evidence is context only; scoring defaults to the latest complete
@@ -237,6 +246,8 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
+- [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
+- [Player Map partner feed](docs/PLAYER_MAP_FEED.md)
 - [Daily data refresh and serving audit](docs/DATA_REFRESH.md)
 - [July 2026 model and data review](docs/audits/MODEL_AND_DATA_REVIEW_2026-07-13.md)
 - [Registered S-tier model tournament](modeling/config/s-tier-tournament-v1.json)

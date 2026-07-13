@@ -1,4 +1,23 @@
-export const PLAYER_MAP_VERSION = 'oracle-player-map/v1' as const
+export const PLAYER_MAP_VERSION = 'oracle-player-map/v2' as const
+export const CAREER_INDEX_VERSION = 'career-index-war-v1' as const
+export const FROZEN_PROSPECT_FORECAST_UNIVERSE = 6_455 as const
+export const CAREER_INDEX_DEFINITION = 'Fixed career-value index from final-career WAR P50, P75, and P90 mapped to versioned WAR anchors; not a probability, percentile, confidence score, or expected WAR' as const
+
+export const CAREER_INDEX_WAR_ANCHORS = [
+  { war: 0, value: 0 },
+  { war: 5, value: 20 },
+  { war: 20, value: 45 },
+  { war: 40, value: 65 },
+  { war: 60, value: 80 },
+  { war: 80, value: 92 },
+  { war: 100, value: 100 },
+] as const
+
+export const CAREER_INDEX_QUANTILE_WEIGHTS = {
+  p50: 0.5,
+  p75: 0.3,
+  p90: 0.2,
+} as const
 
 export type PlayerMapRoute = 'milb' | 'rookie' | 'mlb'
 export type PlayerMapState =
@@ -66,17 +85,65 @@ export interface PlayerMapOracleScore {
   definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score'
 }
 
+export interface CareerIndexWarQuantiles {
+  p50: number
+  p75: number
+  p90: number
+}
+
+export interface PlayerMapForecastLineage {
+  modelVersion: string | null
+  targetVersion: string | null
+  dataVersion: string | null
+  providerVersion: string | null
+}
+
+export interface PlayerMapCareerIndex {
+  version: typeof CAREER_INDEX_VERSION
+  value: number | null
+  scale: 'fixed_career_value_index'
+  route: PlayerMapRoute
+  status: 'research' | 'withheld'
+  asOf: string | null
+  definition: typeof CAREER_INDEX_DEFINITION
+  forecastLineage: PlayerMapForecastLineage
+}
+
+export type PlayerMapStageTailBand =
+  | 'Top 0.1%'
+  | 'Top 1%'
+  | 'Top 5%'
+  | 'Top 10%'
+  | 'Top 25%'
+  | 'Outside top 25%'
+
+export type PlayerMapStageCohort =
+  | 'prospect_forecast'
+  | 'frozen_prospect_prior'
+  | 'current_mlb'
+
+export interface PlayerMapStageStanding {
+  rank: number | null
+  universe: number | null
+  topPercent: number | null
+  tailBand: PlayerMapStageTailBand | null
+  cohort: PlayerMapStageCohort
+  asOf: string | null
+}
+
 export interface PlayerMapProfile {
   version: typeof PLAYER_MAP_VERSION
   asOf: string | null
   route: PlayerMapRoute
   mappingStatus: 'scored' | 'insufficient_sample' | 'coverage_gap' | 'withheld' | 'not_applicable'
-  claimStatus: 'research_rank_only' | 'descriptive_only' | 'withheld'
+  claimStatus: 'research_only' | 'descriptive_only' | 'withheld'
   state: PlayerMapState
   stateLabel: string
   archetype: string
   summary: string
   oracleScore: PlayerMapOracleScore
+  careerIndex: PlayerMapCareerIndex
+  stageStanding: PlayerMapStageStanding
   scores: {
     outcome: PlayerMapScore
     readiness: PlayerMapScore
@@ -91,7 +158,8 @@ export interface PlayerMapProfile {
   nextEvidence: string[]
   marketIndependent: true
   marketInputsIncluded: false
-  comparableWithinStageOnly: true
+  careerIndexComparableAcrossRoutes: true
+  stageStandingComparableWithinStageOnly: true
 }
 
 interface PlayerMapInputMetric {
@@ -166,11 +234,13 @@ export interface PlayerMapInput {
     strongestMetrics: PlayerMapInputTrait[]
   } | null
   careerForecast: {
+    publicationState?: 'observed' | 'research' | 'released' | 'withheld'
     asOf: string
     rank: number | null
     hofCaliberProbability: number | null
     confidenceScore: number | null
     confidenceState: string
+    lineage?: PlayerMapForecastLineage
     finalCareerWar?: {
       p10: number
       p25: number
@@ -208,7 +278,9 @@ export interface PlayerMapInput {
       target: string
       asOf: string
       forecast: {
+        publicationState?: 'observed' | 'research' | 'released' | 'withheld'
         confidenceState: string
+        lineage?: PlayerMapForecastLineage
         finalCareerWar?: {
           p10: number
           p25: number
@@ -253,6 +325,114 @@ function ordinalPercentile(rank: number | null, universe: number | null): number
   if (rank === null || universe === null || rank < 1 || universe < rank) return null
   if (universe === 1) return 100
   return 100 * (universe - rank) / (universe - 1)
+}
+
+export function careerIndexValueForWar(war: number): number | null {
+  if (!Number.isFinite(war)) return null
+  if (war <= CAREER_INDEX_WAR_ANCHORS[0].war) return CAREER_INDEX_WAR_ANCHORS[0].value
+
+  for (let index = 1; index < CAREER_INDEX_WAR_ANCHORS.length; index += 1) {
+    const lower = CAREER_INDEX_WAR_ANCHORS[index - 1]
+    const upper = CAREER_INDEX_WAR_ANCHORS[index]
+    if (war > upper.war) continue
+
+    const position = (war - lower.war) / (upper.war - lower.war)
+    return lower.value + position * (upper.value - lower.value)
+  }
+
+  return CAREER_INDEX_WAR_ANCHORS.at(-1)?.value ?? 100
+}
+
+export function careerIndexValue(
+  quantiles: CareerIndexWarQuantiles | null | undefined,
+): number | null {
+  if (!quantiles) return null
+  const { p50, p75, p90 } = quantiles
+  if (
+    !Number.isFinite(p50) ||
+    !Number.isFinite(p75) ||
+    !Number.isFinite(p90) ||
+    p50 > p75 ||
+    p75 > p90
+  ) return null
+
+  const middle = careerIndexValueForWar(p50)
+  const strong = careerIndexValueForWar(p75)
+  const high = careerIndexValueForWar(p90)
+  if (middle === null || strong === null || high === null) return null
+
+  const value =
+    CAREER_INDEX_QUANTILE_WEIGHTS.p50 * middle +
+    CAREER_INDEX_QUANTILE_WEIGHTS.p75 * strong +
+    CAREER_INDEX_QUANTILE_WEIGHTS.p90 * high
+  return Math.round(value * 10) / 10
+}
+
+export function buildCareerIndex(
+  route: PlayerMapRoute,
+  quantiles: CareerIndexWarQuantiles | null | undefined,
+  asOf: string | null,
+  publicationState?: 'observed' | 'research' | 'released' | 'withheld',
+  forecastLineage?: PlayerMapForecastLineage | null,
+): PlayerMapCareerIndex {
+  const value = publicationState === 'withheld' ? null : careerIndexValue(quantiles)
+  return {
+    version: CAREER_INDEX_VERSION,
+    value,
+    scale: 'fixed_career_value_index',
+    route,
+    status: value === null ? 'withheld' : 'research',
+    asOf,
+    definition: CAREER_INDEX_DEFINITION,
+    forecastLineage: {
+      modelVersion: forecastLineage?.modelVersion ?? null,
+      targetVersion: forecastLineage?.targetVersion ?? null,
+      dataVersion: forecastLineage?.dataVersion ?? null,
+      providerVersion: forecastLineage?.providerVersion ?? null,
+    },
+  }
+}
+
+export function stageTailBand(topPercent: number | null): PlayerMapStageTailBand | null {
+  if (topPercent === null || !Number.isFinite(topPercent) || topPercent < 0 || topPercent > 100) {
+    return null
+  }
+  if (topPercent <= 0.1) return 'Top 0.1%'
+  if (topPercent <= 1) return 'Top 1%'
+  if (topPercent <= 5) return 'Top 5%'
+  if (topPercent <= 10) return 'Top 10%'
+  if (topPercent <= 25) return 'Top 25%'
+  return 'Outside top 25%'
+}
+
+export function buildStageStanding(
+  route: PlayerMapRoute,
+  rank: number | null,
+  universe: number | null,
+  asOf: string | null,
+): PlayerMapStageStanding {
+  const validStanding =
+    rank !== null &&
+    universe !== null &&
+    Number.isInteger(rank) &&
+    Number.isInteger(universe) &&
+    rank >= 1 &&
+    universe >= rank
+  const topPercent = validStanding ? 100 * rank / universe : null
+  const cohort: PlayerMapStageCohort = route === 'milb'
+    ? 'prospect_forecast'
+    : route === 'rookie'
+      ? 'frozen_prospect_prior'
+      : 'current_mlb'
+
+  return {
+    rank: validStanding ? rank : null,
+    universe: validStanding ? universe : null,
+    topPercent,
+    tailBand: stageTailBand(topPercent),
+    cohort,
+    asOf,
+  }
 }
 
 function percentileDisplay(value: number | null): string {
@@ -378,9 +558,19 @@ function buildMinorMap(
   const impactWorkloadSupported = arrival?.gates?.minimumRawWorkload !== false
   const rawImpactValue = validPercentile(impact?.rankPercentile) ? impact.rankPercentile : null
   const impactValue = impactWorkloadSupported ? rawImpactValue : null
-  const careerRank = career?.rank ?? null
-  const careerUniverse = context.minorUniverse ?? impact?.universeRows ?? null
+  const careerSupported = career?.publicationState !== 'withheld'
+  const careerRank = careerSupported ? career?.rank ?? null : null
+  const careerUniverse = 'minorUniverse' in context
+    ? context.minorUniverse ?? null
+    : FROZEN_PROSPECT_FORECAST_UNIVERSE
   const careerValue = ordinalPercentile(careerRank, careerUniverse)
+  const careerIndex = buildCareerIndex(
+    'milb',
+    career?.finalCareerWar,
+    career?.asOf ?? null,
+    career?.publicationState,
+    career?.lineage,
+  )
   const estimatedDebutAge = career?.decomposition?.estimatedDebutAge ?? null
   const ageValue = validPercentile(arrival?.ageContext?.youngerThanPercent)
     ? arrival.ageContext.youngerThanPercent
@@ -456,12 +646,12 @@ function buildMinorMap(
     version: PLAYER_MAP_VERSION,
     asOf: career?.asOf ?? impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
     route: 'milb',
-    mappingStatus: careerRank !== null && careerValue !== null
+    mappingStatus: careerIndex.value !== null
       ? 'scored'
       : evidenceState === 'insufficient' || evidenceState === 'provisional'
         ? 'insufficient_sample'
         : 'coverage_gap',
-    claimStatus: careerRank !== null ? 'research_rank_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
+    claimStatus: careerIndex.value !== null ? 'research_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
     archetype: minorArchetype(strengths, risks),
@@ -474,6 +664,8 @@ function buildMinorMap(
       'mlb-debut-age-mixed-final-standard-bridge-v1',
       career?.asOf ?? null,
     ),
+    careerIndex,
+    stageStanding: buildStageStanding('milb', careerRank, careerUniverse, career?.asOf ?? null),
     scores: {
       outcome: score({
         key: 'outcome',
@@ -566,7 +758,8 @@ function buildMinorMap(
     nextEvidence: minorNextEvidence(player),
     marketIndependent: true,
     marketInputsIncluded: false,
-    comparableWithinStageOnly: true,
+    careerIndexComparableAcrossRoutes: true,
+    stageStandingComparableWithinStageOnly: true,
   }
 }
 
@@ -574,9 +767,17 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
   const rookie = player.recentCallup
   const prior = rookie?.prospectPrior ?? null
   const evidence = rookie?.currentMlbEvidence ?? null
-  const priorValue = prior
-    ? ordinalPercentile(prior.rank, prior.universe)
+  const supportedPrior = prior?.forecast.publicationState === 'withheld' ? null : prior
+  const priorValue = supportedPrior
+    ? ordinalPercentile(supportedPrior.rank, supportedPrior.universe)
     : null
+  const careerIndex = buildCareerIndex(
+    'rookie',
+    prior?.forecast.finalCareerWar,
+    prior?.asOf ?? null,
+    prior?.forecast.publicationState,
+    prior?.forecast.lineage,
+  )
   const currentWarPercentile = validPercentile(evidence?.warPercentile)
     ? evidence.warPercentile
     : null
@@ -609,7 +810,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     : `Current MLB evidence is ${warDisplay}${currentWarPercentile === null ? '' : ` (${percentileDisplay(currentWarPercentile)})`} across ${opportunityDisplay}.`
 
   const signals: PlayerMapSignal[] = []
-  if (prior) {
+  if (supportedPrior) {
     signals.push({
       code: 'prospect_prior_preserved',
       label: 'Prospect prior preserved',
@@ -628,21 +829,28 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     version: PLAYER_MAP_VERSION,
     asOf: evidence?.asOf ?? prior?.asOf ?? player.provenance.retrievedAt,
     route: 'rookie',
-    mappingStatus: priorValue === null ? 'coverage_gap' : 'scored',
-    claimStatus: priorValue === null ? 'withheld' : 'research_rank_only',
+    mappingStatus: careerIndex.value === null ? 'coverage_gap' : 'scored',
+    claimStatus: careerIndex.value === null ? 'withheld' : 'research_only',
     state,
     stateLabel: stateLabels[state],
     archetype: 'Rookie Track / prospect prior',
-    summary: prior
-      ? `${player.name} carries a frozen ${rankDisplay(prior.rank, prior.universe)} prospect career-ceiling rank into Rookie Track. ${liveEvidenceText} Live evidence does not change the prospect-prior score.`
+    summary: supportedPrior
+      ? `${player.name} carries a frozen ${rankDisplay(supportedPrior.rank, supportedPrior.universe)} prospect career-ceiling rank into Rookie Track. ${liveEvidenceText} Live evidence does not change the prospect-prior score.`
       : `${player.name} is in Rookie Track, but an exact frozen prospect prior is unavailable. ${liveEvidenceText}`,
     oracleScore: oracleScore(
       'rookie',
       priorValue,
-      prior?.rank ?? null,
-      prior?.universe ?? null,
-      prior?.target ?? null,
-      prior?.asOf ?? null,
+      supportedPrior?.rank ?? null,
+      supportedPrior?.universe ?? null,
+      supportedPrior?.target ?? null,
+      supportedPrior?.asOf ?? null,
+    ),
+    careerIndex,
+    stageStanding: buildStageStanding(
+      'rookie',
+      supportedPrior?.rank ?? null,
+      supportedPrior?.universe ?? null,
+      supportedPrior?.asOf ?? null,
     ),
     scores: {
       outcome: score({
@@ -653,10 +861,10 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
         scale: 'ordinal_percentile',
         status: priorValue === null ? 'withheld' : 'research',
         basis: 'Frozen pre-debut career-ceiling rank; current MLB evidence is not blended into it',
-        target: prior?.target ?? null,
-        rank: prior?.rank ?? null,
-        universe: prior?.universe ?? null,
-        asOf: prior?.asOf ?? null,
+        target: supportedPrior?.target ?? null,
+        rank: supportedPrior?.rank ?? null,
+        universe: supportedPrior?.universe ?? null,
+        asOf: supportedPrior?.asOf ?? null,
       }),
       readiness: score({
         key: 'readiness',
@@ -719,7 +927,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     risks: currentRisks,
     signals,
     missingEvidence: [
-      ...(!prior ? ['Exact frozen prospect prior'] : []),
+      ...(!supportedPrior ? ['Exact frozen prospect prior'] : []),
       ...(currentWarPercentile === null ? ['Current MLB value standing'] : []),
       ...(player.careerForecast?.rank === null || player.careerForecast === null
         ? ['Supported completed-season MLB career forecast']
@@ -731,12 +939,21 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     ],
     marketIndependent: true,
     marketInputsIncluded: false,
-    comparableWithinStageOnly: true,
+    careerIndexComparableAcrossRoutes: true,
+    stageStandingComparableWithinStageOnly: true,
   }
 }
 
 function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): PlayerMapProfile {
   const forecast = player.careerForecast
+  const forecastSupported = forecast?.publicationState !== 'withheld'
+  const careerIndex = buildCareerIndex(
+    'mlb',
+    forecast?.finalCareerWar,
+    forecast?.asOf ?? null,
+    forecast?.publicationState,
+    forecast?.lineage,
+  )
   const chapter = forecast?.careerChapter?.status === 'research' ? forecast.careerChapter : null
   const currentTraits = uniqueTraits(player.metrics)
   const currentStrengths = currentTraits
@@ -749,7 +966,7 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     .slice(0, 3)
   const bestCurrentTrait = currentTraits
     .toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
-  const rank = forecast?.rank ?? null
+  const rank = forecastSupported ? forecast?.rank ?? null : null
   const universe = context.mlbUniverse ?? null
   const outlookValue = ordinalPercentile(rank, universe)
   const readinessValue = chapter?.exceptionalTrajectory?.probability === undefined || chapter.exceptionalTrajectory === null
@@ -807,8 +1024,8 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     version: PLAYER_MAP_VERSION,
     asOf: forecast?.asOf ?? player.provenance.retrievedAt,
     route: 'mlb',
-    mappingStatus: rank !== null ? 'scored' : forecast ? 'withheld' : 'coverage_gap',
-    claimStatus: rank !== null ? 'research_rank_only' : 'withheld',
+    mappingStatus: careerIndex.value !== null ? 'scored' : forecast ? 'withheld' : 'coverage_gap',
+    claimStatus: careerIndex.value !== null ? 'research_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
     archetype: chapter ? `${chapter.label} / ${chapter.trajectoryState}` : 'MLB profile',
@@ -821,6 +1038,8 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
       'hof-caliber-point-in-time-jaws-v1',
       forecast?.asOf ?? null,
     ),
+    careerIndex,
+    stageStanding: buildStageStanding('mlb', rank, universe, forecast?.asOf ?? null),
     scores: {
       outcome: score({
         key: 'outcome',
@@ -903,7 +1122,8 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     ],
     marketIndependent: true,
     marketInputsIncluded: false,
-    comparableWithinStageOnly: true,
+    careerIndexComparableAcrossRoutes: true,
+    stageStandingComparableWithinStageOnly: true,
   }
 }
 

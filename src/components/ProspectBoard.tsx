@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Database,
   FilterX,
+  Info,
   LoaderCircle,
   Search,
   SlidersHorizontal,
@@ -25,7 +26,7 @@ import {
   isMlbStage,
   stageLabel,
 } from '../lib/forecast'
-import { oracleScoreFor, playerMapFor } from './playerMapView'
+import { careerIndexFor, playerMapFor } from './playerMapView'
 import {
   formatRookieWar,
   formatRookieWarPercentile,
@@ -54,7 +55,7 @@ interface ProspectBoardProps {
 }
 
 const stages: Array<{ value: StageFilter; label: string }> = [
-  { value: 'All', label: 'All' },
+  { value: 'All', label: 'Directory' },
   { value: 'Minors', label: 'Prospects' },
   { value: 'RC', label: 'Rookie Track' },
   { value: 'MLB', label: 'MLB' },
@@ -73,15 +74,15 @@ function withCurrentFacet(
 
 function boardHeading(filters: BoardFilters): { eyebrow: string; title: string } {
   if (filters.stage === 'Minors') {
-    return { eyebrow: 'RUNWAY-ADJUSTED CAREER CEILING', title: 'Prospect Rankings' }
+    return { eyebrow: 'PROJECTED CAREER VALUE', title: 'Prospect Rankings' }
   }
   if (filters.stage === 'RC') {
-    return { eyebrow: 'PROSPECT PRIOR + EARLY MLB READ', title: 'Rookie Track' }
+    return { eyebrow: 'PROSPECT OUTLOOK + MLB EVIDENCE', title: 'Rookie Track' }
   }
   if (filters.stage === 'MLB') {
-    return { eyebrow: 'HALL-LEVEL CAREER OUTLOOK', title: 'MLB Rankings' }
+    return { eyebrow: 'PROJECTED CAREER VALUE', title: 'MLB Rankings' }
   }
-  return { eyebrow: 'ACTIVE PLAYER OUTLOOKS', title: 'Player Rankings' }
+  return { eyebrow: 'SEARCH ACROSS CAREER STAGES', title: 'All Players' }
 }
 
 function emptyStateCopy(stage: StageFilter): { title: string; detail: string } {
@@ -198,8 +199,14 @@ export function ProspectBoard({
                 )
                 onChangeFilters({
                   stage: stage.value,
-                  ...(stage.value === 'MLB' || stage.value === 'RC' ? { level: 'All' } : {}),
-                  ...(sortIsUnavailable ? { sort: 'alphaOpportunity' as const } : {}),
+                  ...(stage.value === 'All' || stage.value === 'MLB' || stage.value === 'RC' ? { level: 'All' } : {}),
+                  ...(stage.value === 'All'
+                    ? { sort: 'name' as const }
+                    : filters.stage === 'All'
+                      ? { sort: 'careerIndex' as const }
+                      : sortIsUnavailable
+                        ? { sort: 'careerIndex' as const }
+                        : {}),
                 })
               }}
             >
@@ -298,18 +305,28 @@ export function ProspectBoard({
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
             }
           >
-            <option value="alphaOpportunity">Oracle Score</option>
-            {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
-              <option value="nearTermImpact">Next 3-year upside</option>
-            ) : null}
-            {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
-              <option value="finalWar">Projected career WAR</option>
-            ) : null}
-            {filters.stage !== 'MLB' && filters.stage !== 'RC' ? (
-              <option value="arrival36">MLB arrival research rank</option>
-            ) : null}
-            <option value="age">Youngest first</option>
-            <option value="name">Name</option>
+            {filters.stage === 'All' ? (
+              <>
+                <option value="name">Player name</option>
+                <option value="age">Youngest first</option>
+              </>
+            ) : (
+              <>
+                <option value="careerIndex">Career Index</option>
+                <option value="alphaOpportunity">Stage standing</option>
+                {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
+                  <option value="nearTermImpact">Next 3-year upside</option>
+                ) : null}
+                {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
+                  <option value="finalWar">Projected career WAR</option>
+                ) : null}
+                {filters.stage !== 'MLB' && filters.stage !== 'RC' ? (
+                  <option value="arrival36">MLB arrival research rank</option>
+                ) : null}
+                <option value="age">Youngest first</option>
+                <option value="name">Name</option>
+              </>
+            )}
           </select>
         </label>
 
@@ -331,6 +348,13 @@ export function ProspectBoard({
           </button>
         </div>
       </div>
+
+      {filters.stage === 'All' ? (
+        <div className="directory-notice" role="note">
+          <Info size={15} aria-hidden="true" />
+          <span><strong>Directory, not a combined leaderboard.</strong> Career Index uses one fixed career-value scale, while each rank compares players only within Prospects, Rookie Track, or MLB.</span>
+        </div>
+      ) : null}
 
       {error && players.length === 0 ? (
         <div className="empty-state empty-state--error" role="alert">
@@ -363,9 +387,9 @@ export function ProspectBoard({
           <table className="board-table oracle-board-table">
             <thead>
               <tr>
-                <th scope="col">Player / Oracle Score</th>
-                <th scope="col">Rank</th>
-                <th scope="col">Career outlook</th>
+                <th scope="col">Player / Career Index</th>
+                <th scope="col">Stage standing</th>
+                <th scope="col">Career projection</th>
                 <th scope="col">Current signal</th>
                 <th scope="col">Evidence</th>
               </tr>
@@ -377,9 +401,13 @@ export function ProspectBoard({
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const forecast = player.careerForecast
                 const playerMap = playerMapFor(player)
-                const oracleScore = oracleScoreFor(player)
+                const careerIndex = careerIndexFor(player, playerMap)
                 const isRookieTrack = player.stage === 'recent_callup' && player.recentCallup !== null
-                const hasProspectPrior = player.recentCallup?.prospectPrior != null
+                const rawProspectPrior = player.recentCallup?.prospectPrior ?? null
+                const prospectPrior = rawProspectPrior?.forecast.publicationState === 'withheld'
+                  ? null
+                  : rawProspectPrior
+                const hasProspectPrior = prospectPrior !== null
                 const mlbStage = isMlbStage(player.stage) && !isRookieTrack
                 const chapter = forecast?.careerChapter
                 const chapterLabel = mlbStage
@@ -389,7 +417,10 @@ export function ProspectBoard({
                   : isRookieTrack
                     ? 'Rookie Track'
                     : developmentChapterLabel(player.level)
-                const prospectForecast = player.recentCallup?.prospectPrior?.forecast ?? null
+                const prospectForecast = prospectPrior?.forecast ?? null
+                const careerMiddleCase = isRookieTrack
+                  ? prospectForecast?.finalCareerWar?.p50 ?? null
+                  : forecast?.finalCareerWar?.p50 ?? null
                 const careerHighCase = isRookieTrack
                   ? prospectForecast?.finalCareerWar?.p90 ?? null
                   : forecast?.finalCareerWar?.p90 ?? null
@@ -409,12 +440,12 @@ export function ProspectBoard({
                         aria-current={selected ? 'true' : undefined}
                       >
                         <span
-                          className={`oracle-score-badge oracle-score-badge--${oracleScore.tone}`}
-                          aria-label={`Oracle Score ${oracleScore.display}`}
-                          title={oracleScore.explanation}
+                          className={`career-index-badge career-index-badge--${careerIndex.tone}`}
+                          aria-label={`Career Index ${careerIndex.display}`}
+                          title={careerIndex.explanation}
                         >
-                          <strong>{oracleScore.display}</strong>
-                          <small>SCORE</small>
+                          <strong>{careerIndex.display}</strong>
+                          <small>INDEX</small>
                         </span>
                         <span>
                           <strong className="player-name">{player.name}</strong>
@@ -430,32 +461,25 @@ export function ProspectBoard({
                     </td>
                     <td className="rank-cell">
                       <strong className="table-primary">
-                        {oracleScore.rank ? `#${oracleScore.rank.toLocaleString()}` : '—'}
+                        {careerIndex.rank ? `#${careerIndex.rank.toLocaleString()}` : '—'}
                       </strong>
                       <small>
-                        {isRookieTrack
-                          ? hasProspectPrior
-                            ? `of ${oracleScore.universe?.toLocaleString() ?? '—'} prospect priors`
-                            : 'Prospect prior not matched'
-                          : oracleScore.universe
-                            ? `of ${oracleScore.universe.toLocaleString()}`
+                        {careerIndex.topLabel && careerIndex.universe
+                          ? `${careerIndex.topLabel} of ${careerIndex.universe.toLocaleString()} ${careerIndex.cohortLabel}`
+                          : isRookieTrack && !hasProspectPrior
+                            ? 'Prospect prior not matched'
                             : chapterLabel}
                       </small>
+                      <small className="mobile-standing-evidence">Evidence · {evidenceDisplay}</small>
                     </td>
                     <td>
                       <strong className="table-primary">
-                        {mlbStage
-                          ? formatWar(forecast?.finalCareerWar?.p50 ?? null)
-                          : formatWar(careerHighCase)}
+                        {formatWar(careerMiddleCase)}
                       </strong>
                       <small>
-                        {mlbStage
-                          ? `Middle career WAR · high case ${formatWar(careerHighCase)}`
-                          : isRookieTrack
-                            ? hasProspectPrior
-                              ? 'Prospect high case carried through call-up'
-                              : 'MLB evidence tracked while the prior is matched'
-                            : `High career case · projected arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}`}
+                        {isRookieTrack && !hasProspectPrior
+                          ? 'Career projection available after the prospect prior is matched'
+                          : `Middle career WAR · high case ${formatWar(careerHighCase)}${!mlbStage && !isRookieTrack ? ` · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}` : ''}`}
                       </small>
                     </td>
                     <td className="signal-cell">

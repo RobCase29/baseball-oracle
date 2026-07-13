@@ -60,7 +60,7 @@ export function MilbEvidenceProfile({ player }: MilbEvidenceProfileProps) {
           <h3 id="evidence-profile-title">Evidence profile</h3>
         </div>
         <div className="evidence-profile-legend" aria-label="Evidence legend">
-          <span><i className="legend-bar legend-bar--rank" aria-hidden="true" />Direct rank</span>
+          <span><i className="legend-bar legend-bar--rank" aria-hidden="true" />Stage rank</span>
           <span><i className="legend-bar legend-bar--age" aria-hidden="true" />Age context</span>
           <span><i className="legend-bar legend-bar--trait" aria-hidden="true" />Raw trait</span>
         </div>
@@ -69,7 +69,7 @@ export function MilbEvidenceProfile({ player }: MilbEvidenceProfileProps) {
       {rows.length === 0 ? (
         <div className="evidence-profile-empty" role="status">
           <strong>No aligned percentile evidence</strong>
-          <span>The direct rank, age context, and raw-trait sources remain unavailable for this player.</span>
+          <span>Stage standing, age context, and raw-trait sources remain unavailable for this player.</span>
         </div>
       ) : (
         <div

@@ -29,7 +29,7 @@ import {
   stageLabel,
 } from '../lib/forecast'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
-import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
+import { careerIndexFor, plainPlayerState, playerMapFor } from './playerMapView'
 import {
   formatRookieWar,
   formatRookieWarPercentile,
@@ -65,7 +65,7 @@ function warningLabel(warning: string, forecast: CareerForecast): string {
     arrival_external_validation_failed:
       'The arrival model did not clear its external release gates.',
     bridge_baseline_not_direct_milb_to_hof_training:
-      'The prospect career tail uses an MLB debut-age bridge; no direct MiLB-to-Hall outcome cohort exists yet.',
+      'The prospect forecast uses MLB arrival odds, role, and projected debut age; it is not yet trained directly from minor-league stats to Hall-level outcomes.',
     unconditional_probability_uses_60_month_arrival_horizon:
       'The prospect HOF estimate uses the frozen 60-month arrival endpoint.',
     arrival_cold_start: 'The arrival estimate is a cold-start prediction.',
@@ -519,7 +519,7 @@ function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; foreca
           <small>
             {mlbStage && exceptional
               ? `At least ${formatWar(exceptional.thresholdWar)} WAR · ${formatProbability(exceptional.referenceBaseRate)} reference rate`
-              : mlbStage ? 'Near-term event estimate withheld' : 'Frozen ordinal anomaly · probability withheld'}
+              : mlbStage ? 'Near-term estimate unavailable' : 'Research arrival rank · exact probability unavailable'}
           </small>
         </div>
         <div>
@@ -579,12 +579,12 @@ function ProspectCareerOutlookPanel({
     <section className="dossier-section prospect-career-outlook" aria-labelledby="prospect-career-title">
       <div className="section-heading-row">
         <div>
-          <span className="eyebrow">ARRIVAL AGE + CAREER RUNWAY</span>
-          <h2 id="prospect-career-title">Runway-adjusted career outlook</h2>
+          <span className="eyebrow">ARRIVAL AGE + CAREER WINDOW</span>
+          <h2 id="prospect-career-title">Prospect career projection</h2>
         </div>
       </div>
       <p className="career-chapter-note">
-        {player.name}&apos;s career rank now carries the projected MLB arrival age into the second leg of the outlook. A later arrival leaves fewer prime seasons to build career value.
+        The projection carries {player.name}&apos;s expected MLB arrival age into the career outlook. A later arrival leaves fewer prime seasons to build career value.
       </p>
       <div className="forecast-metrics career-forecast-metrics" aria-label="Prospect career outlook summary">
         <div className="metric-tile">
@@ -622,7 +622,9 @@ function ProspectCareerOutlookPanel({
 function RookieTrackPanel({ player }: { player: PlayerRecord }) {
   const transition = player.recentCallup
   if (!transition) return null
-  const prior = transition.prospectPrior
+  const prior = transition.prospectPrior?.forecast.publicationState === 'withheld'
+    ? null
+    : transition.prospectPrior
   const priorForecast = prior?.forecast ?? null
   const opportunity = transition.currentMlbEvidence.opportunity
   const progress = rookieEvidenceProgress(player)
@@ -638,8 +640,8 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
       </div>
       <p className="career-chapter-note">
         {prior
-          ? `${player.name}'s prospect career score stays in place while major-league evidence accumulates. The MLB read is shown separately, so a small debut sample cannot erase or silently rewrite the prior.`
-          : `${player.name} remains visible in Rookie Track while the exact pre-debut forecast match is completed. Current MLB evidence is still tracked without manufacturing a replacement score.`}
+          ? `${player.name}'s frozen prospect Career Index stays in place while major-league evidence accumulates. The MLB read is shown separately, so a small debut sample cannot erase or silently rewrite the prior.`
+          : `${player.name} remains visible in Rookie Track while the exact pre-debut forecast match is completed. Current MLB evidence is still tracked without manufacturing a replacement index.`}
       </p>
       <div className="forecast-metrics rookie-track-metrics" aria-label="Rookie Track summary">
         <div className="metric-tile metric-tile--reach">
@@ -675,10 +677,10 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
-          <strong>{prior ? 'No blended score' : 'Prospect prior not matched'}</strong>
+          <strong>{prior ? 'Evidence update, not a re-score' : 'Prospect prior not matched'}</strong>
           <span>{prior
-            ? 'The Oracle Score remains the frozen prospect prior. Current MLB production is shown as a neutral early read until an exposure- and prior-aware transition model beats that prior in out-of-time testing.'
-            : 'Rookie Track keeps the player discoverable, but the Oracle Score stays unavailable until an exact frozen prospect identity match is established.'}</span>
+            ? 'The Career Index and stage standing remain frozen from the prospect forecast. Current MLB production is a neutral evidence read until an exposure- and prior-aware transition model beats that prior in out-of-time testing.'
+            : 'Rookie Track keeps the player discoverable, but the Career Index stays unavailable until an exact frozen prospect identity match is established.'}</span>
         </div>
       </div>
     </section>
@@ -686,7 +688,6 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
 }
 
 function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
-  const oracleScore = oracleScoreFor(player)
   const stageValue = isMlbStage(player.stage)
     ? formatWar(forecast.finalJaws?.p50 ?? null)
     : player.milbImpactRanking?.rank ? `#${player.milbImpactRanking.rank}` : '—'
@@ -703,25 +704,16 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
             {forecast.releaseEligible ? 'Tested career forecast' : 'Research career estimate'}
           </strong>
           <span>
-            Oracle Score is the ranked outcome to compare. The career range is still being tested and is not a Hall of Fame election forecast.
+            Career Index is the primary career-magnitude reading. Stage standing and evidence remain separate, and the forecast is not a Hall of Fame election prediction.
           </span>
         </div>
       </div>
 
       <section className="forecast-metrics career-forecast-metrics" aria-label="Career forecast summary">
-        <div className="metric-tile metric-tile--reach">
-          <span
-            className={`oracle-score-badge oracle-score-badge--large oracle-score-badge--${oracleScore.tone}`}
-            aria-label={`Oracle Score ${oracleScore.display}`}
-          >
-            <strong>{oracleScore.display}</strong>
-            <small>SCORE</small>
-          </span>
-          <div className="metric-detail">
-            <span>ORACLE RANK</span>
-            <strong>{oracleScore.rankLabel}</strong>
-            <small>{oracleScore.outcomeLabel} · completed-season model</small>
-          </div>
+        <div className="metric-tile">
+          <span className="metric-label">CAREER WAR RECORDED</span>
+          <strong className="metric-number">{formatWar(forecast.cumulativeWar)}</strong>
+          <small>Observed major-league value through the latest completed season</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">FINAL CAREER WAR</span>
@@ -878,18 +870,18 @@ function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
-          <strong>Frozen arrival model · exact probability withheld</strong>
-          <span>No horizon is release-validated. The ordinal anomaly rank remains visible; current 2026 evidence is kept separate.</span>
+          <strong>Research arrival rank · exact probability unavailable</strong>
+          <span>The model has not passed every release test. Its arrival rank remains visible, while current 2026 evidence stays separate.</span>
         </div>
       </div>
 
       <div className="research-arrival-grid">
         <div className="research-arrival-summary">
-          <span className="eyebrow">ORDINAL ARRIVAL EVIDENCE</span>
+          <span className="eyebrow">MLB ARRIVAL RESEARCH</span>
           <h2 id="research-arrival-title">Arrival model audit</h2>
           <div className="arrival-rank-hero">
             <strong>{signal?.rank ? `#${signal.rank}` : '—'}</strong>
-            <span>frozen anomaly rank</span>
+            <span>research arrival rank</span>
           </div>
           <dl>
             <div><dt>Signal</dt><dd>{signal?.eligible ? 'Gate cleared' : 'Not cleared'}</dd></div>
@@ -938,7 +930,7 @@ export function PlayerDossier({
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
   const playerMap = playerMapFor(player)
-  const oracleScore = oracleScoreFor(player)
+  const careerIndex = careerIndexFor(player, playerMap)
   const organization = player.organization ?? player.organizationCode ?? 'Organization unavailable'
   const externalIds = Object.entries(player.provenance.externalIds).filter(([, value]) => value !== null)
   const cohort = player.provenance.cohort
@@ -947,20 +939,14 @@ export function PlayerDossier({
     <article id="player-dossier" className="player-dossier" aria-labelledby="player-name">
       <header className="dossier-header">
         <div className="dossier-identity">
-          <span
-            className={`oracle-score-badge oracle-score-badge--large oracle-score-badge--${oracleScore.tone}`}
-            aria-label={`Oracle Score ${oracleScore.display}`}
-            title={oracleScore.explanation}
-          >
-            <strong>{oracleScore.display}</strong>
-            <small>SCORE</small>
-          </span>
           <div>
             <div className="identity-line">
               <span className="eyebrow">
-                {oracleScore.rank === null
-                  ? 'ORACLE SCORE PENDING'
-                  : `${oracleScore.rankLabel.toLocaleUpperCase()} · ${oracleScore.outcomeLabel.toLocaleUpperCase()}`}
+                {careerIndex.value === null
+                  ? 'CAREER INDEX PENDING'
+                  : careerIndex.rank === null
+                    ? `CAREER INDEX ${careerIndex.display} · STAGE STANDING PENDING`
+                    : `${careerIndex.rankLabel.toLocaleUpperCase()}${careerIndex.topLabel ? ` · ${careerIndex.topLabel.toLocaleUpperCase()}` : ''}`}
               </span>
               <span className="source-badge">
                 {plainPlayerState(playerMap.state)}
@@ -1000,7 +986,7 @@ export function PlayerDossier({
           <div>
             <span className="eyebrow">LONG-TERM OUTLOOK</span>
             <h2 id="prospect-career-model-title">Career outlook not matched yet</h2>
-            <p>This player does not yet have the matched arrival and debut-age evidence required for a runway-adjusted career rank.</p>
+            <p>This player does not yet have the matched arrival and projected debut-age forecast required for a prospect career outlook.</p>
           </div>
         </section>
       ) : (
@@ -1109,7 +1095,7 @@ export function PlayerDossier({
         <span><Layers3 size={14} aria-hidden="true" /> {stageLabel(player.stage)}</span>
         <span><Info size={14} aria-hidden="true" /> Research use only</span>
         <span className="footer-score">
-          Oracle Score: {oracleScore.display} · {oracleScore.rankLabel} for {oracleScore.outcomeLabel.toLocaleLowerCase()}
+          Career Index: {careerIndex.display} · {careerIndex.rankLabel}{careerIndex.topLabel ? ` · ${careerIndex.topLabel}` : ''}
         </span>
       </footer>
     </article>

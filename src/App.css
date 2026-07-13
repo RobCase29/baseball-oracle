@@ -494,6 +494,27 @@
   border-bottom: 1px solid var(--line);
 }
 
+.directory-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: #54635e;
+  font-size: 9px;
+  line-height: 1.45;
+  background: #f4f8f6;
+  border-bottom: 1px solid #dce7e2;
+}
+
+.directory-notice svg {
+  flex: 0 0 auto;
+  color: var(--green-dark);
+}
+
+.directory-notice strong {
+  color: var(--ink);
+}
+
 .board-filters .search-field {
   grid-row: 1;
   grid-column: 1 / 5;
@@ -830,27 +851,27 @@
 
 .oracle-board-table th:nth-child(1),
 .oracle-board-table td:nth-child(1) {
-  width: 36%;
+  width: 34%;
 }
 
 .oracle-board-table th:nth-child(2),
 .oracle-board-table td:nth-child(2) {
-  width: 11%;
+  width: 15%;
 }
 
 .oracle-board-table th:nth-child(3),
 .oracle-board-table td:nth-child(3) {
-  width: 20%;
+  width: 22%;
 }
 
 .oracle-board-table th:nth-child(4),
 .oracle-board-table td:nth-child(4) {
-  width: 19%;
+  width: 17%;
 }
 
 .oracle-board-table th:nth-child(5),
 .oracle-board-table td:nth-child(5) {
-  width: 14%;
+  width: 12%;
 }
 
 .board-table th,
@@ -931,7 +952,8 @@
   min-width: 0;
 }
 
-.mobile-player-rank {
+.mobile-player-rank,
+.mobile-standing-evidence {
   display: none;
 }
 
@@ -1134,7 +1156,7 @@
   border-radius: 6px;
 }
 
-.oracle-score-badge {
+.career-index-badge {
   display: grid;
   flex: 0 0 40px;
   width: 40px;
@@ -1146,8 +1168,8 @@
   border-radius: 5px;
 }
 
-.oracle-score-badge strong,
-.player-cell .oracle-score-badge strong {
+.career-index-badge strong,
+.player-cell .career-index-badge strong {
   display: block;
   overflow: visible;
   color: #3f4c48;
@@ -1158,8 +1180,8 @@
   text-overflow: clip;
 }
 
-.oracle-score-badge small,
-.player-cell .oracle-score-badge small {
+.career-index-badge small,
+.player-cell .career-index-badge small {
   display: block;
   margin-top: 3px;
   overflow: visible;
@@ -1172,42 +1194,42 @@
   white-space: nowrap;
 }
 
-.oracle-score-badge--elite {
+.career-index-badge--elite {
   background: #dceee9;
   border-color: #acd2c8;
 }
 
-.oracle-score-badge--elite strong,
-.player-cell .oracle-score-badge--elite strong {
+.career-index-badge--elite strong,
+.player-cell .career-index-badge--elite strong {
   color: #145f51;
 }
 
-.oracle-score-badge--high {
+.career-index-badge--high {
   background: #f5ecd5;
   border-color: #dfc98f;
 }
 
-.oracle-score-badge--high strong,
-.player-cell .oracle-score-badge--high strong {
+.career-index-badge--high strong,
+.player-cell .career-index-badge--high strong {
   color: #765217;
 }
 
-.oracle-score-badge--unavailable {
+.career-index-badge--unavailable {
   background: #f1f3f2;
   border-color: #dde2e0;
 }
 
-.oracle-score-badge--large {
+.career-index-badge--large {
   flex-basis: 52px;
   width: 52px;
   height: 52px;
 }
 
-.oracle-score-badge--large strong {
+.career-index-badge--large strong {
   font-size: 18px;
 }
 
-.oracle-score-badge--large small {
+.career-index-badge--large small {
   font-size: 7px;
 }
 
@@ -1483,7 +1505,7 @@
   line-height: 1.5;
 }
 
-.oracle-score-hero {
+.career-index-hero {
   display: grid;
   min-height: 94px;
   place-content: center;
@@ -1494,15 +1516,15 @@
   border-radius: 5px;
 }
 
-.oracle-score-hero > span,
-.oracle-score-hero > small {
+.career-index-hero > span,
+.career-index-hero > small {
   color: #68746f;
   font-family: var(--mono);
   font-size: 7px;
   font-weight: 850;
 }
 
-.oracle-score-hero > strong {
+.career-index-hero > strong {
   margin: 5px 0 3px;
   color: #35443f;
   font-family: var(--mono);
@@ -1510,21 +1532,21 @@
   line-height: 1;
 }
 
-.oracle-score-hero--elite {
+.career-index-hero--elite {
   background: #dceee9;
   border-color: #abd2c7;
 }
 
-.oracle-score-hero--elite > strong {
+.career-index-hero--elite > strong {
   color: #125f50;
 }
 
-.oracle-score-hero--high {
+.career-index-hero--high {
   background: #f6edd6;
   border-color: #e0ca91;
 }
 
-.oracle-score-hero--high > strong {
+.career-index-hero--high > strong {
   color: #755216;
 }
 
@@ -1554,7 +1576,7 @@
   color: var(--green-dark);
 }
 
-.oracle-score-definition {
+.career-index-definition {
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -1566,7 +1588,7 @@
   border-top: 1px solid #dfe8e4;
 }
 
-.oracle-score-definition strong {
+.career-index-definition strong {
   flex: 0 0 auto;
   color: var(--green-dark);
 }
@@ -3762,8 +3784,55 @@
     min-width: 0;
   }
 
+  .oracle-board-table th:nth-child(4),
+  .oracle-board-table td:nth-child(4) {
+    display: none;
+  }
+
+  .oracle-board-table th:nth-child(1),
+  .oracle-board-table td:nth-child(1) {
+    width: 38%;
+  }
+
   .oracle-board-table th:nth-child(2),
-  .oracle-board-table td:nth-child(2),
+  .oracle-board-table td:nth-child(2) {
+    width: 19%;
+  }
+
+  .oracle-board-table th:nth-child(3),
+  .oracle-board-table td:nth-child(3) {
+    width: 25%;
+  }
+
+  .oracle-board-table th:nth-child(5),
+  .oracle-board-table td:nth-child(5) {
+    width: 18%;
+  }
+}
+
+@container board (max-width: 560px) {
+  .oracle-board-table th:nth-child(3),
+  .oracle-board-table td:nth-child(3) {
+    display: none;
+  }
+
+  .oracle-board-table th:nth-child(1),
+  .oracle-board-table td:nth-child(1) {
+    width: 57%;
+  }
+
+  .oracle-board-table th:nth-child(2),
+  .oracle-board-table td:nth-child(2) {
+    width: 25%;
+  }
+
+  .oracle-board-table th:nth-child(5),
+  .oracle-board-table td:nth-child(5) {
+    width: 18%;
+  }
+}
+
+@container board (max-width: 480px) {
   .oracle-board-table th:nth-child(5),
   .oracle-board-table td:nth-child(5) {
     display: none;
@@ -3771,34 +3840,12 @@
 
   .oracle-board-table th:nth-child(1),
   .oracle-board-table td:nth-child(1) {
-    width: 44%;
+    width: 62%;
   }
 
-  .oracle-board-table th:nth-child(3),
-  .oracle-board-table td:nth-child(3) {
-    width: 26%;
-  }
-
-  .oracle-board-table th:nth-child(4),
-  .oracle-board-table td:nth-child(4) {
-    width: 30%;
-  }
-}
-
-@container board (max-width: 480px) {
-  .oracle-board-table th:nth-child(3),
-  .oracle-board-table td:nth-child(3) {
-    display: none;
-  }
-
-  .oracle-board-table th:nth-child(1),
-  .oracle-board-table td:nth-child(1) {
-    width: 66%;
-  }
-
-  .oracle-board-table th:nth-child(4),
-  .oracle-board-table td:nth-child(4) {
-    width: 34%;
+  .oracle-board-table th:nth-child(2),
+  .oracle-board-table td:nth-child(2) {
+    width: 38%;
   }
 
   .board-table th,
@@ -3817,13 +3864,13 @@
     min-width: 0;
   }
 
-  .player-cell .oracle-score-badge {
+  .player-cell .career-index-badge {
     width: 34px;
     height: 34px;
     flex-basis: 34px;
   }
 
-  .player-cell .oracle-score-badge strong {
+  .player-cell .career-index-badge strong {
     font-size: 12px;
   }
 
@@ -3847,6 +3894,11 @@
 
   .row-chevron {
     display: none;
+  }
+
+  .mobile-standing-evidence {
+    display: block;
+    color: #536a62;
   }
 }
 
@@ -4502,7 +4554,8 @@
     text-align: left;
   }
 
-  .player-map-disclosure {
+  .player-map-disclosure,
+  .career-index-definition {
     align-items: flex-start;
     flex-direction: column;
   }

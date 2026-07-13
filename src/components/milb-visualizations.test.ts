@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { PlayerRecord } from '../domain/forecast'
-import { buildMilbEvidenceRows, buildMilbOpportunityPoints } from './milbVisualizationData'
+import {
+  buildMilbEvidenceRows,
+  buildMilbOpportunityPoints,
+  careerIndexChartDomain,
+} from './milbVisualizationData'
 
 function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
   return {
@@ -145,16 +149,20 @@ describe('MiLB decision visualizations', () => {
     expect(points).toHaveLength(2)
     expect(points[0]).toEqual(expect.objectContaining({
       playerId: 'player-1',
-      oracleRank: 4,
-      oraclePercentile: 100,
+      careerIndex: 15.3,
+      stageRank: 4,
+      stageUniverse: 6_455,
+      stageTailBand: 'Top 0.1%',
       ageAdvantage: 92,
       evidenceCoverage: 25,
       tier: 'priority',
     }))
     expect(points[1]).toEqual(expect.objectContaining({
       playerId: 'aiva-like',
-      oracleRank: 258,
-      oraclePercentile: 96,
+      careerIndex: 15.3,
+      stageRank: 258,
+      stageUniverse: 6_455,
+      stageTailBand: 'Top 5%',
       ageAdvantage: null,
       evidenceCoverage: 50,
       coveredPillars: 2,
@@ -164,6 +172,8 @@ describe('MiLB decision visualizations', () => {
       sampleSummary: '122 PA',
       tier: 'context',
     }))
+    expect(points[0]?.stageTopPercent).toBeCloseTo(0.062, 3)
+    expect(points[1]?.stageTopPercent).toBeCloseTo(3.9969, 4)
   })
 
   it('keeps a career-ranked player on the map when current trait evidence is unavailable', () => {
@@ -182,15 +192,35 @@ describe('MiLB decision visualizations', () => {
     })])
   })
 
-  it('keeps career ceiling, direct impact, age context, and raw traits as separate rows', () => {
+  it('keeps stage standing, direct impact, age context, and raw traits as separate percentile rows', () => {
     const rows = buildMilbEvidenceRows(playerFixture())
 
     expect(rows.map((row) => [row.id, row.kind, row.value])).toEqual([
-      ['career-ceiling-rank', 'model_rank', 100],
+      ['stage-standing', 'model_rank', 100],
       ['impact-rank', 'model_rank', 99.94],
       ['age-context', 'age_context', 92],
       ['trait-contact', 'descriptive_trait', 95],
     ])
+    expect(rows.map((row) => row.label)).toContain('Stage standing')
+    expect(rows.map((row) => row.id)).not.toContain('career-index')
+  })
+
+  it('uses fixed Career Index anchors for an adaptive, disclosed chart domain', () => {
+    expect(careerIndexChartDomain([{ careerIndex: 15.3 }])).toEqual({
+      minimum: 0,
+      maximum: 20,
+      ticks: [0, 20],
+    })
+    expect(careerIndexChartDomain([{ careerIndex: 95 }])).toEqual({
+      minimum: 80,
+      maximum: 100,
+      ticks: [80, 92, 100],
+    })
+    expect(careerIndexChartDomain([])).toEqual({
+      minimum: 0,
+      maximum: 100,
+      ticks: [0, 20, 45, 65, 80, 92, 100],
+    })
   })
 
   it('rejects a career rank outside the scored universe rather than clipping it', () => {

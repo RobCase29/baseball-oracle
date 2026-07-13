@@ -24,6 +24,8 @@ import type {
 } from './_career-oracle-types.js'
 import {
   buildPlayerMap,
+  careerIndexValue,
+  FROZEN_PROSPECT_FORECAST_UNIVERSE,
   PLAYER_MAP_VERSION,
   type PlayerMapBuildContext,
   type PlayerMapProfile,
@@ -38,6 +40,7 @@ const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
+  'careerIndex',
   'alphaOpportunity',
   'hofProbability',
   'nearTermImpact',
@@ -107,7 +110,7 @@ const querySchema = z.object({
     .refine((value) => value !== 'ALL')
     .nullable()
     .default(null),
-  sort: z.enum(playerSorts).default('alphaOpportunity'),
+  sort: z.enum(playerSorts).default('careerIndex'),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   view: z.enum(playerViews).default('full'),
@@ -757,6 +760,23 @@ function prospectRole(player: CareerPreviewPlayer): 'hitter' | 'pitcher' | null 
   return null
 }
 
+export function frozenProspectRankUniverse(
+  preview: CareerOraclePreview | null,
+): number | null {
+  if (preview === null) return null
+  const forecasts = Object.values(preview.prospectForecasts)
+  if (forecasts.length !== FROZEN_PROSPECT_FORECAST_UNIVERSE) return null
+  const ranks = forecasts.map((entry) => entry.careerForecast.rank)
+  if (ranks.some((rank) => rank === null)) return null
+
+  const completeRanks = ranks as number[]
+  const universe = forecasts.length
+  const uniqueRanks = new Set(completeRanks)
+  const isCompleteOrdinalUniverse = uniqueRanks.size === universe &&
+    completeRanks.every((rank) => Number.isInteger(rank) && rank >= 1 && rank <= universe)
+  return isCompleteOrdinalUniverse ? universe : null
+}
+
 export function recentCallupProspectPrior(
   player: CareerPreviewPlayer,
   preview: CareerOraclePreview,
@@ -768,11 +788,14 @@ export function recentCallupProspectPrior(
 
   const prior = preview.prospectForecasts[`${mlbamId}:${role}`]
   const rank = prior?.careerForecast.rank ?? null
-  if (!prior || prior.playerType !== player.playerType || rank === null) return null
-  const universe = Object.values(preview.prospectForecasts).filter(
-    (entry) => entry.careerForecast.rank !== null,
-  ).length
-  if (universe < rank) return null
+  if (
+    !prior ||
+    prior.playerType !== player.playerType ||
+    prior.careerForecast.publicationState === 'withheld' ||
+    rank === null
+  ) return null
+  const universe = frozenProspectRankUniverse(preview)
+  if (universe === null || universe < rank) return null
 
   return {
     rank,
@@ -827,17 +850,26 @@ function candidateKey(candidate: UnifiedBoardCandidate): string {
 }
 
 function candidateOutcomeForecast(candidate: UnifiedBoardCandidate) {
-  if (candidate.stage === 'recent_callup') {
-    return candidate.recentCallupPrior?.forecast ?? null
-  }
-  return candidate.careerForecast
+  const forecast = candidate.stage === 'recent_callup'
+    ? candidate.recentCallupPrior?.forecast ?? null
+    : candidate.careerForecast
+  return forecast?.publicationState === 'withheld' ? null : forecast
 }
 
 function candidateOutcomeRank(candidate: UnifiedBoardCandidate): number | null {
   if (candidate.stage === 'recent_callup') {
-    return candidate.recentCallupPrior?.rank ?? null
+    return candidate.recentCallupPrior?.forecast.publicationState === 'withheld'
+      ? null
+      : candidate.recentCallupPrior?.rank ?? null
   }
-  return candidate.careerForecast?.rank ?? null
+  return candidate.careerForecast?.publicationState === 'withheld'
+    ? null
+    : candidate.careerForecast?.rank ?? null
+}
+
+function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
+  const forecast = candidateOutcomeForecast(candidate)
+  return careerIndexValue(forecast?.finalCareerWar)
 }
 
 export function sortUnifiedCandidates(
@@ -885,6 +917,21 @@ export function sortUnifiedCandidates(
         idTie
       )
     }
+    if (sort === 'careerIndex') {
+      return (
+        compareNullableNumber(
+          candidateCareerIndex(left),
+          candidateCareerIndex(right),
+          'descending',
+        ) ||
+        compareNullableNumber(
+          candidateOutcomeRank(left),
+          candidateOutcomeRank(right),
+          'ascending',
+        ) ||
+        idTie
+      )
+    }
     if (sort === 'alphaOpportunity') {
       return (
         compareNullableNumber(
@@ -924,36 +971,22 @@ export function sortBoardCandidates(
   items: UnifiedBoardCandidate[],
   query: Pick<PlayerQuery, 'stage' | 'sort'>,
 ): UnifiedBoardCandidate[] {
-  const sorted = sortUnifiedCandidates(items, query.sort)
-  if (query.stage !== 'All' || query.sort === 'age' || query.sort === 'name') {
-    return sorted
-  }
-
-  const cohort = (candidate: UnifiedBoardCandidate): 'minor' | 'rookie' | 'mlb' => (
-    candidate.source === 'minor'
-      ? 'minor'
-      : candidate.stage === 'recent_callup'
-        ? 'rookie'
-        : 'mlb'
-  )
-  const cohortOrder = query.sort === 'arrival36'
-    ? (['minor', 'rookie', 'mlb'] as const)
-    : (['rookie', 'mlb', 'minor'] as const)
-  return cohortOrder.flatMap((group) => sorted.filter((candidate) => cohort(candidate) === group))
+  const directorySort = query.sort === 'age' ? 'age' : 'name'
+  return sortUnifiedCandidates(items, query.stage === 'All' ? directorySort : query.sort)
 }
 
 export function assignStageRanks(
   candidates: UnifiedBoardCandidate[],
 ): UnifiedBoardCandidate[] {
   const rankedKeys = new Map<string, number>()
-  for (const source of ['mlb', 'minor'] as const) {
-    sortUnifiedCandidates(
-      candidates.filter((candidate) => candidate.source === source),
-      'hofProbability',
-    )
-      .filter((candidate) => candidate.careerForecast?.hofCaliberProbability != null)
-      .forEach((candidate, index) => rankedKeys.set(candidateKey(candidate), index + 1))
-  }
+  sortUnifiedCandidates(
+    candidates.filter((candidate) => (
+      candidate.source === 'mlb' && candidate.careerForecast?.publicationState !== 'withheld'
+    )),
+    'hofProbability',
+  )
+    .filter((candidate) => candidate.careerForecast?.hofCaliberProbability != null)
+    .forEach((candidate, index) => rankedKeys.set(candidateKey(candidate), index + 1))
 
   return candidates.map((candidate) => {
     if (candidate.careerForecast === null) return candidate
@@ -962,13 +995,15 @@ export function assignStageRanks(
       ...candidate,
       careerForecast: {
         ...candidate.careerForecast,
-        rank: rankedKeys.get(candidateKey(candidate)) ?? null,
+        rank: candidate.source === 'minor'
+          ? artifactRank
+          : rankedKeys.get(candidateKey(candidate)) ?? null,
         lineage: {
           ...candidate.careerForecast.lineage,
           ...(artifactRank === null ? {} : { artifactRank }),
           rankUniverse: candidate.source === 'mlb'
             ? 'current_mlb'
-            : 'live_milb_research_proxy',
+            : 'frozen_prospect_forecast',
         },
       },
     }
@@ -1243,14 +1278,6 @@ export function scoredMlbUniverse(candidates: UnifiedBoardCandidate[]): number {
   )).length
 }
 
-export function scoredMinorForecastUniverse(candidates: UnifiedBoardCandidate[]): number {
-  return candidates.filter((candidate) => (
-    candidate.source === 'minor' &&
-    candidate.careerForecast?.rank !== null &&
-    candidate.careerForecast?.rank !== undefined
-  )).length
-}
-
 export function stageRelevantDataAsOf(
   stage: PlayerStage,
   minorDataAsOf: string | null,
@@ -1276,13 +1303,10 @@ function pageDetails(total: number, query: PlayerQuery) {
 }
 
 function hasMappedOutcome(candidate: UnifiedBoardCandidate): boolean {
-  if (candidate.stage === 'recent_callup') return candidate.recentCallupPrior !== null
-  return candidate.source === 'minor'
-    ? candidate.milbImpactRanking !== null
-    : candidate.careerForecast?.rank !== null && candidate.careerForecast?.rank !== undefined
+  return candidateCareerIndex(candidate) !== null
 }
 
-function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
+export function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
   return {
     playerMapVersion: PLAYER_MAP_VERSION,
     playerMapCoverage: candidates.length,
@@ -1290,6 +1314,7 @@ function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
     matchingMappedCount: candidates.filter(hasMappedOutcome).length,
     marketIndependent: true as const,
     marketInputsIncluded: false as const,
+    primaryScoreSemantics: 'fixed_career_value_index' as const,
     scoreSemantics: 'stage_specific_ordinal_not_market_value' as const,
   }
 }
@@ -1329,7 +1354,7 @@ function degradedStaticResponse(
     candidate.recentCallupPrior,
   ))
   sendJson(request, response, 200, {
-    schemaVersion: query.view === 'map' ? 'player-map-feed.v1' : 'players.v1',
+    schemaVersion: query.view === 'map' ? 'player-map-feed.v2' : 'players.v1',
     items: responseItems(records, query.view),
     page: pageDetails(candidates.length, query),
     meta: {
@@ -1446,7 +1471,7 @@ export default async function handler(
     const pageCandidates = filtered.slice(offset, offset + query.limit)
     const playerMapContext = {
       mlbUniverse: scoredMlbUniverse(mlb),
-      minorUniverse: scoredMinorForecastUniverse(currentUniverse),
+      minorUniverse: frozenProspectRankUniverse(careerPreview),
     }
     const minorPageIds = pageCandidates
       .map((candidate) => candidate.minorProfileId)
@@ -1591,7 +1616,7 @@ export default async function handler(
       response,
       200,
       {
-        schemaVersion: query.view === 'map' ? 'player-map-feed.v1' : 'players.v1',
+        schemaVersion: query.view === 'map' ? 'player-map-feed.v2' : 'players.v1',
         items: responseItems(items, query.view),
         page: pageDetails(filtered.length, query),
         meta: {

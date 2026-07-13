@@ -1,19 +1,26 @@
 import type { PlayerRecord } from '../domain/forecast'
 import {
   buildPlayerMap,
+  FROZEN_PROSPECT_FORECAST_UNIVERSE,
+  PLAYER_MAP_VERSION,
+  type PlayerMapCareerIndex,
   type PlayerMapOracleScore,
   type PlayerMapProfile,
+  type PlayerMapStageStanding,
   type PlayerMapState,
 } from '../domain/playerMap'
 
-export interface OracleScoreView {
+export interface CareerIndexView {
   value: number | null
   display: string
+  label: 'Career Index' | 'Frozen prospect Career Index'
   rank: number | null
   universe: number | null
   rankLabel: string
+  topLabel: string | null
+  tailBand: PlayerMapStageStanding['tailBand']
+  cohortLabel: string
   outcomeLabel: string
-  comparisonLabel: string
   explanation: string
   tone: 'elite' | 'high' | 'standard' | 'unavailable'
 }
@@ -28,9 +35,9 @@ const plainStateLabels: Record<PlayerMapState, string> = {
   profile_only: 'Stats only',
 }
 
-function scoreDisplay(value: number | null): string {
+function indexDisplay(value: number | null): string {
   if (value === null) return '--'
-  const rounded = value >= 99 ? Math.round(value * 10) / 10 : Math.round(value)
+  const rounded = Math.round(value * 10) / 10
   return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)
 }
 
@@ -39,33 +46,94 @@ function roundedOracleValue(value: number | null): number | null {
   return value >= 99 ? Math.round(value * 10) / 10 : Math.round(value)
 }
 
-function scoreTone(value: number | null): OracleScoreView['tone'] {
+function indexTone(value: number | null): CareerIndexView['tone'] {
   if (value === null) return 'unavailable'
-  if (value >= 90) return 'elite'
-  if (value >= 75) return 'high'
+  if (value >= 80) return 'elite'
+  if (value >= 55) return 'high'
   return 'standard'
 }
 
+function topPercentLabel(value: number | null): string | null {
+  if (value === null || !Number.isFinite(value)) return null
+  const digits = value < 1 ? 2 : value < 10 ? 1 : 0
+  const factor = 10 ** digits
+  const conservativeValue = Math.ceil(value * factor) / factor
+  return `Top ${conservativeValue.toFixed(digits)}%`
+}
+
+function cohortLabel(standing: PlayerMapStageStanding): string {
+  if (standing.cohort === 'current_mlb') return 'active MLB projections'
+  return standing.cohort === 'frozen_prospect_prior'
+    ? 'frozen prospect priors'
+    : 'frozen prospect forecasts'
+}
+
+interface LegacyPlayerMapProfile extends Omit<
+  PlayerMapProfile,
+  'version' | 'oracleScore' | 'careerIndex' | 'stageStanding'
+> {
+  version?: string
+  oracleScore?: PlayerMapOracleScore
+  careerIndex?: PlayerMapCareerIndex
+  stageStanding?: PlayerMapStageStanding
+}
+
 export function playerMapFor(player: PlayerRecord): PlayerMapProfile {
-  const existing = player.playerMap as (Omit<PlayerMapProfile, 'oracleScore'> & {
-    oracleScore?: PlayerMapOracleScore
-  }) | null | undefined
+  const existing = player.playerMap as LegacyPlayerMapProfile | null | undefined
   if (!existing) return buildPlayerMap(player)
-  if (existing.oracleScore) return existing as PlayerMapProfile
+  if (
+    existing.version === PLAYER_MAP_VERSION &&
+    existing.oracleScore &&
+    existing.careerIndex &&
+    existing.stageStanding
+  ) {
+    return existing as PlayerMapProfile
+  }
 
   const outcome = existing.scores.outcome
+  const oracleScore = existing.oracleScore ?? {
+    value: roundedOracleValue(outcome.value),
+    scale: 'stage_rank_percentile' as const,
+    route: existing.route,
+    rank: outcome.rank,
+    universe: outcome.universe,
+    target: outcome.target,
+    asOf: outcome.asOf,
+    definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score' as const,
+  }
+  const rawArtifactRank = (
+    player.careerForecast?.lineage as { artifactRank?: unknown } | undefined
+  )?.artifactRank
+  const artifactRank = typeof rawArtifactRank === 'number' &&
+    Number.isInteger(rawArtifactRank) &&
+    rawArtifactRank >= 1 &&
+    rawArtifactRank <= FROZEN_PROSPECT_FORECAST_UNIVERSE
+    ? rawArtifactRank
+    : null
+  const hydrationPlayer = player.stage === 'pre_debut' && player.careerForecast && artifactRank !== null
+    ? {
+        ...player,
+        careerForecast: { ...player.careerForecast, rank: artifactRank },
+      }
+    : player
+  const rebuilt = buildPlayerMap(hydrationPlayer)
+  const {
+    comparableWithinStageOnly: legacyComparability,
+    ...existingFields
+  } = existing as LegacyPlayerMapProfile & { comparableWithinStageOnly?: true }
+  void legacyComparability
+
   return {
-    ...existing,
-    oracleScore: {
-      value: roundedOracleValue(outcome.value),
-      scale: 'stage_rank_percentile',
-      route: existing.route,
-      rank: outcome.rank,
-      universe: outcome.universe,
-      target: outcome.target,
-      asOf: outcome.asOf,
-      definition: 'Rounded stage-specific modeled outcome rank percentile; not a probability or composite score',
-    },
+    ...rebuilt,
+    ...existingFields,
+    version: PLAYER_MAP_VERSION,
+    mappingStatus: rebuilt.mappingStatus,
+    claimStatus: rebuilt.claimStatus,
+    oracleScore,
+    careerIndex: existing.careerIndex ?? rebuilt.careerIndex,
+    stageStanding: existing.stageStanding ?? rebuilt.stageStanding,
+    careerIndexComparableAcrossRoutes: true,
+    stageStandingComparableWithinStageOnly: true,
   }
 }
 
@@ -73,46 +141,43 @@ export function plainPlayerState(state: PlayerMapState): string {
   return plainStateLabels[state]
 }
 
-export function oracleScoreFor(player: PlayerRecord): OracleScoreView {
-  const map = playerMapFor(player)
-  const value = map.oracleScore.value
-  const isMinor = map.route === 'milb'
+export function careerIndexFor(
+  player: PlayerRecord,
+  map: PlayerMapProfile = playerMapFor(player),
+): CareerIndexView {
+  const value = map.careerIndex.value
+  const standing = map.stageStanding
   const isRookieTrack = map.route === 'rookie'
-  const comparisonLabel = isMinor
-    ? 'scored minor-league players'
-    : isRookieTrack
-      ? 'frozen prospect forecasts'
-      : 'scored major-league players'
-  const outcomeLabel = isMinor
-    ? 'Runway-adjusted career ceiling'
-    : isRookieTrack
-      ? 'Prospect trajectory carried into MLB'
-      : 'Hall of Fame career outlook'
-  const rankLabel = map.oracleScore.rank === null
-    ? 'Stage rank unavailable'
-    : map.oracleScore.universe === null
-      ? `#${map.oracleScore.rank.toLocaleString()} at this stage`
-      : `#${map.oracleScore.rank.toLocaleString()} of ${map.oracleScore.universe.toLocaleString()}`
-  const standing = value === null
-    ? null
-    : value >= 100
-      ? `in the top 1% of ${comparisonLabel}`
-      : `above about ${value}% of ${comparisonLabel}`
+  const comparisonLabel = cohortLabel(standing)
+  const topLabel = topPercentLabel(standing.topPercent)
+  const rankLabel = standing.rank === null
+    ? 'Stage standing unavailable'
+    : standing.universe === null
+      ? `#${standing.rank.toLocaleString()} at this stage`
+      : `#${standing.rank.toLocaleString()} of ${standing.universe.toLocaleString()}`
+  const outcomeLabel = isRookieTrack
+    ? 'Prospect outlook carried into MLB'
+    : map.route === 'milb'
+      ? 'Projected career outlook'
+      : 'Projected career magnitude'
   const explanation = value === null
-    ? `There is not enough matched model data to assign an Oracle Score yet.`
+    ? 'There is not enough matched model data to calculate a Career Index yet.'
     : isRookieTrack
-      ? `A score of ${scoreDisplay(value)} preserves where ${player.name} ranked before the call-up while MLB evidence accumulates separately.`
-      : `A score of ${scoreDisplay(value)} puts ${player.name} ${standing} for ${outcomeLabel.replace(/^./u, (letter) => letter.toLocaleLowerCase())}.`
+      ? `A frozen Career Index of ${indexDisplay(value)} preserves ${player.name}'s pre-debut career outlook while MLB evidence accumulates separately.`
+      : `A Career Index of ${indexDisplay(value)} summarizes ${player.name}'s modeled career magnitude from the middle, strong, and high career-WAR cases on one fixed historical scale.`
 
   return {
     value,
-    display: scoreDisplay(value),
-    rank: map.oracleScore.rank,
-    universe: map.oracleScore.universe,
+    display: indexDisplay(value),
+    label: isRookieTrack ? 'Frozen prospect Career Index' : 'Career Index',
+    rank: standing.rank,
+    universe: standing.universe,
     rankLabel,
+    topLabel,
+    tailBand: standing.tailBand,
+    cohortLabel: comparisonLabel,
     outcomeLabel,
-    comparisonLabel,
     explanation,
-    tone: scoreTone(value),
+    tone: indexTone(value),
   }
 }

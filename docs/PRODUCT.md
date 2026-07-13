@@ -13,7 +13,9 @@ Baseball Oracle forecasts baseball outcomes. A later market layer can compare th
 
 ## Current MVP Checkpoint
 
-The July 2026 MVP is a two-stage research cockpit. It combines a live directory
+The July 2026 MVP is a three-state research cockpit across two modeling regimes:
+pre-debut prospects, Rookie Track transitions, and supported MLB careers. It
+combines a live directory
 of 6,179 canonical minor-league players with a locked 2026 40-man-roster census
 covering 1,291 canonical Baseball-Reference MLB identities, for 7,470 active
 player records. The career evidence
@@ -24,8 +26,20 @@ For MLB players, the MVP reports a paired terminal distribution for final career
 WAR, peak-seven WAR, and JAWS, plus `P(final JAWS clears the career-to-date
 role/position standard)`. For minor leaguers, it composes a separately evaluated
 60-month arrival lower-bound proxy with a debut-age career bridge. Those are
-different endpoints, so MLB and MiLB ranks are stage-specific and the All view
-groups rather than interleaves them.
+different endpoints, so MLB and MiLB ranks are stage-specific. Directory defaults
+to player-name order, also supports an age sort, and never implies a combined rank.
+
+Player Map v2 presents three separate decision signals. Career Index measures the
+absolute magnitude of the final-career WAR distribution on frozen career-value
+anchors. Stage standing reports rank and tail band inside the declared prospect
+or MLB universe. Evidence reports sample and coverage strength. The first two are
+not blended, and evidence changes trust rather than score. The exact contract is
+defined in [`CAREER_INDEX_V1.md`](./CAREER_INDEX_V1.md).
+
+Rookie Track preserves the frozen prospect Career Index and stage standing during
+the first partial MLB season while current MLB opportunity and WAR arrive as
+separate confirmation evidence. A supported completed-season MLB forecast, not a
+daily partial-season statistic, triggers the later route transition.
 
 Minor-league performance currently affects the arrival component but does not yet
 shape the conditional terminal career distribution, which uses role and estimated
@@ -53,7 +67,17 @@ plausible-looking heuristic.
 ## Universal Player Map
 
 Every active player receives a Player Map profile even when no release-grade
-probability exists. The map is a fixed vector, not a blended score:
+probability exists. Player Map v2 leads with three intentionally separate fields:
+
+- **Career Index:** fixed-scale career-value magnitude from final WAR P50, P75,
+  and P90. It is not a probability, percentile, or expected WAR.
+- **Stage standing:** exact rank, universe, top-share percentage, and tail band
+  for the declared stage cohort. Prospect ranks retain the frozen 6,455-player
+  universe rather than changing with the active directory.
+- **Evidence:** sample and source coverage that governs how much trust to place
+  in the output without changing either value.
+
+The explanatory map remains a fixed vector, not a blended score:
 
 - **Outcome:** stage-specific standing on the strongest supported value target.
 - **Readiness:** arrival confirmation for MiLB or near-term impact for MLB.
@@ -63,8 +87,10 @@ probability exists. The map is a fixed vector, not a blended score:
   outcome rank; it does not raise or lower the outcome rank itself.
 
 Each dimension carries its scale, comparison universe, target, model vintage, and
-claim state. MiLB and MLB percentiles are not directly interchangeable. Missing
-dimensions are `withheld` or `evidence building`, never zero.
+claim state. MiLB and MLB stage standings are not directly interchangeable.
+Career Index uses one fixed numerical scale, but that does not make the forecast
+routes equally mature or reliable. Missing dimensions are `withheld` or
+`evidence building`, never zero.
 
 The map assigns a readable research state such as `Conviction`, `Discovery`,
 `Rising`, `Monitor`, `Mapped`, or `Evidence building`. Sparse Alpha Radar alerts
@@ -72,7 +98,9 @@ remain a separate layer. For example, a player can be a top-decile direct-impact
 `Discovery` while the separate arrival gate is unconfirmed. That disagreement is
 the finding, not a reason to erase the player from the board.
 
-The Player Map is designed to cover the complete active census. Its dimensions
+The Player Map is designed to cover the complete active census. Directory is the
+identity and coverage surface, not a cross-stage leaderboard. Ranked surfaces
+remain grouped by stage and retain their declared cohorts. Its dimensions
 can be upgraded independently as point-in-time Statcast, minor-league performance,
 scouting, and snapshot-to-snapshot development challengers pass forward tests.
 
@@ -118,9 +146,9 @@ that the next three completed seasons total at least the global training-fold
 not another Hall-caliber probability. Historical completed-season WAR pace is
 descriptive context only.
 
-Alpha Radar is the default MLB decision surface. It only ranks players who clear
-the early-career, learned-runway, broad historical-support, positive-edge, and
-absolute P90 JAWS ceiling gates. The hero value is the percentage-point gap
+Alpha Radar remains a separate sparse research alert. It only ranks players who
+clear the early-career, learned-runway, broad historical-support, positive-edge,
+and absolute P90 JAWS ceiling gates. The alert value is the percentage-point gap
 between the modeled Hall-caliber probability and the supported post-1961 base
 rate. It is model alpha, not market alpha; price is explicitly shown as missing.
 
@@ -128,26 +156,27 @@ rate. It is model alpha, not market alpha; price is explicitly shown as missing.
 
 The first release supports one complete loop:
 
-1. **Scan:** Open Alpha Radar to see gated MLB ceiling anomalies, or switch to the Oracle Board's Hall-caliber, near-term-impact, terminal-WAR, and MiLB-arrival views.
+1. **Scan:** Open a stage ranking and compare Career Index, stage standing, and
+   evidence without conflating them.
 2. **Narrow:** Search and filter by player type, organization, position, and minor-league level; every filter is reflected in the shareable URL.
-3. **Compare:** Move among players on the same filtered board while keeping rank definitions, evidence scales, and uncertainty marks consistent.
+3. **Compare:** Move among players on the same filtered stage while keeping rank definitions, evidence scales, and uncertainty marks consistent.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
-5. **Commit:** Add a player to a watchlist with a thesis, target milestone, and review date.
+5. **Cross-check:** Use Directory to locate any covered player without treating its cross-stage row order as a ranking.
 6. **Revisit:** See what changed between prediction snapshots and whether the original thesis strengthened or weakened.
 
 The current build uses real players and real source evidence; missing or unsupported model outputs remain visibly withheld.
 
-The decision surface separates the two stages visually. The MiLB board pairs
-team, position, role, level, and search filters with a ceiling landscape that
-plots direct five-year impact rank against role/level age advantage. The player
-dossier keeps model rank, age context, and current raw-trait evidence on separate
+The decision surface separates prospects, Rookie Track, and MLB visually. The
+MiLB board pairs team, position, role, level, and search filters with a prospect
+landscape that plots Career Index against current data coverage. The player
+dossier keeps stage standing, age context, and current raw-trait evidence on separate
 scales. For MLB players, recorded cumulative WAR is connected through the latest
 completed season, while future uncertainty is rendered only as a discrete
 terminal distribution. The product does not imply an unsupported annual path.
 
 ## Product Views
 
-### Prospect Board
+### Rankings Table
 
 This is the default view and the primary work surface.
 
@@ -156,13 +185,13 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort by Player Map, MLB probability, near-term impact, terminal outcome, or arrival horizon
+- Sort by Career Index, stage standing, near-term impact, terminal outcome, or arrival horizon
 - Compare selection
-- Add-to-watchlist action
 
 Required row fields:
 
 - Player, organization, position, age, and current level
+- Career Index, exact stage rank, tail band, and evidence state
 - Three-year MLB probability and expected debut window
 - Median and upper-quantile career outcome, explicitly marked conditional where needed
 - Forecast confidence/data quality
@@ -260,14 +289,18 @@ Never use a single unexplained score as a substitute for these components.
 
 ### Phase 0: Interactive Product Prototype
 
-- Prospect Board with search, filters, sort, and responsive behavior
+- Rankings Table and alphabetical Directory with search, filters, sort, and
+  responsive behavior
+- Rookie Track continuity between frozen prospect priors and partial-season MLB
+  evidence
 - Player Dossier with arrival forecast, career fan chart, drivers, and comparables
 - Two-to-four-player comparison
-- Locally persisted watchlist and thesis
+- Shareable player and filter state
 - Demonstration prediction snapshots behind typed interfaces
 - Clear demo-data, as-of, and model-version labels
 
-Exit criterion: a user can complete the scan-to-watchlist workflow without dead controls and can explain the reason, uncertainty, and vintage behind each forecast.
+Exit criterion: a user can complete the scan-to-dossier workflow without dead
+controls and can explain the reason, uncertainty, and vintage behind each forecast.
 
 ### Phase 1: Defensible Baseball Baseline
 
@@ -285,7 +318,7 @@ Exit criterion: every displayed historical prediction can be reproduced without 
 
 - Scheduled ingestion and prediction runs
 - New-evidence and material-change alerts
-- Account-backed watchlists, notes, and saved screens
+- Account-backed research notes and saved screens
 - Scouting, biomechanical, injury, transaction, and environmental feature families where lawful and reliable
 - Cohort discovery and experiment tracking
 
@@ -312,8 +345,8 @@ Model quality:
 Product quality:
 
 - Time from opening the board to a defensible shortlist
-- Dossier and comparison usage before a watchlist decision
-- Percentage of watchlist decisions with a written thesis and review date
+- Dossier and comparison usage before a shortlist decision
+- Percentage of shortlist decisions with a written thesis and review date
 - Ability to reproduce the exact forecast used for a past decision
 - Alert usefulness and false-positive rate once continuous updates exist
 

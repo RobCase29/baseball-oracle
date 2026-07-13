@@ -196,27 +196,30 @@ describe('Oracle Board utilities', () => {
       makePlayer({ id: 'withheld', careerForecast: null }),
     ]
 
-    expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'Minors' }).map((player) => player.id)).toEqual([
       'higher-probability',
       'lower-probability',
       'withheld',
     ])
   })
 
-  it('groups rookie transitions, MLB outcomes, and prospect proxies in the All view', () => {
+  it('treats the All view as an alphabetical cross-stage directory', () => {
     const players = [
       makePlayer({
         id: 'minor-high',
+        name: 'Zulu Prospect',
         careerForecast: makeForecast({ hofCaliberProbability: 0.9 }),
       }),
       makePlayer({
         id: 'mlb-low',
+        name: 'Alpha Veteran',
         stage: 'early_mlb',
         level: null,
         careerForecast: makeForecast({ hofCaliberProbability: 0.01 }),
       }),
       makePlayer({
         id: 'rookie-transition',
+        name: 'Mike Rookie',
         stage: 'recent_callup',
         level: 'MLB',
         careerForecast: null,
@@ -242,8 +245,8 @@ describe('Oracle Board utilities', () => {
     ]
 
     expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
-      'rookie-transition',
       'mlb-low',
+      'rookie-transition',
       'minor-high',
     ])
     expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'Minors' }).map((player) => player.id))
@@ -262,11 +265,71 @@ describe('Oracle Board utilities', () => {
       makePlayer({ id: 'missing' }),
     ]
 
-    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'finalWar' }).map((player) => player.id)).toEqual([
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'Minors', sort: 'finalWar' }).map((player) => player.id)).toEqual([
       'high',
       'low',
       'missing',
     ])
+  })
+
+  it('sorts Career Index by fixed career-value magnitude rather than stage rank', () => {
+    const players = [
+      makePlayer({
+        id: 'best-rank-lower-value',
+        careerForecast: makeForecast({
+          rank: 1,
+          finalCareerWar: { p10: 0, p25: 1, p50: 5, p75: 10, p90: 20 },
+        }),
+      }),
+      makePlayer({
+        id: 'second-rank-higher-value',
+        careerForecast: makeForecast({
+          rank: 2,
+          finalCareerWar: { p10: 5, p25: 15, p50: 35, p75: 50, p90: 70 },
+        }),
+      }),
+      makePlayer({ id: 'withheld' }),
+    ]
+
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'Minors',
+      sort: 'careerIndex',
+    }).map((player) => player.id)).toEqual([
+      'second-rank-higher-value',
+      'best-rank-lower-value',
+      'withheld',
+    ])
+  })
+
+  it('never sorts withheld diagnostic values as a published index or standing', () => {
+    const players = [
+      makePlayer({
+        id: 'withheld-diagnostics',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({
+          publicationState: 'withheld',
+          rank: 1,
+          finalCareerWar: { p10: 20, p25: 40, p50: 60, p75: 80, p90: 100 },
+        }),
+      }),
+      makePlayer({
+        id: 'supported',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({ rank: 2 }),
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'MLB',
+      sort: 'careerIndex',
+    }).map((player) => player.id)).toEqual(['supported', 'withheld-diagnostics'])
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'MLB',
+      sort: 'alphaOpportunity',
+    }).map((player) => player.id)).toEqual(['supported', 'withheld-diagnostics'])
   })
 
   it('sorts the separate near-term endpoint without changing the Hall outcome rank', () => {
@@ -328,9 +391,9 @@ describe('Oracle Board utilities', () => {
       }),
     ]
 
-    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'nearTermImpact' }).map((player) => player.id))
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'MLB', sort: 'nearTermImpact' }).map((player) => player.id))
       .toEqual(['lower-outcome-higher-impact', 'higher-outcome-lower-impact', 'impact-withheld'])
-    expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id))
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'MLB' }).map((player) => player.id))
       .toEqual(['higher-outcome-lower-impact', 'lower-outcome-higher-impact', 'impact-withheld'])
   })
 
@@ -429,10 +492,10 @@ describe('Oracle Board utilities', () => {
         stage: 'early_mlb',
         careerForecast: makeForecast({ rank: 3, alphaSignal: alphaSignal(0.9, false) }),
       }),
-      makePlayer({ id: 'minor-discovery' }),
+      makePlayer({ id: 'minor-discovery', stage: 'early_mlb' }),
     ]
 
-    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'alphaOpportunity' }).map((player) => player.id))
+    expect(filterAndSortPlayers(players, { ...baseFilters, stage: 'MLB', sort: 'alphaOpportunity' }).map((player) => player.id))
       .toEqual(['higher-alpha', 'lower-alpha', 'failed-ceiling-gate', 'minor-discovery'])
   })
 
@@ -529,7 +592,7 @@ describe('Oracle Board utilities', () => {
     ]
 
     expect(
-      filterAndSortPlayers(players, { ...baseFilters, sort: 'arrival36' }).map((player) => player.id),
+      filterAndSortPlayers(players, { ...baseFilters, stage: 'Minors', sort: 'arrival36' }).map((player) => player.id),
     ).toEqual(['lower', 'higher', 'unmatched'])
   })
 
@@ -541,7 +604,7 @@ describe('Oracle Board utilities', () => {
     expect(formatOrdinal(91.4)).toBe('91st')
     expect(formatPercentileRank(99.8)).toBe('P99.8')
     expect(formatTopRankPercent(3, 6455)).toBe('Top <0.1%')
-    expect(formatTopRankPercent(323, 6455)).toBe('Top 5.0%')
+    expect(formatTopRankPercent(323, 6455)).toBe('Top 5.1%')
     expect(formatScore(72.25)).toBe('72.3')
     expect(formatScore(null)).toBe('—')
     expect(formatProbability(0.123)).toBe('12.3%')

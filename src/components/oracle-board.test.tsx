@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
+import { buildPlayerMap, PLAYER_MAP_VERSION } from '../domain/playerMap'
 import { PlayerDossier } from './PlayerDossier'
 import { ProspectBoard } from './ProspectBoard'
+import { playerMapFor } from './playerMapView'
 
 afterEach(cleanup)
 
@@ -412,13 +414,51 @@ const player: PlayerRecord = {
 }
 
 describe('unified Oracle Board shell', () => {
-  it('opens on the five-column player ranking table and excludes provider composites', () => {
+  it('hydrates cached v1 maps from the fixed forecast universe instead of the legacy active universe', () => {
+    const rankedPlayer = {
+      ...player,
+      milbImpactRanking,
+      careerForecast: {
+        ...forecast,
+        rank: 2,
+        lineage: { ...forecast.lineage, artifactRank: 7 },
+      } as CareerForecast,
+    }
+    const legacyV1Map = buildPlayerMap(rankedPlayer, { minorUniverse: 4319 })
+    const {
+      careerIndex: _careerIndex,
+      stageStanding: _stageStanding,
+      ...legacyFields
+    } = legacyV1Map
+    const hydrated = playerMapFor({
+      ...rankedPlayer,
+      playerMap: {
+        ...legacyFields,
+        version: 'oracle-player-map/v1',
+        claimStatus: 'research_rank_only',
+        comparableWithinStageOnly: true,
+      } as unknown as PlayerRecord['playerMap'],
+    })
+
+    expect(hydrated.version).toBe(PLAYER_MAP_VERSION)
+    expect(hydrated.careerIndex.value).toBe(61.1)
+    expect(hydrated.claimStatus).toBe('research_only')
+    expect(JSON.stringify(hydrated)).not.toContain('comparableWithinStageOnly')
+    expect(hydrated.stageStanding).toMatchObject({
+      rank: 7,
+      universe: 6455,
+      cohort: 'prospect_forecast',
+    })
+    expect(hydrated.stageStanding.topPercent).toBeCloseTo(0.1084, 4)
+  })
+
+  it('opens Directory as a noncompetitive five-column player table', () => {
     const onChangeFilters = vi.fn()
     render(
       <ProspectBoard
         players={[player]}
         selectedId={player.id}
-        filters={{ query: '', stage: 'All', playerType: 'All', level: 'All', sort: 'hofProbability' }}
+        filters={{ query: '', stage: 'All', playerType: 'All', level: 'All', sort: 'name' }}
         pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
         loading={false}
         error={null}
@@ -428,19 +468,20 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Player Rankings' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'All Players' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Directory' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Prospects' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Rookie Track' })).toBeInTheDocument()
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
-      'Player / Oracle Score',
-      'Rank',
-      'Career outlook',
+      'Player / Career Index',
+      'Stage standing',
+      'Career projection',
       'Current signal',
       'Evidence',
     ])
-    expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('65.0')).toBeInTheDocument()
-    expect(screen.getByText('High career case · projected arrival age —')).toBeInTheDocument()
+    expect(screen.getByLabelText('Career Index 61.1')).toBeInTheDocument()
+    expect(screen.getByText('24.0')).toBeInTheDocument()
+    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
     expect(screen.getByText('Not confirmed')).toBeInTheDocument()
     expect(screen.getByText('Identity only')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Landscape' })).not.toBeInTheDocument()
@@ -448,18 +489,19 @@ describe('unified Oracle Board shell', () => {
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
     expect(screen.queryByText('Peer signal')).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Rank by' }), {
-      target: { value: 'nearTermImpact' },
-    })
-    expect(onChangeFilters).toHaveBeenCalledWith({ sort: 'nearTermImpact' })
+    expect(screen.getByRole('option', { name: 'Player name' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Youngest first' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Career Index' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Directory, not a combined leaderboard/u)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'MLB' }))
-    expect(onChangeFilters).toHaveBeenCalledWith({ stage: 'MLB', level: 'All' })
+    expect(onChangeFilters).toHaveBeenCalledWith({ stage: 'MLB', level: 'All', sort: 'careerIndex' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Rookie Track' }))
     expect(onChangeFilters).toHaveBeenCalledWith({
       stage: 'RC',
       level: 'All',
+      sort: 'careerIndex',
     })
   })
 
@@ -482,7 +524,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('No matching MLB players')).toBeInTheDocument()
   })
 
-  it('keeps a frozen prospect score visible while Rookie Track shows the early MLB read separately', () => {
+  it('keeps a frozen prospect Career Index while Rookie Track shows MLB evidence separately', () => {
     const rookieTrackPlayer: PlayerRecord = {
       ...player,
       id: 'joe-mack',
@@ -536,11 +578,11 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByRole('heading', { name: 'Rookie Track' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Level' })).toBeDisabled()
-    expect(screen.getByLabelText('Oracle Score 97')).toBeInTheDocument()
+    expect(screen.getByLabelText('Career Index 24')).toBeInTheDocument()
     expect(screen.getByText('#167')).toBeInTheDocument()
-    expect(screen.getByText('of 6,455 prospect priors')).toBeInTheDocument()
-    expect(screen.getByText('13.0')).toBeInTheDocument()
-    expect(screen.getByText('Prospect high case carried through call-up')).toBeInTheDocument()
+    expect(screen.getByText('Top 2.6% of 6,455 frozen prospect priors')).toBeInTheDocument()
+    expect(screen.getByText('4.8')).toBeInTheDocument()
+    expect(screen.getByText('Middle career WAR · high case 13.0')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
     expect(screen.getByText('1.0 WAR · P73 · 172 PA')).toBeInTheDocument()
     expect(screen.getByText('Building evidence')).toBeInTheDocument()
@@ -558,8 +600,9 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Rookie Track' })).toBeInTheDocument()
-    expect(screen.getByText(/prospect career score stays in place while major-league evidence accumulates/u)).toBeInTheDocument()
-    expect(screen.getByText('No blended score')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Frozen prospect Career Index 24' })).toBeInTheDocument()
+    expect(screen.getByText(/frozen prospect Career Index stays in place while major-league evidence accumulates/u)).toBeInTheDocument()
+    expect(screen.getAllByText('Evidence update, not a re-score').length).toBeGreaterThan(0)
     expect(screen.getByRole('img', { name: 'MLB sample progress 57%' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /watch/u })).not.toBeInTheDocument()
   })
@@ -601,9 +644,9 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByLabelText('Oracle Score --')).toBeInTheDocument()
+    expect(screen.getByLabelText('Career Index --')).toBeInTheDocument()
     expect(screen.getByText('Prospect prior not matched')).toBeInTheDocument()
-    expect(screen.getByText('MLB evidence tracked while the prior is matched')).toBeInTheDocument()
+    expect(screen.getByText('Career projection available after the prospect prior is matched')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
 
     unmount()
@@ -611,7 +654,7 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByText(/remains visible in Rookie Track/u)).toBeInTheDocument()
     expect(screen.getAllByText('Prospect prior not matched').length).toBeGreaterThan(0)
-    expect(screen.getByText(/Oracle Score stays unavailable until an exact frozen prospect identity match/u)).toBeInTheDocument()
+    expect(screen.getByText(/Career Index stays unavailable until an exact frozen prospect identity match/u)).toBeInTheDocument()
   })
 
   it('filters by complete team and tokenized position facets and clears the cohort', () => {
@@ -665,7 +708,7 @@ describe('unified Oracle Board shell', () => {
     })
   })
 
-  it('shows a model signal while keeping the career-outcome stage rank primary', () => {
+  it('keeps an MLB model signal separate when the active stage universe is unavailable', () => {
     render(
       <ProspectBoard
         players={[{
@@ -686,7 +729,7 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getAllByText('Launch / breakout')).toHaveLength(2)
-    expect(screen.getByText('#7')).toBeInTheDocument()
+    expect(screen.queryByText('#7')).not.toBeInTheDocument()
     expect(screen.getByText('24.0')).toBeInTheDocument()
     expect(screen.getByText('Middle career WAR · high case 65.0')).toBeInTheDocument()
     expect(screen.getByText('— career WAR to date')).toBeInTheDocument()
@@ -710,16 +753,17 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Prospect Rankings' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Oracle Score 99.9')).toBeInTheDocument()
+    expect(screen.getByLabelText('Career Index 61.1')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
-    expect(screen.getByText('of 6,455')).toBeInTheDocument()
-    expect(screen.getByText('65.0')).toBeInTheDocument()
+    expect(screen.getByText('Top 0.11% of 6,455 frozen prospect forecasts')).toBeInTheDocument()
+    expect(screen.getByText('24.0')).toBeInTheDocument()
+    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age —')).toBeInTheDocument()
     expect(screen.getByText('Arrival rank #5')).toBeInTheDocument()
     expect(screen.getByText('Identity only')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Prospect landscape' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Landscape' }))
     expect(await screen.findByRole('heading', { name: 'Prospect landscape' })).toBeInTheDocument()
-    expect(screen.getByText(/Oracle Score 99\.90 · rank #7 · 0\/0 data areas/u)).toBeInTheDocument()
+    expect(screen.getByText(/Career Index 61\.1 · stage #7 of 6,455 \(Top 1%\) · 0\/0 data areas/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
   })
 
@@ -784,11 +828,11 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getAllByText('Aiva Arquette').length).toBeGreaterThan(0)
-    expect(screen.getByLabelText('Oracle Score 96')).toBeInTheDocument()
+    expect(screen.getByLabelText('Career Index 61.1')).toBeInTheDocument()
     expect(screen.getByText('#258')).toBeInTheDocument()
-    expect(screen.getByText('of 6,455')).toBeInTheDocument()
-    expect(screen.getByText('65.0')).toBeInTheDocument()
-    expect(screen.getByText('High career case · projected arrival age 23')).toBeInTheDocument()
+    expect(screen.getByText('Top 4.0% of 6,455 frozen prospect forecasts')).toBeInTheDocument()
+    expect(screen.getByText('24.0')).toBeInTheDocument()
+    expect(screen.getByText('Middle career WAR · high case 65.0 · arrival age 23')).toBeInTheDocument()
     expect(screen.getByText('Not confirmed')).toBeInTheDocument()
     expect(screen.getByText('2 / 4 data areas')).toBeInTheDocument()
     expect(screen.queryByText('Not ranked')).not.toBeInTheDocument()
@@ -802,8 +846,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Runway-adjusted career ceiling' })).toBeInTheDocument()
-    expect(screen.getByText('A score of 96 puts Aiva Arquette above about 96% of scored minor-league players for runway-adjusted career ceiling.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Projected career outlook' })).toBeInTheDocument()
+    expect(screen.getByText(/A Career Index of 61\.1 summarizes Aiva Arquette's modeled career magnitude/u)).toBeInTheDocument()
     expect(screen.getByText('Not yet confirmed')).toBeInTheDocument()
     expect(screen.getAllByText('Age 23').length).toBeGreaterThan(0)
     expect(screen.getByText('2 / 4 data areas')).toBeInTheDocument()
@@ -812,7 +856,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getAllByText('Whiff rate').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Walk rate').length).toBeGreaterThan(0)
     expect(screen.getByText('28 more plate appearances for a fuller current-season sample')).toBeInTheDocument()
-    expect(screen.getByText('Rank, not a guarantee.')).toBeInTheDocument()
+    expect(screen.getByText('Three separate readings.')).toBeInTheDocument()
   })
 
   it('explains the MiLB impact rank, dual gates, and withheld tail probability in the dossier', () => {
@@ -870,7 +914,7 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Arrival model audit' })).toBeInTheDocument()
-    expect(screen.getByText('Frozen arrival model · exact probability withheld')).toBeInTheDocument()
+    expect(screen.getByText('Research arrival rank · exact probability unavailable')).toBeInTheDocument()
     expect(screen.queryByText('100.0%')).not.toBeInTheDocument()
     expect(screen.getAllByText('Not passed')).toHaveLength(3)
   })
@@ -883,8 +927,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Runway-adjusted career outlook' })).toBeInTheDocument()
-    expect(screen.getByText(/projected MLB arrival age into the second leg/u)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Prospect career projection' })).toBeInTheDocument()
+    expect(screen.getByText(/expected MLB arrival age into the career outlook/u)).toBeInTheDocument()
     expect(screen.getByText('HIGH CAREER CASE')).toBeInTheDocument()
     expect(screen.getByText('Research bridge, not a finished career simulation')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()
@@ -962,7 +1006,7 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()
-    expect(screen.getByText('ORACLE RANK')).toBeInTheDocument()
+    expect(screen.getByText('CAREER WAR RECORDED')).toBeInTheDocument()
     expect(screen.getByText('Priority model alpha')).toBeInTheDocument()
     expect(screen.getByText('+14.8 pp')).toBeInTheDocument()
     expect(screen.getByText(/16\.0% modeled vs 1\.2% historical/u)).toBeInTheDocument()
@@ -999,8 +1043,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByText('ORACLE SCORE PENDING')).toBeInTheDocument()
-    expect(screen.getAllByText('Stage rank unavailable').length).toBeGreaterThan(0)
+    expect(screen.getByText('CAREER INDEX 61.1 · STAGE STANDING PENDING')).toBeInTheDocument()
+    expect(screen.getAllByText('Stage standing unavailable').length).toBeGreaterThan(0)
     expect(screen.queryByText('CAREER FORECAST WITHHELD')).not.toBeInTheDocument()
   })
 })

@@ -539,7 +539,7 @@ export interface PlayerRecord {
   playerMap?: PlayerMapProfile | null
 }
 
-export type SortKey = 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
+export type SortKey = 'careerIndex' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -594,12 +594,13 @@ export interface PlayersResponseMeta {
     minors: boolean
     recentCallups?: boolean
   }
-  playerMapVersion?: 'oracle-player-map/v1'
+  playerMapVersion?: 'oracle-player-map/v1' | 'oracle-player-map/v2'
   playerMapCoverage?: number
   matchingPlayerCount?: number
   matchingMappedCount?: number
   marketIndependent?: true
   marketInputsIncluded?: false
+  primaryScoreSemantics?: 'fixed_career_value_index'
   scoreSemantics?: 'stage_specific_ordinal_not_market_value'
   facets?: {
     teams: PlayerFacetOption[]
@@ -639,7 +640,7 @@ export interface PlayerMapFeedItem {
 }
 
 export interface PlayerMapFeedResponse {
-  schemaVersion: 'player-map-feed.v1'
+  schemaVersion: 'player-map-feed.v2'
   items: PlayerMapFeedItem[]
   page: PlayersPage
   meta: PlayersResponseMeta

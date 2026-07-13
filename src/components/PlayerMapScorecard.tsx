@@ -1,7 +1,7 @@
 import { AlertCircle, Layers3, Radar, Route } from 'lucide-react'
 import type { PlayerRecord } from '../domain/forecast'
 import type { PlayerMapRoute, PlayerMapScore, PlayerMapSignal } from '../domain/playerMap'
-import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
+import { careerIndexFor, playerMapFor } from './playerMapView'
 
 function scoreWidth(score: PlayerMapScore): number | null {
   if (score.value === null || score.scale === 'ordinal_rank') return null
@@ -62,9 +62,9 @@ function supportingDisplay(
 function supportingBasis(score: PlayerMapScore, route: PlayerMapRoute): string {
   if (route === 'rookie') {
     if (score.key === 'readiness') return 'The MLB appearance is observed and confirms arrival.'
-    if (score.key === 'trajectory') return 'Current-role WAR standing, shown separately from the prospect score.'
+    if (score.key === 'trajectory') return 'Current-role WAR standing, shown separately from the frozen Career Index.'
     if (score.key === 'best_trait') return score.basis
-    if (score.key === 'evidence') return 'Observed MLB opportunity changes evidence depth, not the prospect score.'
+    if (score.key === 'evidence') return 'Observed MLB opportunity changes evidence depth, not the frozen Career Index.'
   }
   if (score.key === 'readiness') {
     return route === 'milb'
@@ -89,15 +89,15 @@ function plainSignal(signal: PlayerMapSignal): { label: string; detail: string }
   const copy: Record<PlayerMapSignal['code'], { label: string; detail: string }> = {
     dual_confirmed: {
       label: 'Career upside and MLB readiness agree',
-      detail: 'Both the runway-adjusted career model and the separate MLB arrival check rate this player highly.',
+      detail: 'Both the long-term career forecast and the separate MLB arrival check rate this player highly.',
     },
     ceiling_readiness_split: {
       label: 'High upside, longer path',
-      detail: 'The career ceiling rank is high, but a near-term MLB arrival is not confirmed yet.',
+      detail: 'The prospect career outlook ranks highly, but a near-term MLB arrival is not confirmed yet.',
     },
     thin_data_upside: {
       label: 'Early signal',
-      detail: 'The score is already high even though the current-season sample is still developing.',
+      detail: 'The career outlook is already strong even though the current-season sample is still developing.',
     },
     trait_corroborated: {
       label: 'Current stats support the projection',
@@ -117,7 +117,7 @@ function plainSignal(signal: PlayerMapSignal): { label: string; detail: string }
     },
     prospect_prior_preserved: {
       label: 'Prospect trajectory preserved',
-      detail: 'The pre-debut career score stays visible while the first MLB sample develops.',
+      detail: 'The pre-debut Career Index stays visible while the first MLB sample develops.',
     },
     mlb_confirmation: {
       label: 'MLB evidence is arriving',
@@ -149,7 +149,7 @@ function plainNextStep(step: string): string {
 
 export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   const map = playerMapFor(player)
-  const oracleScore = oracleScoreFor(player)
+  const careerIndex = careerIndexFor(player, map)
   const supportingScores = map.route === 'milb'
     ? [map.scores.outcome, map.scores.readiness, map.scores.trajectory, map.scores.evidence]
     : map.route === 'rookie'
@@ -160,34 +160,36 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   return (
     <section className={`player-map player-map--${map.state}`} aria-labelledby="player-map-title">
       <div className="player-map-heading">
-        <div className={`oracle-score-hero oracle-score-hero--${oracleScore.tone}`}>
-          <span>ORACLE SCORE</span>
-          <strong>{oracleScore.display}</strong>
-          <small>{oracleScore.value === null ? 'NOT SCORED' : '/ 100'}</small>
+        <div
+          className={`career-index-hero career-index-hero--${careerIndex.tone}`}
+          role="group"
+          aria-label={`${careerIndex.label} ${careerIndex.display}`}
+        >
+          <span>{map.route === 'rookie' ? 'FROZEN CAREER INDEX' : 'CAREER INDEX'}</span>
+          <strong>{careerIndex.display}</strong>
+          <small>{careerIndex.value === null ? 'NOT SCORED' : 'CAREER MAGNITUDE'}</small>
         </div>
         <div className="player-map-heading-copy">
-          <span className="eyebrow">PRIMARY PLAYER RANKING</span>
-          <h2 id="player-map-title">{oracleScore.outcomeLabel}</h2>
-          <p>{oracleScore.explanation}</p>
+          <span className="eyebrow">PRIMARY CAREER OUTLOOK</span>
+          <h2 id="player-map-title">{careerIndex.outcomeLabel}</h2>
+          <p>{careerIndex.explanation}</p>
           <div className="player-map-context">
-            <strong>{oracleScore.rankLabel}</strong>
-            <span><Radar size={14} aria-hidden="true" /> {plainPlayerState(map.state)}</span>
+            <strong>{careerIndex.rankLabel}{careerIndex.topLabel ? ` · ${careerIndex.topLabel}` : ''}</strong>
+            <span><Radar size={14} aria-hidden="true" /> {careerIndex.cohortLabel}</span>
           </div>
         </div>
       </div>
 
-      <div className="oracle-score-definition">
-        <strong>Start here.</strong>
+      <div className="career-index-definition">
+        <strong>{map.route === 'rookie' ? 'Evidence update, not a re-score.' : 'How to read it.'}</strong>
         <span>
-          {map.route === 'milb'
-            ? 'Higher is better. The minor-league score carries projected MLB arrival age into the career ceiling rank, so remaining career runway matters.'
-            : map.route === 'rookie'
-              ? 'The score preserves the frozen prospect career rank. Current MLB performance is shown separately and is not blended into it.'
-              : 'Higher is better. Oracle Score converts this player’s exact rank among all scored major-league players to a 0–100 scale.'}
+          {map.route === 'rookie'
+            ? 'The Career Index and stage standing remain frozen from the prospect forecast. Current MLB performance changes the evidence read, not the index.'
+            : 'Career Index maps the middle, strong, and high projected career-WAR cases to one fixed historical value scale. It is not a probability, percentile, confidence score, or expected WAR.'}
         </span>
       </div>
 
-      <div className="player-map-scores" aria-label="Context behind the Oracle Score">
+      <div className="player-map-scores" aria-label="Evidence and context behind the Career Index">
         {supportingScores.map((score) => {
           const width = scoreWidth(score)
           return (
@@ -271,12 +273,12 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
       ) : null}
 
       <div className="player-map-disclosure">
-        <strong>Rank, not a guarantee.</strong>
+        <strong>Three separate readings.</strong>
         <span>{map.route === 'milb'
-          ? 'This is a research rank from an MLB-arrival and debut-age career bridge, not a Hall of Fame probability, blended composite, or card-value estimate. Current stats refresh daily; model ranks change with a tested release.'
+          ? 'Career Index describes projected career magnitude. Stage standing compares frozen prospect forecasts. Evidence describes current support and uncertainty. None is a card-value estimate or guarantee.'
           : map.route === 'rookie'
-            ? 'This is the frozen prospect career rank carried through a call-up, not a new rookie probability or blended score. MLB evidence refreshes daily until a supported completed-season model takes over.'
-            : 'Oracle Score is a stage-specific percentile, not a probability, blended composite, or card-value estimate. Current stats refresh daily; the score changes with a tested model release.'}</span>
+            ? 'Career Index and stage standing are the frozen prospect prior. MLB evidence refreshes daily and remains separate until a supported completed-season model takes over.'
+            : 'Career Index describes projected career magnitude. Stage standing compares active MLB projections. Evidence describes model support. None is a Hall of Fame election probability, card-value estimate, or guarantee.'}</span>
       </div>
     </section>
   )

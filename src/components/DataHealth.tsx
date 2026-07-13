@@ -190,7 +190,7 @@ export function DataHealth() {
         <div>
           <span className="eyebrow">DATA UPDATES</span>
           <h1>Data freshness</h1>
-          <p>See when player stats last changed, whether the daily update ran, and which season powers the score.</p>
+          <p>See when player stats last changed, whether the daily update ran, and which season powers the Career Index.</p>
         </div>
         <span className={`build-badge${automaticUpdatesHealthy ? '' : ' build-badge--warning'}`}>
           {automaticUpdatesHealthy
@@ -225,7 +225,7 @@ export function DataHealth() {
         </div>
         <div>
           <Database size={18} aria-hidden="true" />
-          <span>Oracle Score inputs</span>
+          <span>Career Index inputs</span>
           <strong>{modelSeason ? `Through ${modelSeason}` : 'Update pending'}</strong>
           <small>Current stats are shown separately until the next tested model release</small>
         </div>
@@ -243,7 +243,7 @@ export function DataHealth() {
           <small>{formatDate(mlbUpdatedAt)}</small>
         </div>
         <div>
-          <span>SCORE MODEL</span>
+          <span>CAREER INDEX MODEL</span>
           <strong>{modelSeason ? `Completed ${modelSeason} season` : 'Model date unavailable'}</strong>
           <small>Re-scoring is a tested release, not an automatic in-season change</small>
         </div>
