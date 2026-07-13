@@ -2732,6 +2732,19 @@
     min-width: 0;
   }
 
+  .oracle-board-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .oracle-board-table .player-cell {
+    min-width: 0;
+  }
+
+  .oracle-board-table .alpha-cell {
+    width: auto;
+  }
+
   .board-table th:nth-child(3),
   .board-table td:nth-child(3),
   .board-table th:nth-child(6),
