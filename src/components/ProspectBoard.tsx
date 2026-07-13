@@ -247,6 +247,9 @@ export function ProspectBoard({
                           {player.initials}
                         </span>
                         <span>
+                          <span className="mobile-player-rank">
+                            {displayedRank ? `#${displayedRank} ${rankScope}` : 'Not ranked'}
+                          </span>
                           <strong>{player.name}</strong>
                           <small>
                             {organization} · {player.position ?? player.playerType}

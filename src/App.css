@@ -679,6 +679,10 @@
   min-width: 0;
 }
 
+.mobile-player-rank {
+  display: none;
+}
+
 .player-cell strong {
   display: block;
   overflow: hidden;
@@ -2745,6 +2749,8 @@
     width: auto;
   }
 
+  .board-table th:nth-child(1),
+  .board-table td:nth-child(1),
   .board-table th:nth-child(3),
   .board-table td:nth-child(3),
   .board-table th:nth-child(6),
@@ -2756,18 +2762,77 @@
     display: none;
   }
 
+  .oracle-board-table th:nth-child(2),
+  .oracle-board-table td:nth-child(2) {
+    width: 50%;
+  }
+
+  .oracle-board-table th:nth-child(4),
+  .oracle-board-table td:nth-child(4) {
+    width: 17%;
+  }
+
+  .oracle-board-table th:nth-child(5),
+  .oracle-board-table td:nth-child(5) {
+    width: 23%;
+  }
+
+  .oracle-board-table th:nth-child(9),
+  .oracle-board-table td:nth-child(9) {
+    width: 10%;
+  }
+
   .board-table th,
   .board-table td {
     padding-inline: 6px;
   }
 
-  .board-table th:first-child,
-  .board-table td:first-child {
+  .oracle-board-table th:nth-child(2),
+  .oracle-board-table td:nth-child(2) {
     padding-left: 11px;
   }
 
+  .oracle-board-table th:nth-child(9),
+  .oracle-board-table td:nth-child(9) {
+    padding-inline: 2px;
+  }
+
   .player-cell {
-    min-width: 138px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .player-cell .player-avatar {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    font-size: 9px;
+  }
+
+  .player-cell strong {
+    overflow: visible;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .mobile-player-rank {
+    display: block;
+    margin-bottom: 2px;
+    color: #78827f;
+    font-family: var(--mono);
+    font-size: 7px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .alpha-cell-lead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .row-chevron {
