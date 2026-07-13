@@ -1,0 +1,276 @@
+{
+  "schemaVersion": "oracle-registered-tournament/v1",
+  "protocolVersion": "s-tier-tournament-v1",
+  "registeredAt": "2026-07-13",
+  "status": "registered_not_executed",
+  "claimBoundary": {
+    "ultimateModelClaimAllowed": false,
+    "releaseEligibleAtRegistration": false,
+    "marketReturnIsSeparate": true,
+    "rankIsNotProbability": true,
+    "requiredBeforeReleaseClaim": [
+      "locked prospective shadow holdout reaches a predeclared maturity date",
+      "all point-in-time, calibration, subgroup, tail, and operational gates pass",
+      "winning entrant and calibrator are frozen before shadow-holdout labels are opened"
+    ]
+  },
+  "estimands": [
+    {
+      "id": "milb_arrival",
+      "population": "complete affiliated contract-roster census of players without an MLB appearance",
+      "landmarks": ["weekly_in_season", "season_end"],
+      "outcomes": [
+        "first_mlb_appearance_within_12_months",
+        "first_mlb_appearance_within_24_months",
+        "first_mlb_appearance_within_36_months",
+        "first_mlb_appearance_within_48_months",
+        "first_mlb_appearance_within_60_months"
+      ],
+      "censoring": "right_censored_with_exit_and_lost_to_coverage_states"
+    },
+    {
+      "id": "milb_impact",
+      "population": "same point-in-time pre-debut risk set",
+      "landmarks": ["weekly_in_season", "season_end"],
+      "outcomes": [
+        "mlb_war_in_calendar_years_1_through_5",
+        "at_least_5_mlb_war_in_calendar_years_1_through_5",
+        "at_least_10_mlb_war_in_calendar_years_1_through_5"
+      ],
+      "censoring": "joint_arrival_and_value_model_with_explicit_no_arrival_mass"
+    },
+    {
+      "id": "mlb_career_arc",
+      "population": "every active MLB player at a point-in-time landmark",
+      "landmarks": ["weekly_in_season", "season_end"],
+      "outcomes": [
+        "next_season_roster_and_playing_time_state",
+        "annual_war_path",
+        "career_length",
+        "final_career_war",
+        "peak_seven_war",
+        "final_jaws",
+        "position_and_era_specific_hall_caliber"
+      ],
+      "censoring": "joint_exit_reentry_playing_time_and_value_process"
+    }
+  ],
+  "dataContract": {
+    "knowledgeTimeVerified": true,
+    "effectiveTimeVerified": true,
+    "stableIdentityRequired": true,
+    "nameOnlyJoinsAllowed": false,
+    "zeroAppearancePlayersRequired": true,
+    "sourceCoverageIndicatorsRequired": true,
+    "trainingServingFeatureParityRequired": true,
+    "rawInputsImmutable": true,
+    "atomicScorePublicationRequired": true,
+    "minimumCurrentUniverseIdentityResolution": 0.995
+  },
+  "featureGroups": [
+    {
+      "id": "context_core",
+      "required": true,
+      "examples": ["age", "role", "position", "level", "era", "league", "park", "roster_state"]
+    },
+    {
+      "id": "workload_and_opportunity",
+      "required": true,
+      "examples": ["pa", "batters_faced", "innings_outs", "games", "starts", "days_active"]
+    },
+    {
+      "id": "context_normalized_performance",
+      "required": true,
+      "examples": ["shrunken_rate_components", "league_relative_rates", "park_adjusted_rates", "age_level_residuals"]
+    },
+    {
+      "id": "development_trajectory",
+      "required": true,
+      "examples": ["promotion_velocity", "repeat_level", "role_change", "rolling_skill_change", "workload_change"]
+    },
+    {
+      "id": "availability_and_durability",
+      "required": true,
+      "examples": ["injured_list", "inactive", "restricted", "release_return", "workload_interruption"]
+    },
+    {
+      "id": "acquisition_capital",
+      "required": false,
+      "examples": ["draft_round", "bonus", "international_signing", "option_and_roster_status"]
+    },
+    {
+      "id": "point_in_time_scouting",
+      "required": false,
+      "examples": ["future_value", "tool_grades", "pitch_grades", "risk_grade", "dated_public_rank"]
+    },
+    {
+      "id": "milb_tracking",
+      "required": false,
+      "examples": ["contact_quality", "swing_decisions", "contact_rates", "pitch_shape", "velocity", "command"]
+    },
+    {
+      "id": "mlb_statcast",
+      "required": false,
+      "examples": ["expected_outcomes", "barrel_and_hard_hit", "swing_decisions", "bat_speed", "pitch_shape", "velocity", "location"]
+    },
+    {
+      "id": "organization_public_information",
+      "required": false,
+      "examples": ["organization", "depth_chart", "transaction_and_promotion_context"]
+    }
+  ],
+  "prohibitedFeatures": [
+    "future_statistics_or_roster_state",
+    "retrospectively_revised_value_without_original_known_at",
+    "highest_level_reached_after_landmark",
+    "eventual_career_length_or_resolution_state",
+    "prospect_savant_composite_score",
+    "provider_composite_used_as_oracle_target",
+    "market_price_or_card_return_in_baseball_talent_model"
+  ],
+  "ablationLadder": [
+    ["context_core", "workload_and_opportunity"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability", "acquisition_capital"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability", "point_in_time_scouting"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability", "milb_tracking"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability", "mlb_statcast"],
+    ["context_core", "workload_and_opportunity", "context_normalized_performance", "development_trajectory", "availability_and_durability", "acquisition_capital", "point_in_time_scouting", "milb_tracking", "mlb_statcast", "organization_public_information"]
+  ],
+  "modelFamilies": {
+    "arrival": [
+      "empirical_bayes_age_level_role_era_hazard",
+      "elastic_net_discrete_time_competing_risk",
+      "gradient_boosted_survival",
+      "random_survival_forest",
+      "nonnegative_out_of_fold_super_learner"
+    ],
+    "impact": [
+      "transparent_age_level_role_performance_prior",
+      "elastic_net_logistic",
+      "monotone_generalized_additive_model",
+      "hist_gradient_boosting",
+      "categorical_gradient_boosting",
+      "nonnegative_out_of_fold_super_learner"
+    ],
+    "careerArc": [
+      "hierarchical_role_age_state_space",
+      "joint_exit_reentry_playing_time_component_model",
+      "quantile_gradient_boosting",
+      "paired_residual_simulation",
+      "calibrated_joint_scenario_ensemble"
+    ]
+  },
+  "evaluation": {
+    "randomRowSplitsAllowed": false,
+    "playerClustered": true,
+    "predictionOriginChronological": true,
+    "transformationsFitWithinFold": true,
+    "calibrationFitWithinFold": true,
+    "onlineAndColdStartReported": true,
+    "horizonMaturityRequired": true,
+    "rollingOrigins": {
+      "historicalSeasonEndStart": 2010,
+      "historicalSeasonEndEnd": 2025,
+      "scoreOnlyMatureOutcomesAtEachHorizon": true,
+      "post2020RegimeReportedSeparately": true,
+      "pandemicAnd2021ReorganizationStressReportedSeparately": true
+    },
+    "primaryMetrics": {
+      "arrivalAndImpact": ["brier", "log_loss", "integrated_brier", "calibration_intercept", "calibration_slope"],
+      "careerDistribution": ["weighted_interval_score", "crps", "mae", "interval_50_coverage", "interval_80_coverage", "interval_95_coverage"],
+      "hallTail": ["brier", "log_loss", "average_precision", "top_1_percent_precision", "top_5_percent_precision", "expected_shortfall_error"]
+    },
+    "secondaryMetrics": ["roc_auc", "top_1_percent_lift", "top_5_percent_lift", "top_10_percent_lift"],
+    "subgroups": [
+      "hitter_pitcher_starter_reliever",
+      "position",
+      "age_band",
+      "level",
+      "organization",
+      "era",
+      "coverage_tier",
+      "cold_start",
+      "tracking_available",
+      "scouting_available"
+    ],
+    "uncertainty": {
+      "method": "paired_nonparametric_player_cluster_bootstrap",
+      "repetitions": 2000,
+      "confidenceLevel": 0.95
+    }
+  },
+  "shadowHoldout": {
+    "status": "planned_not_frozen",
+    "cohortId": "active-census-2026-07-13",
+    "freezePlannedAt": "2026-07-13T23:59:59-04:00",
+    "labelAccess": "sealed_until_each_predeclared_horizon_matures",
+    "tuningAfterFreezeAllowed": false,
+    "predictionRevisionsAllowed": false,
+    "scoreDates": {
+      "arrival12Month": "2027-07-14",
+      "arrival24Month": "2028-07-14",
+      "arrival36Month": "2029-07-14",
+      "impactFiveCalendarYears": "2031-12-31",
+      "careerAndHall": "score_with_censoring_aware_updates_until_resolved"
+    },
+    "parallelShadowSnapshots": "weekly_without_replacing_the_frozen_primary_cohort"
+  },
+  "promotionGates": {
+    "lineage": {
+      "pointInTimeFeatureFraction": 1.0,
+      "maximumFutureKnowledgeViolations": 0,
+      "maximumDuplicatePredictionKeys": 0
+    },
+    "superiority": {
+      "pairedBrierImprovementLower95BoundGreaterThan": 0.0,
+      "positiveForwardFoldFractionMinimum": 0.75,
+      "mustBeatTransparentAndPublicConsensusBaselines": true
+    },
+    "calibration": {
+      "absoluteCalibrationInTheLargeMaximum": 0.02,
+      "calibrationSlopeInclusive": [0.8, 1.2],
+      "expectedCalibrationErrorMaximum": 0.02,
+      "observedExpectedInclusive": [0.8, 1.25]
+    },
+    "tail": {
+      "topOnePercentAbsoluteCalibrationGapMaximum": 0.05,
+      "topFivePercentObservedExpectedInclusive": [0.75, 1.33],
+      "minimumHallEventPlayersForReleaseInference": 100,
+      "p95AndP99EvaluationRequired": true
+    },
+    "distribution": {
+      "interval50CoverageInclusive": [0.45, 0.55],
+      "interval80CoverageInclusive": [0.75, 0.85],
+      "interval95CoverageInclusive": [0.92, 0.98],
+      "earlyCareerAndHighPerformanceSlicesMustPass": true
+    },
+    "subgroups": {
+      "maximumMajorCohortBrierRegression": 0.01,
+      "minimumSupportedSubgroupPassFraction": 0.75,
+      "missingFeatureStressTestsRequired": true,
+      "eraAndOrganizationShiftTestsRequired": true
+    },
+    "operations": {
+      "sourceFreshnessSlaHours": {
+        "rostersAndTransactions": 6,
+        "currentMlbAndMilbStats": 24,
+        "tracking": 24,
+        "scouting": 168,
+        "identityCrosswalk": 168
+      },
+      "currentUniverseScoreCoverageMinimum": 0.995,
+      "atomicPublicationRequired": true,
+      "schemaDriftBlocksPublication": true,
+      "staleSourceBlocksPublication": true
+    }
+  },
+  "selectionRule": {
+    "primary": "minimum_predeclared_proper_score_on_chronological_selection_origins",
+    "tieBreakers": ["calibration", "cold_start_score", "tail_score", "simplicity"],
+    "featureGroupMustEarnAdmissionByAblation": true,
+    "postSelectionHoldoutUse": "confirmation_only"
+  }
+}

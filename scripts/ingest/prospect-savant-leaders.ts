@@ -21,6 +21,10 @@ import {
 import { persistRawLanding } from './raw-landing.js'
 import { refreshPlayerDirectorySnapshot } from './player-directory.js'
 import {
+  assertProspectSavantCurrentCardinality,
+  type CurrentRefreshCardinalityGate,
+} from './current-refresh-quality.js'
+import {
   disambiguateSourceRecordKeys,
   idempotencyKey,
   normalizeRequestUrl,
@@ -38,6 +42,32 @@ export interface IngestProspectSavantResult {
   responseHash: string
   rows: number
   slice: ProspectSavantSlice
+}
+
+interface ProspectSavantIngestOptions {
+  apiBase?: string
+  enforceCurrentCardinality?: boolean
+}
+
+async function previousProspectSavantSliceRows(
+  sql: ReturnType<typeof postgres>,
+  slice: ProspectSavantSlice,
+): Promise<number | null> {
+  const [previous] = await sql<{ rows: number }[]>`
+    SELECT (run.counts->>'rows')::integer AS rows
+    FROM raw.ingestion_run AS run
+    JOIN catalog.dataset AS dataset ON dataset.id = run.dataset_id
+    JOIN catalog.source AS source ON source.id = dataset.source_id
+    WHERE source.slug = 'prospect-savant'
+      AND dataset.dataset_key = 'minor-league-leaders'
+      AND run.status = 'succeeded'
+      AND run.parser_version = ${PROSPECT_SAVANT_PARSER_VERSION}
+      AND run.parameters->'slice' = ${sql.json(slice as unknown as postgres.JSONValue)}
+      AND run.counts->>'rows' ~ '^\\d+$'
+    ORDER BY run.finished_at DESC NULLS LAST, run.started_at DESC
+    LIMIT 1
+  `
+  return previous?.rows ?? null
 }
 
 export interface ProspectSavantBackfillResult {
@@ -60,7 +90,7 @@ function uniqueRecordKeys(
 
 export async function ingestProspectSavantSlice(
   inputSlice: ProspectSavantSlice,
-  options: { apiBase?: string } = {},
+  options: ProspectSavantIngestOptions = {},
 ): Promise<IngestProspectSavantResult> {
   const slice = validateProspectSavantSlice(inputSlice)
   const url = normalizeRequestUrl(
@@ -74,7 +104,7 @@ export async function ingestProspectSavantSlice(
   const response = await fetchProspectSavantLeaders(url)
   const body = await response.text()
   const fetchedAt = new Date()
-  const envelope = parseProspectSavantEnvelope(body)
+  const { envelope, semanticQuality } = parseProspectSavantEnvelope(body, slice)
   const responseHash = sha256(body)
   const sourceKeys = uniqueRecordKeys(envelope.data, slice)
   const records = envelope.data.map((record, index) => ({
@@ -92,6 +122,16 @@ export async function ingestProspectSavantSlice(
   })
 
   try {
+    let cardinalityGate: CurrentRefreshCardinalityGate | null = null
+    if (options.enforceCurrentCardinality) {
+      const previousRows = await previousProspectSavantSliceRows(sql, slice)
+      cardinalityGate = assertProspectSavantCurrentCardinality(
+        envelope.data.length,
+        slice,
+        previousRows,
+      )
+    }
+
     const landing = await persistRawLanding(sql, {
       sourceSlug: 'prospect-savant',
       datasetKey: 'minor-league-leaders',
@@ -102,12 +142,20 @@ export async function ingestProspectSavantSlice(
         request: sanitizedRequest(url),
         slice,
         cohortDependentMetrics: prospectSavantCohortDependentMetrics,
+        ...(cardinalityGate
+          ? { currentRefreshCardinality: cardinalityGate }
+          : {}),
+        semanticQuality,
         temporalCaveat:
           'Current age and organization fields are not assumed to be historical as-of values.',
       },
       counts: {
         rows: envelope.data.length,
         schema: schemaFingerprint(envelope.data),
+        ...(cardinalityGate
+          ? { currentRefreshCardinality: cardinalityGate }
+          : {}),
+        semanticQuality,
       },
       fetchedAt,
       request: {
@@ -143,6 +191,7 @@ export async function backfillProspectSavant(options: {
   slices?: readonly ProspectSavantSlice[]
   delayMs?: number
   apiBase?: string
+  enforceCurrentCardinality?: boolean
   onProgress?: (result: IngestProspectSavantResult) => void
 } = {}): Promise<ProspectSavantBackfillResult> {
   const slices = options.slices ?? buildProspectSavantHistoricalSlices()
@@ -165,6 +214,7 @@ export async function backfillProspectSavant(options: {
     try {
       const result = await ingestProspectSavantSlice(slice, {
         apiBase: options.apiBase,
+        enforceCurrentCardinality: options.enforceCurrentCardinality,
       })
       if (result.status === 'stored') summary.stored += 1
       else if (result.status === 'duplicate') summary.duplicates += 1

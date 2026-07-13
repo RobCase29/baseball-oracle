@@ -20,15 +20,12 @@ import type {
 import {
   eligibleAlphaSignal,
   developmentChapterLabel,
-  formatPercentagePointDelta,
-  formatProbability,
   formatTopRankPercent,
   formatWar,
   isMlbStage,
-  probabilityTone,
   stageLabel,
 } from '../lib/forecast'
-import { playerMapFor } from './playerMapView'
+import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
 
 const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
@@ -65,24 +62,20 @@ function withCurrentFacet(
   return [{ value: current, label: current, count: 0 }, ...options]
 }
 
-function confidenceLabel(player: PlayerRecord): string {
-  return player.careerForecast?.confidenceState ?? 'Withheld'
-}
-
 function alphaMissLabel(player: PlayerRecord): string {
   if (!isMlbStage(player.stage)) {
-    if (!player.researchEstimate) return 'No exact frozen arrival-model match'
-    if (!player.milbAlphaSignal?.eligible) return 'Arrival confirmation gate not cleared'
-    if (!player.milbImpactRanking) return 'No exact frozen impact-rank match'
-    if (player.milbImpactRanking.rankPercentile < 90) return 'Outside the five-year impact top decile'
-    return 'Research ceiling rank withheld'
+    if (!player.researchEstimate) return 'Not enough matched data to estimate MLB arrival'
+    if (!player.milbAlphaSignal?.eligible) return 'MLB arrival is not confirmed yet'
+    if (!player.milbImpactRanking) return 'Not enough matched data for an impact score'
+    if (player.milbImpactRanking.rankPercentile < 90) return 'Outside the top 10% for five-year MLB impact'
+    return 'Five-year impact score unavailable'
   }
   const signal = player.careerForecast?.alphaSignal
-  if (!signal || signal.status === 'withheld') return 'Completed-season signal withheld'
-  if (!signal.gates.earlyCareer) return 'Outside the early-career gate'
-  if (!signal.gates.prePrimeRunway) return 'Insufficient pre-prime runway'
-  if (!signal.gates.absoluteCeiling) return 'Absolute ceiling gate not cleared'
-  return 'No positive edge versus the historical baseline'
+  if (!signal || signal.status === 'withheld') return 'No standout career signal yet'
+  if (!signal.gates.earlyCareer) return 'Past the early-career breakout window'
+  if (!signal.gates.prePrimeRunway) return 'Limited development time before the typical peak years'
+  if (!signal.gates.absoluteCeiling) return 'Projected ceiling is below the standout threshold'
+  return 'Career outlook does not beat the similar-player baseline'
 }
 
 export function ProspectBoard({
@@ -120,21 +113,21 @@ export function ProspectBoard({
         <div>
           <span className="eyebrow">
             {minorAlphaView
-              ? 'DIRECT IMPACT RANK + ARRIVAL CONFIRMATION'
+              ? 'FIVE-YEAR MLB IMPACT RANKING'
               : mlbAlphaView
-                ? 'MODEL-GATED CAREER ANOMALIES'
+                ? 'HALL-LEVEL CAREER RANKING'
                 : alphaView
-                  ? 'UNIVERSAL STAGE-SPECIFIC ASSESSMENT'
-                : 'STAGE-SPECIFIC RESEARCH RANK'}
+                  ? 'ONE SCORE, COMPARED WITH PLAYERS AT THE SAME STAGE'
+                  : 'PLAYER OUTLOOK RANKINGS'}
           </span>
           <h2 id="board-title">
             {minorAlphaView
-              ? 'Early Ceiling Radar'
+              ? 'Prospect Rankings'
               : mlbAlphaView
-                ? 'Alpha Radar'
+                ? 'MLB Rankings'
                 : alphaView
-                  ? 'Player Map'
-                  : 'Oracle Board'}
+                  ? 'Player Rankings'
+                  : 'Oracle Rankings'}
           </h2>
         </div>
         <span className="record-count">
@@ -143,7 +136,7 @@ export function ProspectBoard({
         </span>
       </div>
 
-      <div className="board-filters" aria-label="Player cohort filters">
+      <div className="board-filters" aria-label="Player filters">
         <label className="search-field">
           <span className="sr-only">Search players</span>
           <Search size={16} aria-hidden="true" />
@@ -162,7 +155,18 @@ export function ProspectBoard({
               type="button"
               className={filters.stage === stage ? 'is-active' : ''}
               aria-pressed={filters.stage === stage}
-              onClick={() => onChangeFilters(stage === 'MLB' ? { stage, level: 'All' } : { stage })}
+              onClick={() => {
+                const sortIsUnavailable = (
+                  stage === 'Minors' && (
+                    filters.sort === 'nearTermImpact' || filters.sort === 'finalWar'
+                  )
+                ) || (stage === 'MLB' && filters.sort === 'arrival36')
+                onChangeFilters({
+                  stage,
+                  ...(stage === 'MLB' ? { level: 'All' } : {}),
+                  ...(sortIsUnavailable ? { sort: 'alphaOpportunity' as const } : {}),
+                })
+              }}
             >
               {stage}
             </button>
@@ -244,12 +248,11 @@ export function ProspectBoard({
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
             }
           >
-            <option value="alphaOpportunity">Player map</option>
-            <option value="hofProbability">P(HOF caliber)</option>
-            <option value="nearTermImpact">Near-term impact</option>
-            <option value="finalWar">Final WAR P50</option>
-            <option value="arrival36">Arrival anomaly rank</option>
-            <option value="age">Age</option>
+            <option value="alphaOpportunity">Oracle Score</option>
+            {filters.stage !== 'Minors' ? <option value="nearTermImpact">Next 3-year upside</option> : null}
+            {filters.stage !== 'Minors' ? <option value="finalWar">Projected career WAR</option> : null}
+            {filters.stage !== 'MLB' ? <option value="arrival36">MLB arrival research rank</option> : null}
+            <option value="age">Youngest first</option>
             <option value="name">Name</option>
           </select>
         </label>
@@ -265,7 +268,7 @@ export function ProspectBoard({
             team: 'All',
             position: 'All',
           })}
-          title="Clear cohort filters"
+          title="Clear player filters"
         >
           <FilterX size={14} aria-hidden="true" />
           Clear{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
@@ -293,8 +296,8 @@ export function ProspectBoard({
       {loading && players.length === 0 ? (
         <div className="empty-state" role="status">
           <LoaderCircle className="spin" size={22} aria-hidden="true" />
-          <strong>Loading the player universe</strong>
-          <span>Reading the current research artifact and source directory.</span>
+          <strong>Loading players</strong>
+          <span>Loading current stats and career projections.</span>
         </div>
       ) : null}
 
@@ -304,13 +307,13 @@ export function ProspectBoard({
             <thead>
               <tr>
                 <th scope="col">Rank</th>
-                <th scope="col">Player / stage</th>
-                <th scope="col">Age / context</th>
-                <th scope="col">P(HOF caliber)</th>
-                <th scope="col">Player map</th>
-                <th scope="col">Final WAR</th>
-                <th scope="col">Arrival / actual</th>
-                <th scope="col">Confidence</th>
+                <th scope="col">Player / Oracle Score</th>
+                <th scope="col">Age / career stage</th>
+                <th scope="col">What the score ranks</th>
+                <th scope="col">Why it stands out</th>
+                <th scope="col">Career projection</th>
+                <th scope="col">Current path</th>
+                <th scope="col">Evidence</th>
                 <th scope="col"><span className="sr-only">Save</span></th>
               </tr>
             </thead>
@@ -321,11 +324,11 @@ export function ProspectBoard({
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const forecast = player.careerForecast
-                const hofProbability = forecast?.hofCaliberProbability ?? null
                 const mlbStage = isMlbStage(player.stage)
                 const chapter = forecast?.careerChapter
                 const alpha = eligibleAlphaSignal(player)
                 const playerMap = playerMapFor(player)
+                const oracleScore = oracleScoreFor(player)
                 const impact = !mlbStage ? player.milbImpactRanking ?? null : null
                 const rawAlpha = forecast?.alphaSignal
                 const chapterLabel = mlbStage
@@ -333,16 +336,13 @@ export function ProspectBoard({
                     ? chapter.label
                     : chapter ? 'Chapter withheld' : 'Chapter unavailable'
                   : developmentChapterLabel(player.level)
-                const displayedRank = alphaView
-                  ? alpha?.rank ?? impact?.rank ?? playerMap.scores.outcome.rank
-                  : forecast?.rank ?? null
-                const rankScope = alphaView
-                  ? impact
-                    ? `of ${impact.universeRows.toLocaleString()}`
-                    : alpha
-                      ? 'alpha'
-                      : playerMap.route === 'mlb' ? 'MLB outlook' : 'player map'
-                  : mlbStage ? 'MLB' : 'minors'
+                const displayedRank = oracleScore.rank
+                const rankScope = oracleScore.universe
+                  ? `of ${oracleScore.universe.toLocaleString()}`
+                  : playerMap.route === 'mlb' ? 'major leaguers' : 'prospects'
+                const evidenceDisplay = playerMap.route === 'milb'
+                  ? playerMap.scores.evidence.display.replace('pillars', 'data areas')
+                  : forecast?.confidenceState ?? 'Not available'
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -351,7 +351,7 @@ export function ProspectBoard({
                         {displayedRank ? `#${displayedRank}` : '—'}
                       </strong>
                       <small>
-                        {displayedRank ? rankScope : playerMap.stateLabel}
+                        {displayedRank ? rankScope : plainPlayerState(playerMap.state)}
                       </small>
                     </td>
                     <td>
@@ -361,12 +361,17 @@ export function ProspectBoard({
                         onClick={() => onSelect(player.id)}
                         aria-current={selected ? 'true' : undefined}
                       >
-                        <span className={`player-avatar player-avatar--${player.playerType.toLowerCase()}`}>
-                          {player.initials}
+                        <span
+                          className={`oracle-score-badge oracle-score-badge--${oracleScore.tone}`}
+                          aria-label={`Oracle Score ${oracleScore.display}`}
+                          title={oracleScore.explanation}
+                        >
+                          <strong>{oracleScore.display}</strong>
+                          <small>SCORE</small>
                         </span>
                         <span>
                           <span className="mobile-player-rank">
-                            {displayedRank ? `#${displayedRank} ${rankScope}` : playerMap.stateLabel}
+                            {displayedRank ? `Stage #${displayedRank} ${rankScope}` : 'Score pending'}
                           </span>
                           <strong className="player-name">{player.name}</strong>
                           <small>
@@ -384,33 +389,21 @@ export function ProspectBoard({
                       <small>{chapterLabel}</small>
                     </td>
                     <td>
-                      {hofProbability === null ? (
-                        <strong className="table-primary">—</strong>
-                      ) : (
-                        <span className={`probability-value tone-${probabilityTone(hofProbability * 100)}`}>
-                          {formatProbability(hofProbability)}
-                        </span>
-                      )}
-                      <small>
-                        {player.stage === 'pre_debut' && forecast
-                          ? 'research · 60m lower bound'
-                          : forecast?.publicationState ?? 'no career model'}
-                      </small>
+                      <strong className="table-primary">
+                        {mlbStage ? 'Hall-level career stats' : '5+ MLB WAR in 5 years'}
+                      </strong>
+                      <small>Stage rank, not a probability</small>
                     </td>
                     <td className="alpha-cell">
                       {alpha ? (
                         <>
                           <div className="alpha-cell-lead">
-                            <strong className="alpha-edge-value">
-                              {formatPercentagePointDelta(alpha.edge?.probabilityDelta ?? null)}
-                            </strong>
+                            <strong className="alpha-edge-value">Standout</strong>
                             <span className={`alpha-tier alpha-tier--${alpha.tier}`}>
-                              {alpha.tier === 'priority' ? 'model priority' : 'model watch'}
+                              {plainPlayerState(playerMap.state)}
                             </span>
                           </div>
-                          <small>
-                            {formatProbability(alpha.modeledProbability)} modeled vs {formatProbability(alpha.baseline?.probability ?? null)} base
-                          </small>
+                          <small>Career outlook clears the early-career upside checks</small>
                         </>
                       ) : impact ? (
                         <>
@@ -422,13 +415,13 @@ export function ProspectBoard({
                               )}
                             </strong>
                             <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
-                              {playerMap.stateLabel}
+                              {plainPlayerState(playerMap.state)}
                             </span>
                           </div>
                           <small>
-                            Impact #{impact.rank.toLocaleString()} · {player.milbAlphaSignal?.eligible
-                              ? `arrival #${player.milbAlphaSignal.rank?.toLocaleString() ?? '—'}`
-                              : 'arrival not confirmed'}
+                            Five-year rank #{impact.rank.toLocaleString()} · {player.milbAlphaSignal?.eligible
+                              ? `MLB arrival rank #${player.milbAlphaSignal.rank?.toLocaleString() ?? '—'}`
+                              : 'MLB arrival not yet confirmed'}
                           </small>
                         </>
                       ) : (
@@ -440,24 +433,33 @@ export function ProspectBoard({
                                 : playerMap.scores.evidence.display}
                             </strong>
                             <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
-                              {playerMap.stateLabel}
+                              {plainPlayerState(playerMap.state)}
                             </span>
                           </div>
                           <small>
                             {mlbStage
                               ? rawAlpha?.status === 'research'
-                                ? 'Terminal outlook mapped · Alpha gate not triggered'
+                                ? 'Career outlook scored · no standout signal yet'
                                 : alphaMissLabel(player)
-                              : 'Direct impact rank unavailable · evidence retained'}
+                              : 'More data needed before an Oracle Score is assigned'}
                           </small>
                         </>
                       )}
                     </td>
                     <td>
-                      <strong className="table-primary">
-                        {formatWar(forecast?.finalCareerWar?.p50 ?? null)}
-                      </strong>
-                      <small>P50 · P90 {formatWar(forecast?.finalCareerWar?.p90 ?? null)}</small>
+                      {mlbStage ? (
+                        <>
+                          <strong className="table-primary">
+                            {formatWar(forecast?.finalCareerWar?.p50 ?? null)}
+                          </strong>
+                          <small>Middle estimate · high case {formatWar(forecast?.finalCareerWar?.p90 ?? null)}</small>
+                        </>
+                      ) : (
+                        <>
+                          <strong className="table-primary">In development</strong>
+                          <small>Direct minor-to-career model is not ready</small>
+                        </>
+                      )}
                     </td>
                     <td>
                       {mlbStage ? (
@@ -467,24 +469,18 @@ export function ProspectBoard({
                         </>
                       ) : (
                         <>
-                          <strong className="table-primary">
-                            {player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : 'Withheld'}
-                          </strong>
+                          <strong className="table-primary">{player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : 'Not confirmed'}</strong>
                           <small>
                             {player.milbAlphaSignal?.rank
-                              ? 'frozen arrival-anomaly rank'
-                              : 'arrival confidence not calibrated'}
+                              ? 'MLB arrival signal rank'
+                              : 'Model has not confirmed near-term MLB arrival'}
                           </small>
                         </>
                       )}
                     </td>
                     <td>
-                      <strong className="table-primary confidence-value">{confidenceLabel(player)}</strong>
-                      <small>
-                        {forecast?.confidenceScore === null || !forecast
-                          ? 'score withheld'
-                          : `${formatProbability(forecast.confidenceScore)} evidence`}
-                      </small>
+                      <strong className="table-primary confidence-value">{evidenceDisplay}</strong>
+                      <small>{playerMap.route === 'milb' ? 'current stat coverage' : 'support behind the career outlook'}</small>
                     </td>
                     <td>
                       <button
@@ -512,7 +508,7 @@ export function ProspectBoard({
           <span>
             {filters.stage === 'MLB'
               ? 'Adjust the search or role filters.'
-              : 'Adjust the search or cohort filters.'}
+              : 'Adjust the search or player filters.'}
           </span>
         </div>
       ) : null}

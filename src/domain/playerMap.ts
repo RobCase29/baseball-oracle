@@ -53,6 +53,17 @@ export interface PlayerMapSignal {
   detail: string
 }
 
+export interface PlayerMapOracleScore {
+  value: number | null
+  scale: 'stage_rank_percentile'
+  route: PlayerMapRoute
+  rank: number | null
+  universe: number | null
+  target: string | null
+  asOf: string | null
+  definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score'
+}
+
 export interface PlayerMapProfile {
   version: typeof PLAYER_MAP_VERSION
   asOf: string | null
@@ -63,6 +74,7 @@ export interface PlayerMapProfile {
   stateLabel: string
   archetype: string
   summary: string
+  oracleScore: PlayerMapOracleScore
   scores: {
     outcome: PlayerMapScore
     readiness: PlayerMapScore
@@ -207,6 +219,11 @@ function percentileDisplay(value: number | null): string {
   return `P${value.toFixed(digits)}`
 }
 
+function roundedOracleValue(value: number | null): number | null {
+  if (value === null) return null
+  return value >= 99 ? Math.round(value * 10) / 10 : Math.round(value)
+}
+
 function rankDisplay(rank: number | null, universe: number | null): string {
   if (rank === null) return 'Not confirmed'
   return universe === null
@@ -216,6 +233,26 @@ function rankDisplay(rank: number | null, universe: number | null): string {
 
 function score(input: PlayerMapScore): PlayerMapScore {
   return input
+}
+
+function oracleScore(
+  route: PlayerMapRoute,
+  value: number | null,
+  rank: number | null,
+  universe: number | null,
+  target: string | null,
+  asOf: string | null,
+): PlayerMapOracleScore {
+  return {
+    value: roundedOracleValue(value),
+    scale: 'stage_rank_percentile',
+    route,
+    rank,
+    universe,
+    target,
+    asOf,
+    definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+  }
 }
 
 function uniqueTraits(traits: PlayerMapInputTrait[]): PlayerMapTrait[] {
@@ -374,6 +411,14 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
     stateLabel: stateLabels[state],
     archetype: minorArchetype(strengths, risks),
     summary: `${player.name} ${outlookText}. Current evidence is ${evidenceState}.${strengthText}${riskText}`,
+    oracleScore: oracleScore(
+      'milb',
+      impactValue,
+      impact?.rank ?? null,
+      impact?.universeRows ?? null,
+      impact?.target.id ?? null,
+      impact?.frozenAsOf ?? null,
+    ),
     scores: {
       outcome: score({
         key: 'outcome',
@@ -461,6 +506,17 @@ function buildMinorMap(player: PlayerMapInput): PlayerMapProfile {
 function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): PlayerMapProfile {
   const forecast = player.careerForecast
   const chapter = forecast?.careerChapter?.status === 'research' ? forecast.careerChapter : null
+  const currentTraits = uniqueTraits(player.metrics)
+  const currentStrengths = currentTraits
+    .filter((trait) => trait.percentile >= 80)
+    .toSorted((left, right) => right.percentile - left.percentile)
+    .slice(0, 3)
+  const currentRisks = currentTraits
+    .filter((trait) => trait.percentile <= 20)
+    .toSorted((left, right) => left.percentile - right.percentile)
+    .slice(0, 3)
+  const bestCurrentTrait = currentTraits
+    .toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
   const rank = forecast?.rank ?? null
   const universe = context.mlbUniverse ?? null
   const outlookValue = ordinalPercentile(rank, universe)
@@ -499,11 +555,21 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
       detail: `The completed-season career chapter is ${chapter?.trajectoryState ?? 'rising'}.`,
     })
   }
+  if (bestCurrentTrait && bestCurrentTrait.percentile >= 80) {
+    signals.push({
+      code: 'trait_corroborated',
+      label: 'Current performance corroboration',
+      detail: `${bestCurrentTrait.label} is in the top 20% of the current role group.`,
+    })
+  }
 
   const outlookText = rank === null
     ? 'does not have a supported terminal-outcome rank'
     : `ranks ${rankDisplay(rank, universe)} on the current MLB terminal-outcome route`
   const paceText = paceValue === null ? '' : ` Historical WAR pace is ${percentileDisplay(paceValue)}.`
+  const currentText = bestCurrentTrait === null
+    ? ''
+    : ` Current ${bestCurrentTrait.label.toLocaleLowerCase('en-US')} is ${percentileDisplay(bestCurrentTrait.percentile)}.`
 
   return {
     version: PLAYER_MAP_VERSION,
@@ -514,7 +580,15 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     state,
     stateLabel: stateLabels[state],
     archetype: chapter ? `${chapter.label} / ${chapter.trajectoryState}` : 'MLB profile',
-    summary: `${player.name} ${outlookText}.${paceText} Evidence confidence remains ${forecast?.confidenceState ?? 'withheld'}.`,
+    summary: `${player.name} ${outlookText}.${paceText}${currentText} Evidence confidence remains ${forecast?.confidenceState ?? 'withheld'}.`,
+    oracleScore: oracleScore(
+      'mlb',
+      outlookValue,
+      rank,
+      universe,
+      'hof-caliber-point-in-time-jaws-v1',
+      forecast?.asOf ?? null,
+    ),
     scores: {
       outcome: score({
         key: 'outcome',
@@ -557,12 +631,14 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
       }),
       bestTrait: score({
         key: 'best_trait',
-        label: 'Current trait evidence',
-        value: null,
-        display: 'Not ingested',
+        label: 'Current-season performance',
+        value: bestCurrentTrait?.percentile ?? null,
+        display: bestCurrentTrait ? percentileDisplay(bestCurrentTrait.percentile) : 'Not available',
         scale: 'descriptive_percentile',
-        status: 'withheld',
-        basis: 'The current MLB preview does not yet include observed tracking metrics',
+        status: bestCurrentTrait ? 'observed' : 'withheld',
+        basis: bestCurrentTrait
+          ? `${bestCurrentTrait.label} (${bestCurrentTrait.value ?? 'value unavailable'})`
+          : 'Current role-relative performance is not available',
         target: null,
         rank: null,
         universe: null,
@@ -582,16 +658,16 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
         asOf: forecast?.asOf ?? null,
       }),
     },
-    strengths: [],
-    risks: [],
+    strengths: currentStrengths,
+    risks: currentRisks,
     signals,
     missingEvidence: [
       ...(!forecast ? ['Supported terminal forecast'] : []),
-      'Current MLB tracking metrics',
+      ...(!bestCurrentTrait ? ['Current MLB performance'] : []),
     ],
     nextEvidence: [
       'Next completed-season Career Oracle snapshot',
-      'Current MLB performance and tracking ingestion',
+      ...(!bestCurrentTrait ? ['Current MLB performance and tracking ingestion'] : []),
     ],
     marketIndependent: true,
     marketInputsIncluded: false,

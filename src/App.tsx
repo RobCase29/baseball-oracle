@@ -24,9 +24,16 @@ import {
   filterAndSortPlayers,
   stageCoverageForPlayers,
 } from './lib/forecast'
+import {
+  LEGACY_WATCHLIST_STORAGE_KEY,
+  loadStoredWatchlist,
+  mergeRefreshedWatchlist,
+  serializeWatchlist,
+  WATCHLIST_STORAGE_KEY,
+  watchlistIdBatches,
+} from './lib/watchlist'
 
 const PAGE_SIZE = 50
-const WATCHLIST_STORAGE_KEY = 'baseball-oracle.real-watchlist.v3'
 
 const ValidationDashboard = lazy(() =>
   import('./components/ValidationDashboard').then((module) => ({
@@ -58,13 +65,20 @@ function filtersFromUrl(): BoardFilters {
     : defaultFilters.level
   const validSorts = new Set<BoardFilters['sort']>([
     'alphaOpportunity',
-    'hofProbability',
     'nearTermImpact',
     'finalWar',
     'arrival36',
     'age',
     'name',
   ])
+  const resolvedSort = sort && validSorts.has(sort as BoardFilters['sort'])
+    ? sort as BoardFilters['sort']
+    : defaultFilters.sort
+  const stageSort = (resolvedStage === 'Minors' && (
+    resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
+  )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36')
+    ? defaultFilters.sort
+    : resolvedSort
 
   return {
     query: parameters.get('q') ?? defaultFilters.query,
@@ -75,9 +89,7 @@ function filtersFromUrl(): BoardFilters {
     level: resolvedStage === 'MLB' ? 'All' : resolvedLevel,
     team: parameters.get('team') ?? defaultFilters.team,
     position: parameters.get('position') ?? defaultFilters.position,
-    sort: sort && validSorts.has(sort as BoardFilters['sort'])
-      ? sort as BoardFilters['sort']
-      : defaultFilters.sort,
+    sort: stageSort,
   }
 }
 
@@ -102,34 +114,10 @@ const emptyMeta: PlayersResponseMeta = {
 }
 
 function loadWatchlist(): Map<string, PlayerRecord> {
-  try {
-    const stored = window.localStorage.getItem(WATCHLIST_STORAGE_KEY)
-    if (!stored) return new Map()
-    const parsed = JSON.parse(stored) as unknown
-    if (!Array.isArray(parsed)) return new Map()
-
-    const players = parsed.filter((candidate): candidate is PlayerRecord => {
-      if (typeof candidate !== 'object' || candidate === null) return false
-      const input = candidate as Record<string, unknown>
-      const coverage = input.coverage
-      const provenance = input.provenance
-      return (
-        typeof input.id === 'string' &&
-        typeof input.name === 'string' &&
-        typeof input.initials === 'string' &&
-        typeof input.stage === 'string' &&
-        typeof input.playerType === 'string' &&
-        'careerForecast' in input &&
-        Array.isArray(input.metrics) &&
-        typeof coverage === 'object' && coverage !== null &&
-        Array.isArray((coverage as Record<string, unknown>).levelsObserved) &&
-        typeof provenance === 'object' && provenance !== null
-      )
-    })
-    return new Map(players.map((player) => [player.id, player]))
-  } catch {
-    return new Map()
-  }
+  return loadStoredWatchlist(
+    window.localStorage.getItem(WATCHLIST_STORAGE_KEY),
+    window.localStorage.getItem(LEGACY_WATCHLIST_STORAGE_KEY),
+  )
 }
 
 function formatDataDate(value: string | null): string {
@@ -183,13 +171,58 @@ function App() {
   const [watchlist, setWatchlist] = useState<Map<string, PlayerRecord>>(loadWatchlist)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const deferredQuery = useDeferredValue(filters.query)
+  const isWatchlistView = activeView === 'Watchlist'
+  const watchlistIdsKey = useMemo(
+    () => Array.from(watchlist.keys()).toSorted().join('\n'),
+    [watchlist],
+  )
 
   useEffect(() => {
-    window.localStorage.setItem(
-      WATCHLIST_STORAGE_KEY,
-      JSON.stringify(Array.from(watchlist.values())),
-    )
+    try {
+      window.localStorage.setItem(
+        WATCHLIST_STORAGE_KEY,
+        serializeWatchlist(watchlist.values()),
+      )
+      window.localStorage.removeItem(LEGACY_WATCHLIST_STORAGE_KEY)
+    } catch {
+      // The in-memory watchlist remains usable if browser storage is unavailable.
+    }
   }, [watchlist])
+
+  useEffect(() => {
+    if (!watchlistIdsKey) return
+    const controller = new AbortController()
+    const batches = watchlistIdBatches(watchlistIdsKey.split('\n'))
+
+    void Promise.allSettled(batches.map(async (ids) => {
+      const parameters = new URLSearchParams({
+        ids: ids.join(','),
+        page: '1',
+        limit: ids.length.toString(),
+        sort: 'name',
+        stage: 'All',
+      })
+      const response = await fetch(`/api/players?${parameters.toString()}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+      if (!response.ok) throw new Error(`Player endpoint returned ${response.status}.`)
+      const result = (await response.json()) as unknown
+      if (!isPlayersResponse(result)) {
+        throw new Error('Player endpoint returned an unexpected response.')
+      }
+      return result.items.map(normalizePlayerRecord)
+    })).then((results) => {
+      if (controller.signal.aborted) return
+      const refreshed = results.flatMap((result) => (
+        result.status === 'fulfilled' ? result.value : []
+      ))
+      if (refreshed.length === 0) return
+      setWatchlist((current) => mergeRefreshedWatchlist(current, refreshed))
+    })
+
+    return () => controller.abort()
+  }, [isWatchlistView, watchlistIdsKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -258,7 +291,6 @@ function App() {
     () => filterAndSortPlayers(Array.from(watchlist.values()), filters),
     [filters, watchlist],
   )
-  const isWatchlistView = activeView === 'Watchlist'
   const visiblePlayers = isWatchlistView ? savedPlayers : players
   const visiblePagination: PlayersPage = isWatchlistView
     ? {
@@ -341,6 +373,11 @@ function App() {
       ? `${selectedPlayer.careerForecast.careerChapter.featureSeason}-12-31T00:00:00.000Z`
       : null
   const evidenceBuildingCount = Math.max(0, visiblePagination.total - mappedOutlookCount)
+  const statsClockLabel = filters.stage === 'Minors'
+    ? 'Minor-league stats checked'
+    : filters.stage === 'MLB'
+      ? 'MLB stats checked'
+      : 'All stats checked'
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -356,11 +393,11 @@ function App() {
         <div className="topbar">
           <div className="topbar-context">
             <CircleDot size={14} aria-hidden="true" />
-            <span>Professional baseball · stage-specific career outcomes</span>
+            <span>Professional baseball · projected career upside</span>
           </div>
           <div className="topbar-meta">
-            <span><CalendarDays size={14} aria-hidden="true" /> Current stats {formatDataDate(meta.dataAsOf)}</span>
-            <span><History size={14} aria-hidden="true" /> Model snapshot {formatDataDate(modelVintage)}</span>
+            <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataDate(meta.dataAsOf)}</span>
+            <span><History size={14} aria-hidden="true" /> Score data through {formatDataDate(modelVintage)}</span>
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
@@ -371,7 +408,7 @@ function App() {
                   ? 'Source unavailable'
                   : topbarStatus === 'degraded'
                     ? 'Partial source data'
-                    : 'Live source data'}
+                    : 'Sources connected'}
             </span>
           </div>
         </div>
@@ -388,17 +425,17 @@ function App() {
           <main className="research-workspace">
             <header className="workspace-header board-workspace-header">
               <div>
-                <span className="eyebrow">BASEBALL DECISION INTELLIGENCE</span>
-                <h1>{isWatchlistView ? 'Watchlist' : 'Player Radar'}</h1>
+                <span className="eyebrow">PLAYER FORECASTS</span>
+                <h1>{isWatchlistView ? 'Watchlist' : 'Player Rankings'}</h1>
                 <p>
                   {isWatchlistView
-                    ? 'Saved player snapshots, evidence states, and research-only career outcomes.'
-                    : 'Scan stage-specific career upside, isolate unusual development paths, and inspect the evidence before committing a player to the watchlist.'}
+                    ? 'Saved players, current Oracle Scores, and the stats behind each outlook.'
+                    : 'Start with the Oracle Score, then inspect the upside, readiness, and evidence behind each player.'}
                 </p>
               </div>
               <div className="snapshot-id">
-                <span>RESEARCH STATE</span>
-                <strong>{meta.targetVersion ?? 'Career model pending'}</strong>
+                <span>MODEL STATUS</span>
+                <strong>{meta.targetVersion ? 'Research predictions' : 'Model update pending'}</strong>
               </div>
             </header>
 
@@ -412,17 +449,17 @@ function App() {
 
             <section className="overview-strip" aria-label="Board summary">
               <div>
-                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'MATCHING COHORT'}</span>
+                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'MATCHING PLAYERS'}</span>
                 <strong>{visiblePagination.total.toLocaleString()}</strong>
-                <small>{isWatchlistView ? `${watchlist.size} saved total` : 'one row per available player record'}</small>
+                <small>{isWatchlistView ? `${watchlist.size} saved total` : 'after the selected filters'}</small>
               </div>
               <div>
-                <span>OUTLOOK SCORED</span>
+                <span>ORACLE SCORES</span>
                 <strong>{mappedOutlookCount.toLocaleString()}</strong>
                 <small>
                   {evidenceBuildingCount > 0
-                    ? `${evidenceBuildingCount.toLocaleString()} matching profiles still evidence-building`
-                    : 'stage-specific outcome rank available'}
+                    ? `${evidenceBuildingCount.toLocaleString()} players still need more model data`
+                    : 'every matching player has a score'}
                 </small>
               </div>
               <div>
@@ -432,8 +469,8 @@ function App() {
                   {isWatchlistView
                     ? 'stage mix in matching watchlist'
                     : statcastCoverage > 0
-                      ? `${statcastCoverage} loaded with tracking data`
-                      : 'stage coverage in current artifact'}
+                      ? `${statcastCoverage} with current tracking stats`
+                      : 'players available at each stage'}
                 </small>
               </div>
               <div>
@@ -472,7 +509,7 @@ function App() {
                   <span>
                     {isWatchlistView
                       ? 'Save a real player from the board to begin a watchlist.'
-                      : 'Choose a record from the current cohort.'}
+                      : 'Choose a player to see the full outlook.'}
                   </span>
                 </div>
               )}

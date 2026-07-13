@@ -29,8 +29,8 @@ import {
   isMlbStage,
   stageLabel,
 } from '../lib/forecast'
-import { ProbabilityRing } from './ProbabilityRing'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
+import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
 
 const CareerArcChart = lazy(() =>
   import('./CareerArcChart').then((module) => ({ default: module.CareerArcChart })),
@@ -555,18 +555,13 @@ function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; foreca
 }
 
 function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
-  const hofProbability = forecast.hofCaliberProbability
+  const oracleScore = oracleScoreFor(player)
   const stageValue = isMlbStage(player.stage)
     ? formatWar(forecast.finalJaws?.p50 ?? null)
-    : player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : '—'
-  const stageMetric = isMlbStage(player.stage) ? 'FINAL JAWS' : 'ARRIVAL ANOMALY RANK'
-  const rankLabel = forecast.rank
-    ? isMlbStage(player.stage)
-      ? `#${forecast.rank} among current MLB`
-      : `#${forecast.rank} career bridge rank`
-    : forecast.hofCaliberProbability === null
-      ? 'Rank withheld'
-      : 'Rank unavailable'
+    : player.milbImpactRanking?.rank ? `#${player.milbImpactRanking.rank}` : '—'
+  const stageMetric = isMlbStage(player.stage)
+    ? 'HALL BENCHMARK PROGRESS'
+    : 'FIVE-YEAR IMPACT RANK'
 
   return (
     <>
@@ -574,76 +569,73 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
           <strong>
-            {forecast.releaseEligible ? 'Locked Career Oracle forecast' : 'Career Oracle research preview · not release eligible'}
+            {forecast.releaseEligible ? 'Tested career forecast' : 'Research career estimate'}
           </strong>
           <span>
-            Hall caliber is a statistical career standard, not a prediction of election. MLB and minor ranks use separate universes; confidence never changes rank.
+            Oracle Score is the ranked outcome to compare. The career range is still being tested and is not a Hall of Fame election forecast.
           </span>
         </div>
       </div>
 
       <section className="forecast-metrics career-forecast-metrics" aria-label="Career forecast summary">
         <div className="metric-tile metric-tile--reach">
-          {hofProbability === null ? (
-            <div className="probability-withheld"><CircleDashed size={22} aria-hidden="true" /><span>Withheld</span></div>
-          ) : (
-            <ProbabilityRing value={hofProbability * 100} label="HOF CALIBER" />
-          )}
+          <span
+            className={`oracle-score-badge oracle-score-badge--large oracle-score-badge--${oracleScore.tone}`}
+            aria-label={`Oracle Score ${oracleScore.display}`}
+          >
+            <strong>{oracleScore.display}</strong>
+            <small>SCORE</small>
+          </span>
           <div className="metric-detail">
-            <span>{isMlbStage(player.stage) ? 'UNCONDITIONAL OUTCOME' : '60M LOWER-BOUND OUTCOME'}</span>
-            <strong>{rankLabel}</strong>
-            <small>{forecast.publicationState} · {forecast.lineage.targetVersion}</small>
+            <span>ORACLE RANK</span>
+            <strong>{oracleScore.rankLabel}</strong>
+            <small>{oracleScore.outcomeLabel} · completed-season model</small>
           </div>
         </div>
         <div className="metric-tile">
           <span className="metric-label">FINAL CAREER WAR</span>
           <strong className="metric-number">{formatWar(forecast.finalCareerWar?.p50 ?? null)}</strong>
-          <small>P10 {formatWar(forecast.finalCareerWar?.p10 ?? null)} · P90 {formatWar(forecast.finalCareerWar?.p90 ?? null)}</small>
+          <small>Model range {formatWar(forecast.finalCareerWar?.p10 ?? null)} to {formatWar(forecast.finalCareerWar?.p90 ?? null)}</small>
         </div>
         <div className="metric-tile">
-          <span className="metric-label">PEAK-SEVEN WAR</span>
+          <span className="metric-label">BEST 7 SEASONS</span>
           <strong className="metric-number">{formatWar(forecast.peakSevenWar?.p50 ?? null)}</strong>
-          <small>P10 {formatWar(forecast.peakSevenWar?.p10 ?? null)} · P90 {formatWar(forecast.peakSevenWar?.p90 ?? null)}</small>
+          <small>Model range {formatWar(forecast.peakSevenWar?.p10 ?? null)} to {formatWar(forecast.peakSevenWar?.p90 ?? null)}</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">{stageMetric}</span>
           <strong className="metric-number">{stageValue}</strong>
           <small>
             {isMlbStage(player.stage)
-              ? `P90 ${formatWar(forecast.finalJaws?.p90 ?? null)} · standard ${formatWar(forecast.hofStandard?.jaws ?? null)}`
-              : 'frozen ordinal evidence · raw probability withheld'}
+              ? `High case ${formatWar(forecast.finalJaws?.p90 ?? null)} · Hall benchmark ${formatWar(forecast.hofStandard?.jaws ?? null)} on the combined career measure`
+              : 'Ranks projected MLB impact through 2030; no Hall probability is shown'}
           </small>
         </div>
       </section>
 
-      <AlphaRadarPanel player={player} forecast={forecast} />
-
       <section className="confidence-strip" aria-label="Forecast confidence">
         <Gauge size={17} aria-hidden="true" />
         <div>
-          <strong>{forecast.confidenceState} confidence</strong>
+          <strong>{forecast.confidenceState} evidence quality</strong>
           <span>
-            {forecast.confidenceScore === null ? 'Score withheld' : `${formatProbability(forecast.confidenceScore)} evidence confidence`}
-            {forecast.intervalWidth === null ? '' : ` · ${forecast.intervalWidth.toFixed(1)} WAR P10–P90 width`}
+            {forecast.intervalWidth === null
+              ? 'Based on available completed-season history'
+              : `${forecast.intervalWidth.toFixed(1)} WAR between low and high cases`}
           </span>
         </div>
-        <p>Confidence describes evidence coverage and uncertainty. It is never multiplied into the ranking probability.</p>
+        <p>This describes how much evidence supports the estimate. It does not change the player’s rank.</p>
       </section>
-
-      <CareerChapterPanel player={player} forecast={forecast} />
-
-      <ForecastDecomposition player={player} forecast={forecast} />
 
       <section className="dossier-section career-section" aria-labelledby="career-title">
         <div className="section-heading-row">
           <div>
-            <span className="eyebrow">RECORDED + TERMINAL DISTRIBUTION</span>
-            <h2 id="career-title">Career value trajectory</h2>
+            <span className="eyebrow">CAREER HISTORY + PROJECTION</span>
+            <h2 id="career-title">Projected career arc</h2>
           </div>
           <div className="chart-key" aria-hidden="true">
-            <span><i className="key-terminal-range" />Terminal P10–P90</span>
-            <span><i className="key-terminal-mid" />P25–P75</span>
-            <span><i className="key-terminal-median" />P50</span>
+            <span><i className="key-terminal-range" />Wide range</span>
+            <span><i className="key-terminal-mid" />Middle range</span>
+            <span><i className="key-terminal-median" />Midpoint</span>
             <span><i className="key-actual" />Recorded</span>
           </div>
         </div>
@@ -654,17 +646,22 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
         ) : (
           <div className="chart-empty">
             <CircleDashed size={20} aria-hidden="true" />
-            <span>Age-by-age career paths are not present in this research artifact.</span>
+            <span>An age-by-age career path is not available for this player yet.</span>
           </div>
         )}
       </section>
 
-      <div className="dossier-columns forecast-detail-columns">
+      <details className="advanced-model-details">
+        <summary>Advanced forecast details</summary>
+        <AlphaRadarPanel player={player} forecast={forecast} />
+        <CareerChapterPanel player={player} forecast={forecast} />
+        <ForecastDecomposition player={player} forecast={forecast} />
+        <div className="dossier-columns forecast-detail-columns">
         <section className="dossier-section" aria-labelledby="standard-title">
           <div className="section-heading-row">
             <div>
-              <span className="eyebrow">FROZEN TARGET</span>
-              <h2 id="standard-title">Hall-caliber reference</h2>
+              <span className="eyebrow">CAREER BENCHMARK</span>
+              <h2 id="standard-title">Hall of Fame benchmark</h2>
             </div>
             <ShieldCheck size={18} aria-hidden="true" />
           </div>
@@ -673,11 +670,11 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
               <div><dt>Standard</dt><dd>{forecast.hofStandard.label}</dd></div>
               <div><dt>Role / position</dt><dd>{forecast.hofStandard.roleOrPosition ?? 'Role fallback'}</dd></div>
               <div><dt>Career WAR</dt><dd>{formatWar(forecast.hofStandard.careerWar)}</dd></div>
-              <div><dt>Peak-seven WAR</dt><dd>{formatWar(forecast.hofStandard.peakSevenWar)}</dd></div>
-              <div><dt>JAWS</dt><dd>{formatWar(forecast.hofStandard.jaws)}</dd></div>
+              <div><dt>Best 7 seasons</dt><dd>{formatWar(forecast.hofStandard.peakSevenWar)}</dd></div>
+              <div><dt>Combined benchmark (JAWS)</dt><dd>{formatWar(forecast.hofStandard.jaws)}</dd></div>
             </dl>
           ) : (
-            <p className="section-empty">The target version is pinned, but its component reference values are not included in this preview.</p>
+            <p className="section-empty">The benchmark details are not available for this player.</p>
           )}
         </section>
 
@@ -694,10 +691,10 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
               {forecast.warnings.map((warning) => <li key={warning}>{warningLabel(warning, forecast)}</li>)}
             </ul>
           ) : (
-            <p className="section-empty">No player-specific warning was included. The research-only publication state still applies.</p>
+            <p className="section-empty">No additional player-specific warning was included.</p>
           )}
         </section>
-      </div>
+        </div>
 
       {forecast.drivers.length > 0 ? (
         <section className="dossier-section evidence-section" aria-labelledby="evidence-title">
@@ -733,7 +730,8 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
             })}
           </div>
         </section>
-      ) : null}
+        ) : null}
+      </details>
     </>
   )
 }
@@ -810,7 +808,8 @@ export function PlayerDossier({
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
-  const impactRank = player.stage === 'pre_debut' ? player.milbImpactRanking?.rank ?? null : null
+  const playerMap = playerMapFor(player)
+  const oracleScore = oracleScoreFor(player)
   const organization = player.organization ?? player.organizationCode ?? 'Organization unavailable'
   const externalIds = Object.entries(player.provenance.externalIds).filter(([, value]) => value !== null)
   const cohort = player.provenance.cohort
@@ -819,24 +818,23 @@ export function PlayerDossier({
     <article id="player-dossier" className="player-dossier" aria-labelledby="player-name">
       <header className="dossier-header">
         <div className="dossier-identity">
-          <span className={`player-avatar player-avatar--large player-avatar--${player.playerType.toLowerCase()}`}>
-            {player.initials}
+          <span
+            className={`oracle-score-badge oracle-score-badge--large oracle-score-badge--${oracleScore.tone}`}
+            aria-label={`Oracle Score ${oracleScore.display}`}
+            title={oracleScore.explanation}
+          >
+            <strong>{oracleScore.display}</strong>
+            <small>SCORE</small>
           </span>
           <div>
             <div className="identity-line">
               <span className="eyebrow">
-                {impactRank
-                  ? `#${impactRank} MILB FIVE-YEAR IMPACT RANK`
-                  : forecast?.rank
-                    ? isMlbStage(player.stage)
-                      ? `#${forecast.rank} MLB HALL-CALIBER RANK`
-                      : `#${forecast.rank} MINORS CAREER BRIDGE RANK`
-                  : forecast?.hofCaliberProbability != null
-                    ? 'CURRENT RANK UNAVAILABLE'
-                    : 'CAREER FORECAST WITHHELD'}
+                {oracleScore.rank === null
+                  ? 'ORACLE SCORE PENDING'
+                  : `${oracleScore.rankLabel.toLocaleUpperCase()} · ${oracleScore.outcomeLabel.toLocaleUpperCase()}`}
               </span>
               <span className="source-badge">
-                {forecast?.publicationState ?? 'Observed only'}
+                {plainPlayerState(playerMap.state)}
               </span>
             </div>
             <h2 id="player-name">{player.name}</h2>
@@ -867,64 +865,66 @@ export function PlayerDossier({
         </div>
       </header>
 
-      <p className="player-summary">
-        {forecast?.summary ?? (forecast
-          ? (isMlbStage(player.stage)
-              ? `${player.name}'s research distribution combines recorded career evidence with an unconditional Hall-caliber outcome. It remains outside the release gate until prospective validation is complete.`
-              : `${player.name}'s research distribution combines the frozen 60-month arrival endpoint with an MLB debut-age career bridge. It is a lower-bound proxy and remains outside the release gate.`)
-          : `No validated Career Oracle outcome is available for this ${stageLabel(player.stage).toLocaleLowerCase()} record. Source evidence remains visible without substituting a composite provider score.`)}
-      </p>
-
       <PlayerMapScorecard player={player} />
 
-      <MilbAlphaRadarPanel player={player} />
-
-      {forecast ? (
+      {forecast && isMlbStage(player.stage) ? (
         <CareerForecastPanel player={player} forecast={forecast} />
+      ) : player.stage === 'pre_debut' ? (
+        <section className="model-pending" aria-labelledby="prospect-career-model-title">
+          <CircleDashed size={20} aria-hidden="true" />
+          <div>
+            <span className="eyebrow">LONG-TERM OUTLOOK</span>
+            <h2 id="prospect-career-model-title">Full career model in development</h2>
+            <p>Oracle Score ranks projected five-year MLB impact. We do not show a Hall of Fame percentage or full career arc until a direct minor-to-career model passes forward tests.</p>
+          </div>
+        </section>
       ) : (
         <section className="model-pending" aria-labelledby="model-pending-title">
           <CircleDashed size={20} aria-hidden="true" />
           <div>
-            <span className="eyebrow">UNCONDITIONAL CAREER OUTCOME</span>
-            <h2 id="model-pending-title">Career forecast withheld</h2>
-            <p>Hall-caliber probability, final WAR, peak value, and rank remain blank until a locked career artifact contains this player.</p>
+            <span className="eyebrow">CAREER OUTLOOK</span>
+            <h2 id="model-pending-title">Career estimate not available yet</h2>
+            <p>This player does not have enough matched completed-season data for a career projection.</p>
           </div>
         </section>
       )}
 
-      {player.stage === 'pre_debut' && player.researchEstimate ? (
-        <ResearchArrivalPanel player={player} />
+      {player.stage === 'pre_debut' ? (
+        <details className="advanced-model-details">
+          <summary>Advanced prospect model details</summary>
+          <MilbAlphaRadarPanel player={player} />
+          {player.researchEstimate ? <ResearchArrivalPanel player={player} /> : null}
+        </details>
       ) : null}
 
-      <section className="observed-metrics" aria-label="Observed player context">
+      <section className="observed-metrics" aria-label="Current player information">
         <div className="metric-tile">
           <span className="metric-label">CAREER STAGE</span>
           <strong className="metric-text">{stageLabel(player.stage)}</strong>
           <small>{player.level ?? 'level unavailable'}</small>
         </div>
         <div className="metric-tile">
-          <span className="metric-label">AGE / ROLE</span>
+          <span className="metric-label">AGE / PLAYER TYPE</span>
           <strong className="metric-number">{player.age ?? '—'}</strong>
           <small>{player.playerType} · {player.position ?? 'position unavailable'}</small>
         </div>
         <div className="metric-tile">
           <span className="metric-label">{player.opportunity?.label.toUpperCase() ?? 'OPPORTUNITY'}</span>
           <strong className="metric-number">{player.opportunity?.value ?? '—'}</strong>
-          <small>{player.provenance.season ?? 'Current'} observed season</small>
+          <small>{player.provenance.season ?? 'Current'} season</small>
         </div>
         <div className="metric-tile">
-          <span className="metric-label">EVIDENCE COVERAGE</span>
+          <span className="metric-label">AVAILABLE DATA</span>
           <strong className="metric-text">{player.coverage.label}</strong>
           <small>{player.coverage.levelsObserved.join(', ') || player.level || 'context unavailable'}</small>
         </div>
       </section>
 
-      <div className="dossier-columns dossier-columns--observed">
-        <section className="dossier-section traits-section" aria-labelledby="traits-title">
+      <section className="dossier-section traits-section" aria-labelledby="traits-title">
           <div className="section-heading-row">
             <div>
-              <span className="eyebrow">SUPPORTING EVIDENCE</span>
-              <h2 id="traits-title">Observed player shape</h2>
+              <span className="eyebrow">CURRENT STATS</span>
+              <h2 id="traits-title">Performance profile</h2>
             </div>
             <ShieldCheck size={18} aria-hidden="true" />
           </div>
@@ -945,21 +945,23 @@ export function PlayerDossier({
               ))}
             </div>
           ) : (
-            <p className="section-empty">No source measurements were bundled with this player record.</p>
+            <p className="section-empty">Current performance stats are not available for this player yet.</p>
           )}
           <div className="tag-list" aria-label="Data coverage">
             {player.coverage.hasStatcast ? <span>Statcast metrics</span> : null}
-            {player.coverage.hasTraditional ? <span>Traditional metrics</span> : null}
-            {player.coverage.hasComplementaryRows ? <span>Merged source variants</span> : null}
+            {player.coverage.hasTraditional ? <span>Season stats</span> : null}
+            {player.coverage.hasComplementaryRows ? <span>Multiple sources matched</span> : null}
             {player.coverage.levelsObserved.map((level) => <span key={level}>{level}</span>)}
           </div>
-        </section>
+      </section>
 
+      <details className="advanced-model-details data-source-details">
+        <summary>Data sources and record details</summary>
         <section className="dossier-section provenance-section" aria-labelledby="provenance-title">
           <div className="section-heading-row">
             <div>
-              <span className="eyebrow">LINEAGE</span>
-              <h2 id="provenance-title">Profile provenance</h2>
+              <span className="eyebrow">SOURCE DETAILS</span>
+              <h2 id="provenance-title">Where this data came from</h2>
             </div>
             <Database size={18} aria-hidden="true" />
           </div>
@@ -968,25 +970,21 @@ export function PlayerDossier({
             <div><dt>Dataset</dt><dd>{player.provenance.dataset}</dd></div>
             <div><dt>Season</dt><dd>{player.provenance.season ?? 'Unavailable'}</dd></div>
             <div><dt>Retrieved</dt><dd>{formatRetrievedAt(player.provenance.retrievedAt)}</dd></div>
-            {cohort ? <div><dt>Cohort</dt><dd>Ages {cohort.minAge}–{cohort.maxAge} · Q{cohort.pitchQualifier}</dd></div> : null}
-            <div><dt>Identity</dt><dd>{externalIds.length > 0 ? `${externalIds.length} source ID${externalIds.length === 1 ? '' : 's'}` : 'Canonical preview ID'}</dd></div>
+            {cohort ? <div><dt>Comparison group</dt><dd>Ages {cohort.minAge}–{cohort.maxAge} · standard playing-time filter</dd></div> : null}
+            <div><dt>Player match</dt><dd>{externalIds.length > 0 ? `${externalIds.length} verified source ID${externalIds.length === 1 ? '' : 's'}` : 'Internal player record'}</dd></div>
           </dl>
           {player.coverage.organizationConflict ? (
             <p className="provenance-note"><Info size={14} aria-hidden="true" /> Organization differs across merged source variants.</p>
           ) : null}
         </section>
-      </div>
+      </details>
 
       <footer className="dossier-footer">
         <span><CalendarClock size={14} aria-hidden="true" /> As of {formatRetrievedAt(forecast?.asOf ?? player.provenance.retrievedAt)}</span>
         <span><Layers3 size={14} aria-hidden="true" /> {stageLabel(player.stage)}</span>
         <span><Info size={14} aria-hidden="true" /> Research use only</span>
         <span className="footer-score">
-          Rank basis: {impactRank
-            ? 'completed-2025 five-year MLB impact rank'
-            : isMlbStage(player.stage)
-              ? 'current MLB P(HOF caliber)'
-              : 'live-minors career bridge proxy'}
+          Oracle Score: {oracleScore.display} · {oracleScore.rankLabel} for {oracleScore.outcomeLabel.toLocaleLowerCase()}
         </span>
       </footer>
     </article>

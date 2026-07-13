@@ -6,6 +6,15 @@
   "functions": {
     "api/admin/*.ts": {
       "maxDuration": 300
+    },
+    "api/cron/*.ts": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/refresh-current",
+      "schedule": "17 10 * * *"
+    }
+  ]
 }

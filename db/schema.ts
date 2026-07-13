@@ -23,6 +23,7 @@ const catalog = pgSchema('catalog')
 const raw = pgSchema('raw')
 const core = pgSchema('core')
 const ml = pgSchema('ml')
+const ops = pgSchema('ops')
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -104,6 +105,32 @@ export const ingestionRuns = raw.table(
     index('ingestion_dataset_started_idx').on(table.datasetId, table.startedAt),
     index('ingestion_status_started_idx').on(table.status, table.startedAt),
     check('ingestion_status_chk', sql`${table.status} in ('running', 'succeeded', 'failed', 'skipped')`),
+  ],
+)
+
+export const refreshRuns = ops.table(
+  'refresh_run',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    jobKey: text('job_key').notNull(),
+    triggerKind: text('trigger_kind').notNull(),
+    season: integer('season'),
+    status: text('status').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    codeCommit: text('code_commit').notNull(),
+    result: jsonb('result').$type<Record<string, unknown>>().notNull().default({}),
+    error: jsonb('error').$type<Record<string, unknown>>(),
+  },
+  (table) => [
+    uniqueIndex('refresh_run_one_running_job_uidx')
+      .on(table.jobKey)
+      .where(sql`${table.status} = 'running'`),
+    index('refresh_run_job_started_idx').on(table.jobKey, table.startedAt.desc()),
+    check('refresh_run_status_chk', sql`${table.status} in ('running', 'succeeded', 'partial', 'failed', 'skipped')`),
+    check('refresh_run_season_chk', sql`${table.season} is null or ${table.season} between 1871 and 2200`),
+    check('refresh_run_window_chk', sql`${table.finishedAt} is null or ${table.finishedAt} >= ${table.startedAt}`),
+    check('refresh_run_completion_chk', sql`(${table.status} = 'running' and ${table.finishedAt} is null) or (${table.status} <> 'running' and ${table.finishedAt} is not null)`),
   ],
 )
 

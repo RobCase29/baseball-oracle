@@ -2,8 +2,15 @@
 
 Baseball Oracle is a point-in-time research platform for two prediction problems:
 
-1. The probability that a professional minor-league player reaches MLB.
-2. The distribution of that player's remaining career outcomes, updated as new minor- and major-league evidence arrives.
+1. Which professional minor-league players have the strongest path to meaningful MLB impact.
+2. Which active major leaguers have the strongest remaining career path toward Hall of Fame-caliber statistics.
+
+The product now leads with one **Oracle Score** from 0 to 100. It is the rounded
+percentile of a player's stage-specific outcome rank: five-year MLB impact for
+minor leaguers and Hall of Fame-caliber career outlook for major leaguers. It is
+not a probability, a blend of supporting signals, or an investment-return score.
+The exact stage rank, target, model date, current stats, strengths, risks, and data
+coverage remain available beside it.
 
 The repository ships a working React research cockpit backed by authorized
 Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
@@ -12,6 +19,21 @@ profiles and 6,179 canonical pre-debut players after role and MLB-stage deduplic
 current 40-man-roster MLB players and 6,455 frozen prospect research forecasts.
 All career outputs are visibly research-only and use separate MLB and MiLB rank
 universes because their targets are not directly comparable.
+
+## Current data and model updates
+
+Production defines a daily 10:17 UTC refresh for all ten current Prospect Savant
+minor-league slices and the authorized Baseball-Reference current-season batting
+and pitching value pages. New MLB WAR, workload, and role-relative WAR percentile
+reach player profiles without silently changing the completed-season Oracle Score.
+`/api/health` reports the last source attempts, complete-slice coverage, scheduled
+job receipt, and separate current-data and model clocks.
+
+Model scoring remains a tested release rather than an automatic side effect of a
+source refresh. The current ranks use completed-2025 model features. The full
+July 2026 audit concludes that these models contain useful ranking signal but are
+not an ultimate champion; the registered larger tournament and data priorities are
+linked below.
 
 ## Run locally
 
@@ -110,11 +132,12 @@ The post-hoc 36-month diagnostic selected 223 players with 110 arrivals, but the
 external calibration and population-shift gates failed, so no probability is
 presented as validated confidence.
 
-The Minors `Alpha opportunity` view then orders arrival-eligible players with the
-separate probability-free `milb-impact-five-calendar-year-war-v1` rank. Its target
-is at least 5 total MLB WAR in 2026-2030. The champion produced 8.10x top-decile
-lift across player-purged forward folds, but extreme-tail calibration failed, so
-the public artifact exposes rank and cohort evidence while omitting player impact
+The default Minors Oracle Score orders every impact-ranked player with the
+probability-free `milb-impact-five-calendar-year-war-v1` rank; the separate MLB
+arrival check is supporting context and never controls that score. Its target is
+at least 5 total MLB WAR in 2026-2030. The champion produced 8.10x top-decile lift
+across player-purged forward folds, but extreme-tail calibration failed, so the
+public artifact exposes rank and comparison evidence while omitting player impact
 probabilities. Current raw traits remain descriptive corroboration only. See
 [MiLB Alpha model card](docs/MILB_ALPHA.md).
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
@@ -190,11 +213,11 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Alpha Radar / Oracle board:** dual-gated MiLB early-ceiling ranks and separate MLB ceiling anomalies, real players, stage/role/level filters, stage-specific ranks, pagination, and a browser-local watchlist.
-- **Player dossier:** probability-free five-year MiLB impact rank, arrival confirmation, age/workload/support gates, named raw-trait corroboration, MLB Alpha thesis, learned career chapter, career distributions, Hall standard, warnings, and lineage.
-- **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
-- **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
-- **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.
+- **Player rankings:** one primary Oracle Score, exact stage rank, real players, team/position/stage filters, current evidence, and a browser-local watchlist.
+- **Player dossier:** score explanation, current strengths and risks, current stats, an MLB career arc where supported, an honest prospect long-term-model status, and collapsible advanced details.
+- **Accuracy:** historical test results and failed checks, published without hiding weak spots.
+- **Model review:** a plain-language verdict, target-by-target evidence, testing rules, and the path to a champion model.
+- **Data updates:** daily-job status, MiLB and MLB completeness, source dates, and the completed season powering each score.
 
 Every model output remains lineage-bound and labeled with its publication state.
 In-season 2026 evidence is context only; scoring defaults to the latest complete
@@ -214,6 +237,9 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
+- [Daily data refresh and serving audit](docs/DATA_REFRESH.md)
+- [July 2026 model and data review](docs/audits/MODEL_AND_DATA_REVIEW_2026-07-13.md)
+- [Registered S-tier model tournament](modeling/config/s-tier-tournament-v1.json)
 
 ## Core principle
 

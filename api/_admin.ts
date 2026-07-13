@@ -8,7 +8,18 @@ function digest(value: string): Buffer {
 }
 
 export function hasValidIngestionAuthorization(request: IncomingMessage): boolean {
-  const expected = process.env.INGESTION_SECRET?.trim()
+  return hasValidBearerAuthorization(request, process.env.INGESTION_SECRET)
+}
+
+export function hasValidCronAuthorization(request: IncomingMessage): boolean {
+  return hasValidBearerAuthorization(request, process.env.CRON_SECRET)
+}
+
+function hasValidBearerAuthorization(
+  request: IncomingMessage,
+  expectedValue: string | undefined,
+): boolean {
+  const expected = expectedValue?.trim()
   const authorization = request.headers.authorization
   const header = Array.isArray(authorization) ? authorization[0] : authorization
   const provided = header?.startsWith('Bearer ') ? header.slice(7).trim() : ''

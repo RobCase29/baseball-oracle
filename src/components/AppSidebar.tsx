@@ -20,11 +20,11 @@ interface AppSidebarProps {
 }
 
 const navigation = [
-  { label: 'Board' as const, icon: BarChart3 },
-  { label: 'Watchlist' as const, icon: Star },
-  { label: 'Validation' as const, icon: ShieldCheck },
-  { label: 'Model lab' as const, icon: FlaskConical },
-  { label: 'Data health' as const, icon: Database },
+  { label: 'Board' as const, displayLabel: 'Rankings', icon: BarChart3 },
+  { label: 'Watchlist' as const, displayLabel: 'Watchlist', icon: Star },
+  { label: 'Validation' as const, displayLabel: 'Accuracy', icon: ShieldCheck },
+  { label: 'Model lab' as const, displayLabel: 'Model review', icon: FlaskConical },
+  { label: 'Data health' as const, displayLabel: 'Data updates', icon: Database },
 ]
 
 export function AppSidebar({
@@ -47,17 +47,17 @@ export function AppSidebar({
       </div>
 
       <nav className="sidebar-nav" aria-label="Workspace">
-        {navigation.map(({ label, icon: Icon }) => (
+        {navigation.map(({ label, displayLabel, icon: Icon }) => (
           <button
             className={activeView === label ? 'is-active' : ''}
             key={label}
             type="button"
             onClick={() => onChangeView(label)}
             aria-current={activeView === label ? 'page' : undefined}
-            title={label}
+            title={displayLabel}
           >
             <Icon size={18} aria-hidden="true" />
-            <span>{label}</span>
+            <span>{displayLabel}</span>
             {label === 'Watchlist' && watchlistCount > 0 ? (
               <small>{watchlistCount}</small>
             ) : null}
@@ -68,8 +68,8 @@ export function AppSidebar({
       <div className="sidebar-status">
         <span className="status-dot" aria-hidden="true" />
         <div>
-          <strong>Research build</strong>
-          <span>Real data · Research estimates</span>
+          <strong>Model in testing</strong>
+          <span>Real players · Daily data</span>
         </div>
       </div>
 

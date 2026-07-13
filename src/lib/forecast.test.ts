@@ -321,7 +321,7 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-arrival', 'lower-arrival'])
   })
 
-  it('sorts only eligible MLB alpha by empirical probability edge', () => {
+  it('sorts MLB watchlist players by the career outcome rank behind Oracle Score', () => {
     const alphaSignal = (delta: number, eligible = true): NonNullable<CareerForecast['alphaSignal']> => ({
       version: 'alpha-signal-v1',
       status: 'research',
@@ -381,17 +381,17 @@ describe('Oracle Board utilities', () => {
       makePlayer({
         id: 'lower-alpha',
         stage: 'early_mlb',
-        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.08) }),
+        careerForecast: makeForecast({ rank: 2, alphaSignal: alphaSignal(0.08) }),
       }),
       makePlayer({
         id: 'higher-alpha',
         stage: 'early_mlb',
-        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.2) }),
+        careerForecast: makeForecast({ rank: 1, alphaSignal: alphaSignal(0.2) }),
       }),
       makePlayer({
         id: 'failed-ceiling-gate',
         stage: 'early_mlb',
-        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.9, false) }),
+        careerForecast: makeForecast({ rank: 3, alphaSignal: alphaSignal(0.9, false) }),
       }),
       makePlayer({ id: 'minor-discovery' }),
     ]
@@ -400,7 +400,7 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-alpha', 'lower-alpha', 'failed-ceiling-gate', 'minor-discovery'])
   })
 
-  it('sorts dual-gated MiLB ceiling alpha by the probability-free impact rank', () => {
+  it('sorts MiLB players by the five-year impact rank behind Oracle Score', () => {
     const milbSignal = (rank: number) => ({
       status: 'research',
       eligible: true,

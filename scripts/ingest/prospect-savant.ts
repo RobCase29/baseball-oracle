@@ -28,7 +28,23 @@ export interface ProspectSavantSlice {
   maxAge: number
 }
 
+export interface ProspectSavantSemanticQuality {
+  observedRows: number
+  minimumValidFraction: number
+  requiredValidRows: number
+  supportedIdentifierRows: number
+  expectedCoreRows: number
+  validRows: number
+  roleCoreRule: 'hitter_batting_line' | 'pitcher_workload_and_rates'
+}
+
+export interface ParsedProspectSavantEnvelope {
+  envelope: ProspectSavantEnvelope
+  semanticQuality: ProspectSavantSemanticQuality
+}
+
 export const PROSPECT_SAVANT_PARSER_VERSION = 'prospect-savant-leaders-v1'
+export const PROSPECT_SAVANT_MINIMUM_VALID_FRACTION = 0.95
 export const PROSPECT_SAVANT_DEFAULT_API_BASE =
   'https://oriolebird.pythonanywhere.com/'
 
@@ -47,6 +63,107 @@ export const prospectSavantCohortDependentMetrics = [
   'power_agg',
   'd_agg',
 ] as const
+
+function nonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function finiteNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (!nonEmptyString(value)) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function positiveIdentifier(value: unknown): boolean {
+  const number = finiteNumber(value)
+  if (number !== null) return number !== 0
+  return nonEmptyString(value) && value !== '0'
+}
+
+function hasSupportedIdentifier(record: SourceRecord): boolean {
+  return (
+    positiveIdentifier(record.id) ||
+    positiveIdentifier(record.MinorMasterId) ||
+    positiveIdentifier(record.MLBAMId) ||
+    nonEmptyString(record.UPURL)
+  )
+}
+
+function hasExpectedCohortFields(
+  record: SourceRecord,
+  slice: ProspectSavantSlice,
+): boolean {
+  return (
+    nonEmptyString(record.name) &&
+    finiteNumber(record.age) !== null &&
+    finiteNumber(record.season) === slice.season &&
+    record.level === slice.level
+  )
+}
+
+function hasExpectedRoleCore(
+  record: SourceRecord,
+  slice: ProspectSavantSlice,
+): boolean {
+  if (!hasExpectedCohortFields(record, slice)) return false
+
+  if (slice.role === 'hitters') {
+    return ['pa', 'ba', 'obp', 'slg'].every(
+      (field) => finiteNumber(record[field]) !== null,
+    )
+  }
+
+  return (
+    finiteNumber(record.ip) !== null &&
+    (finiteNumber(record.pitches) !== null ||
+      finiteNumber(record.total_pitches) !== null) &&
+    finiteNumber(record.krate) !== null &&
+    finiteNumber(record.bbrate) !== null
+  )
+}
+
+export function assertProspectSavantSemantics(
+  records: readonly SourceRecord[],
+  slice: ProspectSavantSlice,
+): ProspectSavantSemanticQuality {
+  const supportedIdentifierRows = records.filter(hasSupportedIdentifier).length
+  const expectedCoreRows = records.filter((record) =>
+    hasExpectedRoleCore(record, slice),
+  ).length
+  const validRows = records.filter(
+    (record) =>
+      hasSupportedIdentifier(record) && hasExpectedRoleCore(record, slice),
+  ).length
+  const requiredValidRows = Math.max(
+    1,
+    Math.ceil(records.length * PROSPECT_SAVANT_MINIMUM_VALID_FRACTION),
+  )
+  const quality: ProspectSavantSemanticQuality = {
+    observedRows: records.length,
+    minimumValidFraction: PROSPECT_SAVANT_MINIMUM_VALID_FRACTION,
+    requiredValidRows,
+    supportedIdentifierRows,
+    expectedCoreRows,
+    validRows,
+    roleCoreRule:
+      slice.role === 'hitters'
+        ? 'hitter_batting_line'
+        : 'pitcher_workload_and_rates',
+  }
+
+  if (validRows < requiredValidRows) {
+    throw new Error(
+      `Prospect Savant ${slice.season} ${slice.level} ${slice.role} failed ` +
+        `the schema gate: ${validRows} of ${records.length} rows have a supported ` +
+        `player identifier and expected role fields; requires at least ` +
+        `${requiredValidRows} (identifiers ${supportedIdentifierRows}, role fields ` +
+        `${expectedCoreRows})`,
+    )
+  }
+
+  return quality
+}
 
 export function validateProspectSavantSlice(
   slice: ProspectSavantSlice,
@@ -93,8 +210,16 @@ export function buildProspectSavantLeadersUrl(
   return new URL(path, base.href.endsWith('/') ? base : `${base.href}/`).toString()
 }
 
-export function parseProspectSavantEnvelope(body: string): ProspectSavantEnvelope {
-  return prospectSavantEnvelopeSchema.parse(JSON.parse(body))
+export function parseProspectSavantEnvelope(
+  body: string,
+  slice: ProspectSavantSlice,
+): ParsedProspectSavantEnvelope {
+  validateProspectSavantSlice(slice)
+  const envelope = prospectSavantEnvelopeSchema.parse(JSON.parse(body))
+  return {
+    envelope,
+    semanticQuality: assertProspectSavantSemantics(envelope.data, slice),
+  }
 }
 
 function identifier(record: SourceRecord): string {
@@ -160,6 +285,21 @@ export function buildProspectSavantHistoricalSlices(options: {
   }
 
   return slices
+}
+
+export function buildProspectSavantCurrentSlices(season: number): ProspectSavantSlice[] {
+  return prospectSavantLevels.flatMap((level) =>
+    prospectSavantRoles.map((role) =>
+      validateProspectSavantSlice({
+        role,
+        level,
+        season,
+        pitchQualifier: 1,
+        minAge: 16,
+        maxAge: 40,
+      }),
+    ),
+  )
 }
 
 export async function fetchProspectSavantLeaders(url: string): Promise<Response> {

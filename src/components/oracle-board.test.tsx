@@ -429,16 +429,18 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Oracle Board' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Oracle Rankings' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minors' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'P(HOF caliber)' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Player map' })).toBeInTheDocument()
-    expect(screen.getByText('8.1%')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'What the score ranks' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Why it stands out' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Player / Oracle Score' })).toBeInTheDocument()
+    expect(screen.getByText('5+ MLB WAR in 5 years')).toBeInTheDocument()
+    expect(screen.getByText('Stage rank, not a probability')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('Profile only')).toBeInTheDocument()
-    expect(screen.getByText('Direct impact rank unavailable · evidence retained')).toBeInTheDocument()
-    expect(screen.getByText('Withheld')).toBeInTheDocument()
-    expect(screen.getByText('arrival confidence not calibrated')).toBeInTheDocument()
+    expect(screen.getAllByText('Stats only').length).toBeGreaterThan(0)
+    expect(screen.getByText('More data needed before an Oracle Score is assigned')).toBeInTheDocument()
+    expect(screen.getByText('Not confirmed')).toBeInTheDocument()
+    expect(screen.getByText('Model has not confirmed near-term MLB arrival')).toBeInTheDocument()
     expect(screen.queryByText('61.0%')).not.toBeInTheDocument()
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
     expect(screen.queryByText('Peer signal')).not.toBeInTheDocument()
@@ -526,7 +528,7 @@ describe('unified Oracle Board shell', () => {
     })
   })
 
-  it('shows model alpha and uses the eligible alpha rank without a narrow current-peer rank', () => {
+  it('shows a model signal while keeping the career-outcome stage rank primary', () => {
     render(
       <ProspectBoard
         players={[{
@@ -549,10 +551,11 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
-    expect(screen.getByText('+14.8 pp')).toBeInTheDocument()
-    expect(screen.getByText('model priority')).toBeInTheDocument()
-    expect(screen.getByText('#3')).toBeInTheDocument()
-    expect(screen.getByText('alpha')).toBeInTheDocument()
+    expect(screen.getByText('Standout')).toBeInTheDocument()
+    expect(screen.getByText('Career outlook clears the early-career upside checks')).toBeInTheDocument()
+    expect(screen.getByText('Strong model signal')).toBeInTheDocument()
+    expect(screen.getByText('#7')).toBeInTheDocument()
+    expect(screen.getByText('major leaguers')).toBeInTheDocument()
     expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
@@ -573,13 +576,14 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Prospect Rankings' })).toBeInTheDocument()
     expect(screen.getByText('Top <0.1%')).toBeInTheDocument()
-    expect(screen.getByText('Discovery')).toBeInTheDocument()
+    expect(screen.getByText('High upside, more proof needed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Oracle Score 100')).toBeInTheDocument()
     expect(screen.getByText('#3')).toBeInTheDocument()
     expect(screen.getByText('of 6,455')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Loaded player landscape' })).toBeInTheDocument()
-    expect(screen.getByText(/Impact #3 · arrival #5/u)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Prospect landscape' })).toBeInTheDocument()
+    expect(screen.getByText(/Five-year rank #3 · MLB arrival rank #5/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
   })
 
@@ -642,8 +646,9 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getAllByText('Aiva Arquette').length).toBeGreaterThan(0)
     expect(screen.getByText('Top 4.0%')).toBeInTheDocument()
-    expect(screen.getByText('Discovery')).toBeInTheDocument()
-    expect(screen.getByText('Impact #258 · arrival not confirmed')).toBeInTheDocument()
+    expect(screen.getByText('High upside, more proof needed')).toBeInTheDocument()
+    expect(screen.getByLabelText('Oracle Score 96')).toBeInTheDocument()
+    expect(screen.getByText('Five-year rank #258 · MLB arrival not yet confirmed')).toBeInTheDocument()
     expect(screen.queryByText('Not ranked')).not.toBeInTheDocument()
     expect(screen.queryByText('Not triggered')).not.toBeInTheDocument()
 
@@ -657,18 +662,18 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Oracle Player Map' })).toBeInTheDocument()
-    expect(screen.getByText('P96')).toBeInTheDocument()
-    expect(screen.getByText('Not confirmed')).toBeInTheDocument()
-    expect(screen.getByText('P84')).toBeInTheDocument()
-    expect(screen.getByText('P91')).toBeInTheDocument()
-    expect(screen.getByText('2 / 4 pillars')).toBeInTheDocument()
-    expect(screen.getByText('Ceiling / readiness split')).toBeInTheDocument()
-    expect(screen.getByText('Thin-data upside')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Five-year MLB impact' })).toBeInTheDocument()
+    expect(screen.getByText('A score of 96 puts Aiva Arquette above about 96% of scored minor-league players for five-year MLB impact.')).toBeInTheDocument()
+    expect(screen.getByText('Not yet confirmed')).toBeInTheDocument()
+    expect(screen.getByText('84th percentile')).toBeInTheDocument()
+    expect(screen.getByText('91st percentile')).toBeInTheDocument()
+    expect(screen.getByText('2 / 4 data areas')).toBeInTheDocument()
+    expect(screen.getByText('High upside, longer path')).toBeInTheDocument()
+    expect(screen.getByText('Early signal')).toBeInTheDocument()
     expect(screen.getAllByText('Whiff rate').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Walk rate').length).toBeGreaterThan(0)
-    expect(screen.getByText('28 PA to the sufficient current-sample threshold')).toBeInTheDocument()
-    expect(screen.getByText('No composite score.')).toBeInTheDocument()
+    expect(screen.getByText('28 more plate appearances for a fuller current-season sample')).toBeInTheDocument()
+    expect(screen.getByText('Rank, not a guarantee.')).toBeInTheDocument()
   })
 
   it('explains the MiLB impact rank, dual gates, and withheld tail probability in the dossier', () => {
@@ -735,7 +740,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getAllByText('Not passed')).toHaveLength(3)
   })
 
-  it('leads the dossier with unconditional career output and rank-independent confidence', () => {
+  it('keeps a full prospect career arc withheld until the direct model is ready', () => {
     render(
       <PlayerDossier
         player={player}
@@ -745,40 +750,16 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByText('60M LOWER-BOUND OUTCOME')).toBeInTheDocument()
-    expect(screen.getByText('#7 career bridge rank')).toBeInTheDocument()
-    expect(screen.getByText('#7 MINORS CAREER BRIDGE RANK')).toBeInTheDocument()
-    expect(screen.getByText('Moderate confidence')).toBeInTheDocument()
-    expect(screen.getByText(/never multiplied into the ranking probability/u)).toBeInTheDocument()
-    expect(screen.getByText('P(HOF caliber | MLB)')).toBeInTheDocument()
-    expect(screen.getByText('Research only.')).toBeInTheDocument()
-    expect(screen.getByText(/\+2\.4 JAWS support extension/u)).toBeInTheDocument()
-    expect(screen.getByText(/not observed player value/u)).toBeInTheDocument()
-    expect(screen.getByText(
-      "The comparison uses the player's career-to-date role/position standard and rebaselines if that classification changes.",
-    )).toBeInTheDocument()
-    expect(screen.getByText(/heuristic evidence and uncertainty summary/u)).toBeInTheDocument()
-    expect(screen.getByText(/does not inherit the tournament metrics/u)).toBeInTheDocument()
-    expect(screen.getByText(/P95\/P99 and elite-tail validation remain pending/u)).toBeInTheDocument()
-    expect(screen.getByText(/rebaselines the forecast if that classification changes/u)).toBeInTheDocument()
-    expect(screen.getByText(/partial-only scoring is unvalidated/u)).toBeInTheDocument()
-    expect(screen.getByText(/Partial-season statistics are context only/u)).toBeInTheDocument()
-    expect(screen.getByText(/latest completed-season feature state is stale/u)).toBeInTheDocument()
-    expect(screen.getByText(/No current MLB opportunity is observed/u)).toBeInTheDocument()
-    expect(screen.getByText(/young, high-performance distribution slice/u)).toBeInTheDocument()
-    expect(screen.getByText(/completed careers ending by 2007/u)).toBeInTheDocument()
-    expect(screen.getByText(/early-career peak-seven interval/u)).toBeInTheDocument()
-    expect(screen.getByText(/retrospective development holdout/u)).toBeInTheDocument()
-    expect(screen.getByText(/Prospective validation is not complete/u)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Career chapter' })).toBeInTheDocument()
+    expect(screen.getAllByText('Stage rank unavailable').length).toBeGreaterThan(0)
+    expect(screen.getByText('ORACLE SCORE PENDING')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Full career model in development' })).toBeInTheDocument()
+    expect(screen.getByText(/Oracle Score ranks projected five-year MLB impact/u)).toBeInTheDocument()
+    expect(screen.getByText(/do not show a Hall of Fame percentage or full career arc/u)).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()
+    expect(screen.queryByText('FINAL CAREER WAR')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Projected career arc' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
     expect(screen.getByText('Impact rank unavailable')).toBeInTheDocument()
-    expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('ARRIVAL RANK')).toBeInTheDocument()
-    expect(screen.queryByText('P(MLB · 36M)')).not.toBeInTheDocument()
-    expect(screen.getByText(/MLB career chapter begins only after supported completed-season/u)).toBeInTheDocument()
-    expect(screen.queryByText('Ahead of the curve')).not.toBeInTheDocument()
-    expect(screen.queryByText('#4 of 512 · moderate reliability')).not.toBeInTheDocument()
   })
 
   it('separates a learned career chapter and near-term event from the Hall outcome', () => {
@@ -850,7 +831,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('img', { name: 'HOF CALIBER: 16%' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /HOF CALIBER/u })).not.toBeInTheDocument()
+    expect(screen.getByText('ORACLE RANK')).toBeInTheDocument()
     expect(screen.getByText('Priority model alpha')).toBeInTheDocument()
     expect(screen.getByText('+14.8 pp')).toBeInTheDocument()
     expect(screen.getByText(/16\.0% modeled vs 1\.2% historical/u)).toBeInTheDocument()
@@ -863,7 +845,8 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('P(3Y IMPACT)')).toBeInTheDocument()
     expect(screen.getAllByText('43.0%')).toHaveLength(3)
     expect(screen.getByText('HISTORICAL WAR PACE')).toBeInTheDocument()
-    expect(screen.getAllByText('P99.1')).toHaveLength(2)
+    expect(screen.getAllByText('P99.1')).toHaveLength(1)
+    expect(screen.getByText('99th percentile')).toBeInTheDocument()
     expect(screen.getByText('+0.8 WAR')).toBeInTheDocument()
     expect(screen.getByText(/67\.0% continuation/u)).toBeInTheDocument()
     expect(screen.getByText(/Through 2025 · age 22 · MLB season 1 · 5\.0 season WAR/u)).toBeInTheDocument()
@@ -888,8 +871,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByText('CURRENT RANK UNAVAILABLE')).toBeInTheDocument()
-    expect(screen.getByText('Rank unavailable')).toBeInTheDocument()
+    expect(screen.getByText('ORACLE SCORE PENDING')).toBeInTheDocument()
+    expect(screen.getAllByText('Stage rank unavailable').length).toBeGreaterThan(0)
     expect(screen.queryByText('CAREER FORECAST WITHHELD')).not.toBeInTheDocument()
   })
 })

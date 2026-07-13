@@ -99,11 +99,10 @@ export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha
   return { arrivalSignal, impactRanking, tier }
 }
 
-export function alphaOpportunityEdge(player: PlayerRecord): number | null {
-  const mlbEdge = eligibleAlphaSignal(player)?.edge?.probabilityDelta
-  if (mlbEdge !== undefined) return mlbEdge
-  const milbAlpha = eligibleMilbCeilingAlpha(player)
-  return milbAlpha ? milbAlpha.impactRanking.rankPercentile / 100 : null
+export function oracleOutcomeRank(player: PlayerRecord): number | null {
+  return player.stage === 'pre_debut'
+    ? player.milbImpactRanking?.rank ?? null
+    : player.careerForecast?.rank ?? null
 }
 
 export function filterAndSortPlayers(
@@ -171,50 +170,12 @@ export function filterAndSortPlayers(
         )
       }
       if (filters.sort === 'alphaOpportunity') {
-        const leftMilb = eligibleMilbCeilingAlpha(left)
-        const rightMilb = eligibleMilbCeilingAlpha(right)
-        if (left.stage === 'pre_debut' && right.stage === 'pre_debut') {
-          return (
-            compareNullableNumber(
-              leftMilb?.impactRanking.rank ?? null,
-              rightMilb?.impactRanking.rank ?? null,
-              'ascending',
-            ) ||
-            compareNullableNumber(
-              left.milbImpactRanking?.rank ?? null,
-              right.milbImpactRanking?.rank ?? null,
-              'ascending',
-            ) ||
-            compareNullableNumber(
-              leftMilb?.arrivalSignal.rank ?? null,
-              rightMilb?.arrivalSignal.rank ?? null,
-              'ascending',
-            ) ||
-            compareNullableNumber(
-              left.careerForecast?.rank ?? null,
-              right.careerForecast?.rank ?? null,
-              'ascending',
-            ) ||
-            compareNullableNumber(
-              leftMilb?.arrivalSignal.ageContext?.percentileWithinRoleLevel ?? null,
-              rightMilb?.arrivalSignal.ageContext?.percentileWithinRoleLevel ?? null,
-              'ascending',
-            ) ||
-            left.id.localeCompare(right.id)
-          )
-        }
         return (
           compareNullableNumber(
-            alphaOpportunityEdge(left),
-            alphaOpportunityEdge(right),
-            'descending',
+            oracleOutcomeRank(left),
+            oracleOutcomeRank(right),
+            'ascending',
           ) ||
-          compareNullableNumber(
-            nearTermImpactProbability(left),
-            nearTermImpactProbability(right),
-            'descending',
-          ) ||
-          compareNullableNumber(left.age, right.age, 'ascending') ||
           left.id.localeCompare(right.id)
         )
       }

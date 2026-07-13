@@ -46,8 +46,11 @@ const playerSorts = [
   'name',
 ] as const
 const playerViews = ['full', 'map'] as const
+const maximumPlayerIds = 50
+const canonicalPlayerIdPattern = /^[A-Za-z0-9][A-Za-z0-9:._~'@/+-]{0,199}$/u
 const queryParameterNames = new Set([
   'q',
+  'ids',
   'stage',
   'playerType',
   'level',
@@ -73,6 +76,15 @@ const querySchema = z.object({
     .max(80)
     .refine(hasNoControlCharacters)
     .default(''),
+  ids: z
+    .string()
+    .trim()
+    .max(10_000)
+    .transform((value) => value.split(',').map((entry) => entry.trim()))
+    .refine((values) => values.length <= maximumPlayerIds)
+    .refine((values) => values.every((value) => canonicalPlayerIdPattern.test(value)))
+    .refine((values) => new Set(values).size === values.length)
+    .default([]),
   stage: z.enum(playerStages).default('All'),
   playerType: z.enum(playerTypes).default('All'),
   level: z.enum(playerLevels).default('All'),
@@ -108,6 +120,7 @@ type PlayerView = (typeof playerViews)[number]
 
 export interface PlayerQuery {
   q: string
+  ids: string[]
   stage: PlayerStage
   playerType: PlayerType
   level: PlayerLevel
@@ -206,12 +219,27 @@ interface MinorCandidateRow {
   pitches: DatabaseNumber
 }
 
+interface CurrentMlbValueRow {
+  bbref_id: string
+  season: DatabaseNumber
+  observed_role: 'Hitter' | 'Pitcher' | 'Two-way'
+  b_pa: DatabaseNumber
+  b_war: DatabaseNumber
+  p_ip: string | null
+  p_games: DatabaseNumber
+  p_games_started: DatabaseNumber
+  p_war: DatabaseNumber
+  total_war: DatabaseNumber
+  current_war_percentile: DatabaseNumber
+  known_at: string
+}
+
 interface ObservedMetric {
   key: string
   label: string
   value: string
   percentile: number | null
-  source: 'Prospect Savant'
+  source: 'Prospect Savant' | 'Baseball-Reference'
 }
 
 const publicCache = 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
@@ -277,6 +305,7 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
 
     const input = {
       q: readSingleParameter(url.searchParams, 'q'),
+      ids: readSingleParameter(url.searchParams, 'ids'),
       stage: readSingleParameter(url.searchParams, 'stage'),
       playerType: readSingleParameter(url.searchParams, 'playerType'),
       level: readSingleParameter(url.searchParams, 'level'),
@@ -374,6 +403,7 @@ function metric(
   label: string,
   value: string | null,
   percentile: DatabaseNumber = null,
+  source: ObservedMetric['source'] = 'Prospect Savant',
 ): ObservedMetric | null {
   if (value === null) return null
   return {
@@ -381,8 +411,48 @@ function metric(
     label,
     value,
     percentile: percentileOrNull(percentile),
-    source: 'Prospect Savant',
+    source,
   }
+}
+
+function currentMlbMetrics(row: CurrentMlbValueRow | null): ObservedMetric[] {
+  if (!row) return []
+  const war = (value: DatabaseNumber): string | null => {
+    const parsed = numberOrNull(value)
+    return parsed === null ? null : `${parsed.toFixed(1)} WAR`
+  }
+  const innings = row.p_ip ? `${row.p_ip} IP` : null
+  return [
+    metric(
+      'current-season-war',
+      'Current-season WAR',
+      war(row.total_war),
+      row.current_war_percentile,
+      'Baseball-Reference',
+    ),
+    metric('current-season-batting-war', 'Batting WAR', war(row.b_war), null, 'Baseball-Reference'),
+    metric('current-season-pitching-war', 'Pitching WAR', war(row.p_war), null, 'Baseball-Reference'),
+    metric('current-season-pa', 'Plate appearances', formatCount(row.b_pa), null, 'Baseball-Reference'),
+    metric('current-season-ip', 'Innings pitched', innings, null, 'Baseball-Reference'),
+    metric('current-season-starts', 'Games started', formatCount(row.p_games_started), null, 'Baseball-Reference'),
+  ].filter((entry): entry is ObservedMetric => entry !== null)
+}
+
+function currentMlbOpportunity(
+  player: CareerPreviewPlayer,
+  row: CurrentMlbValueRow | null,
+): { label: string; value: string } | null {
+  if (!row) return null
+  if (player.playerType === 'Hitter') {
+    const value = formatCount(row.b_pa)
+    return value === null ? null : { label: 'PA', value }
+  }
+  if (player.playerType === 'Pitcher') {
+    return row.p_ip ? { label: 'IP', value: row.p_ip } : null
+  }
+  const pa = formatCount(row.b_pa)
+  if (pa && row.p_ip) return { label: 'PA / IP', value: `${pa} / ${row.p_ip}` }
+  return pa ? { label: 'PA', value: pa } : row.p_ip ? { label: 'IP', value: row.p_ip } : null
 }
 
 export function shouldSuppressSlashLine(
@@ -545,6 +615,7 @@ function previewPlayerRecord(
   player: CareerPreviewPlayer,
   preview: CareerOraclePreview,
   careerForecast: CareerForecast,
+  currentStats: CurrentMlbValueRow | null,
   buildContext: PlayerMapBuildContext,
 ) {
   const levelsObserved = [...new Set(
@@ -567,24 +638,32 @@ function previewPlayerRecord(
     psScore: null,
     psPercentile: null,
     agePercentile: null,
-    opportunity: null,
-    metrics: [],
+    opportunity: currentMlbOpportunity(player, currentStats),
+    metrics: currentMlbMetrics(currentStats),
     coverage: {
-      label: 'Career Oracle preview evidence',
+      label: currentStats
+        ? 'Current MLB value statistics and career model'
+        : 'Career model evidence; current value statistics unavailable',
       hasStatcast: false,
-      hasTraditional: false,
+      hasTraditional: currentStats !== null,
       hasComplementaryRows: false,
       levelsObserved,
-      sourceVariants: [],
+      sourceVariants: currentStats
+        ? [`baseball-reference-current-${currentStats.observed_role.toLowerCase()}`]
+        : [],
       organizationConflict: false,
       cohortMismatch: false,
     },
     provenance: {
-      source: 'Baseball Oracle',
-      dataset: 'Career Oracle research preview',
-      datasetKey: preview.modelVersion,
-      season: null,
-      retrievedAt: isoDate(preview.asOf),
+      source: currentStats ? 'Baseball-Reference + Baseball Oracle' : 'Baseball Oracle',
+      dataset: currentStats
+        ? 'Current MLB value and Career Oracle research preview'
+        : 'Career Oracle research preview',
+      datasetKey: currentStats
+        ? `baseball-reference-current-value+${preview.modelVersion}`
+        : preview.modelVersion,
+      season: currentStats ? roundedNumber(currentStats.season, 0) : null,
+      retrievedAt: isoDate(currentStats?.known_at ?? preview.asOf),
       cohort: null,
       externalIds: player.externalIds,
     },
@@ -637,6 +716,13 @@ function databaseIdentifier(value: DatabaseNumber): string | null {
 function previewMlbamId(player: CareerPreviewPlayer): string | null {
   const value = player.externalIds.mlbam ?? player.externalIds.mlbamId
   return databaseIdentifier(value)
+}
+
+function previewBbrefId(player: CareerPreviewPlayer): string | null {
+  const value = player.externalIds.bbref ?? player.externalIds.baseballReference
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return /^[a-z0-9][a-z0-9_.'-]{2,9}\d{2}$/u.test(trimmed) ? trimmed : null
 }
 
 function isMlbPreviewPlayer(
@@ -727,77 +813,16 @@ export function sortUnifiedCandidates(
       )
     }
     if (sort === 'alphaOpportunity') {
-      const leftAlpha = left.source === 'mlb' &&
-          left.careerForecast?.alphaSignal?.status === 'research' &&
-          left.careerForecast.alphaSignal.eligible
-        ? left.careerForecast.alphaSignal
-        : null
-      const rightAlpha = right.source === 'mlb' &&
-          right.careerForecast?.alphaSignal?.status === 'research' &&
-          right.careerForecast.alphaSignal.eligible
-        ? right.careerForecast.alphaSignal
-        : null
-      const leftMilbAlpha = left.source === 'minor' && left.milbAlphaSignal?.eligible
-        ? left.milbAlphaSignal
-        : null
-      const rightMilbAlpha = right.source === 'minor' && right.milbAlphaSignal?.eligible
-        ? right.milbAlphaSignal
-        : null
-      const leftMilbImpact = leftMilbAlpha &&
-          left.milbImpactRanking && left.milbImpactRanking.rankPercentile >= 90
-        ? left.milbImpactRanking
-        : null
-      const rightMilbImpact = rightMilbAlpha &&
-          right.milbImpactRanking && right.milbImpactRanking.rankPercentile >= 90
-        ? right.milbImpactRanking
-        : null
-
-      if (left.source === 'minor' && right.source === 'minor') {
-        return (
-          compareNullableNumber(leftMilbImpact?.rank ?? null, rightMilbImpact?.rank ?? null, 'ascending') ||
-          compareNullableNumber(
-            left.milbImpactRanking?.rank ?? null,
-            right.milbImpactRanking?.rank ?? null,
-            'ascending',
-          ) ||
-          compareNullableNumber(leftMilbAlpha?.rank ?? null, rightMilbAlpha?.rank ?? null, 'ascending') ||
-          compareNullableNumber(
-            left.careerForecast?.rank ?? null,
-            right.careerForecast?.rank ?? null,
-            'ascending',
-          ) ||
-          compareNullableNumber(
-            leftMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
-            rightMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
-            'ascending',
-          ) ||
-          idTie
-        )
-      }
       return (
         compareNullableNumber(
-          leftAlpha?.edge?.probabilityDelta ?? leftMilbAlpha?.primaryEdge.probabilityDelta ?? null,
-          rightAlpha?.edge?.probabilityDelta ?? rightMilbAlpha?.primaryEdge.probabilityDelta ?? null,
-          'descending',
+          left.source === 'minor'
+            ? left.milbImpactRanking?.rank ?? null
+            : left.careerForecast?.rank ?? null,
+          right.source === 'minor'
+            ? right.milbImpactRanking?.rank ?? null
+            : right.careerForecast?.rank ?? null,
+          'ascending',
         ) ||
-        compareNullableNumber(
-          leftAlpha?.nearTermImpact?.probability ?? (
-            left.source === 'mlb'
-              ? left.careerForecast?.careerChapter?.status === 'research'
-                ? left.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
-                : null
-              : left.arrivalProbability36
-          ),
-          rightAlpha?.nearTermImpact?.probability ?? (
-            right.source === 'mlb'
-              ? right.careerForecast?.careerChapter?.status === 'research'
-                ? right.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
-                : null
-              : right.arrivalProbability36
-          ),
-          'descending',
-        ) ||
-        compareNullableNumber(left.age, right.age, 'ascending') ||
         idTie
       )
     }
@@ -1030,6 +1055,7 @@ export function matchesQuery(
   query: PlayerQuery,
   omittedFacet?: FacetFilter,
 ): boolean {
+  const idMatches = query.ids.length === 0 || query.ids.includes(candidate.id)
   const needle = normalizeSearchText(query.q)
   const textMatches = needle.length === 0 || [
     candidate.name,
@@ -1048,7 +1074,7 @@ export function matchesQuery(
   ].some((value) => value?.trim().toLocaleLowerCase('en-US') === teamNeedle)
   const positionMatches = omittedFacet === 'position' || query.position === null ||
     playerPositionTokens(candidate.position).includes(query.position)
-  return textMatches && stageMatches && typeMatches && levelMatches && teamMatches && positionMatches
+  return idMatches && textMatches && stageMatches && typeMatches && levelMatches && teamMatches && positionMatches
 }
 
 interface PlayerFacetOption {
@@ -1123,6 +1149,29 @@ function latestIso(values: Array<string | null>): string | null {
   return timestamps.length === 0 ? null : new Date(Math.max(...timestamps)).toISOString()
 }
 
+export function scoredMlbUniverse(candidates: UnifiedBoardCandidate[]): number {
+  return candidates.filter((candidate) => (
+    candidate.source === 'mlb' &&
+    candidate.careerForecast?.rank !== null &&
+    candidate.careerForecast?.rank !== undefined
+  )).length
+}
+
+export function stageRelevantDataAsOf(
+  stage: PlayerStage,
+  minorDataAsOf: string | null,
+  currentMlbDataAsOf: string | null,
+): string | null {
+  if (stage === 'Minors') return minorDataAsOf
+  if (stage === 'MLB') return currentMlbDataAsOf
+
+  const available = [minorDataAsOf, currentMlbDataAsOf].filter(
+    (value): value is string => value !== null && Number.isFinite(Date.parse(value)),
+  )
+  if (available.length !== 2) return null
+  return new Date(Math.min(...available.map((value) => Date.parse(value)))).toISOString()
+}
+
 function pageDetails(total: number, query: PlayerQuery) {
   return {
     page: query.page,
@@ -1171,11 +1220,15 @@ function degradedStaticResponse(
   )
   const offset = (query.page - 1) * query.limit
   const page = candidates.slice(offset, offset + query.limit)
-  const context = { mlbUniverse: universe.length, minorUniverse: 0 }
+  const context = {
+    mlbUniverse: scoredMlbUniverse(universe),
+    minorUniverse: 0,
+  }
   const records = page.map((candidate) => previewPlayerRecord(
     candidate.previewPlayer!,
     preview,
     candidate.careerForecast!,
+    null,
     context,
   ))
   sendJson(request, response, 200, {
@@ -1186,7 +1239,7 @@ function degradedStaticResponse(
       source: 'Baseball Oracle',
       dataset: 'Career Oracle MLB research preview',
       season: null,
-      dataAsOf: isoDate(preview.asOf),
+      dataAsOf: null,
       coverage: 'MLB preview only; the live minor-league directory is unavailable',
       forecastStatus: preview.releaseEligible ? 'published' : 'research_only',
       researchCoverage: candidates.filter(
@@ -1294,14 +1347,19 @@ export default async function handler(
     )
     const pageCandidates = filtered.slice(offset, offset + query.limit)
     const playerMapContext = {
-      mlbUniverse: mlb.length,
+      mlbUniverse: scoredMlbUniverse(mlb),
       minorUniverse: canonicalMinors.length,
     }
     const minorPageIds = pageCandidates
       .map((candidate) => candidate.minorProfileId)
       .filter((value): value is string => value !== null)
+    const mlbPageBbrefIds = pageCandidates
+      .filter((candidate) => candidate.source === 'mlb')
+      .map((candidate) => previewBbrefId(candidate.previewPlayer!))
+      .filter((value): value is string => value !== null)
 
-    const rowResult = minorPageIds.length === 0 ? [] : await sql`
+    const [rowResult, currentMlbResult, currentMlbAsOfResult] = await Promise.all([
+      minorPageIds.length === 0 ? Promise.resolve([]) : sql`
       SELECT
         profile_id,
         source_player_id,
@@ -1370,13 +1428,41 @@ export default async function handler(
         age_percentile
       FROM app.player_directory_snapshot
       WHERE profile_id = ANY(${minorPageIds}::text[])
-    `
+      `,
+      mlbPageBbrefIds.length === 0 ? Promise.resolve([]) : sql`
+        SELECT
+          bbref_id,
+          season,
+          observed_role,
+          b_pa,
+          b_war,
+          p_ip,
+          p_games,
+          p_games_started,
+          p_war,
+          total_war,
+          current_war_percentile,
+          known_at::text AS known_at
+        FROM app.current_mlb_value_snapshot
+        WHERE bbref_id = ANY(${mlbPageBbrefIds}::text[])
+      `,
+      sql`
+        SELECT max(known_at)::text AS known_at
+        FROM app.current_mlb_value_snapshot
+      `,
+    ])
     const minorRowsById = new Map(
       (rowResult as unknown as PlayerRow[]).map((row) => [row.profile_id, row]),
     )
     if (minorRowsById.size !== minorPageIds.length) {
       throw new Error('Selected minor-league profiles changed during the directory request')
     }
+    const currentMlbRowsById = new Map(
+      (currentMlbResult as unknown as CurrentMlbValueRow[]).map((row) => [row.bbref_id, row]),
+    )
+    const currentMlbDataAsOf = isoDate(
+      (currentMlbAsOfResult as unknown as Array<{ known_at: string | null }>)[0]?.known_at,
+    )
 
     const items = pageCandidates.map((candidate) => {
       if (candidate.source === 'mlb') {
@@ -1384,6 +1470,7 @@ export default async function handler(
           candidate.previewPlayer!,
           careerPreview!,
           candidate.careerForecast!,
+          currentMlbRowsById.get(previewBbrefId(candidate.previewPlayer!) ?? '') ?? null,
           playerMapContext,
         )
       }
@@ -1409,13 +1496,15 @@ export default async function handler(
         items: responseItems(items, query.view),
         page: pageDetails(filtered.length, query),
         meta: {
-          source: careerPreview ? 'Baseball Oracle + Prospect Savant' : 'Prospect Savant',
+          source: careerPreview
+            ? 'Baseball Oracle + Baseball-Reference + Prospect Savant'
+            : 'Prospect Savant',
           dataset: careerPreview
             ? 'Current Career Oracle universe'
             : 'Minor League Leaders',
           season: Number.isFinite(minorSeason) ? minorSeason : null,
-          dataAsOf: latestIso([minorDataAsOf, careerPreview ? isoDate(careerPreview.asOf) : null]),
-          coverage: 'Current MLB preview plus live canonical minor-league players; research only',
+          dataAsOf: stageRelevantDataAsOf(query.stage, minorDataAsOf, currentMlbDataAsOf),
+          coverage: 'Current MLB value evidence, current roster census, and live canonical minor-league players; model scores remain completed-season research',
           forecastStatus: careerPreview?.releaseEligible ? 'published' : 'research_only',
           researchCoverage: currentUniverse.filter(
             (candidate) => candidate.careerForecast?.hofCaliberProbability != null,

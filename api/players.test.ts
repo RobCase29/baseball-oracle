@@ -13,8 +13,10 @@ import {
   parseQuery,
   playerMapFeedItem,
   playerPositionTokens,
+  scoredMlbUniverse,
   sortBoardCandidates,
   sortUnifiedCandidates,
+  stageRelevantDataAsOf,
   shouldSuppressSlashLine,
   type PlayerQuery,
   type UnifiedBoardCandidate,
@@ -188,6 +190,7 @@ function candidate(
 function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
   return {
     q: '',
+    ids: [],
     stage: 'All',
     playerType: 'All',
     level: 'All',
@@ -214,6 +217,27 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players'))?.view).toBe('full')
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
+  })
+
+  it('accepts a bounded exact player-ID batch and rejects malformed batches', () => {
+    const request = (url: string) => ({ url }) as Parameters<typeof parseQuery>[0]
+    const ids = ['bbref:judgeaa01', 'prospect-savant:mlbam:804109:hitters']
+
+    expect(parseQuery(request(`/api/players?ids=${ids.join(',')}`))?.ids).toEqual(ids)
+    expect(parseQuery(request('/api/players?ids=bbref:judgeaa01,bbref:judgeaa01'))).toBeNull()
+    expect(parseQuery(request('/api/players?ids=bbref%3Ajudgeaa01%2C'))).toBeNull()
+    expect(parseQuery(request('/api/players?ids=bbref%3Ajudgeaa01%2C%3Cscript%3E'))).toBeNull()
+    expect(parseQuery(request(`/api/players?ids=${Array.from(
+      { length: 51 },
+      (_, index) => `bbref:player${index.toString().padStart(4, '0')}`,
+    ).join(',')}`))).toBeNull()
+  })
+
+  it('matches an exact ID before applying the regular board filters', () => {
+    const player = candidate('bbref:judgeaa01', { name: 'Aaron Judge' })
+
+    expect(matchesQuery(player, query({ ids: ['bbref:judgeaa01'] }))).toBe(true)
+    expect(matchesQuery(player, query({ ids: ['bbref:troutmi01'] }))).toBe(false)
   })
 
   it('matches player search without requiring diacritics', () => {
@@ -253,6 +277,32 @@ describe('unified player ordering', () => {
     expect(byId.get('minor-second')?.careerForecast?.lineage.rankUniverse).toBe('live_milb_research_proxy')
     expect(byId.get('mlb-first')?.careerForecast?.lineage.rankUniverse).toBe('current_mlb')
     expect(byId.get('withheld')?.careerForecast).toBeNull()
+  })
+
+  it('uses only scored MLB players as the Oracle Score rank universe', () => {
+    const scored = candidate('scored', {
+      source: 'mlb',
+      stage: 'established_mlb',
+      minorProfileId: null,
+    })
+    const unscored = candidate('unscored', {
+      source: 'mlb',
+      stage: 'established_mlb',
+      minorProfileId: null,
+      careerForecast: { ...forecast(0.1, 10, 50), rank: null },
+    })
+
+    expect(scoredMlbUniverse([scored, unscored, candidate('minor')])).toBe(1)
+  })
+
+  it('reports a source-relevant stats clock and is conservative for All players', () => {
+    const minors = '2026-07-13T12:00:00.000Z'
+    const mlb = '2026-07-12T12:00:00.000Z'
+
+    expect(stageRelevantDataAsOf('Minors', minors, mlb)).toBe(minors)
+    expect(stageRelevantDataAsOf('MLB', minors, mlb)).toBe(mlb)
+    expect(stageRelevantDataAsOf('All', minors, mlb)).toBe(mlb)
+    expect(stageRelevantDataAsOf('All', minors, null)).toBeNull()
   })
 
   it('groups incomparable outcome sorts by stage in the All view', () => {
@@ -320,7 +370,7 @@ describe('unified player ordering', () => {
       .toEqual(['mlb-high-impact', 'mlb-low-impact-high-hof', 'mlb-withheld-impact'])
   })
 
-  it('orders MLB Alpha by edge and dual-gated MiLB Alpha by direct impact rank', () => {
+  it('orders each stage by the exact outcome rank behind Oracle Score', () => {
     const ineligible = forecast(0.9, 60, 3, 0.5, 0.95, 0.8)
     if (ineligible.alphaSignal) {
       ineligible.alphaSignal.eligible = false
@@ -389,7 +439,7 @@ describe('unified player ordering', () => {
       .toEqual(['minor-first-alpha', 'minor-second-alpha', 'minor-discovery'])
   })
 
-  it('uses direct MiLB impact rank after gated Alpha candidates', () => {
+  it('uses direct MiLB impact rank whether or not the arrival signal cleared', () => {
     const aivaArrival = researchMilbAlphaSignal('804109', 'Hitter')
     const aivaImpact = researchMilbImpactRanking('804109', 'Hitter')
     expect(aivaArrival?.eligible).toBe(false)
@@ -432,6 +482,16 @@ describe('player-map feed contract', () => {
       playerMap: {
         version: 'oracle-player-map/v1',
         state: 'discovery',
+        oracleScore: {
+          value: 96,
+          scale: 'stage_rank_percentile',
+          route: 'milb',
+          rank: 258,
+          universe: 6_455,
+          target: 'mlb_war_next_5_ge_5',
+          asOf: '2025-12-31T00:00:00.000Z',
+          definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+        },
         marketIndependent: true,
         marketInputsIncluded: false,
       },
@@ -441,6 +501,7 @@ describe('player-map feed contract', () => {
     expect(Object.keys(item)).toEqual(['playerId', 'identity', 'externalIds', 'context', 'assessment'])
     expect(item.externalIds.mlbam).toBe('804109')
     expect(item.context).toMatchObject({ stage: 'pre_debut', organizationCode: 'MIA' })
+    expect(item.assessment.oracleScore).toMatchObject({ value: 96, rank: 258, universe: 6_455 })
     expect(item.assessment.marketIndependent).toBe(true)
     expect(JSON.stringify(item)).not.toContain('researchEstimate')
     expect(JSON.stringify(item)).not.toContain('careerForecast')

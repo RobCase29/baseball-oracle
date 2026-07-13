@@ -89,6 +89,16 @@ describe('Player Map', () => {
     expect(profile.claimStatus).toBe('research_rank_only')
     expect(profile.state).toBe('discovery')
     expect(profile.stateLabel).toBe('Discovery')
+    expect(profile.oracleScore).toEqual({
+      value: 96,
+      scale: 'stage_rank_percentile',
+      route: 'milb',
+      rank: 258,
+      universe: 6_455,
+      target: 'mlb_war_next_5_ge_5',
+      asOf: '2025-12-31T00:00:00.000Z',
+      definition: 'Rounded stage-specific outcome rank percentile; not a probability or composite score',
+    })
     expect(profile.scores.outcome).toMatchObject({
       value: 96.017973,
       display: 'P96',
@@ -118,6 +128,15 @@ describe('Player Map', () => {
       stage: 'early_mlb',
       age: 23,
       level: 'MLB',
+      metrics: [
+        {
+          key: 'current-season-war',
+          label: 'Current-season WAR',
+          value: '3.1 WAR',
+          percentile: 92,
+          source: 'Baseball-Reference',
+        },
+      ],
       careerForecast: {
         asOf: '2025-12-31T00:00:00.000Z',
         rank: 20,
@@ -146,8 +165,27 @@ describe('Player Map', () => {
       rank: 20,
       universe: 100,
     })
+    expect(profile.oracleScore).toMatchObject({
+      value: 81,
+      route: 'mlb',
+      rank: 20,
+      universe: 100,
+      target: 'hof-caliber-point-in-time-jaws-v1',
+    })
     expect(profile.scores.readiness).toMatchObject({ value: 25, display: '25.0%' })
     expect(profile.scores.evidence).toMatchObject({ value: 72, display: '72 / 100' })
+    expect(profile.scores.bestTrait).toMatchObject({
+      label: 'Current-season performance',
+      value: 92,
+      display: 'P92',
+      status: 'observed',
+    })
+    expect(profile.strengths[0]).toMatchObject({
+      key: 'current-season-war',
+      percentile: 92,
+    })
+    expect(profile.signals.map((signal) => signal.code)).toContain('trait_corroborated')
+    expect(profile.missingEvidence).not.toContain('Current MLB performance')
     expect(profile.comparableWithinStageOnly).toBe(true)
   })
 })

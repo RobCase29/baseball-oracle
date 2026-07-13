@@ -29,11 +29,13 @@ server pull. It does not yet provide immutable cursors or incremental changes.
 The compact feed contains:
 
 - `playerId`: the current Oracle record identifier.
-- `identity.externalIds`: exact provider identifiers. MLBAM is the preferred
+- `externalIds`: exact provider identifiers. MLBAM is the preferred
   cross-product join key.
 - `context`: active career stage, role, organization, position, level, and age.
 - `assessment`: the universal Player Map vector, state, evidence, flags, target,
   comparison universe, version, and as-of dates.
+- `assessment.oracleScore`: the primary 0-100 stage-specific outcome score, plus
+  its exact rank, universe, target, route, and model as-of date.
 - `meta`: feed and scorecard versions plus explicit market-independence flags.
 
 Names are display fields, not identity keys. Never auto-merge two records only by
@@ -42,9 +44,18 @@ reviewed identity-resolution queue otherwise.
 
 ## Score Semantics
 
-The Player Map has five independent dimensions: outcome, readiness, trajectory,
-best current trait, and evidence. Every numeric value carries a scale and basis.
-`null` means the dimension is withheld or unavailable; it never means zero.
+`assessment.oracleScore.value` is the primary product score. It is the rounded
+stage-specific outcome rank percentile, not a probability or a weighted composite.
+The top percentile retains one decimal so the highest-ranked players do not all
+collapse to the same display value.
+For example, a score of 96 means the player ranks above approximately 96% of the
+declared comparison universe for that route and target. Always retain its `rank`,
+`universe`, `route`, `target`, and `asOf` fields. A `null` score means unavailable;
+it never means zero.
+
+The supporting Player Map dimensions are readiness, trajectory, best current
+trait, and evidence. They explain the primary score and how much trust to place in
+it; they are not blended into it. Every numeric value carries a scale and basis.
 
 Ordinal percentiles are comparable only inside their declared stage and universe.
 For example, MiLB five-year impact percentile 96 means top 4% of the frozen MiLB
