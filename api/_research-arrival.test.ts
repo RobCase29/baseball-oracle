@@ -30,8 +30,9 @@ describe('research arrival preview', () => {
     expect(researchPreviewSummary.releaseEligible).toBe(false)
   })
 
-  it('exposes only model-gated MiLB arrival anomalies with frozen ranks', () => {
+  it('retains every frozen diagnostic while ranking only model-gated arrival anomalies', () => {
     const signal = researchMilbAlphaSignal('815908', 'Hitter')
+    const aiva = researchMilbAlphaSignal('804109', 'Hitter')
 
     expect(signal).toMatchObject({
       version: 'milb-alpha-signal-v1',
@@ -46,8 +47,26 @@ describe('research arrival preview', () => {
     })
     expect(signal?.primaryEdge.probabilityDelta).toBeCloseTo(0.91808361)
     expect(signal?.releaseGates.probabilityCalibrationPassed).toBe(false)
+    expect(aiva).toMatchObject({
+      eligible: false,
+      tier: 'none',
+      rank: null,
+      ageContext: {
+        youngerThanPercent: 83.54,
+        referencePlayers: 1985,
+        priorLevel: 'Adv A',
+      },
+      gates: {
+        supportedHistoricalContext: true,
+        youngForRoleAndLevel: true,
+        minimumRawWorkload: true,
+        minimumPrimaryProbability: false,
+        positivePrimaryModelEdge: false,
+        positiveLongHorizonModelEdge: false,
+      },
+    })
     expect(researchMilbAlphaSignal('815908', 'Pitcher')).toBeNull()
-    expect(researchPreviewSummary.milbAlphaSignalCoverage).toBe(210)
+    expect(researchPreviewSummary.milbAlphaSignalCoverage).toBe(6455)
     expect(researchPreviewSummary.milbAlphaSignalEligible).toBe(210)
   })
 })

@@ -22,6 +22,16 @@ import {
 import type {
   CareerForecast,
 } from './_career-oracle-types.js'
+import {
+  buildPlayerMap,
+  PLAYER_MAP_VERSION,
+  type PlayerMapBuildContext,
+  type PlayerMapProfile,
+} from '../src/domain/playerMap.js'
+import type {
+  PlayerMapFeedItem,
+  PlayerRecord,
+} from '../src/domain/forecast.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'MLB'] as const
@@ -35,6 +45,7 @@ const playerSorts = [
   'age',
   'name',
 ] as const
+const playerViews = ['full', 'map'] as const
 const queryParameterNames = new Set([
   'q',
   'stage',
@@ -45,6 +56,7 @@ const queryParameterNames = new Set([
   'sort',
   'page',
   'limit',
+  'view',
 ])
 
 function hasNoControlCharacters(value: string): boolean {
@@ -85,12 +97,14 @@ const querySchema = z.object({
   sort: z.enum(playerSorts).default('alphaOpportunity'),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
+  view: z.enum(playerViews).default('full'),
 })
 
 type PlayerType = (typeof playerTypes)[number]
 type PlayerStage = (typeof playerStages)[number]
 type PlayerLevel = (typeof playerLevels)[number]
 type PlayerSort = (typeof playerSorts)[number]
+type PlayerView = (typeof playerViews)[number]
 
 export interface PlayerQuery {
   q: string
@@ -102,6 +116,7 @@ export interface PlayerQuery {
   sort: PlayerSort
   page: number
   limit: number
+  view: PlayerView
 }
 
 type DatabaseNumber = bigint | number | string | null
@@ -270,6 +285,7 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
       sort: readSingleParameter(url.searchParams, 'sort'),
       page: readSingleParameter(url.searchParams, 'page'),
       limit: readSingleParameter(url.searchParams, 'limit'),
+      view: readSingleParameter(url.searchParams, 'view'),
     }
 
     const parsed = querySchema.safeParse(
@@ -453,13 +469,14 @@ function playerRecord(
   careerForecast: CareerForecast | null,
   milbAlphaSignal: ResearchMilbAlphaSignal | null,
   milbImpactRanking: ResearchMilbImpactRanking | null,
+  context: PlayerMapBuildContext,
 ) {
   const bats = row.bats && row.bats !== '0' ? row.bats : null
   const throws = row.throws && row.throws !== '0' ? row.throws : null
   const batsThrows = bats && throws ? `${bats}/${throws}` : bats ?? throws
 
   const metrics = observedMetrics(row)
-  return {
+  const record = {
     id: row.profile_id,
     name: row.display_name,
     initials: initials(row.display_name),
@@ -518,19 +535,24 @@ function playerRecord(
     }),
     careerForecast,
   }
+  return {
+    ...record,
+    playerMap: buildPlayerMap(record, context),
+  }
 }
 
 function previewPlayerRecord(
   player: CareerPreviewPlayer,
   preview: CareerOraclePreview,
   careerForecast: CareerForecast,
+  buildContext: PlayerMapBuildContext,
 ) {
-  const context = [...new Set(
+  const levelsObserved = [...new Set(
     [player.level, player.stage === 'pre_debut' ? 'Minor leagues' : 'MLB']
       .filter((value): value is string => Boolean(value)),
   )]
 
-  return {
+  const record = {
     id: player.id,
     name: player.name,
     initials: initials(player.name),
@@ -552,7 +574,7 @@ function previewPlayerRecord(
       hasStatcast: false,
       hasTraditional: false,
       hasComplementaryRows: false,
-      levelsObserved: context,
+      levelsObserved,
       sourceVariants: [],
       organizationConflict: false,
       cohortMismatch: false,
@@ -571,6 +593,34 @@ function previewPlayerRecord(
     milbImpactRanking: null,
     minorTraitEvidence: null,
     careerForecast,
+  }
+  return {
+    ...record,
+    playerMap: buildPlayerMap(record, buildContext),
+  }
+}
+
+interface MappedPlayerRecord extends PlayerRecord {
+  playerMap: PlayerMapProfile
+}
+
+export function playerMapFeedItem(record: MappedPlayerRecord): PlayerMapFeedItem {
+  return {
+    playerId: record.id,
+    identity: {
+      name: record.name,
+    },
+    externalIds: record.provenance.externalIds,
+    context: {
+      playerType: record.playerType,
+      stage: record.stage,
+      age: record.age,
+      level: record.level,
+      organization: record.organization,
+      organizationCode: record.organizationCode,
+      position: record.position,
+    },
+    assessment: record.playerMap,
   }
 }
 
@@ -705,7 +755,17 @@ export function sortUnifiedCandidates(
       if (left.source === 'minor' && right.source === 'minor') {
         return (
           compareNullableNumber(leftMilbImpact?.rank ?? null, rightMilbImpact?.rank ?? null, 'ascending') ||
+          compareNullableNumber(
+            left.milbImpactRanking?.rank ?? null,
+            right.milbImpactRanking?.rank ?? null,
+            'ascending',
+          ) ||
           compareNullableNumber(leftMilbAlpha?.rank ?? null, rightMilbAlpha?.rank ?? null, 'ascending') ||
+          compareNullableNumber(
+            left.careerForecast?.rank ?? null,
+            right.careerForecast?.rank ?? null,
+            'ascending',
+          ) ||
           compareNullableNumber(
             leftMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
             rightMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
@@ -1072,6 +1132,31 @@ function pageDetails(total: number, query: PlayerQuery) {
   }
 }
 
+function hasMappedOutcome(candidate: UnifiedBoardCandidate): boolean {
+  return candidate.source === 'minor'
+    ? candidate.milbImpactRanking !== null
+    : candidate.careerForecast?.rank !== null && candidate.careerForecast?.rank !== undefined
+}
+
+function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
+  return {
+    playerMapVersion: PLAYER_MAP_VERSION,
+    playerMapCoverage: candidates.length,
+    matchingPlayerCount: candidates.length,
+    matchingMappedCount: candidates.filter(hasMappedOutcome).length,
+    marketIndependent: true as const,
+    marketInputsIncluded: false as const,
+    scoreSemantics: 'stage_specific_ordinal_not_market_value' as const,
+  }
+}
+
+function responseItems(
+  records: MappedPlayerRecord[],
+  view: PlayerView,
+): MappedPlayerRecord[] | PlayerMapFeedItem[] {
+  return view === 'map' ? records.map(playerMapFeedItem) : records
+}
+
 function degradedStaticResponse(
   request: IncomingMessage,
   response: ServerResponse,
@@ -1086,13 +1171,16 @@ function degradedStaticResponse(
   )
   const offset = (query.page - 1) * query.limit
   const page = candidates.slice(offset, offset + query.limit)
+  const context = { mlbUniverse: universe.length, minorUniverse: 0 }
+  const records = page.map((candidate) => previewPlayerRecord(
+    candidate.previewPlayer!,
+    preview,
+    candidate.careerForecast!,
+    context,
+  ))
   sendJson(request, response, 200, {
-    schemaVersion: 'players.v1',
-    items: page.map((candidate) => previewPlayerRecord(
-      candidate.previewPlayer!,
-      preview,
-      candidate.careerForecast!,
-    )),
+    schemaVersion: query.view === 'map' ? 'player-map-feed.v1' : 'players.v1',
+    items: responseItems(records, query.view),
     page: pageDetails(candidates.length, query),
     meta: {
       source: 'Baseball Oracle',
@@ -1131,6 +1219,7 @@ function degradedStaticResponse(
       degradedReason: reason,
       rankScope: 'stage_specific',
       stageRankAvailability: { mlb: true, minors: false },
+      ...playerMapResponseMeta(candidates),
       facets: buildPlayerFacets(universe, query),
     },
   }, publicCache)
@@ -1204,6 +1293,10 @@ export default async function handler(
       query,
     )
     const pageCandidates = filtered.slice(offset, offset + query.limit)
+    const playerMapContext = {
+      mlbUniverse: mlb.length,
+      minorUniverse: canonicalMinors.length,
+    }
     const minorPageIds = pageCandidates
       .map((candidate) => candidate.minorProfileId)
       .filter((value): value is string => value !== null)
@@ -1291,6 +1384,7 @@ export default async function handler(
           candidate.previewPlayer!,
           careerPreview!,
           candidate.careerForecast!,
+          playerMapContext,
         )
       }
       return playerRecord(
@@ -1298,6 +1392,7 @@ export default async function handler(
         candidate.careerForecast,
         candidate.milbAlphaSignal,
         candidate.milbImpactRanking,
+        playerMapContext,
       )
     })
     const minorDataAsOf = latestIso(minorRoleRows.map((row) => isoDate(row.known_at)))
@@ -1310,8 +1405,8 @@ export default async function handler(
       response,
       200,
       {
-        schemaVersion: 'players.v1',
-        items,
+        schemaVersion: query.view === 'map' ? 'player-map-feed.v1' : 'players.v1',
+        items: responseItems(items, query.view),
         page: pageDetails(filtered.length, query),
         meta: {
           source: careerPreview ? 'Baseball Oracle + Prospect Savant' : 'Prospect Savant',
@@ -1363,6 +1458,7 @@ export default async function handler(
             mlb: careerPreview !== null,
             minors: careerPreview !== null,
           },
+          ...playerMapResponseMeta(filtered),
           facets,
           identity: {
             minorRoleRows: minorDedupe.inputRoleRows,

@@ -1,3 +1,5 @@
+import type { PlayerMapProfile } from './playerMap.js'
+
 export type PlayerType = 'Hitter' | 'Pitcher' | 'Two-way'
 
 export type PlayerStage = 'pre_debut' | 'early_mlb' | 'established_mlb' | 'inactive'
@@ -327,7 +329,7 @@ export interface MilbAlphaSignal {
   } | null
   workload: {
     kind: 'PA' | 'IP'
-    value: number
+    value: number | null
     minimum: number
   }
   baselineSupport: {
@@ -508,6 +510,7 @@ export interface PlayerRecord {
   milbImpactRanking?: MilbImpactRanking | null
   minorTraitEvidence?: MinorTraitEvidence | null
   careerForecast: CareerForecast | null
+  playerMap?: PlayerMapProfile | null
 }
 
 export type SortKey = 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
@@ -563,6 +566,13 @@ export interface PlayersResponseMeta {
     mlb: boolean
     minors: boolean
   }
+  playerMapVersion?: 'oracle-player-map/v1'
+  playerMapCoverage?: number
+  matchingPlayerCount?: number
+  matchingMappedCount?: number
+  marketIndependent?: true
+  marketInputsIncluded?: false
+  scoreSemantics?: 'stage_specific_ordinal_not_market_value'
   facets?: {
     teams: PlayerFacetOption[]
     positions: PlayerFacetOption[]
@@ -578,6 +588,31 @@ export interface PlayerFacetOption {
 export interface PlayersResponse {
   schemaVersion: 'players.v1'
   items: PlayerRecord[]
+  page: PlayersPage
+  meta: PlayersResponseMeta
+}
+
+export interface PlayerMapFeedItem {
+  playerId: string
+  identity: {
+    name: string
+  }
+  externalIds: Record<string, string | number | null>
+  context: {
+    playerType: PlayerType
+    stage: PlayerStage
+    age: number | null
+    level: string | null
+    organization: string | null
+    organizationCode: string | null
+    position: string | null
+  }
+  assessment: PlayerMapProfile
+}
+
+export interface PlayerMapFeedResponse {
+  schemaVersion: 'player-map-feed.v1'
+  items: PlayerMapFeedItem[]
   page: PlayersPage
   meta: PlayersResponseMeta
 }

@@ -15,5 +15,11 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["api/**/*.ts", "db/**/*.ts", "scripts/**/*.ts"]
+  "include": [
+    "api/**/*.ts",
+    "db/**/*.ts",
+    "scripts/**/*.ts",
+    "src/domain/forecast.ts",
+    "src/domain/playerMap.ts"
+  ]
 }

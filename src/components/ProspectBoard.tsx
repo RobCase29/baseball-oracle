@@ -20,7 +20,6 @@ import type {
 import {
   eligibleAlphaSignal,
   developmentChapterLabel,
-  eligibleMilbCeilingAlpha,
   formatPercentagePointDelta,
   formatProbability,
   formatTopRankPercent,
@@ -29,6 +28,7 @@ import {
   probabilityTone,
   stageLabel,
 } from '../lib/forecast'
+import { playerMapFor } from './playerMapView'
 
 const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
@@ -103,6 +103,7 @@ export function ProspectBoard({
   const hasNextPage = pagination.page < pagination.totalPages
   const alphaView = filters.sort === 'alphaOpportunity'
   const minorAlphaView = alphaView && filters.stage === 'Minors'
+  const mlbAlphaView = alphaView && filters.stage === 'MLB'
   const activeFilterCount = [
     filters.query.trim() ? filters.query : null,
     filters.playerType !== 'All' ? filters.playerType : null,
@@ -119,13 +120,21 @@ export function ProspectBoard({
         <div>
           <span className="eyebrow">
             {minorAlphaView
-              ? 'YOUNG PLAYERS WITH TWO-MODEL CEILING CONFIRMATION'
-              : alphaView
+              ? 'DIRECT IMPACT RANK + ARRIVAL CONFIRMATION'
+              : mlbAlphaView
                 ? 'MODEL-GATED CAREER ANOMALIES'
+                : alphaView
+                  ? 'UNIVERSAL STAGE-SPECIFIC ASSESSMENT'
                 : 'STAGE-SPECIFIC RESEARCH RANK'}
           </span>
           <h2 id="board-title">
-            {minorAlphaView ? 'Early Ceiling Radar' : alphaView ? 'Alpha Radar' : 'Oracle Board'}
+            {minorAlphaView
+              ? 'Early Ceiling Radar'
+              : mlbAlphaView
+                ? 'Alpha Radar'
+                : alphaView
+                  ? 'Player Map'
+                  : 'Oracle Board'}
           </h2>
         </div>
         <span className="record-count">
@@ -235,7 +244,7 @@ export function ProspectBoard({
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
             }
           >
-            <option value="alphaOpportunity">Alpha opportunity</option>
+            <option value="alphaOpportunity">Player map</option>
             <option value="hofProbability">P(HOF caliber)</option>
             <option value="nearTermImpact">Near-term impact</option>
             <option value="finalWar">Final WAR P50</option>
@@ -298,7 +307,7 @@ export function ProspectBoard({
                 <th scope="col">Player / stage</th>
                 <th scope="col">Age / context</th>
                 <th scope="col">P(HOF caliber)</th>
-                <th scope="col">Alpha signal</th>
+                <th scope="col">Player map</th>
                 <th scope="col">Final WAR</th>
                 <th scope="col">Arrival / actual</th>
                 <th scope="col">Confidence</th>
@@ -316,7 +325,8 @@ export function ProspectBoard({
                 const mlbStage = isMlbStage(player.stage)
                 const chapter = forecast?.careerChapter
                 const alpha = eligibleAlphaSignal(player)
-                const milbCeiling = eligibleMilbCeilingAlpha(player)
+                const playerMap = playerMapFor(player)
+                const impact = !mlbStage ? player.milbImpactRanking ?? null : null
                 const rawAlpha = forecast?.alphaSignal
                 const chapterLabel = mlbStage
                   ? chapter?.status === 'research'
@@ -324,12 +334,14 @@ export function ProspectBoard({
                     : chapter ? 'Chapter withheld' : 'Chapter unavailable'
                   : developmentChapterLabel(player.level)
                 const displayedRank = alphaView
-                  ? alpha?.rank ?? milbCeiling?.impactRanking.rank ?? null
+                  ? alpha?.rank ?? impact?.rank ?? playerMap.scores.outcome.rank
                   : forecast?.rank ?? null
                 const rankScope = alphaView
-                  ? milbCeiling
-                    ? `of ${milbCeiling.impactRanking.universeRows.toLocaleString()}`
-                    : 'alpha'
+                  ? impact
+                    ? `of ${impact.universeRows.toLocaleString()}`
+                    : alpha
+                      ? 'alpha'
+                      : playerMap.route === 'mlb' ? 'MLB outlook' : 'player map'
                   : mlbStage ? 'MLB' : 'minors'
 
                 return (
@@ -339,11 +351,7 @@ export function ProspectBoard({
                         {displayedRank ? `#${displayedRank}` : '—'}
                       </strong>
                       <small>
-                        {displayedRank
-                          ? rankScope
-                          : forecast?.hofCaliberProbability != null
-                            ? alphaView ? 'not eligible' : 'unavailable'
-                            : 'withheld'}
+                        {displayedRank ? rankScope : playerMap.stateLabel}
                       </small>
                     </td>
                     <td>
@@ -358,9 +366,9 @@ export function ProspectBoard({
                         </span>
                         <span>
                           <span className="mobile-player-rank">
-                            {displayedRank ? `#${displayedRank} ${rankScope}` : 'Not ranked'}
+                            {displayedRank ? `#${displayedRank} ${rankScope}` : playerMap.stateLabel}
                           </span>
-                          <strong>{player.name}</strong>
+                          <strong className="player-name">{player.name}</strong>
                           <small>
                             {organization} · {player.position ?? player.playerType} · Age {player.age ?? '—'} · {player.level ?? stageLabel(player.stage)}
                           </small>
@@ -404,31 +412,44 @@ export function ProspectBoard({
                             {formatProbability(alpha.modeledProbability)} modeled vs {formatProbability(alpha.baseline?.probability ?? null)} base
                           </small>
                         </>
-                      ) : milbCeiling ? (
+                      ) : impact ? (
                         <>
                           <div className="alpha-cell-lead">
                             <strong className="alpha-edge-value">
                               {formatTopRankPercent(
-                                milbCeiling.impactRanking.rank,
-                                milbCeiling.impactRanking.universeRows,
+                                impact.rank,
+                                impact.universeRows,
                               )}
                             </strong>
-                            <span className={`alpha-tier alpha-tier--${milbCeiling.tier}`}>
-                              {milbCeiling.tier} research
+                            <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
+                              {playerMap.stateLabel}
                             </span>
                           </div>
                           <small>
-                            Impact #{milbCeiling.impactRanking.rank.toLocaleString()} · arrival #{milbCeiling.arrivalSignal.rank?.toLocaleString() ?? '—'}
+                            Impact #{impact.rank.toLocaleString()} · {player.milbAlphaSignal?.eligible
+                              ? `arrival #${player.milbAlphaSignal.rank?.toLocaleString() ?? '—'}`
+                              : 'arrival not confirmed'}
                           </small>
                         </>
                       ) : (
                         <>
-                          <strong className="alpha-withheld">
-                            {mlbStage && rawAlpha?.status === 'research'
-                              ? 'Not triggered'
-                              : mlbStage ? 'Withheld' : 'Not triggered'}
-                          </strong>
-                          <small>{alphaMissLabel(player)}</small>
+                          <div className="alpha-cell-lead">
+                            <strong className="alpha-withheld">
+                              {playerMap.scores.outcome.rank
+                                ? `#${playerMap.scores.outcome.rank.toLocaleString()}`
+                                : playerMap.scores.evidence.display}
+                            </strong>
+                            <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
+                              {playerMap.stateLabel}
+                            </span>
+                          </div>
+                          <small>
+                            {mlbStage
+                              ? rawAlpha?.status === 'research'
+                                ? 'Terminal outlook mapped · Alpha gate not triggered'
+                                : alphaMissLabel(player)
+                              : 'Direct impact rank unavailable · evidence retained'}
+                          </small>
                         </>
                       )}
                     </td>

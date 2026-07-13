@@ -30,6 +30,7 @@ import {
   stageLabel,
 } from '../lib/forecast'
 import { ProbabilityRing } from './ProbabilityRing'
+import { PlayerMapScorecard } from './PlayerMapScorecard'
 
 const CareerArcChart = lazy(() =>
   import('./CareerArcChart').then((module) => ({ default: module.CareerArcChart })),
@@ -873,6 +874,8 @@ export function PlayerDossier({
               : `${player.name}'s research distribution combines the frozen 60-month arrival endpoint with an MLB debut-age career bridge. It is a lower-bound proxy and remains outside the release gate.`)
           : `No validated Career Oracle outcome is available for this ${stageLabel(player.stage).toLocaleLowerCase()} record. Source evidence remains visible without substituting a composite provider score.`)}
       </p>
+
+      <PlayerMapScorecard player={player} />
 
       <MilbAlphaRadarPanel player={player} />
 

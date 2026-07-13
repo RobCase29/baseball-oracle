@@ -442,6 +442,30 @@ describe('Oracle Board utilities', () => {
     ])
   })
 
+  it('uses direct impact rank for a mapped MiLB watchlist player without an arrival trigger', () => {
+    const players = [
+      makePlayer({ id: 'unmapped' }),
+      makePlayer({
+        id: 'aiva-like',
+        milbAlphaSignal: {
+          status: 'research',
+          eligible: false,
+          rank: null,
+        } as NonNullable<PlayerRecord['milbAlphaSignal']>,
+        milbImpactRanking: {
+          rank: 258,
+          rankPercentile: 96.017973,
+        } as NonNullable<PlayerRecord['milbImpactRanking']>,
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'Minors',
+      sort: 'alphaOpportunity',
+    }).map((player) => player.id)).toEqual(['aiva-like', 'unmapped'])
+  })
+
   it('sorts the frozen arrival-anomaly rank without presenting raw probability order', () => {
     const estimate = (probability: number) => ({
       status: 'research_only' as const,

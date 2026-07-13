@@ -181,8 +181,18 @@ export function filterAndSortPlayers(
               'ascending',
             ) ||
             compareNullableNumber(
+              left.milbImpactRanking?.rank ?? null,
+              right.milbImpactRanking?.rank ?? null,
+              'ascending',
+            ) ||
+            compareNullableNumber(
               leftMilb?.arrivalSignal.rank ?? null,
               rightMilb?.arrivalSignal.rank ?? null,
+              'ascending',
+            ) ||
+            compareNullableNumber(
+              left.careerForecast?.rank ?? null,
+              right.careerForecast?.rank ?? null,
               'ascending',
             ) ||
             compareNullableNumber(

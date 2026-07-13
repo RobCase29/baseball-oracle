@@ -43,6 +43,7 @@ descending, then stable identity. There is no composite score.
 ### Current Artifact
 
 - Frozen as of: 2025-12-31.
+- Diagnostic coverage: 6,455 frozen scoreable snapshots.
 - Eligible signals: 210.
 - Priority signals: 105.
 - Leading ranks: Jesus Made, Jhonny Level, Rainiel Rodriguez, Aidan Miller, Max Clark.
@@ -50,6 +51,11 @@ descending, then stable identity. There is no composite score.
 The artifact is matched to the live 2026 directory by exact MLBAM ID and role. It
 does not infer identity from names. Players already present in the MLB census are
 removed from the live minor-league surface.
+
+Noneligible rows retain their age context and gate diagnostics so the universal
+Player Map can explain why a player is unconfirmed. Failed-calibration raw
+probabilities remain research internals and are not presented as public confidence
+or included in the compact partner feed.
 
 ### Evaluation State
 
@@ -70,11 +76,13 @@ population-shift admission and pooled calibration cell-fraction gates. Therefore
 
 ## Early Ceiling Radar Contract
 
-The deployed Minors Alpha ordering is a two-model confirmation, not a blended
+The eligible Minors Alpha subset is a two-model confirmation, not a blended
 score. A player must clear the Arrival Alpha eligibility gate and rank at or above
 the 90th percentile in the direct five-year impact challenger. Eligible players
 are ordered by direct impact rank, then arrival rank, age-for-level percentile,
-and stable identity.
+and stable identity. The wider Early Ceiling Radar retains every direct-impact
+match and labels an unconfirmed top-decile rank as `Discovery`, so model
+disagreement remains visible instead of removing the player from the board.
 
 The ordinal research buckets are:
 

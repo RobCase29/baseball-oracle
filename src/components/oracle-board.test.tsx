@@ -227,6 +227,75 @@ const milbImpactRanking: NonNullable<PlayerRecord['milbImpactRanking']> = {
   ],
 }
 
+const aivaTraits: NonNullable<PlayerRecord['minorTraitEvidence']> = {
+  version: 'minor-trait-evidence-v1',
+  status: 'descriptive_source_evidence_only',
+  predictiveValidation: false,
+  playerType: 'Hitter',
+  opportunity: {
+    state: 'provisional',
+    sufficient: false,
+    observed: { plateAppearances: 122, inningsPitched: null, pitches: null },
+    thresholds: [{ unit: 'PA', provisional: 75, sufficient: 150 }],
+  },
+  coverage: {
+    availableMetricCount: 5,
+    coveredPillarCount: 2,
+    totalPillarCount: 4,
+    requiredCoveredPillars: 3,
+    sufficient: false,
+    missingPillars: ['Damage', 'Expected output'],
+  },
+  corroboration: {
+    strongPercentileThreshold: 80,
+    strongPillarCount: 1,
+    requiredStrongPillars: 2,
+    multiPillar: false,
+    passesAllDescriptiveGates: false,
+  },
+  pillars: [
+    {
+      key: 'contact',
+      label: 'Contact',
+      covered: true,
+      strong: true,
+      availableMetricCount: 3,
+      strongestMetric: {
+        key: 'whiff', label: 'Whiff rate', value: '18.2%', percentile: 90.8,
+        pillar: 'contact', source: 'Prospect Savant',
+      },
+    },
+    {
+      key: 'swing-decisions',
+      label: 'Swing decisions',
+      covered: true,
+      strong: false,
+      availableMetricCount: 2,
+      strongestMetric: {
+        key: 'chase', label: 'Chase rate', value: '31.4%', percentile: 16.1,
+        pillar: 'swing-decisions', source: 'Prospect Savant',
+      },
+    },
+    { key: 'damage', label: 'Damage', covered: false, strong: false, availableMetricCount: 0, strongestMetric: null },
+    { key: 'expected-output', label: 'Expected output', covered: false, strong: false, availableMetricCount: 0, strongestMetric: null },
+  ],
+  strongestMetrics: [
+    { key: 'whiff', label: 'Whiff rate', value: '18.2%', percentile: 90.8, pillar: 'contact', source: 'Prospect Savant' },
+    { key: 'strikeout', label: 'Strikeout rate', value: '19.7%', percentile: 82.1, pillar: 'contact', source: 'Prospect Savant' },
+    { key: 'zone-contact', label: 'Zone contact', value: '86.5%', percentile: 78.1, pillar: 'contact', source: 'Prospect Savant' },
+    { key: 'chase', label: 'Chase rate', value: '31.4%', percentile: 16.1, pillar: 'swing-decisions', source: 'Prospect Savant' },
+    { key: 'walk', label: 'Walk rate', value: '6.1%', percentile: 14.3, pillar: 'swing-decisions', source: 'Prospect Savant' },
+  ],
+  exclusions: {
+    providerCompositeMetricCount: 1,
+    kMinusBbPercentileCount: 0,
+    unsupportedSourceMetricCount: 0,
+    invalidPercentileCount: 0,
+    duplicateMetricKeyCount: 0,
+  },
+  warnings: [],
+}
+
 const forecast: CareerForecast = {
   publicationState: 'research',
   releaseEligible: false,
@@ -363,10 +432,11 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('heading', { name: 'Oracle Board' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minors' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'P(HOF caliber)' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Alpha signal' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Player map' })).toBeInTheDocument()
     expect(screen.getByText('8.1%')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('Not triggered')).toBeInTheDocument()
+    expect(screen.getByText('Profile only')).toBeInTheDocument()
+    expect(screen.getByText('Direct impact rank unavailable · evidence retained')).toBeInTheDocument()
     expect(screen.getByText('Withheld')).toBeInTheDocument()
     expect(screen.getByText('arrival confidence not calibrated')).toBeInTheDocument()
     expect(screen.queryByText('61.0%')).not.toBeInTheDocument()
@@ -505,12 +575,100 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
     expect(screen.getByText('Top <0.1%')).toBeInTheDocument()
-    expect(screen.getByText('priority research')).toBeInTheDocument()
+    expect(screen.getByText('Discovery')).toBeInTheDocument()
     expect(screen.getByText('#3')).toBeInTheDocument()
     expect(screen.getByText('of 6,455')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Ceiling landscape' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Loaded player landscape' })).toBeInTheDocument()
     expect(screen.getByText(/Impact #3 · arrival #5/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
+  })
+
+  it('maps a high-impact MiLB player even when arrival confirmation is not cleared', () => {
+    const aivaSignal: NonNullable<PlayerRecord['milbAlphaSignal']> = {
+      ...milbAlphaSignal,
+      eligible: false,
+      tier: 'none',
+      rank: null,
+      rankScope: null,
+      ageContext: {
+        ...milbAlphaSignal.ageContext!,
+        age: 22.21,
+        percentileWithinRoleLevel: 16.46,
+        youngerThanPercent: 83.54,
+        referencePlayers: 1985,
+        priorLevel: 'Adv A',
+      },
+      gates: {
+        ...milbAlphaSignal.gates,
+        minimumPrimaryProbability: false,
+        positivePrimaryModelEdge: false,
+        positiveLongHorizonModelEdge: false,
+      },
+    }
+    const aivaImpact: NonNullable<PlayerRecord['milbImpactRanking']> = {
+      ...milbImpactRanking,
+      rank: 258,
+      rankPercentile: 96.017973,
+    }
+    const aiva: PlayerRecord = {
+      ...player,
+      name: 'Aiva Arquette',
+      initials: 'AA',
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+      age: 22,
+      level: 'AA',
+      opportunity: { label: 'PA', value: '122' },
+      milbAlphaSignal: aivaSignal,
+      milbImpactRanking: aivaImpact,
+      minorTraitEvidence: aivaTraits,
+    }
+
+    const { unmount } = render(
+      <ProspectBoard
+        players={[aiva]}
+        selectedId={aiva.id}
+        filters={{ query: 'Aiva', stage: 'Minors', playerType: 'All', level: 'All', sort: 'alphaOpportunity' }}
+        pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
+        loading={false}
+        error={null}
+        watchlist={new Set()}
+        onSelect={vi.fn()}
+        onToggleWatchlist={vi.fn()}
+        onChangeFilters={vi.fn()}
+        onChangePage={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByText('Aiva Arquette').length).toBeGreaterThan(0)
+    expect(screen.getByText('Top 4.0%')).toBeInTheDocument()
+    expect(screen.getByText('Discovery')).toBeInTheDocument()
+    expect(screen.getByText('Impact #258 · arrival not confirmed')).toBeInTheDocument()
+    expect(screen.queryByText('Not ranked')).not.toBeInTheDocument()
+    expect(screen.queryByText('Not triggered')).not.toBeInTheDocument()
+
+    unmount()
+    render(
+      <PlayerDossier
+        player={aiva}
+        saved={false}
+        onToggleWatchlist={vi.fn()}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Oracle Player Map' })).toBeInTheDocument()
+    expect(screen.getByText('P96')).toBeInTheDocument()
+    expect(screen.getByText('Not confirmed')).toBeInTheDocument()
+    expect(screen.getByText('P84')).toBeInTheDocument()
+    expect(screen.getByText('P91')).toBeInTheDocument()
+    expect(screen.getByText('2 / 4 pillars')).toBeInTheDocument()
+    expect(screen.getByText('Ceiling / readiness split')).toBeInTheDocument()
+    expect(screen.getByText('Thin-data upside')).toBeInTheDocument()
+    expect(screen.getAllByText('Whiff rate').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Walk rate').length).toBeGreaterThan(0)
+    expect(screen.getByText('28 PA to the sufficient current-sample threshold')).toBeInTheDocument()
+    expect(screen.getByText('No composite score.')).toBeInTheDocument()
   })
 
   it('explains the MiLB impact rank, dual gates, and withheld tail probability in the dossier', () => {
@@ -703,9 +861,9 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
     expect(screen.getByText('breakout · hitter track')).toBeInTheDocument()
     expect(screen.getByText('P(3Y IMPACT)')).toBeInTheDocument()
-    expect(screen.getAllByText('43.0%')).toHaveLength(2)
+    expect(screen.getAllByText('43.0%')).toHaveLength(3)
     expect(screen.getByText('HISTORICAL WAR PACE')).toBeInTheDocument()
-    expect(screen.getByText('P99.1')).toBeInTheDocument()
+    expect(screen.getAllByText('P99.1')).toHaveLength(2)
     expect(screen.getByText('+0.8 WAR')).toBeInTheDocument()
     expect(screen.getByText(/67\.0% continuation/u)).toBeInTheDocument()
     expect(screen.getByText(/Through 2025 · age 22 · MLB season 1 · 5\.0 season WAR/u)).toBeInTheDocument()

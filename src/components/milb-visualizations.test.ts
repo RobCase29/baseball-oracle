@@ -52,6 +52,31 @@ function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
       universeRows: 6455,
     } as PlayerRecord['milbImpactRanking'],
     minorTraitEvidence: {
+      opportunity: {
+        state: 'provisional',
+        sufficient: false,
+        observed: {
+          plateAppearances: 80,
+          inningsPitched: null,
+          pitches: null,
+        },
+        thresholds: [{ unit: 'PA', provisional: 50, sufficient: 150 }],
+      },
+      coverage: {
+        availableMetricCount: 3,
+        coveredPillarCount: 1,
+        totalPillarCount: 4,
+        requiredCoveredPillars: 3,
+        sufficient: false,
+        missingPillars: ['Discipline', 'Damage', 'Expected output'],
+      },
+      corroboration: {
+        strongPercentileThreshold: 80,
+        strongPillarCount: 1,
+        requiredStrongPillars: 2,
+        multiPillar: false,
+        passesAllDescriptiveGates: false,
+      },
       pillars: [{
         key: 'contact',
         label: 'Contact',
@@ -71,19 +96,77 @@ function playerFixture(overrides: Partial<PlayerRecord> = {}): PlayerRecord {
 }
 
 describe('MiLB decision visualizations', () => {
-  it('plots only exact minor-league rank and age-context matches', () => {
+  it('plots every impact-ranked minor leaguer without requiring an eligible alpha or age context', () => {
+    const defaultEvidence = playerFixture().minorTraitEvidence!
     const points = buildMilbOpportunityPoints([
       playerFixture(),
-      playerFixture({ id: 'missing-context', milbAlphaSignal: null }),
+      playerFixture({
+        id: 'aiva-like',
+        name: 'Aiva Arquette',
+        milbAlphaSignal: null,
+        milbImpactRanking: {
+          rank: 258,
+          rankPercentile: 96.02,
+          universeRows: 6455,
+        } as PlayerRecord['milbImpactRanking'],
+        minorTraitEvidence: {
+          ...defaultEvidence,
+          opportunity: {
+            ...defaultEvidence.opportunity,
+            observed: {
+              plateAppearances: 122,
+              inningsPitched: null,
+              pitches: null,
+            },
+          },
+          coverage: {
+            ...defaultEvidence.coverage,
+            coveredPillarCount: 2,
+            totalPillarCount: 4,
+            missingPillars: ['Damage', 'Expected output'],
+          },
+        },
+      }),
       playerFixture({ id: 'mlb-player', stage: 'early_mlb' }),
     ])
 
-    expect(points).toEqual([expect.objectContaining({
+    expect(points).toHaveLength(2)
+    expect(points[0]).toEqual(expect.objectContaining({
       playerId: 'player-1',
       impactRank: 4,
       impactPercentile: 99.94,
       ageAdvantage: 92,
+      evidenceCoverage: 25,
       tier: 'priority',
+    }))
+    expect(points[1]).toEqual(expect.objectContaining({
+      playerId: 'aiva-like',
+      impactRank: 258,
+      impactPercentile: 96.02,
+      ageAdvantage: null,
+      evidenceCoverage: 50,
+      coveredPillars: 2,
+      totalPillars: 4,
+      missingPillars: ['Damage', 'Expected output'],
+      sampleState: 'provisional',
+      sampleSummary: '122 PA',
+      tier: 'context',
+    }))
+  })
+
+  it('keeps an impact-ranked player on the map when current trait evidence is unavailable', () => {
+    const points = buildMilbOpportunityPoints([
+      playerFixture({ milbAlphaSignal: null, minorTraitEvidence: null }),
+    ])
+
+    expect(points).toEqual([expect.objectContaining({
+      playerId: 'player-1',
+      ageAdvantage: null,
+      evidenceCoverage: 0,
+      coveredPillars: 0,
+      totalPillars: 0,
+      sampleState: 'unavailable',
+      sampleSummary: 'Current sample unavailable',
     })])
   })
 

@@ -21,7 +21,6 @@ import type {
   PlayersResponseMeta,
 } from './domain/forecast'
 import {
-  eligibleMilbCeilingAlpha,
   filterAndSortPlayers,
   stageCoverageForPlayers,
 } from './lib/forecast'
@@ -321,12 +320,14 @@ function App() {
   const stageCoverage = isWatchlistView
     ? stageCoverageForPlayers(visiblePlayers)
     : meta.stageCoverage ?? stageCoverageForPlayers(visiblePlayers)
-  const milbAlphaCount = isWatchlistView
-    ? visiblePlayers.filter((player) => eligibleMilbCeilingAlpha(player) !== null).length
-    : meta.milbImpactAlphaEligible ?? 0
-  const mlbAlphaCount = isWatchlistView
-    ? visiblePlayers.filter((player) => player.careerForecast?.alphaSignal?.eligible).length
-    : meta.alphaSignalEligible ?? 0
+  const loadedMappedOutlookCount = visiblePlayers.filter((player) => (
+    player.stage === 'pre_debut'
+      ? player.milbImpactRanking !== null && player.milbImpactRanking !== undefined
+      : player.careerForecast?.rank !== null && player.careerForecast?.rank !== undefined
+  )).length
+  const mappedOutlookCount = isWatchlistView
+    ? loadedMappedOutlookCount
+    : meta.matchingMappedCount ?? loadedMappedOutlookCount
   const topbarStatus = loading && players.length === 0
     ? 'loading'
     : error
@@ -339,11 +340,7 @@ function App() {
     : selectedPlayer?.careerForecast?.careerChapter?.featureSeason
       ? `${selectedPlayer.careerForecast.careerChapter.featureSeason}-12-31T00:00:00.000Z`
       : null
-  const signalUniverseCount = filters.stage === 'Minors'
-    ? milbAlphaCount
-    : filters.stage === 'MLB'
-      ? mlbAlphaCount
-      : milbAlphaCount + mlbAlphaCount
+  const evidenceBuildingCount = Math.max(0, visiblePagination.total - mappedOutlookCount)
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -420,9 +417,13 @@ function App() {
                 <small>{isWatchlistView ? `${watchlist.size} saved total` : 'one row per available player record'}</small>
               </div>
               <div>
-                <span>ACTIONABLE SIGNALS</span>
-                <strong>{signalUniverseCount.toLocaleString()}</strong>
-                <small>{filters.stage === 'Minors' ? 'dual-gated MiLB ceiling universe' : filters.stage === 'MLB' ? 'eligible MLB ceiling universe' : 'stage-specific ceiling universe'}</small>
+                <span>OUTLOOK SCORED</span>
+                <strong>{mappedOutlookCount.toLocaleString()}</strong>
+                <small>
+                  {evidenceBuildingCount > 0
+                    ? `${evidenceBuildingCount.toLocaleString()} matching profiles still evidence-building`
+                    : 'stage-specific outcome rank available'}
+                </small>
               </div>
               <div>
                 <span>MINORS / MLB</span>

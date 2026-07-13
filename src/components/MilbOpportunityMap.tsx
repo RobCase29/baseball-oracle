@@ -49,11 +49,16 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
       <strong>{point.name}</strong>
       <span>{point.organization} · {point.position} · {point.playerType} · {point.level}</span>
       <span>Impact: #{point.impactRank.toLocaleString()} of {point.impactUniverse.toLocaleString()} ({formatPercentile(point.impactPercentile)})</span>
-      <span>Younger than {point.ageAdvantage.toFixed(0)}% of historical role/level peers</span>
+      <span>Evidence: {point.coveredPillars} of {point.totalPillars} pillars ({point.evidenceCoverage.toFixed(0)}%)</span>
+      <span>Current sample: {point.sampleSummary} · {point.sampleState}</span>
+      {point.missingPillars.length > 0 ? <span>Missing: {point.missingPillars.join(', ')}</span> : null}
+      {point.ageAdvantage === null
+        ? <span>Historical role/level age context unavailable</span>
+        : <span>Younger than {point.ageAdvantage.toFixed(0)}% of historical role/level peers</span>}
       <span>Frozen arrival gate: {point.arrivalGateCleared ? 'cleared' : 'not cleared'}</span>
       <span>Current trait corroboration: {point.traitCorroborated ? 'cleared' : 'not cleared'}</span>
       {point.tier === 'context' ? null : <span>Dual-gate tier: {point.tier}</span>}
-      <small>Ordinal research evidence · raw impact probability withheld</small>
+      <small>Evidence coverage measures completeness, not confidence · raw impact probability withheld</small>
     </div>
   )
 }
@@ -68,6 +73,9 @@ function OpportunityDot({
   if (cx === undefined || cy === undefined || !payload) return null
   const selected = payload.playerId === selectedId
   const cleared = payload.tier !== 'context'
+  const ageContext = payload.ageAdvantage === null
+    ? 'historical age context unavailable'
+    : `younger than ${payload.ageAdvantage.toFixed(0)} percent of historical role and level peers`
 
   const selectPoint = () => onSelect(payload.playerId)
   const handleKeyDown = (event: KeyboardEvent<SVGGElement>) => {
@@ -80,7 +88,7 @@ function OpportunityDot({
     <g
       role="button"
       tabIndex={0}
-      aria-label={`${payload.name}, ${payload.playerType}, impact ${formatPercentile(payload.impactPercentile)}, younger than ${payload.ageAdvantage.toFixed(0)} percent of historical role and level peers`}
+      aria-label={`${payload.name}, ${payload.playerType}, impact ${formatPercentile(payload.impactPercentile)}, ${payload.evidenceCoverage.toFixed(0)} percent evidence coverage, ${ageContext}`}
       onClick={selectPoint}
       onKeyDown={handleKeyDown}
       style={{ cursor: 'pointer' }}
@@ -95,8 +103,8 @@ function OpportunityDot({
           width={8}
           height={8}
           rx={1}
-          fill={cleared ? 'var(--gold)' : 'var(--line-strong)'}
-          fillOpacity={cleared ? 0.94 : 0.65}
+          fill="var(--gold)"
+          fillOpacity={cleared ? 0.94 : 0.52}
           stroke={payload.traitCorroborated ? 'var(--ink)' : 'var(--paper)'}
           strokeWidth={payload.traitCorroborated ? 2 : 1.5}
           transform={`rotate(45 ${cx} ${cy})`}
@@ -106,8 +114,8 @@ function OpportunityDot({
           cx={cx}
           cy={cy}
           r={selected ? 6 : 5}
-          fill={cleared ? 'var(--green)' : 'var(--line-strong)'}
-          fillOpacity={cleared ? 0.92 : 0.65}
+          fill="var(--green)"
+          fillOpacity={cleared ? 0.92 : 0.52}
           stroke={payload.traitCorroborated ? 'var(--ink)' : 'var(--paper)'}
           strokeWidth={payload.traitCorroborated ? 2 : 1.5}
         />
@@ -124,35 +132,25 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
   const minimumImpact = points.length > 0
     ? Math.min(...points.map((point) => point.impactPercentile))
     : 0
-  const minimumAgeAdvantage = points.length > 0
-    ? Math.min(...points.map((point) => point.ageAdvantage))
-    : 0
   const impactDomainMinimum = minimumImpact >= 95
     ? Math.max(90, Math.floor(minimumImpact) - 1)
     : minimumImpact >= 90
       ? 90
       : Math.max(0, Math.floor(minimumImpact / 10) * 10)
-  const ageDomainMinimum = minimumAgeAdvantage >= 60
-    ? Math.max(0, Math.floor(minimumAgeAdvantage / 10) * 10 - 10)
-    : 0
   const impactTicks = [
     impactDomainMinimum,
     impactDomainMinimum + (100 - impactDomainMinimum) / 3,
     impactDomainMinimum + (100 - impactDomainMinimum) * 2 / 3,
     100,
   ]
-  const ageTicks = [
-    ageDomainMinimum,
-    ageDomainMinimum + (100 - ageDomainMinimum) / 2,
-    100,
-  ]
+  const evidenceTicks = [0, 25, 50, 75, 100]
 
   return (
     <section className="opportunity-map" aria-labelledby="opportunity-map-title">
       <div className="opportunity-map-heading">
         <div>
-          <span className="eyebrow">DEVELOPMENT CONTEXT × DIRECT IMPACT RANK</span>
-          <h3 id="opportunity-map-title">Ceiling landscape</h3>
+          <span className="eyebrow">OUTCOME RANK × CURRENT EVIDENCE DEPTH</span>
+          <h3 id="opportunity-map-title">Loaded player landscape</h3>
         </div>
         <div className="opportunity-map-legend" aria-label="Plot legend">
           <span><i className="legend-dot legend-dot--hitter" aria-hidden="true" />Hitter</span>
@@ -164,14 +162,14 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
 
       {points.length === 0 ? (
         <div className="opportunity-map-empty" role="status">
-          <strong>No comparable minor-league points</strong>
-          <span>An exact frozen five-year impact rank and role/level age context are both required.</span>
+          <strong>No impact-ranked minor leaguers in these results</strong>
+          <span>A frozen five-year impact rank is required; age context and current trait coverage are optional.</span>
         </div>
       ) : (
         <div
           className="opportunity-map-chart"
           role="group"
-          aria-label="Minor-league five-year impact rank percentile plotted against level-relative age advantage"
+          aria-label="Minor-league five-year impact rank percentile plotted against current evidence coverage in the loaded results"
           style={{ width: '100%', height: 330 }}
         >
           <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={260}>
@@ -188,14 +186,14 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
               ) : null}
               <XAxis
                 type="number"
-                dataKey="ageAdvantage"
-                domain={[ageDomainMinimum, 100]}
-                ticks={ageTicks}
+                dataKey="evidenceCoverage"
+                domain={[0, 100]}
+                ticks={evidenceTicks}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'var(--muted)', fontSize: 10 }}
                 label={{
-                  value: 'YOUNGER THAN HISTORICAL ROLE/LEVEL PEERS (%)',
+                  value: 'CURRENT EVIDENCE COVERAGE (%)',
                   position: 'insideBottom',
                   offset: -20,
                   fill: 'var(--muted)',
@@ -225,15 +223,16 @@ export function MilbOpportunityMap({ players, selectedId, onSelect }: MilbOpport
       )}
 
       <div className="opportunity-map-footer">
-        <span>{points.length.toLocaleString()} exact matches in loaded results{omittedCount > 0 ? ` · ${omittedCount.toLocaleString()} missing rank or age context` : ''}</span>
-        <strong>Tail view P{impactDomainMinimum.toFixed(0)}–P100 · no probabilities blended</strong>
+        <span>{points.length.toLocaleString()} impact-ranked players in loaded results{omittedCount > 0 ? ` · ${omittedCount.toLocaleString()} missing direct impact rank` : ''}</span>
+        <strong>Loaded view P{impactDomainMinimum.toFixed(0)}–P100 · coverage is not confidence</strong>
       </div>
 
       {selectedPoint ? (
         <div className="opportunity-map-selection" aria-live="polite">
           <strong>{selectedPoint.name}</strong>
           <span>
-            #{selectedPoint.impactRank.toLocaleString()} impact · {formatPercentile(selectedPoint.impactPercentile)} · younger than {selectedPoint.ageAdvantage.toFixed(0)}% at {selectedPoint.level}
+            #{selectedPoint.impactRank.toLocaleString()} impact · {formatPercentile(selectedPoint.impactPercentile)} · {selectedPoint.coveredPillars}/{selectedPoint.totalPillars} evidence pillars
+            {selectedPoint.ageAdvantage === null ? '' : ` · younger than ${selectedPoint.ageAdvantage.toFixed(0)}% at ${selectedPoint.level}`}
           </span>
         </div>
       ) : null}

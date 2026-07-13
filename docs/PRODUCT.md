@@ -14,8 +14,9 @@ Baseball Oracle forecasts baseball outcomes. A later market layer can compare th
 ## Current MVP Checkpoint
 
 The July 2026 MVP is a two-stage research cockpit. It combines a live directory
-of 6,800 canonical minor-league players with a locked 2026 40-man-roster census
-covering 1,291 canonical Baseball-Reference MLB identities. The career evidence
+of 6,179 canonical minor-league players with a locked 2026 40-man-roster census
+covering 1,291 canonical Baseball-Reference MLB identities, for 7,470 active
+player records. The career evidence
 base contains 117,033 player-seasons from 1871 through the in-season 2026 census;
 2025 is the latest complete season used for scoring features.
 
@@ -48,6 +49,32 @@ plausible-looking heuristic.
 - **Separate populations.** Hitters and pitchers require different features, outcome dynamics, and models. Role and level transitions also matter.
 - **No hidden target changes.** A debut probability, a regular-player probability, a star-outcome probability, and a Hall of Fame path are distinct targets.
 - **Research cockpit first.** The first screen is the usable player board, not a marketing landing page.
+
+## Universal Player Map
+
+Every active player receives a Player Map profile even when no release-grade
+probability exists. The map is a fixed vector, not a blended score:
+
+- **Outcome:** stage-specific standing on the strongest supported value target.
+- **Readiness:** arrival confirmation for MiLB or near-term impact for MLB.
+- **Trajectory:** age/level runway for MiLB or historical career pace for MLB.
+- **Current traits:** the strongest observed skill plus material weaknesses.
+- **Evidence:** sample and source coverage. Evidence changes how much to trust an
+  outcome rank; it does not raise or lower the outcome rank itself.
+
+Each dimension carries its scale, comparison universe, target, model vintage, and
+claim state. MiLB and MLB percentiles are not directly interchangeable. Missing
+dimensions are `withheld` or `evidence building`, never zero.
+
+The map assigns a readable research state such as `Conviction`, `Discovery`,
+`Rising`, `Monitor`, `Mapped`, or `Evidence building`. Sparse Alpha Radar alerts
+remain a separate layer. For example, a player can be a top-decile direct-impact
+`Discovery` while the separate arrival gate is unconfirmed. That disagreement is
+the finding, not a reason to erase the player from the board.
+
+The Player Map is designed to cover the complete active census. Its dimensions
+can be upgraded independently as point-in-time Statcast, minor-league performance,
+scouting, and snapshot-to-snapshot development challengers pass forward tests.
 
 ## Core Forecasts
 
@@ -129,7 +156,7 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort by Alpha opportunity, MLB probability, near-term impact, terminal outcome, or arrival horizon
+- Sort by Player Map, MLB probability, near-term impact, terminal outcome, or arrival horizon
 - Compare selection
 - Add-to-watchlist action
 

@@ -11,6 +11,7 @@ import {
   normalizeQueryText,
   normalizeSearchText,
   parseQuery,
+  playerMapFeedItem,
   playerPositionTokens,
   sortBoardCandidates,
   sortUnifiedCandidates,
@@ -195,6 +196,7 @@ function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
     sort: 'alphaOpportunity',
     page: 1,
     limit: 50,
+    view: 'full',
     ...patch,
   }
 }
@@ -204,6 +206,14 @@ describe('unified player ordering', () => {
     expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
     expect(normalizeQueryText('Peña')).toBe('Peña')
     expect(normalizeSearchText('Jesús Made')).toBe('jesus made')
+  })
+
+  it('defaults to the full response and accepts the compact player-map view', () => {
+    const request = (url: string) => ({ url }) as Parameters<typeof parseQuery>[0]
+
+    expect(parseQuery(request('/api/players'))?.view).toBe('full')
+    expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
+    expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
   })
 
   it('matches player search without requiring diacritics', () => {
@@ -377,6 +387,64 @@ describe('unified player ordering', () => {
     )
       .map((item) => item.id))
       .toEqual(['minor-first-alpha', 'minor-second-alpha', 'minor-discovery'])
+  })
+
+  it('uses direct MiLB impact rank after gated Alpha candidates', () => {
+    const aivaArrival = researchMilbAlphaSignal('804109', 'Hitter')
+    const aivaImpact = researchMilbImpactRanking('804109', 'Hitter')
+    expect(aivaArrival?.eligible).toBe(false)
+    expect(aivaImpact?.rank).toBe(258)
+
+    const sorted = sortUnifiedCandidates([
+      candidate('unmapped-profile', {
+        milbAlphaSignal: null,
+        milbImpactRanking: null,
+        careerForecast: null,
+      }),
+      candidate('aiva-like', {
+        milbAlphaSignal: aivaArrival,
+        milbImpactRanking: aivaImpact,
+        careerForecast: null,
+      }),
+    ], 'alphaOpportunity')
+
+    expect(sorted.map((item) => item.id)).toEqual(['aiva-like', 'unmapped-profile'])
+  })
+})
+
+describe('player-map feed contract', () => {
+  it('contains only identity, external IDs, and the market-independent assessment', () => {
+    const record = {
+      id: 'prospect-savant:804109',
+      name: 'Aiva Arquette',
+      playerType: 'Hitter',
+      stage: 'pre_debut',
+      age: 22,
+      level: 'AA',
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+      position: 'SS',
+      provenance: {
+        externalIds: { mlbam: '804109', prospectSavant: 'aiva-arquette' },
+      },
+      researchEstimate: { horizons: [{ probability: 0.73 }] },
+      careerForecast: { hofCaliberProbability: 0.04 },
+      playerMap: {
+        version: 'oracle-player-map/v1',
+        state: 'discovery',
+        marketIndependent: true,
+        marketInputsIncluded: false,
+      },
+    } as unknown as Parameters<typeof playerMapFeedItem>[0]
+
+    const item = playerMapFeedItem(record)
+    expect(Object.keys(item)).toEqual(['playerId', 'identity', 'externalIds', 'context', 'assessment'])
+    expect(item.externalIds.mlbam).toBe('804109')
+    expect(item.context).toMatchObject({ stage: 'pre_debut', organizationCode: 'MIA' })
+    expect(item.assessment.marketIndependent).toBe(true)
+    expect(JSON.stringify(item)).not.toContain('researchEstimate')
+    expect(JSON.stringify(item)).not.toContain('careerForecast')
+    expect(JSON.stringify(item)).not.toContain('0.73')
   })
 })
 

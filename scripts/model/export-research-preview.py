@@ -155,10 +155,6 @@ def main() -> None:
         evaluated_rows,
         alpha_reference,
     )
-    for estimate in estimates.values():
-        if estimate["milbAlphaSignal"]["eligible"] is not True:
-            estimate.pop("milbAlphaSignal")
-
     preview = {
         "schemaVersion": "research-arrival-preview/v1",
         "status": "external_validation_failed_research_only",

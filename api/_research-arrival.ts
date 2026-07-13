@@ -87,7 +87,7 @@ const milbAlphaSignalSchema = z.object({
   }).strict().nullable(),
   workload: z.object({
     kind: z.enum(['PA', 'IP']),
-    value: z.number().finite().nonnegative(),
+    value: z.number().finite().nonnegative().nullable(),
     minimum: z.number().finite().positive(),
   }).strict(),
   baselineSupport: z.object({
@@ -159,7 +159,7 @@ function validateMilbAlphaSignal(value: unknown): ResearchMilbAlphaSignal {
   const derivedGates = {
     supportedHistoricalContext,
     youngForRoleAndLevel: (parsed.ageContext?.percentileWithinRoleLevel ?? 101) <= 33,
-    minimumRawWorkload: parsed.workload.value >= parsed.workload.minimum,
+    minimumRawWorkload: parsed.workload.value !== null && parsed.workload.value >= parsed.workload.minimum,
     minimumPrimaryProbability: parsed.primaryEdge.probability >= 0.2,
     positivePrimaryModelEdge: parsed.primaryEdge.probabilityDelta >= 0.1,
     positiveLongHorizonModelEdge: parsed.longHorizonEdge.probabilityDelta > 0,
