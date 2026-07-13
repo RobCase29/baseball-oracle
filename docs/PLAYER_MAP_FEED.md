@@ -175,9 +175,10 @@ contract should add:
 - idempotent record versions and effective-dated identity redirects;
 - scoped server-to-server API keys.
 
-The current endpoint already emits a strong per-page `ETag`, honors
-`If-None-Match`, and includes a deterministic content-derived `meta.snapshotId`
-with `snapshotScope=ranking_and_census`. The fingerprint hashes canonical player
+The current endpoint emits a deterministic per-page `ETag`, honors weak or
+strong `If-None-Match` validators, and includes a content-derived
+`meta.snapshotId` with `snapshotScope=ranking_and_census`. The hosting layer may
+surface the entity tag in weak form after transfer encoding. The fingerprint hashes canonical player
 identity, every ranking input, forecast lineage, and score-contract versions, so
 it detects ranking or census drift during a paginated pull. It does not freeze
 explanatory detail rows; immutable snapshot-bound cursors remain future work.

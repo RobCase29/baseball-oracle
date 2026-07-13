@@ -380,7 +380,7 @@ describe('unified player ordering', () => {
     })
   })
 
-  it('publishes a strong ETag and honors conditional GET requests', () => {
+  it('publishes a deterministic ETag and honors conditional GET requests', () => {
     function responseRecorder() {
       const headers = new Map<string, string>()
       let body: string | undefined
