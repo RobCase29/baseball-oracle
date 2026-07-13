@@ -5,7 +5,7 @@ import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import AbstractSet, Any, Iterable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,9 @@ CAREER_DATA_SCHEMA_VERSION = "career-oracle-landmarks/v1"
 DEFAULT_INACTIVITY_YEARS = 3
 HITTER_POSITIONS = ("C", "1B", "2B", "3B", "SS", "LF", "CF", "RF")
 EXACT_STANDARD_KEYS = (*HITTER_POSITIONS, "P", "RP")
+TWO_WAY_MIN_PA = 60.0
+TWO_WAY_MIN_IP_OUTS = 60.0
+TWO_WAY_MIN_WORKLOAD_RATIO = 0.25
 NUMERIC_FEATURES = (
     "age",
     "season_number",
@@ -237,15 +240,39 @@ def normalize_player_seasons(frame: pd.DataFrame) -> pd.DataFrame:
         bad = sorted(set(season_state) - {"complete", "in_season"})
         raise CareerDataError(f"Unsupported season_state values: {bad}")
 
-    role = _text(frame, ("role", "player_type", "playerType"), "").str.lower()
+    reported_role = _text(
+        frame,
+        ("role", "player_type", "playerType", "source_role"),
+        "",
+    ).str.lower()
     b_pa = _numeric(frame, ("b_pa", "pa", "batting_pa"), 0.0).fillna(0.0)
     p_outs = _numeric(frame, ("p_ip_outs", "pitching_outs", "ipouts"), 0.0).fillna(0.0)
-    inferred_role = np.select(
-        [(b_pa >= 100) & (p_outs >= 90), p_outs > b_pa, b_pa >= 0],
-        ["two_way", "pitcher", "hitter"],
-        default="hitter",
+    batting_workload = b_pa / 600.0
+    pitching_workload = p_outs / 540.0
+    balanced_two_way = (
+        (b_pa >= TWO_WAY_MIN_PA)
+        & (p_outs >= TWO_WAY_MIN_IP_OUTS)
+        & (
+            np.minimum(batting_workload, pitching_workload)
+            >= TWO_WAY_MIN_WORKLOAD_RATIO
+            * np.maximum(batting_workload, pitching_workload)
+        )
     )
-    role = role.where(role.isin(["hitter", "pitcher", "two_way"]), inferred_role)
+    inferred_role = pd.Series(
+        np.select(
+            [balanced_two_way, pitching_workload > batting_workload, b_pa >= 0],
+            ["two_way", "pitcher", "hitter"],
+            default="hitter",
+        ),
+        index=frame.index,
+        dtype="string",
+    )
+    reported_role = reported_role.where(
+        reported_role.isin(["hitter", "pitcher", "two_way"]),
+        inferred_role,
+    )
+    has_observed_workload = b_pa.gt(0) | p_outs.gt(0)
+    role = inferred_role.where(has_observed_workload, reported_role)
 
     normalized = pd.DataFrame(
         {
@@ -375,9 +402,18 @@ def _point_in_time_role(group: pd.DataFrame) -> tuple[str, str]:
     p_outs = float(group["p_ip_outs"].sum())
     p_games = float(group["p_games"].sum())
     p_starts = float(group["p_games_started"].sum())
-    season_two_way = bool(
-        ((group["b_pa"] >= 300) & (group["p_ip_outs"] >= 90)).any()
+    season_batting_workload = group["b_pa"] / 600.0
+    season_pitching_workload = group["p_ip_outs"] / 540.0
+    balanced_two_way = (
+        (group["b_pa"] >= TWO_WAY_MIN_PA)
+        & (group["p_ip_outs"] >= TWO_WAY_MIN_IP_OUTS)
+        & (
+            np.minimum(season_batting_workload, season_pitching_workload)
+            >= TWO_WAY_MIN_WORKLOAD_RATIO
+            * np.maximum(season_batting_workload, season_pitching_workload)
+        )
     )
+    season_two_way = bool(balanced_two_way.any())
     if season_two_way:
         return "two_way", "TWO_WAY"
     batting_workload = b_pa / 600.0
@@ -423,6 +459,7 @@ def build_career_landmarks(
     *,
     as_of_year: int | None = None,
     inactivity_years: int = DEFAULT_INACTIVITY_YEARS,
+    active_player_ids: AbstractSet[str] = frozenset(),
 ) -> pd.DataFrame:
     seasons = normalize_player_seasons(player_seasons)
     lookup = standard_lookup(jaws_standards)
@@ -442,7 +479,11 @@ def build_career_landmarks(
         has_later_partial = bool(
             ((group["season_state"] == "in_season") & (group["season"] >= career_end)).any()
         )
-        resolved = career_end <= as_of - inactivity_years and not has_later_partial
+        resolved = (
+            career_end <= as_of - inactivity_years
+            and not has_later_partial
+            and str(player_id) not in active_player_ids
+        )
         debut_year = int(complete["season"].min())
         role_path = tuple(
             _point_in_time_role(complete.iloc[:landmark])

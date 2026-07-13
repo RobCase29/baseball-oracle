@@ -25,6 +25,7 @@ interface ObjectBlob {
 }
 
 export interface RawLandingInput {
+  signal?: AbortSignal
   sourceSlug: string
   datasetKey: string
   idempotencyKey: string
@@ -102,7 +103,9 @@ export async function persistRawLanding(
   sql: SqlClient,
   input: RawLandingInput,
 ): Promise<RawLandingResult> {
+  input.signal?.throwIfAborted()
   const permission = await lookupActivePermission(sql, input.sourceSlug, input.datasetKey)
+  input.signal?.throwIfAborted()
   const batchSize = input.batchSize ?? 200
   if (!Number.isInteger(batchSize) || batchSize < 1) {
     throw new Error('Raw record batch size must be a positive integer')
@@ -149,6 +152,7 @@ export async function persistRawLanding(
        )
     RETURNING id
   `
+  input.signal?.throwIfAborted()
 
   if (insertedRun.length === 0) {
     const [existing] = await sql<{ status: string }[]>`
@@ -167,6 +171,7 @@ export async function persistRawLanding(
 
   try {
     return await sql.begin(async (transaction) => {
+      input.signal?.throwIfAborted()
       const insertedBlobs = await transaction<{ id: string }[]>`
         INSERT INTO raw.blob (
           sha256,
@@ -195,6 +200,7 @@ export async function persistRawLanding(
             WHERE sha256 = ${input.response.sha256}
             LIMIT 1
           `
+      input.signal?.throwIfAborted()
 
       if (!existingBlob) {
         throw new Error('Raw blob could not be inserted or resolved by content hash')
@@ -224,8 +230,10 @@ export async function persistRawLanding(
         )
         RETURNING id
       `
+      input.signal?.throwIfAborted()
 
       for (let offset = 0; offset < input.records.length; offset += batchSize) {
+        input.signal?.throwIfAborted()
         const batch = input.records.slice(offset, offset + batchSize).map((item, index) => ({
           fetch_id: fetchRecord.id,
           ordinal: offset + index,
@@ -250,6 +258,7 @@ export async function persistRawLanding(
         `
       }
 
+      input.signal?.throwIfAborted()
       await transaction`
         UPDATE raw.ingestion_run
         SET
@@ -258,6 +267,7 @@ export async function persistRawLanding(
           counts = ${transaction.json(input.counts as postgres.JSONValue)}
         WHERE id = ${runId}
       `
+      input.signal?.throwIfAborted()
 
       return {
         status: 'stored' as const,

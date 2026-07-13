@@ -302,9 +302,13 @@ export function buildProspectSavantCurrentSlices(season: number): ProspectSavant
   )
 }
 
-export async function fetchProspectSavantLeaders(url: string): Promise<Response> {
+export async function fetchProspectSavantLeaders(
+  url: string,
+  signal?: AbortSignal,
+): Promise<Response> {
   return fetchWithRetry(url, {
     sourceName: 'Prospect Savant',
+    signal,
     headers: {
       Accept: 'application/json',
       'User-Agent':

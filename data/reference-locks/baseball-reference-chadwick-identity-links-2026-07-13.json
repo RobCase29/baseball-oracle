@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "baseball-reference-chadwick-identity-links/v1",
+  "asOf": "2026-07-13T19:29:41.606Z",
+  "identityPolicy": "exact_bbref_page_meta_to_pinned_chadwick_key_no_name_matching",
+  "entries": [
+    {"bbref":"alfonel02","chadwickKey":"3284acff","sourceUrl":"https://www.baseball-reference.com/players/a/alfonel02.shtml","retrievedAt":"2026-07-13T19:29:02.270Z","responseSha256":"0351adb0ce3439aa4b5fd6ee60501aacfb0985854dc88715a0f0bcf9a90e932e"},
+    {"bbref":"brannja01","chadwickKey":"8eac3bb5","sourceUrl":"https://www.baseball-reference.com/players/b/brannja01.shtml","retrievedAt":"2026-07-13T19:29:05.509Z","responseSha256":"a066d82785995fa445ea1aab22c85a9f63f65a722bf48750bcdf962c9f3b4751"},
+    {"bbref":"gastelu01","chadwickKey":"7c7ffb50","sourceUrl":"https://www.baseball-reference.com/players/g/gastelu01.shtml","retrievedAt":"2026-07-13T19:29:08.817Z","responseSha256":"499884fd8b8a9ea95473069f923df4c8be4bb83a5fd5f3e4c573a7bd09d379f7"},
+    {"bbref":"gowo01","chadwickKey":"665a2f26","sourceUrl":"https://www.baseball-reference.com/players/g/gowo01.shtml","retrievedAt":"2026-07-13T19:29:12.095Z","responseSha256":"8fc6c41e33ed538fde0b4aa1508172611e6225618264d399ff602690c263c2df"},
+    {"bbref":"hughega01","chadwickKey":"5a4f0f7f","sourceUrl":"https://www.baseball-reference.com/players/h/hughega01.shtml","retrievedAt":"2026-07-13T19:29:15.385Z","responseSha256":"b7c79ba056f7112c0c2135cd1cb620bb2ff3790eb0feb35762ba9fd2f7f4fcce"},
+    {"bbref":"johnsiv01","chadwickKey":"6fdc4669","sourceUrl":"https://www.baseball-reference.com/players/j/johnsiv01.shtml","retrievedAt":"2026-07-13T19:29:18.654Z","responseSha256":"5f3fbd02e1acdeb451fa3a404666686360f335debf487186695dcd2f3f2065d3"},
+    {"bbref":"laralu01","chadwickKey":"5401e885","sourceUrl":"https://www.baseball-reference.com/players/l/laralu01.shtml","retrievedAt":"2026-07-13T19:29:21.924Z","responseSha256":"0d2a40187b4989b7065539c13dbf6a57af9c2fb0b3a01c91c04f37f86f21c52a"},
+    {"bbref":"murphow01","chadwickKey":"68d2a91a","sourceUrl":"https://www.baseball-reference.com/players/m/murphow01.shtml","retrievedAt":"2026-07-13T19:29:25.215Z","responseSha256":"0d1cd9cce489f79e766063dddaeb86ba9757aab51ff8b385af6395a9cb2101d6"},
+    {"bbref":"peoplbe01","chadwickKey":"815d53ec","sourceUrl":"https://www.baseball-reference.com/players/p/peoplbe01.shtml","retrievedAt":"2026-07-13T19:29:28.493Z","responseSha256":"633779d3a94d6bd4b44d4b4f2dd1cd2bd3aa25db4732d0d4467dc0b1196e50a5"},
+    {"bbref":"santowi01","chadwickKey":"c3872494","sourceUrl":"https://www.baseball-reference.com/players/s/santowi01.shtml","retrievedAt":"2026-07-13T19:29:31.772Z","responseSha256":"bdb7701a46dd47c07ca4e95128c07e3bd116058c777e94726a7b820ec83be744"},
+    {"bbref":"stallga01","chadwickKey":"47d633f6","sourceUrl":"https://www.baseball-reference.com/players/s/stallga01.shtml","retrievedAt":"2026-07-13T19:29:35.051Z","responseSha256":"c3d7f78563281c0ce3bf82296f1dbec3751bd15658d702002421e0506f9f417c"},
+    {"bbref":"valened01","chadwickKey":"d6642c81","sourceUrl":"https://www.baseball-reference.com/players/v/valened01.shtml","retrievedAt":"2026-07-13T19:29:38.317Z","responseSha256":"e4db1b703e76544423d93316dce2487738528d643214d925c9033e58b3be5d38"},
+    {"bbref":"yeaned01","chadwickKey":"bb46fa9f","sourceUrl":"https://www.baseball-reference.com/players/y/yeaned01.shtml","retrievedAt":"2026-07-13T19:29:41.606Z","responseSha256":"eab8bac0a8eb9c5eaf9d9f179102161eaa16368646f966d3a2295bebce043aa5"}
+  ]
+}

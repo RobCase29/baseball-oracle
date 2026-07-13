@@ -21,6 +21,7 @@ try:
         read_records,
     )
     from modeling.career_preview import (
+        SELECTIVE_TARGET_DOMAIN_DISCLOSURE,
         build_preview_payload,
         load_arrival_preview,
         validate_preview_sanity,
@@ -37,7 +38,12 @@ except ModuleNotFoundError:
         normalize_player_seasons,
         read_records,
     )
-    from career_preview import build_preview_payload, load_arrival_preview, validate_preview_sanity
+    from career_preview import (
+        SELECTIVE_TARGET_DOMAIN_DISCLOSURE,
+        build_preview_payload,
+        load_arrival_preview,
+        validate_preview_sanity,
+    )
     from career_chapters import fit_career_chapter_model
     from career_tournament import fit_final_scoring_bundle, run_career_tournament
     from provenance import file_sha256, json_sha256, producer_metadata
@@ -107,6 +113,63 @@ def _verify_manifest_output(
     if len(expected_sha256) != 64 or file_sha256(path) != expected_sha256:
         raise ValueError(f"Manifest SHA-256 mismatch: {portable}")
     return output
+
+
+def _target_exclusion_report(
+    panel: pd.DataFrame, excluded_target_players: tuple[str, ...]
+) -> dict[str, Any]:
+    excluded = panel.loc[
+        panel["resolved_career"]
+        & panel["bbref_id"].astype(str).isin(excluded_target_players)
+    ].copy()
+    final_reasons = excluded[
+        ["bbref_id", "target_eligibility_reason"]
+    ].drop_duplicates("bbref_id")
+    reason_keys = {
+        "twoWayRolePath": "two_way_role_path",
+        "broadRoleSwitch": "broad_role_switch",
+        "syntheticStandardFallback": "synthetic_standard_fallback",
+    }
+    supported_landmarks = excluded.loc[
+        excluded["role"].isin(["hitter", "pitcher"])
+        & excluded["broad_role_switch"].eq(False)
+        & excluded["standard_fallback"].eq(False)
+    ]
+    supported_by_reason: dict[str, dict[str, int]] = {}
+    for label, reason in reason_keys.items():
+        reason_rows = supported_landmarks.loc[
+            supported_landmarks["target_eligibility_reason"].eq(reason)
+        ]
+        supported_by_reason[label] = {
+            "players": int(reason_rows["bbref_id"].nunique()),
+            "landmarks": int(len(reason_rows)),
+        }
+
+    reason_counts = final_reasons["target_eligibility_reason"].value_counts()
+    return {
+        "players": len(excluded_target_players),
+        "twoWayPlayers": int(reason_counts.get("two_way_role_path", 0)),
+        "broadRoleSwitchPlayers": int(reason_counts.get("broad_role_switch", 0)),
+        "syntheticStandardFallbackPlayers": int(
+            reason_counts.get("synthetic_standard_fallback", 0)
+        ),
+        "selectiveTargetDomain": {
+            "status": "research_only_conditional_validation",
+            "metricsConditionalOnSupportedTargetDomain": True,
+            "futureTransitionRiskModeled": False,
+            "excludedPlayersWithPointInTimeSupportedLandmarks": int(
+                supported_landmarks["bbref_id"].nunique()
+            ),
+            "excludedPointInTimeSupportedLandmarks": int(len(supported_landmarks)),
+            "byCompletedCareerExclusionReason": supported_by_reason,
+            "supportedLandmarkDefinition": (
+                "point_in_time_role_is_hitter_or_pitcher_with_no_broad_role_switch_"
+                "to_date_and_an_exact_nonfallback_jaws_standard"
+            ),
+            "disclosure": SELECTIVE_TARGET_DOMAIN_DISCLOSURE,
+        },
+        "policy": "excluded_from_training_and_current_ranking_when_the_career_role_path_or_exact_hall_standard_is_unsupported",
+    }
 
 
 def _load_chadwick_crosswalk(
@@ -207,6 +270,7 @@ def main() -> None:
         standards,
         as_of_year=as_of_year,
         inactivity_years=args.inactivity_years,
+        active_player_ids=roster_bbref_ids,
     )
     excluded_target_players = tuple(
         sorted(
@@ -225,24 +289,9 @@ def main() -> None:
         minimum_players_per_split=args.minimum_players_per_split,
     )
     tournament = run_career_tournament(model_panel, split)
-    exclusion_reasons = (
-        panel.loc[
-            panel["resolved_career"] & ~panel["target_eligible"].eq(True),
-            ["bbref_id", "target_eligibility_reason"],
-        ]
-        .drop_duplicates("bbref_id")
-        ["target_eligibility_reason"]
-        .value_counts()
+    tournament.report["targetExclusions"] = _target_exclusion_report(
+        panel, excluded_target_players
     )
-    tournament.report["targetExclusions"] = {
-        "players": len(excluded_target_players),
-        "twoWayPlayers": int(exclusion_reasons.get("two_way_role_path", 0)),
-        "broadRoleSwitchPlayers": int(exclusion_reasons.get("broad_role_switch", 0)),
-        "syntheticStandardFallbackPlayers": int(
-            exclusion_reasons.get("synthetic_standard_fallback", 0)
-        ),
-        "policy": "excluded_from_training_and_current_ranking_when_the_career_role_path_or_exact_hall_standard_is_unsupported",
-    }
     scoring_bundle = fit_final_scoring_bundle(
         model_panel,
         tournament.champion_name,
@@ -301,7 +350,7 @@ def main() -> None:
                 "manifestPath": _portable(roster_manifest_path),
                 "manifestSha256": file_sha256(roster_manifest_path),
                 "knownAtLast": roster_manifest.get("coverage", {}).get("known_at_last"),
-                "usage": "scoring_census_only_not_training",
+                "usage": "scoring_census_and_active_player_target_mask_not_model_feature",
             },
             "chadwickCrosswalk": {
                 "directory": _portable(args.chadwick_dir.resolve()),

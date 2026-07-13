@@ -47,10 +47,30 @@ opportunity when an upstream source was unavailable in the first window. The end
 8. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
 9. Optionally lands a current FanGraphs board when
    `FANGRAPHS_CURRENT_PROSPECTS_URL` is explicitly configured.
-10. Attempts each source independently, so one upstream outage cannot suppress the
-   other current-source refreshes.
-11. Records success, failure, partial results, code commit, season, and timestamps in
+10. Enforces a 260-second request deadline below Vercel's 300-second function
+    limit. Prospect Savant, Baseball-Reference, and optional FanGraphs receive
+    bounded 105-, 95-, and 10-second windows. HTTP work and crawl delays stop on
+    abort, while PostgreSQL statements, lock waits, and idle transactions have
+    server-side limits. One stalled provider therefore cannot consume the other
+    required provider's opportunity or strand the operational receipt.
+11. Treats Prospect Savant and Baseball-Reference as the two required providers.
+    An optional FanGraphs failure remains visible in source results but does not
+    turn a complete required-source run into a partial run.
+12. Records success, failure, partial results, code commit, season, and timestamps in
    `ops.refresh_run` even when source bytes have not changed.
+
+The two required sources use separate season clocks. Baseball-Reference current MLB
+value rolls over on April 1 UTC. Prospect Savant's A, A+, AA, and AAA hitter and
+pitcher slices also roll on April 1. Its two Rookie slices retain and recheck the
+prior season until June 1, after affiliated Rookie schedules begin. During that
+window, publication selects the latest valid season independently for each level,
+but only after both its hitter and pitcher slices pass. The eight available
+current-year slices therefore stay fresh without inventing two unavailable Rookie
+cohorts or combining roles from different seasons. Health preserves
+`currentCoverage.prospectSavant.season` as the maximum selected season and exposes
+`minimumSeason` when the ten-slice set spans two seasons. Each receipt records the
+standard-level and Rookie-level source seasons separately. A running receipt older
+than six minutes is closed as failed before the next invocation claims the job.
 
 Vercel does not retry failed Cron invocations. The collectors make only bounded
 request-level retries, are content idempotent, and the next twice-daily invocation
@@ -68,24 +88,54 @@ as active MLB evidence, so a player can enter Rookie Track before the next froze
 model census is trained. These values are current evidence, not model inputs, until
 a new point-in-time feature and scoring pipeline is promoted.
 
+For an exact modeled-player match, the current row is authoritative for team,
+position, age, workload, and current role. Multi-team aggregate codes such as
+`2TM` never overwrite a known roster-census assignment; an unmatched aggregate
+is labeled `Multiple teams` rather than treated as a club. A current role change must clear a
+substantive 60-PA or 20-IP evidence gate; token usage cannot trigger it, and a
+completed-season two-way classification is not downgraded because one side is
+temporarily absent. When a supported single-role model and substantive current
+role disagree, the old Career Index and terminal forecast are removed from ranks
+instead of being relabeled. Live statistics stay visible under an explicit role-
+transition treatment until a completed-season model supports the new role.
+
 Cross-source lifecycle transitions are exact-ID only. The build includes a pinned
 Chadwick/Baseball-Reference identity artifact with unique MLBAM and Baseball-
-Reference keys plus source hashes. A current-season debut is removed from the
-pre-debut board and enters Rookie Track; its frozen prospect prior is retained only
-when the MLB record resolves to that prior through an exact identifier. A player
-with earlier MLB experience who is currently represented by a minor-league row is
-kept searchable as `MLB experience, now in minors`, but is excluded from both the
+Reference keys plus source hashes, along with a source-hash-validated
+`key_person`-to-MLBAM lookup from the same pinned Chadwick release. When a new
+Baseball-Reference ID is absent from the committed crosswalk, the scheduled refresh
+may retrieve only that canonical player page. The requested ID, canonical URL,
+unique `sr-bbref-id`, and unique `sr-chadwick-id` metadata must agree before the
+Chadwick key can resolve to MLBAM. The raw page and response hash are retained, and
+the exact BRef/Chadwick/MLBAM triple is recorded in
+`core.mlb_exact_identity_overlay` with one-to-one database constraints. Identical
+observations may refresh the evidence clock; any provider-ID disagreement fails
+closed. Names are never part of that promotion. A current-season debut enters Rookie Track only
+when a complete current MLB row is present; its frozen prospect prior is retained
+only when the MLB record resolves to that prior through an exact identifier. A
+minor row with exact debut history remains searchable outside prospect ranks until
+that MLB evidence arrives. A player
+with earlier MLB experience who has current-season minor-league data is kept
+searchable as `MLB experience · current minor data`, but is excluded from both the
 prospect ranking and active-MLB ranking. Names, accents, and approximate matches are
 never used to manufacture a lifecycle join or score.
 
-Regenerate the identity artifact with `npm run data:mlb-identity:export` only after
-updating the pinned source inputs. `npm run data:mlb-identity:test` verifies source
-hashes, identifier uniqueness, and loader behavior before publication.
+Regenerate the identity artifacts with `npm run data:mlb-identity:export` and
+`npm run data:chadwick-mlbam:export` only after updating their pinned source inputs.
+The corresponding test commands verify source hashes, one-to-one exact links,
+identifier uniqueness, and loader behavior. Health composes the committed map with
+the durable overlay, validates every overlay row again against the pinned Chadwick
+lookup, and degrades immediately for an unresolved current BRef row, a static/live
+conflict, or ambiguous evidence. The bundled artifact age remains visible metadata,
+but it does not make otherwise complete live exact-ID coverage stale. An auxiliary
+identity-page failure does not suppress valid current statistics; it leaves that
+player explicitly unlinked and health degraded until a later refresh resolves it.
 
 The expanded `/api/health` response reads latest attempts and successful fetches
-from Neon, reports 10-slice MiLB and two-side MLB coverage, includes scheduled and
-manual job receipts, and publishes a small build-generated manifest for all three
-committed model artifacts. It intentionally separates two clocks:
+from Neon, reports the latest valid 10-slice MiLB role-level set and two-side MLB
+coverage, includes scheduled and manual job receipts, and publishes a small
+build-generated manifest for all three committed model artifacts. It intentionally
+separates two clocks:
 
 - `statsChangedAt` is when new source bytes were stored. It may remain old when a
   source is checked successfully but its content is unchanged.
@@ -127,10 +177,11 @@ opportunities.
 
 | Process | In season | Offseason | Publication rule |
 | --- | --- | --- | --- |
-| Prospect Savant current slices | Twice daily | Weekly | Publish directory only with 10/10 slices |
+| Prospect Savant current slices | Twice daily | Weekly | Publish the latest valid complete role pair per level only with 10/10 slices |
 | Baseball-Reference current value pair | Twice daily | Weekly | Publish current MLB evidence only with 2/2 sides |
 | MLB roster census | Daily | Weekly and after transaction bursts | Atomic complete 30-team snapshot |
 | FanGraphs board and grades | Weekly and after known board releases | Weekly | Normalize and reconcile identities before serving |
+| Exact MLB identity bridge | Every current refresh, plus weekly pinned-source review | Monthly pinned-source review | Auto-publish only exact page metadata that resolves through the pinned Chadwick lookup; conflicts stay unlinked |
 | Point-in-time feature build and score | Weekly | Monthly | Atomic batch after coverage, leakage, drift, and movement checks |
 | Champion retraining tournament | Monthly challenger run | Full annual run after season close | Promotion only on untouched temporal gates |
 | Prospective scorecard | After every completed scoring window | Monthly summary | Never overwrite the prediction that preceded the outcome |

@@ -75,8 +75,9 @@ The compact feed contains:
 five-year-impact-rank coverage.
 
 Names are display fields, not identity keys. Never auto-merge two records only by
-normalized player name. Use MLBAM first, another exact provider ID second, and a
-reviewed identity-resolution queue otherwise.
+normalized player name. Use MLBAM first, another exact provider ID second, and the
+durable BRef/Chadwick/MLBAM evidence overlay only when all three identifiers agree.
+Unresolved or conflicting evidence stays separate for review.
 
 ## Score Semantics
 
@@ -90,9 +91,12 @@ anchors, missing-value policy, and stage transitions are defined in
 `assessment.stageStanding` carries relative rarity separately. `topPercent` is
 the player's rank divided by the declared universe, expressed as a percentage;
 lower is better. `tailBand` is one of Top 0.1%, Top 1%, Top 5%, Top 10%, Top 25%,
-or Outside top 25%. Prospect standing uses the frozen 6,455-player artifact, not
-the changing number of active directory matches. Rookie Track carries that exact
-frozen prospect standing until a supported completed-season MLB forecast exists.
+or Outside top 25%. The frozen prospect census contains 6,455 records; 6,412 have
+a supported career forecast and 43 are retained as explicit unscored coverage
+cases. Prospect standing uses the 6,412-player supported rank universe, not the
+changing number of active directory matches or the total artifact census. Rookie
+Track carries that exact frozen supported-prospect standing until a completed-
+season MLB forecast is available.
 `scope=declared_model_cohort` means search, team, position, and active-stage
 filters do not renumber it. Gaps such as prospect ranks #1, #4, and #5 are valid
 when intervening frozen-cohort players have graduated to Rookie Track or are no

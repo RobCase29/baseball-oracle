@@ -14,7 +14,7 @@ from scripts.model.export_mlb_identity_crosswalk import (
 )
 
 
-HEADER = ["key_mlbam", "key_bbref", "mlb_played_first", "mlb_played_last"]
+HEADER = ["key_person", "key_mlbam", "key_bbref", "mlb_played_first", "mlb_played_last"]
 
 
 def write_json(path: Path, value: object) -> None:
@@ -30,24 +30,28 @@ def fixture(
     chadwick_dir.mkdir(parents=True)
     rows = [
         {
+            "key_person": "00000001",
             "key_mlbam": "100",
             "key_bbref": "exactaa01",
             "mlb_played_first": "2020",
             "mlb_played_last": "2025",
         },
         {
+            "key_person": "00000002",
             "key_mlbam": "101",
             "key_bbref": "",
             "mlb_played_first": "2024",
             "mlb_played_last": "2024",
         },
         {
+            "key_person": "00000003",
             "key_mlbam": "102",
             "key_bbref": "futureaa01",
             "mlb_played_first": "",
             "mlb_played_last": "",
         },
         {
+            "key_person": "00000004",
             "key_mlbam": "103",
             "key_bbref": "",
             "mlb_played_first": "",
@@ -88,6 +92,7 @@ def fixture(
         {"bbref_id": "exactaa01", "season": 2020, "player_name": "Not Used"},
         {"bbref_id": "exactaa01", "season": 2026, "player_name": "Still Not Used"},
         {"bbref_id": "o'bermi01", "season": 2025, "player_name": "Exact A"},
+        {"bbref_id": "newdebut01", "season": 2026, "player_name": "Not Used"},
     ]
     write_json(player_seasons_path, player_seasons)
     coverage = {
@@ -196,3 +201,36 @@ def test_rejects_player_seasons_that_drift_from_the_reference_lock(
 
     with pytest.raises(ValueError, match="does not match its reference lock"):
         build(tmp_path, paths)
+
+
+def test_promotes_exact_bref_page_metadata_through_pinned_chadwick_key(
+    tmp_path: Path,
+) -> None:
+    paths = fixture(tmp_path)
+    links_path = tmp_path / "data/reference-locks/bref-chadwick-links.json"
+    write_json(
+        links_path,
+        {
+            "schemaVersion": "baseball-reference-chadwick-identity-links/v1",
+            "asOf": "2026-07-13T19:29:41.606Z",
+            "identityPolicy": "exact_bbref_page_meta_to_pinned_chadwick_key_no_name_matching",
+            "entries": [
+                {
+                    "bbref": "newdebut01",
+                    "chadwickKey": "00000004",
+                    "sourceUrl": "https://www.baseball-reference.com/players/n/newdebut01.shtml",
+                    "responseSha256": "a" * 64,
+                }
+            ],
+        },
+    )
+
+    artifact = build_artifact(
+        root=tmp_path,
+        bref_chadwick_links_path=links_path,
+        **paths,
+    )
+
+    assert artifact["asOf"] == "2026-07-13T19:29:41.606Z"
+    assert [103, "newdebut01", 2026, 2026, "bref"] in artifact["records"]
+    assert artifact["source"]["baseballReferenceChadwickLinks"]["records"] == 1

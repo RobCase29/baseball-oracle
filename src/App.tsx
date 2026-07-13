@@ -416,11 +416,15 @@ function App() {
     })
   }
 
+  const identityNeedsRefresh = (
+    meta.identity?.identityCrosswalkStatus !== undefined &&
+    meta.identity.identityCrosswalkStatus !== 'current'
+  ) || (meta.identity?.unmatchedCurrentBbrefIds ?? 0) > 0
   const topbarStatus = loading && players.length === 0
     ? 'loading'
     : error
       ? 'error'
-      : meta.degraded || meta.currentDataFreshness?.status !== 'ok'
+      : meta.degraded || identityNeedsRefresh || meta.currentDataFreshness?.status !== 'ok'
         ? 'degraded'
         : 'live'
   const modelVintage = selectedPlayer
@@ -442,17 +446,19 @@ function App() {
     ? 'Connecting'
     : topbarStatus === 'error'
       ? 'Source unavailable'
-      : meta.degraded
-        ? 'Partial source data'
-        : meta.currentDataFreshness?.reasonCodes.some((reason) => (
-            reason === 'cron_not_configured' || reason === 'scheduled_run_not_observed'
-          ))
-          ? 'Refresh verification pending'
-          : meta.currentDataFreshness?.status === 'stale'
-          ? 'Stats refresh overdue'
-          : meta.currentDataFreshness?.status === 'degraded'
+      : identityNeedsRefresh
+        ? 'Identity refresh needed'
+        : meta.degraded
+          ? 'Partial source data'
+          : meta.currentDataFreshness?.reasonCodes.some((reason) => (
+              reason === 'cron_not_configured' || reason === 'scheduled_run_not_observed'
+            ))
             ? 'Refresh verification pending'
-            : 'Updated twice daily'
+            : meta.currentDataFreshness?.status === 'stale'
+              ? 'Stats refresh overdue'
+              : meta.currentDataFreshness?.status === 'degraded'
+                ? 'Refresh verification pending'
+                : 'Updated twice daily'
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>

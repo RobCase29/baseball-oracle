@@ -15,9 +15,18 @@ import {
   type ProspectSavantBackfillResult,
 } from '../../scripts/ingest/prospect-savant-leaders.js'
 import { buildProspectSavantCurrentSlices } from '../../scripts/ingest/prospect-savant.js'
+import { currentRefreshDatabaseOptions } from '../../scripts/ingest/shared.js'
 import { hasValidCronAuthorization, sendJson } from '../_admin.js'
 
 const jobKey = 'current-baseball-source-refresh-v1'
+
+export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 260_000
+export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
+export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
+  prospectSavant: 105_000,
+  baseballReference: 95_000,
+  fangraphs: 10_000,
+} as const
 
 export type RefreshRunStatus = 'succeeded' | 'partial' | 'failed'
 
@@ -45,6 +54,13 @@ type FangraphsRefreshResult = Awaited<ReturnType<typeof ingestFangraphsProspects
 
 export interface CurrentRefreshResult {
   season: number
+  sourceSeasons: {
+    prospectSavant: {
+      standardLevels: number
+      rookieLevel: number
+    }
+    baseballReference: number
+  }
   prospectSavant: RefreshSourceResult<ProspectSavantBackfillResult>
   baseballReference: RefreshSourceResult<BaseballReferenceCurrentResult>
   fangraphs: RefreshSourceResult<FangraphsRefreshResult>
@@ -73,7 +89,12 @@ const defaultDependencies: CurrentRefreshDependencies = {
 
 export function baseballSeasonForDate(date: Date): number {
   const year = date.getUTCFullYear()
-  return date.getUTCMonth() < 2 ? year - 1 : year
+  return date.getUTCMonth() < 3 ? year - 1 : year
+}
+
+export function prospectSavantRookieSeasonForDate(date: Date): number {
+  const year = date.getUTCFullYear()
+  return date.getUTCMonth() < 5 ? year - 1 : year
 }
 
 function cronTrigger(request: IncomingMessage): string {
@@ -102,24 +123,15 @@ export function currentFangraphsConfiguration(): FangraphsRefreshConfiguration {
   }
 }
 
-function configuredSourceStatuses(
-  result: CurrentRefreshResult,
-): Array<'succeeded' | 'failed'> {
-  return [
-    result.prospectSavant.status,
-    result.baseballReference.status,
-    result.fangraphs.status,
-  ].filter(
-    (status): status is 'succeeded' | 'failed' => status !== 'not_configured',
-  )
-}
-
 export function deriveRefreshRunStatus(
   result: CurrentRefreshResult,
 ): RefreshRunStatus {
-  const statuses = configuredSourceStatuses(result)
-  const successes = statuses.filter((status) => status === 'succeeded').length
-  if (successes === statuses.length) return 'succeeded'
+  const requiredStatuses = [
+    result.prospectSavant.status,
+    result.baseballReference.status,
+  ]
+  const successes = requiredStatuses.filter((status) => status === 'succeeded').length
+  if (successes === requiredStatuses.length) return 'succeeded'
   if (successes === 0) return 'failed'
   return 'partial'
 }
@@ -128,7 +140,7 @@ function aggregateError(
   result: CurrentRefreshResult,
 ): { sources: Record<string, { message: string }> } | null {
   const sources: Record<string, { message: string }> = {}
-  for (const source of ['prospectSavant', 'baseballReference', 'fangraphs'] as const) {
+  for (const source of ['prospectSavant', 'baseballReference'] as const) {
     const outcome = result[source]
     if (outcome.status === 'failed') sources[source] = outcome.error
   }
@@ -138,19 +150,35 @@ function aggregateError(
 async function attemptSource<T>(
   collect: () => Promise<T>,
   publish: (result: T) => Promise<void> | void = () => undefined,
+  signal?: AbortSignal,
+  fatalSignal?: AbortSignal,
 ): Promise<RefreshSourceResult<T>> {
   let result: T | undefined
   try {
+    signal?.throwIfAborted()
     result = await collect()
+    signal?.throwIfAborted()
     await publish(result)
+    signal?.throwIfAborted()
     return { status: 'succeeded', result }
   } catch (error) {
+    fatalSignal?.throwIfAborted()
     return {
       status: 'failed',
       error: safeError(error),
       ...(result === undefined ? {} : { result }),
     }
   }
+}
+
+function sourceDeadlineSignal(
+  parentSignal: AbortSignal | undefined,
+  timeoutMs: number,
+): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs)
+  return parentSignal
+    ? AbortSignal.any([parentSignal, timeoutSignal])
+    : timeoutSignal
 }
 
 function assertProspectSavantComplete(
@@ -186,29 +214,58 @@ export async function refreshCurrentSources(
   season: number,
   fangraphsConfiguration: FangraphsRefreshConfiguration,
   dependencies: CurrentRefreshDependencies = defaultDependencies,
+  options: {
+    signal?: AbortSignal
+    prospectSavantSeason?: number
+    prospectSavantRookieSeason?: number
+  } = {},
 ): Promise<CurrentRefreshResult> {
-  const slices = buildProspectSavantCurrentSlices(season)
+  options.signal?.throwIfAborted()
+  const prospectSavantSeason = options.prospectSavantSeason ?? season
+  const prospectSavantRookieSeason =
+    options.prospectSavantRookieSeason ?? prospectSavantSeason
+  const slices = buildProspectSavantCurrentSlices(prospectSavantSeason).map((slice) => (
+    slice.level === 'Rk' ? { ...slice, season: prospectSavantRookieSeason } : slice
+  ))
+  const prospectSavantSignal = sourceDeadlineSignal(
+    options.signal,
+    CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
+  )
   const prospectSavant = await attemptSource(
     () => dependencies.backfillProspectSavant({
       slices,
       delayMs: 250,
       enforceCurrentCardinality: true,
+      signal: prospectSavantSignal,
     }),
     async (sourceResult) => {
       assertProspectSavantComplete(sourceResult, slices.length)
+      prospectSavantSignal.throwIfAborted()
       await dependencies.refreshPlayerDirectorySnapshot()
     },
+    prospectSavantSignal,
+    options.signal,
   )
 
+  const baseballReferenceSignal = sourceDeadlineSignal(
+    options.signal,
+    CURRENT_REFRESH_SOURCE_BUDGETS_MS.baseballReference,
+  )
   const baseballReference = await attemptSource(
     () => dependencies.ingestBaseballReferenceCurrentSeason(
       season,
-      { enforceCurrentCardinality: true },
+      {
+        enforceCurrentCardinality: true,
+        signal: baseballReferenceSignal,
+      },
     ),
     async (sourceResult) => {
       assertBaseballReferenceComplete(sourceResult)
+      baseballReferenceSignal.throwIfAborted()
       await dependencies.refreshCurrentMlbValueSnapshot()
     },
+    baseballReferenceSignal,
+    options.signal,
   )
 
   let fangraphs: RefreshSourceResult<FangraphsRefreshResult>
@@ -217,8 +274,13 @@ export async function refreshCurrentSources(
   } else if (fangraphsConfiguration.status === 'invalid') {
     fangraphs = { status: 'failed', error: fangraphsConfiguration.error }
   } else {
+    const fangraphsSignal = sourceDeadlineSignal(
+      options.signal,
+      CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs,
+    )
     fangraphs = await attemptSource(
       () => dependencies.ingestFangraphsProspects({
+        signal: fangraphsSignal,
         url: fangraphsConfiguration.url,
       }),
       (sourceResult) => {
@@ -226,10 +288,23 @@ export async function refreshCurrentSources(
           throw new Error('FanGraphs refresh is still in progress')
         }
       },
+      fangraphsSignal,
     )
   }
 
-  return { season, prospectSavant, baseballReference, fangraphs }
+  return {
+    season,
+    sourceSeasons: {
+      prospectSavant: {
+        standardLevels: prospectSavantSeason,
+        rookieLevel: prospectSavantRookieSeason,
+      },
+      baseballReference: season,
+    },
+    prospectSavant,
+    baseballReference,
+    fangraphs,
+  }
 }
 
 export default async function handler(
@@ -253,12 +328,17 @@ export default async function handler(
 
   const now = new Date()
   const season = baseballSeasonForDate(now)
-  const sql = postgres(directDatabaseUrl(), {
-    max: 1,
-    prepare: false,
-    idle_timeout: 10,
-    connect_timeout: 15,
-  })
+  const prospectSavantRookieSeason = prospectSavantRookieSeasonForDate(now)
+  const refreshController = new AbortController()
+  const deadline = setTimeout(() => {
+    refreshController.abort(
+      new Error(
+        `Current source refresh exceeded its ${CURRENT_REFRESH_EXECUTION_BUDGET_MS / 1000}-second execution budget`,
+      ),
+    )
+  }, CURRENT_REFRESH_EXECUTION_BUDGET_MS)
+  deadline.unref()
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(10_000))
   let runId: string | null = null
   let result: CurrentRefreshResult | null = null
 
@@ -271,7 +351,7 @@ export default async function handler(
         error = jsonb_build_object('message', 'Refresh exceeded the stale-run timeout')
       WHERE job_key = ${jobKey}
         AND status = 'running'
-        AND started_at < now() - interval '15 minutes'
+        AND started_at < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_RUN_MS)}
     `
 
     const claimed = await sql<{ id: string }[]>`
@@ -301,6 +381,8 @@ export default async function handler(
     result = await refreshCurrentSources(
       season,
       currentFangraphsConfiguration(),
+      defaultDependencies,
+      { signal: refreshController.signal, prospectSavantRookieSeason },
     )
     const status = deriveRefreshRunStatus(result)
     const error = aggregateError(result)
@@ -334,6 +416,7 @@ export default async function handler(
     console.error('Current source refresh failed', error)
     sendJson(response, 500, { status: 'failed', jobKey, ...safeError(error) })
   } finally {
+    clearTimeout(deadline)
     await sql.end({ timeout: 5 })
   }
 }

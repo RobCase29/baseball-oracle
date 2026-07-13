@@ -24,11 +24,11 @@ universes because their targets are not directly comparable.
 
 ## Current data and model updates
 
-Production defines a daily 10:17 UTC refresh for all ten current Prospect Savant
-minor-league slices and the authorized Baseball-Reference current-season batting
-and pitching value pages. New MLB WAR, workload, and role-relative WAR percentile
-reach player profiles without silently changing the completed-season Career Index
-or a Rookie Track player's frozen prospect prior.
+Production defines twice-daily 10:17 and 22:17 UTC refreshes for all ten current
+Prospect Savant minor-league slices and the authorized Baseball-Reference
+current-season batting and pitching value pages. New MLB WAR, workload, and
+role-relative WAR percentile reach player profiles without silently changing the
+completed-season Career Index or a Rookie Track player's frozen prospect prior.
 `/api/health` reports the last source attempts, complete-slice coverage, scheduled
 job receipt, and separate current-data and model clocks.
 

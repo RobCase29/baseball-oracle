@@ -165,6 +165,11 @@ def test_preview_discloses_exact_refit_does_not_inherit_tournament_metrics() -> 
         "current-player probabilities do not inherit" in disclosure
         for disclosure in payload["disclosures"]
     )
+    assert any(
+        "future two-way, cross-role, and unsupported-standard transition risk is not modeled"
+        in disclosure
+        for disclosure in payload["disclosures"]
+    )
 
 
 def test_failed_rookie_discrimination_gate_withholds_early_mlb_rank() -> None:

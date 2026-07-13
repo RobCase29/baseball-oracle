@@ -1,9 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  abortableDelay,
   boundedSourceRecordKey,
+  CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
+  CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
+  currentRefreshDatabaseOptions,
   disambiguateSourceRecordKeys,
+  fetchWithRetry,
   SOURCE_RECORD_KEY_MAX_BYTES,
 } from './shared.js'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('shared ingestion helpers', () => {
   it('gives every repeated identical source row a deterministic unique key', () => {
@@ -25,5 +34,42 @@ describe('shared ingestion helpers', () => {
       SOURCE_RECORD_KEY_MAX_BYTES,
     )
     expect(boundedSourceRecordKey(oversized)).toBe(bounded)
+  })
+
+  it('does not start an HTTP attempt after the parent refresh is aborted', async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    const controller = new AbortController()
+    controller.abort(new Error('Refresh deadline elapsed'))
+
+    await expect(
+      fetchWithRetry('https://example.com/data', {
+        attempts: 3,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow('Refresh deadline elapsed')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('cancels retry and crawl delays when the parent refresh is aborted', async () => {
+    const controller = new AbortController()
+    const waiting = abortableDelay(60_000, controller.signal)
+
+    controller.abort(new Error('Source budget elapsed'))
+
+    await expect(waiting).rejects.toThrow('Source budget elapsed')
+  })
+
+  it('bounds refresh database statements and lock waits on the server', () => {
+    expect(currentRefreshDatabaseOptions()).toMatchObject({
+      connection: {
+        statement_timeout: CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
+        lock_timeout: CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
+        idle_in_transaction_session_timeout:
+          CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS + 5_000,
+      },
+    })
+    expect(currentRefreshDatabaseOptions(10_000).connection.statement_timeout).toBe(10_000)
+    expect(() => currentRefreshDatabaseOptions(0)).toThrow(/positive integer/iu)
   })
 })

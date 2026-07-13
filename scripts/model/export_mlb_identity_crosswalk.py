@@ -8,6 +8,7 @@ import csv
 import hashlib
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,14 +31,21 @@ DEFAULT_BREF_REFERENCE_LOCK = (
     ROOT / "data/reference-locks/baseball-reference-mlb-war.json"
 )
 DEFAULT_OUTPUT = ROOT / "api/_data/mlb-identity-crosswalk.json"
+DEFAULT_BREF_CHADWICK_LINKS = (
+    ROOT
+    / "data/reference-locks/baseball-reference-chadwick-identity-links-2026-07-13.json"
+)
 
 CHADWICK_REQUIRED_COLUMNS = {
+    "key_person",
     "key_mlbam",
     "key_bbref",
     "mlb_played_first",
     "mlb_played_last",
 }
 BREF_ID_PATTERN = re.compile(r"^[a-z0-9_'.]+$")
+CHADWICK_KEY_PATTERN = re.compile(r"^[0-9a-f]{8}$")
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 def file_sha256(path: Path) -> str:
@@ -194,6 +202,56 @@ def validate_bref_lock(
     }
 
 
+def validate_bref_chadwick_links(
+    path: Path | None,
+    root: Path,
+) -> tuple[dict[str, str], dict[str, object] | None]:
+    if path is None:
+        return {}, None
+    value = read_object(path, "Baseball-Reference identity link lock")
+    if value.get("schemaVersion") != "baseball-reference-chadwick-identity-links/v1":
+        raise ValueError("Baseball-Reference identity link schema changed")
+    if value.get("identityPolicy") != "exact_bbref_page_meta_to_pinned_chadwick_key_no_name_matching":
+        raise ValueError("Baseball-Reference identity link policy changed")
+    as_of = value.get("asOf")
+    if not isinstance(as_of, str):
+        raise ValueError("Baseball-Reference identity links require asOf")
+    try:
+        datetime.fromisoformat(as_of.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError("Baseball-Reference identity link asOf is invalid") from error
+    entries = value.get("entries")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("Baseball-Reference identity links require entries")
+
+    by_chadwick: dict[str, str] = {}
+    seen_bbref: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            raise ValueError(f"Identity link {index} must be an object")
+        bbref = require_bbref_identifier(entry.get("bbref"), f"identity link {index}.bbref")
+        chadwick_key = str(entry.get("chadwickKey") or "")
+        if not CHADWICK_KEY_PATTERN.fullmatch(chadwick_key):
+            raise ValueError(f"identity link {index}.chadwickKey is invalid")
+        expected_url = f"https://www.baseball-reference.com/players/{bbref[0]}/{bbref}.shtml"
+        if entry.get("sourceUrl") != expected_url:
+            raise ValueError(f"identity link {index}.sourceUrl is not the exact BRef page")
+        if not SHA256_PATTERN.fullmatch(str(entry.get("responseSha256") or "")):
+            raise ValueError(f"identity link {index}.responseSha256 is invalid")
+        if bbref in seen_bbref or chadwick_key in by_chadwick:
+            raise ValueError("Baseball-Reference identity links must be one-to-one")
+        seen_bbref.add(bbref)
+        by_chadwick[chadwick_key] = bbref
+
+    return by_chadwick, {
+        "path": relative_path(path, root),
+        "sha256": file_sha256(path),
+        "asOf": as_of,
+        "records": len(entries),
+        "identityPolicy": value["identityPolicy"],
+    }
+
+
 def build_artifact(
     *,
     chadwick_dir: Path,
@@ -201,6 +259,7 @@ def build_artifact(
     player_seasons_path: Path,
     player_seasons_manifest_path: Path,
     bref_reference_lock_path: Path,
+    bref_chadwick_links_path: Path | None = None,
     root: Path = ROOT,
 ) -> dict[str, object]:
     """Build an exact identifier artifact; player names are never read or compared."""
@@ -210,6 +269,10 @@ def build_artifact(
         player_seasons_path,
         player_seasons_manifest_path,
         bref_reference_lock_path,
+        root,
+    )
+    linked_bbref_by_chadwick, link_lineage = validate_bref_chadwick_links(
+        bref_chadwick_links_path,
         root,
     )
 
@@ -234,6 +297,7 @@ def build_artifact(
     records: list[list[object | None]] = []
     seen_mlbam: set[str] = set()
     seen_bbref: set[str] = set()
+    resolved_link_keys: set[str] = set()
     for shard_name in EXPECTED_CHADWICK_SHARDS:
         shard_path = chadwick_dir / shard_name
         with shard_path.open(newline="", encoding="utf-8") as handle:
@@ -241,8 +305,15 @@ def build_artifact(
             if reader.fieldnames is None or not CHADWICK_REQUIRED_COLUMNS.issubset(reader.fieldnames):
                 raise ValueError(f"Chadwick shard has an unexpected header: {shard_name}")
             for row_number, row in enumerate(reader, start=2):
+                chadwick_key = str(row.get("key_person") or "").strip()
                 raw_mlbam = str(row.get("key_mlbam") or "").strip()
-                bbref_id = str(row.get("key_bbref") or "").strip() or None
+                native_bbref_id = str(row.get("key_bbref") or "").strip() or None
+                linked_bbref_id = linked_bbref_by_chadwick.get(chadwick_key)
+                if linked_bbref_id is not None:
+                    resolved_link_keys.add(chadwick_key)
+                if native_bbref_id is not None and linked_bbref_id not in {None, native_bbref_id}:
+                    raise ValueError(f"BRef identity link conflicts with Chadwick at {shard_name}:{row_number}")
+                bbref_id = native_bbref_id or linked_bbref_id
                 chadwick_first = optional_year(
                     row.get("mlb_played_first"),
                     f"{shard_name}:{row_number}.mlb_played_first",
@@ -265,8 +336,8 @@ def build_artifact(
                 seen_mlbam.add(mlbam)
                 if bbref_id is not None:
                     bbref_id = require_bbref_identifier(
-                        row.get("key_bbref"),
-                        f"{shard_name}:{row_number}.key_bbref",
+                        bbref_id,
+                        f"{shard_name}:{row_number}.resolved_bbref",
                     )
                     if bbref_id in seen_bbref:
                         raise ValueError(f"Duplicate Chadwick BRef identifier: {bbref_id}")
@@ -294,6 +365,10 @@ def build_artifact(
                     [int(mlbam), bbref_id, first_mlb_season, last_mlb_season, evidence]
                 )
 
+    unresolved_links = set(linked_bbref_by_chadwick) - resolved_link_keys
+    if unresolved_links:
+        raise ValueError(f"Identity links did not resolve in pinned Chadwick: {sorted(unresolved_links)}")
+
     records.sort(key=lambda row: int(row[0]))
     bref_evidence = sum(row[4] == "bref" for row in records)
     chadwick_evidence = sum(row[4] == "chadwick" for row in records)
@@ -302,9 +377,28 @@ def build_artifact(
     if not isinstance(generated_at, str) or not generated_at:
         raise ValueError("Baseball-Reference reference lock is missing createdAt")
 
+    artifact_as_of = generated_at
+    if link_lineage is not None:
+        artifact_as_of = max(
+            (generated_at, str(link_lineage["asOf"])),
+            key=lambda value: datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc),
+        )
+
+    source: dict[str, object] = {
+        "chadwickRegister": {
+            "version": CHADWICK_VERSION,
+            "sourceLockPath": relative_path(source_lock_path, root),
+            "sourceLockSha256": file_sha256(source_lock_path),
+            "shards": chadwick_lineage,
+        },
+        "baseballReferencePlayerSeasons": bref_lineage,
+    }
+    if link_lineage is not None:
+        source["baseballReferenceChadwickLinks"] = link_lineage
+
     return {
         "schemaVersion": "mlb-identity-crosswalk/v1",
-        "asOf": generated_at,
+        "asOf": artifact_as_of,
         "identityPolicy": "exact_mlbam_bbref_only_no_name_matching",
         "recordCount": len(records),
         "coverage": {
@@ -313,15 +407,7 @@ def build_artifact(
             "chadwickSeasonEvidence": chadwick_evidence,
             "crosswalkOnly": crosswalk_only,
         },
-        "source": {
-            "chadwickRegister": {
-                "version": CHADWICK_VERSION,
-                "sourceLockPath": relative_path(source_lock_path, root),
-                "sourceLockSha256": file_sha256(source_lock_path),
-                "shards": chadwick_lineage,
-            },
-            "baseballReferencePlayerSeasons": bref_lineage,
-        },
+        "source": source,
         "recordShape": [
             "mlbam",
             "bbref",
@@ -357,6 +443,11 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_BREF_REFERENCE_LOCK,
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--bref-chadwick-links",
+        type=Path,
+        default=DEFAULT_BREF_CHADWICK_LINKS,
+    )
     return parser.parse_args()
 
 
@@ -368,6 +459,7 @@ def main() -> None:
         player_seasons_path=args.player_seasons,
         player_seasons_manifest_path=args.player_seasons_manifest,
         bref_reference_lock_path=args.bref_reference_lock,
+        bref_chadwick_links_path=args.bref_chadwick_links,
     )
     write_artifact(artifact, args.output)
     coverage = artifact["coverage"]

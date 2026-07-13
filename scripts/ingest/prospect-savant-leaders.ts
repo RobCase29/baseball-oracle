@@ -25,6 +25,8 @@ import {
   type CurrentRefreshCardinalityGate,
 } from './current-refresh-quality.js'
 import {
+  abortableDelay,
+  currentRefreshDatabaseOptions,
   disambiguateSourceRecordKeys,
   idempotencyKey,
   normalizeRequestUrl,
@@ -47,6 +49,7 @@ export interface IngestProspectSavantResult {
 interface ProspectSavantIngestOptions {
   apiBase?: string
   enforceCurrentCardinality?: boolean
+  signal?: AbortSignal
 }
 
 async function previousProspectSavantSliceRows(
@@ -92,6 +95,7 @@ export async function ingestProspectSavantSlice(
   inputSlice: ProspectSavantSlice,
   options: ProspectSavantIngestOptions = {},
 ): Promise<IngestProspectSavantResult> {
+  options.signal?.throwIfAborted()
   const slice = validateProspectSavantSlice(inputSlice)
   const url = normalizeRequestUrl(
     buildProspectSavantLeadersUrl(
@@ -101,8 +105,9 @@ export async function ingestProspectSavantSlice(
         PROSPECT_SAVANT_DEFAULT_API_BASE,
     ),
   )
-  const response = await fetchProspectSavantLeaders(url)
+  const response = await fetchProspectSavantLeaders(url, options.signal)
   const body = await response.text()
+  options.signal?.throwIfAborted()
   const fetchedAt = new Date()
   const { envelope, semanticQuality } = parseProspectSavantEnvelope(body, slice)
   const responseHash = sha256(body)
@@ -114,12 +119,7 @@ export async function ingestProspectSavantSlice(
     recordSha256: sha256(stableStringify(record)),
   }))
 
-  const sql = postgres(directDatabaseUrl(), {
-    max: 1,
-    prepare: false,
-    idle_timeout: 10,
-    connect_timeout: 15,
-  })
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 
   try {
     let cardinalityGate: CurrentRefreshCardinalityGate | null = null
@@ -131,8 +131,10 @@ export async function ingestProspectSavantSlice(
         previousRows,
       )
     }
+    options.signal?.throwIfAborted()
 
     const landing = await persistRawLanding(sql, {
+      signal: options.signal,
       sourceSlug: 'prospect-savant',
       datasetKey: 'minor-league-leaders',
       idempotencyKey: idempotencyKey(url, responseHash),
@@ -175,6 +177,7 @@ export async function ingestProspectSavantSlice(
       },
       records,
     })
+    options.signal?.throwIfAborted()
 
     return {
       status: landing.status,
@@ -192,6 +195,7 @@ export async function backfillProspectSavant(options: {
   delayMs?: number
   apiBase?: string
   enforceCurrentCardinality?: boolean
+  signal?: AbortSignal
   onProgress?: (result: IngestProspectSavantResult) => void
 } = {}): Promise<ProspectSavantBackfillResult> {
   const slices = options.slices ?? buildProspectSavantHistoricalSlices()
@@ -210,11 +214,13 @@ export async function backfillProspectSavant(options: {
   }
 
   for (const [index, slice] of slices.entries()) {
+    options.signal?.throwIfAborted()
     summary.attempted += 1
     try {
       const result = await ingestProspectSavantSlice(slice, {
         apiBase: options.apiBase,
         enforceCurrentCardinality: options.enforceCurrentCardinality,
+        signal: options.signal,
       })
       if (result.status === 'stored') summary.stored += 1
       else if (result.status === 'duplicate') summary.duplicates += 1
@@ -222,6 +228,7 @@ export async function backfillProspectSavant(options: {
       summary.rows += result.rows
       options.onProgress?.(result)
     } catch (error) {
+      options.signal?.throwIfAborted()
       summary.failures.push({
         slice,
         message: error instanceof Error ? error.message : 'Unknown ingestion error',
@@ -229,7 +236,7 @@ export async function backfillProspectSavant(options: {
     }
 
     if (index < slices.length - 1 && delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
+      await abortableDelay(delayMs, options.signal)
     }
   }
 

@@ -1186,7 +1186,9 @@ export function buildPlayerMap(
   player: PlayerMapInput,
   context: PlayerMapBuildContext = {},
 ): PlayerMapProfile {
-  if (player.stage === 'pre_debut') return buildMinorMap(player, context)
+  if (player.stage === 'pre_debut' || player.stage === 'post_debut_minors') {
+    return buildMinorMap(player, context)
+  }
   if (player.stage === 'recent_callup') return buildRookieMap(player)
   return buildMlbMap(player, context)
 }

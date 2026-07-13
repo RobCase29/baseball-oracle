@@ -64,9 +64,14 @@ export function parseFangraphsEnvelope(body: string): FangraphsEnvelope {
   return fangraphsEnvelopeSchema.parse(JSON.parse(body))
 }
 
-export async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+export async function fetchWithRetry(
+  url: string,
+  attempts = 3,
+  signal?: AbortSignal,
+): Promise<Response> {
   return fetchUrlWithRetry(url, {
     attempts,
+    signal,
     sourceName: 'FanGraphs',
     headers: {
       Accept: 'application/json',

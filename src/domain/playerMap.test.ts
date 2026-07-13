@@ -27,6 +27,18 @@ function makePlayer(overrides: Partial<PlayerMapInput> = {}): PlayerMapInput {
 }
 
 describe('Player Map', () => {
+  it('keeps current minor data after MLB experience on an unranked minor route', () => {
+    const profile = buildPlayerMap(makePlayer({
+      stage: 'post_debut_minors',
+      careerForecast: null,
+    }), { minorUniverse: 6_412, mlbUniverse: 1_000 })
+
+    expect(profile.route).toBe('milb')
+    expect(profile.careerIndex.value).toBeNull()
+    expect(profile.stageStanding).toMatchObject({ rank: null, universe: null })
+    expect(profile.handling.primary?.code).toBe('post_debut_minor_assignment')
+  })
+
   it('maps career WAR scenarios to a fixed, roster-independent career index', () => {
     expect(careerIndexValueForWar(-2)).toBe(0)
     expect(careerIndexValueForWar(5)).toBe(20)

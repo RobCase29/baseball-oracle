@@ -654,16 +654,26 @@ export interface PlayersResponseMeta {
     minorRoleRows: number
     canonicalMinorPlayers: number
     duplicateMinorRoleRowsRemoved: number
+    minorTwoWayPlayers?: number
     crossStageDuplicatesRemoved: number
     minorPlayersMissingMlbam: number
     mlbPlayersMissingMlbam: number
     currentMlbProfilesOutsideModelCensus?: number
-    experiencedMinorRowsSuppressed?: number
-    currentSeasonDebutMinorRowsSuppressed?: number
+    experiencedMinorRowsExcludedFromRankings?: number
+    currentSeasonDebutMinorRowsIdentified?: number
     minorIdsRecoveredFromExactCrosswalk?: number
-    identityPolicy?: 'exact_mlbam_bbref_only_no_name_matching'
+    identityPolicy?: 'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching'
     identityCrosswalkAsOf?: string
     identityCrosswalkRecords?: number
+    identityCrosswalkStatus?: 'current' | 'stale' | 'invalid'
+    identityCrosswalkAgeHours?: number | null
+    identityCrosswalkMaxAgeHours?: number
+    identityOverlayRecords?: number
+    identityOverlayConflicts?: number
+    identityOverlayNewestObservedAt?: string | null
+    currentMlbRows?: number
+    unmatchedCurrentBbrefIds?: number
+    conflictingCurrentMlbIds?: number
   }
   searchRecovery?: {
     query: string

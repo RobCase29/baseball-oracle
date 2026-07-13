@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assessMlbIdentityCrosswalkFreshness,
   loadMlbIdentityCrosswalk,
   requireMlbIdentityCrosswalk,
   validateMlbIdentityCrosswalkArtifact,
@@ -63,11 +64,11 @@ describe('MLB identity crosswalk', () => {
 
     expect(crosswalk.summary).toMatchObject({
       schemaVersion: 'mlb-identity-crosswalk/v1',
-      recordCount: 23_752,
+      recordCount: 23_764,
       coverage: {
-        recordsWithBbref: 23_750,
-        baseballReferenceSeasonEvidence: 23_590,
-        chadwickSeasonEvidence: 2,
+        recordsWithBbref: 23_763,
+        baseballReferenceSeasonEvidence: 23_603,
+        chadwickSeasonEvidence: 1,
         crosswalkOnly: 160,
       },
     })
@@ -86,12 +87,17 @@ describe('MLB identity crosswalk', () => {
       bbref: 'anderja02',
       firstMlbSeason: 2026,
     })
+    expect(crosswalk.byBbref('laralu01')).toMatchObject({
+      mlbam: 800_325,
+      firstMlbSeason: 2026,
+      seasonEvidence: 'baseball-reference-player-seasons',
+    })
     expect(crosswalk.byMlbam(671_155)).toEqual({
       mlbam: 671_155,
-      bbref: null,
+      bbref: 'johnsiv01',
       firstMlbSeason: 2026,
       lastMlbSeason: 2026,
-      seasonEvidence: 'chadwick-register',
+      seasonEvidence: 'baseball-reference-player-seasons',
     })
   })
 
@@ -124,7 +130,41 @@ describe('MLB identity crosswalk', () => {
     expect(() => validateMlbIdentityCrosswalkArtifact(namePolicyDrift)).toThrow()
   })
 
+  it('uses the newest exact-ID source as the artifact clock', () => {
+    const fixture = artifactFixture()
+    fixture.asOf = '2026-07-13T19:29:41.606Z'
+    Object.assign(fixture.source, {
+      baseballReferenceChadwickLinks: {
+        path: 'data/reference-locks/baseball-reference-chadwick-identity-links-2026-07-13.json',
+        sha256,
+        asOf: fixture.asOf,
+        records: 13,
+        identityPolicy: 'exact_bbref_page_meta_to_pinned_chadwick_key_no_name_matching',
+      },
+    })
+
+    expect(validateMlbIdentityCrosswalkArtifact(fixture).asOf).toBe(fixture.asOf)
+    const staleClock = structuredClone(fixture)
+    staleClock.asOf = '2026-07-12T18:30:20.537Z'
+    expect(() => validateMlbIdentityCrosswalkArtifact(staleClock)).toThrow(/newest exact-ID source/iu)
+  })
+
   it('returns null for a missing artifact path', () => {
     expect(loadMlbIdentityCrosswalk('/definitely/missing/crosswalk.json')).toBeNull()
+  })
+
+  it('makes stale exact-ID coverage operationally visible', () => {
+    expect(assessMlbIdentityCrosswalkFreshness(
+      '2026-07-12T18:30:20.537Z',
+      new Date('2026-07-13T18:30:20.537Z'),
+    )).toMatchObject({ status: 'current', ageHours: 24, maxAgeHours: 168 })
+    expect(assessMlbIdentityCrosswalkFreshness(
+      '2026-07-01T00:00:00.000Z',
+      new Date('2026-07-13T00:00:00.000Z'),
+    )).toMatchObject({ status: 'stale', ageHours: 288 })
+    expect(assessMlbIdentityCrosswalkFreshness(
+      'not-a-date',
+      new Date('2026-07-13T00:00:00.000Z'),
+    )).toMatchObject({ status: 'invalid', ageHours: null })
   })
 })

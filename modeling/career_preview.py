@@ -65,6 +65,11 @@ except ModuleNotFoundError:
 
 PREVIEW_SCHEMA_VERSION = "career-oracle-preview/v1"
 PROSPECT_BRIDGE_TARGET_VERSION = "mlb-debut-age-mixed-final-standard-bridge-v1"
+SELECTIVE_TARGET_DOMAIN_DISCLOSURE = (
+    "Tournament metrics are conditional on careers that remain in the supported "
+    "single-role, exact-standard target domain; future two-way, cross-role, and "
+    "unsupported-standard transition risk is not modeled."
+)
 
 
 def _age_value(value: object) -> float | None:
@@ -889,6 +894,7 @@ def build_preview_payload(
             "Research output only; release gates are incomplete.",
             "Hall caliber is a statistical JAWS outcome, not Hall of Fame induction probability.",
             "Champion selection used only the chronological selection cohort; the inspected development holdout is retrospective audit evidence, not prospective validation.",
+            SELECTIVE_TARGET_DOMAIN_DISCLOSURE,
             "Current-player point and raw classifier learners were refit through all resolved careers while held-out residual banks and calibrators were frozen; full player-disjoint cross-fit recalibration remains pending.",
             "The exact final 2022 current-scoring refit was not cross-fitted or evaluated; current-player probabilities do not inherit the retrospective tournament metrics.",
             "2026 is an in-season census; completed-season features remain the default scoring state.",

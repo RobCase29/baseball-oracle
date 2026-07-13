@@ -43,7 +43,7 @@ except ModuleNotFoundError:
 
 RANDOM_SEED = 29
 TOURNAMENT_SCHEMA_VERSION = "career-oracle-tournament/v1"
-MODEL_VERSION = "career-oracle-jaws-tournament-v2"
+MODEL_VERSION = "career-oracle-jaws-tournament-v3"
 TARGET_VERSION = "hof-caliber-point-in-time-jaws-v1"
 QUANTILE_NAMES = ("p10", "p25", "p50", "p75", "p90")
 QUANTILE_LEVELS = np.asarray((0.10, 0.25, 0.50, 0.75, 0.90), dtype=float)

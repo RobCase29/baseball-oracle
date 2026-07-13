@@ -897,9 +897,26 @@
         "minorRoleRows",
         "canonicalMinorPlayers",
         "duplicateMinorRoleRowsRemoved",
+        "minorTwoWayPlayers",
         "crossStageDuplicatesRemoved",
         "minorPlayersMissingMlbam",
-        "mlbPlayersMissingMlbam"
+        "mlbPlayersMissingMlbam",
+        "currentMlbProfilesOutsideModelCensus",
+        "experiencedMinorRowsExcludedFromRankings",
+        "currentSeasonDebutMinorRowsIdentified",
+        "minorIdsRecoveredFromExactCrosswalk",
+        "identityPolicy",
+        "identityCrosswalkAsOf",
+        "identityCrosswalkRecords",
+        "identityCrosswalkStatus",
+        "identityCrosswalkAgeHours",
+        "identityCrosswalkMaxAgeHours",
+        "identityOverlayRecords",
+        "identityOverlayConflicts",
+        "identityOverlayNewestObservedAt",
+        "currentMlbRows",
+        "unmatchedCurrentBbrefIds",
+        "conflictingCurrentMlbIds"
       ],
       "properties": {
         "minorRoleRows": {
@@ -914,6 +931,10 @@
           "type": "integer",
           "minimum": 0
         },
+        "minorTwoWayPlayers": {
+          "type": "integer",
+          "minimum": 0
+        },
         "crossStageDuplicatesRemoved": {
           "type": "integer",
           "minimum": 0
@@ -923,6 +944,67 @@
           "minimum": 0
         },
         "mlbPlayersMissingMlbam": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currentMlbProfilesOutsideModelCensus": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "experiencedMinorRowsExcludedFromRankings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currentSeasonDebutMinorRowsIdentified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minorIdsRecoveredFromExactCrosswalk": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "identityPolicy": {
+          "const": "exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching"
+        },
+        "identityCrosswalkAsOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "identityCrosswalkRecords": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "identityCrosswalkStatus": {
+          "enum": ["current", "stale", "invalid"]
+        },
+        "identityCrosswalkAgeHours": {
+          "type": ["number", "null"]
+        },
+        "identityCrosswalkMaxAgeHours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "identityOverlayRecords": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "identityOverlayConflicts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "identityOverlayNewestObservedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "currentMlbRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unmatchedCurrentBbrefIds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "conflictingCurrentMlbIds": {
           "type": "integer",
           "minimum": 0
         }

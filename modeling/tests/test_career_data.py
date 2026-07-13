@@ -14,12 +14,16 @@ from modeling.career_data import (
     build_career_landmarks,
     chronological_player_split,
     normalize_jaws_standards,
+    normalize_player_seasons,
     normalize_position,
     peak_seven,
     read_records,
 )
 from modeling.provenance import file_sha256
-from modeling.train_career_tournament import _verify_manifest_output
+from modeling.train_career_tournament import (
+    _target_exclusion_report,
+    _verify_manifest_output,
+)
 
 
 def standards() -> pd.DataFrame:
@@ -186,6 +190,82 @@ def test_broad_hitter_pitcher_role_switch_is_not_target_eligible(
     assert panel["target_eligibility_reason"].eq("broad_role_switch").all()
 
 
+def test_target_exclusion_report_quantifies_earlier_supported_landmarks() -> None:
+    panel = pd.DataFrame(
+        [
+            {
+                "bbref_id": "twoway01",
+                "resolved_career": True,
+                "target_eligibility_reason": "two_way_role_path",
+                "role": "hitter",
+                "broad_role_switch": False,
+                "standard_fallback": False,
+            },
+            {
+                "bbref_id": "twoway01",
+                "resolved_career": True,
+                "target_eligibility_reason": "two_way_role_path",
+                "role": "two_way",
+                "broad_role_switch": False,
+                "standard_fallback": False,
+            },
+            {
+                "bbref_id": "switch01",
+                "resolved_career": True,
+                "target_eligibility_reason": "broad_role_switch",
+                "role": "hitter",
+                "broad_role_switch": False,
+                "standard_fallback": False,
+            },
+            {
+                "bbref_id": "switch01",
+                "resolved_career": True,
+                "target_eligibility_reason": "broad_role_switch",
+                "role": "pitcher",
+                "broad_role_switch": True,
+                "standard_fallback": False,
+            },
+            {
+                "bbref_id": "fallback01",
+                "resolved_career": True,
+                "target_eligibility_reason": "synthetic_standard_fallback",
+                "role": "hitter",
+                "broad_role_switch": False,
+                "standard_fallback": False,
+            },
+            {
+                "bbref_id": "fallback01",
+                "resolved_career": True,
+                "target_eligibility_reason": "synthetic_standard_fallback",
+                "role": "hitter",
+                "broad_role_switch": False,
+                "standard_fallback": True,
+            },
+        ]
+    )
+
+    report = _target_exclusion_report(
+        panel, ("fallback01", "switch01", "twoway01")
+    )
+
+    assert report["players"] == 3
+    assert report["twoWayPlayers"] == 1
+    assert report["broadRoleSwitchPlayers"] == 1
+    assert report["syntheticStandardFallbackPlayers"] == 1
+    audit = report["selectiveTargetDomain"]
+    assert audit["status"] == "research_only_conditional_validation"
+    assert audit["metricsConditionalOnSupportedTargetDomain"] is True
+    assert audit["futureTransitionRiskModeled"] is False
+    assert audit["excludedPlayersWithPointInTimeSupportedLandmarks"] == 3
+    assert audit["excludedPointInTimeSupportedLandmarks"] == 3
+    assert audit["byCompletedCareerExclusionReason"] == {
+        "twoWayRolePath": {"players": 1, "landmarks": 1},
+        "broadRoleSwitch": {"players": 1, "landmarks": 1},
+        "syntheticStandardFallback": {"players": 1, "landmarks": 1},
+    }
+    assert "future two-way" in audit["disclosure"]
+
+
 def test_unresolved_and_in_season_careers_are_strictly_masked() -> None:
     rows = [
         season("retired01", 2010, 3.0),
@@ -218,6 +298,20 @@ def test_three_subsequent_complete_seasons_are_required_for_resolution() -> None
 
     assert bool(panel.loc["threefull", "resolved_career"]) is True
     assert bool(panel.loc["onlytwo0", "resolved_career"]) is False
+
+
+def test_current_roster_members_never_supply_resolved_training_targets() -> None:
+    row = season("returning1", 2019, 3.0)
+    panel = build_career_landmarks(
+        pd.DataFrame([row]),
+        standards(),
+        as_of_year=2025,
+        active_player_ids={"returning1"},
+    ).set_index("bbref_id")
+
+    assert bool(panel.loc["returning1", "resolved_career"]) is False
+    assert pd.isna(panel.loc["returning1", "final_career_war"])
+    assert pd.isna(panel.loc["returning1", "hof_caliber"])
 
 
 def test_jaws_value_basis_excludes_cross_side_war() -> None:
@@ -269,6 +363,48 @@ def test_pitcher_batting_appearances_do_not_create_false_two_way_career() -> Non
     two_way_panel = panel.loc[panel["bbref_id"].eq("twoway01")]
     assert two_way_panel["target_eligible"].eq(False).all()
     assert two_way_panel["target_eligibility_reason"].eq("two_way_role_path").all()
+
+
+def test_role_policy_uses_balanced_workload_over_stale_source_labels() -> None:
+    limited_two_way = season(
+        "limitedtw1", 1998, 2.0, position="D/1", role="two_way", age=24
+    )
+    limited_two_way["b_pa"] = 70
+    limited_two_way["b_war"] = 1.0
+    limited_two_way["p_ip_outs"] = 75
+    limited_two_way["p_war"] = 1.0
+    limited_two_way["total_war"] = 2.0
+    pitcher_with_pa = season(
+        "pitchpa01", 1998, 4.0, position="1/H", role="two_way", age=24
+    )
+    pitcher_with_pa["b_pa"] = 70
+    pitcher_with_pa["b_war"] = 0.2
+    pitcher_with_pa["p_ip_outs"] = 750
+    pitcher_with_pa["p_war"] = 4.0
+    pitcher_with_pa["total_war"] = 4.2
+
+    panel = build_career_landmarks(
+        pd.DataFrame([limited_two_way, pitcher_with_pa]),
+        standards(),
+        as_of_year=2020,
+    )
+
+    assert panel.loc[panel["bbref_id"].eq("limitedtw1"), "role"].eq("two_way").all()
+    assert panel.loc[panel["bbref_id"].eq("limitedtw1"), "career_war_to_date"].eq(2.0).all()
+    assert panel.loc[panel["bbref_id"].eq("pitchpa01"), "role"].eq("pitcher").all()
+
+    inferred = normalize_player_seasons(
+        pd.DataFrame([
+            {**limited_two_way, "role": "unknown"},
+            {**pitcher_with_pa, "role": "unknown"},
+        ])
+    ).set_index("bbref_id")
+    assert inferred.loc["limitedtw1", "source_role"] == "two_way"
+    assert inferred.loc["pitchpa01", "source_role"] == "pitcher"
+
+    renormalized = normalize_player_seasons(inferred.reset_index()).set_index("bbref_id")
+    assert renormalized.loc["limitedtw1", "source_role"] == "two_way"
+    assert renormalized.loc["pitchpa01", "source_role"] == "pitcher"
 
 
 def test_feature_contract_rejects_target_fields() -> None:

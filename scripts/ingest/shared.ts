@@ -7,8 +7,31 @@ export interface RetryOptions {
   attempts?: number
   headers?: HeadersInit
   retryStatuses?: ReadonlySet<number>
+  signal?: AbortSignal
   sourceName?: string
   timeoutMs?: number
+}
+
+export const CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS = 20_000
+export const CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS = 5_000
+
+export function currentRefreshDatabaseOptions(
+  statementTimeoutMs = CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
+) {
+  if (!Number.isInteger(statementTimeoutMs) || statementTimeoutMs < 1) {
+    throw new Error('Database statement timeout must be a positive integer')
+  }
+  return {
+    max: 1,
+    prepare: false,
+    idle_timeout: 10,
+    connect_timeout: 15,
+    connection: {
+      statement_timeout: statementTimeoutMs,
+      lock_timeout: CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
+      idle_in_transaction_session_timeout: statementTimeoutMs + 5_000,
+    },
+  } as const
 }
 
 const defaultRetryStatuses = new Set([429, 500, 502, 503, 504])
@@ -125,6 +148,29 @@ function retryDelay(attempt: number, retryAfter: string | null): number {
   return Math.min(1_000 * 2 ** attempt + Math.floor(Math.random() * 250), 10_000)
 }
 
+export async function abortableDelay(
+  delayMs: number,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!Number.isFinite(delayMs) || delayMs < 0) {
+    throw new Error('Delay must be a non-negative finite number')
+  }
+  signal?.throwIfAborted()
+  if (delayMs === 0) return
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', abort)
+      resolve()
+    }, delayMs)
+    const abort = () => {
+      clearTimeout(timer)
+      reject(signal?.reason ?? new DOMException('The operation was aborted', 'AbortError'))
+    }
+    signal?.addEventListener('abort', abort, { once: true })
+  })
+}
+
 export async function fetchWithRetry(
   url: string,
   options: RetryOptions = {},
@@ -139,28 +185,35 @@ export async function fetchWithRetry(
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    options.signal?.throwIfAborted()
     let response: Response
     try {
+      const timeoutSignal = AbortSignal.timeout(options.timeoutMs ?? 45_000)
       response = await fetch(url, {
         headers: options.headers,
-        signal: AbortSignal.timeout(options.timeoutMs ?? 45_000),
+        signal: options.signal
+          ? AbortSignal.any([options.signal, timeoutSignal])
+          : timeoutSignal,
       })
     } catch (error) {
+      options.signal?.throwIfAborted()
       lastError = error instanceof Error ? error : new Error(`Unknown ${sourceName} request error`)
       if (attempt < attempts - 1) {
-        await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt, null)))
+        await abortableDelay(retryDelay(attempt, null), options.signal)
       }
       continue
     }
 
+    options.signal?.throwIfAborted()
     if (response.ok) return response
 
     lastError = new Error(`${sourceName} request failed with HTTP ${response.status}`)
     if (!retryStatuses.has(response.status)) throw lastError
 
     if (attempt < attempts - 1) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, retryDelay(attempt, response.headers.get('retry-after'))),
+      await abortableDelay(
+        retryDelay(attempt, response.headers.get('retry-after')),
+        options.signal,
       )
     }
   }

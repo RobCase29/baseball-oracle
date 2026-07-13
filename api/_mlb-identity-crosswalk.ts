@@ -17,6 +17,16 @@ const sourceFileSchema = z.object({
   bytes: positiveIntegerSchema,
 }).strict()
 
+const exactLinkSourceSchema = z.object({
+  path: z.string().min(1),
+  sha256: sha256Schema,
+  asOf: z.iso.datetime({ offset: true }),
+  records: positiveIntegerSchema,
+  identityPolicy: z.literal(
+    'exact_bbref_page_meta_to_pinned_chadwick_key_no_name_matching',
+  ),
+}).strict()
+
 const compactRecordSchema = z.tuple([
   positiveIntegerSchema,
   bbrefSchema.nullable(),
@@ -51,6 +61,7 @@ const artifactSchema = z.object({
       referenceLockSha256: sha256Schema,
       generatedAt: z.iso.datetime({ offset: true }),
     }).strict(),
+    baseballReferenceChadwickLinks: exactLinkSourceSchema.optional(),
   }).strict(),
   recordShape: z.tuple([
     z.literal('mlbam'),
@@ -93,6 +104,34 @@ export interface MlbIdentityCrosswalk {
   byBbref(value: string | null): MlbIdentityRecord | null
 }
 
+export const MLB_IDENTITY_CROSSWALK_MAX_AGE_HOURS = 24 * 7
+
+export interface MlbIdentityCrosswalkFreshness {
+  status: 'current' | 'stale' | 'invalid'
+  asOf: string
+  ageHours: number | null
+  maxAgeHours: number
+}
+
+export function assessMlbIdentityCrosswalkFreshness(
+  asOf: string,
+  now = new Date(),
+): MlbIdentityCrosswalkFreshness {
+  const timestamp = Date.parse(asOf)
+  const ageHours = (now.getTime() - timestamp) / 3_600_000
+  const valid = Number.isFinite(timestamp) && Number.isFinite(ageHours) && ageHours >= -1
+  return {
+    status: !valid
+      ? 'invalid'
+      : ageHours <= MLB_IDENTITY_CROSSWALK_MAX_AGE_HOURS
+        ? 'current'
+        : 'stale',
+    asOf,
+    ageHours: valid ? Math.round(ageHours * 10) / 10 : null,
+    maxAgeHours: MLB_IDENTITY_CROSSWALK_MAX_AGE_HOURS,
+  }
+}
+
 const defaultCrosswalkPath = new URL('./_data/mlb-identity-crosswalk.json', import.meta.url)
 let cachedDefaultCrosswalk: MlbIdentityCrosswalk | undefined
 
@@ -129,8 +168,13 @@ export function validateMlbIdentityCrosswalkArtifact(value: unknown) {
   if (artifact.records.length !== artifact.recordCount) {
     throw new Error('MLB identity record count does not match the artifact')
   }
-  if (artifact.asOf !== artifact.source.baseballReferencePlayerSeasons.generatedAt) {
-    throw new Error('MLB identity as-of timestamp must match its Baseball-Reference lock')
+  const sourceAsOf = [
+    artifact.source.baseballReferencePlayerSeasons.generatedAt,
+    artifact.source.baseballReferenceChadwickLinks?.asOf,
+  ].filter((value): value is string => value !== undefined)
+    .sort((left, right) => Date.parse(right) - Date.parse(left))[0]
+  if (artifact.asOf !== sourceAsOf) {
+    throw new Error('MLB identity as-of timestamp must match its newest exact-ID source')
   }
 
   const shardNames = artifact.source.chadwickRegister.shards.map((entry) => (

@@ -8,12 +8,15 @@ import {
   buildPlayerFacets,
   canonicalExternalId,
   currentMlbComparisonRole,
+  currentMlbTeamContext,
+  currentRoleForModeledPlayer,
   currentMlbMetrics,
   currentOnlyMlbCandidates,
   dedupeMinorCandidates,
   frozenProspectRankUniverse,
   matchesQuery,
   mergeCurrentUniverse,
+  minorTwoWayEvidenceDisplay,
   matchesIfNoneMatch,
   mlbCandidates,
   minorCandidates,
@@ -33,10 +36,12 @@ import {
   snapshotId,
   stageRelevantDataAsOf,
   shouldSuppressSlashLine,
+  withholdForecastForCurrentRoleTransition,
   type PlayerQuery,
   type UnifiedBoardCandidate,
 } from './players.js'
 import { requireMlbIdentityCrosswalk } from './_mlb-identity-crosswalk.js'
+import { composeMlbIdentityCrosswalk } from './_mlb-identity-overlay.js'
 
 const war = { p10: 1, p25: 5, p50: 12, p75: 24, p90: 40 }
 const currentMlbRow = {
@@ -213,6 +218,7 @@ function candidate(
     position: 'CF',
     mlbamId: id.replace(/\D/gu, '') || null,
     opportunityScore: 100,
+    minorRoleWorkload: { plateAppearances: 100, pitchingOuts: 0 },
     careerForecast: forecast(0.1, 20, 900),
     milbAlphaSignal: null,
     milbImpactRanking: null,
@@ -312,7 +318,7 @@ function joeMackPreview(): CareerOraclePreview {
   return {
     schemaVersion: 'career-oracle-preview/v1',
     asOf: '2026-07-12T18:36:27.386Z',
-    modelVersion: 'career-oracle-jaws-tournament-v2',
+    modelVersion: 'career-oracle-jaws-tournament-v3',
     targetVersion: 'hof-caliber-point-in-time-jaws-v1',
     dataVersion: null,
     providerVersion: null,
@@ -1151,36 +1157,83 @@ describe('source display quality', () => {
 })
 
 describe('minor identity dedupe', () => {
-  it('prefers a forecast-backed role, then opportunity, and preserves missing IDs', () => {
+  it('keeps token opposite-side records in the substantive single-role cohort', () => {
     const deduped = dedupeMinorCandidates([
       candidate('hitter-1', {
         mlbamId: '700001',
         opportunityScore: 500,
+        minorRoleWorkload: { plateAppearances: 500, pitchingOuts: 0 },
         careerForecast: null,
       }),
       candidate('pitcher-1', {
         mlbamId: '700001',
         playerType: 'Pitcher',
         opportunityScore: 10,
+        minorRoleWorkload: { plateAppearances: 0, pitchingOuts: 10 },
       }),
-      candidate('hitter-2', { mlbamId: '700002', opportunityScore: 30 }),
+      candidate('hitter-2', {
+        mlbamId: '700002',
+        opportunityScore: 30,
+        minorRoleWorkload: { plateAppearances: 30, pitchingOuts: 0 },
+      }),
       candidate('pitcher-2', {
         mlbamId: '700002',
         playerType: 'Pitcher',
         opportunityScore: 80,
+        minorRoleWorkload: { plateAppearances: 0, pitchingOuts: 80 },
       }),
       candidate('missing-a', { mlbamId: null }),
       candidate('missing-b', { mlbamId: null }),
     ])
 
     expect(deduped.items.map((item) => item.id)).toEqual([
-      'pitcher-1',
+      'hitter-1',
       'pitcher-2',
       'missing-a',
       'missing-b',
     ])
+    expect(deduped.items[0]).toMatchObject({ playerType: 'Hitter', careerForecast: null })
+    expect(deduped.items[1]).toMatchObject({ playerType: 'Pitcher' })
     expect(deduped.duplicateRoleRowsRemoved).toBe(2)
+    expect(deduped.twoWayPlayers).toBe(0)
     expect(deduped.missingMlbam).toBe(2)
+  })
+
+  it('withholds single-role scoring for a balanced substantive minor two-way player', () => {
+    const result = dedupeMinorCandidates([
+      candidate('balanced-hitter', {
+        mlbamId: '700003',
+        opportunityScore: 180,
+        minorRoleWorkload: { plateAppearances: 180, pitchingOuts: 0 },
+      }),
+      candidate('balanced-pitcher', {
+        mlbamId: '700003',
+        playerType: 'Pitcher',
+        opportunityScore: 180,
+        minorRoleWorkload: { plateAppearances: 0, pitchingOuts: 180 },
+      }),
+    ])
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        playerType: 'Two-way',
+        position: 'TWO_WAY',
+        careerForecast: null,
+        milbAlphaSignal: null,
+        milbImpactRanking: null,
+      }),
+    ])
+    expect(result.twoWayPlayers).toBe(1)
+  })
+
+  it('discloses combined opportunity and representative metrics for a minor two-way record', () => {
+    expect(minorTwoWayEvidenceDisplay('Pitcher', {
+      plateAppearances: 180,
+      pitchingOuts: 181,
+    })).toEqual({
+      opportunity: { label: 'PA / IP', value: '180 / 60.1' },
+      coverageLabel: 'Two-way workload; partial metrics shown from representative pitcher row',
+    })
   })
 
   it('keeps the MLB record when an exact MLBAM ID also appears in the minor directory', () => {
@@ -1199,6 +1252,50 @@ describe('minor identity dedupe', () => {
     )
 
     expect(result.items.map((item) => item.id)).toEqual(['mlb-player', 'unmapped-minor'])
+    expect(result.crossStageDuplicatesRemoved).toBe(1)
+  })
+
+  it('prefers current post-debut minor evidence over an MLB model row without current stats', () => {
+    const result = mergeCurrentUniverse(
+      [candidate('model-only-mlb', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        mlbamId: '700101',
+        minorProfileId: null,
+        currentStats: null,
+      })],
+      [candidate('optioned-minor', {
+        stage: 'post_debut_minors',
+        mlbamId: '700101',
+      })],
+    )
+
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: 'optioned-minor', stage: 'post_debut_minors' }),
+    ])
+    expect(result.canonicalMinors.map((item) => item.id)).toEqual(['optioned-minor'])
+    expect(result.crossStageDuplicatesRemoved).toBe(1)
+  })
+
+  it('keeps live MLB evidence over a matching post-debut minor record', () => {
+    const result = mergeCurrentUniverse(
+      [candidate('live-mlb', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        mlbamId: '700102',
+        minorProfileId: null,
+        currentStats: currentMlbRow,
+      })],
+      [candidate('rehab-minor', {
+        stage: 'post_debut_minors',
+        mlbamId: '700102',
+      })],
+    )
+
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: 'live-mlb', currentStats: currentMlbRow }),
+    ])
+    expect(result.canonicalMinors).toEqual([])
     expect(result.crossStageDuplicatesRemoved).toBe(1)
   })
 
@@ -1310,6 +1407,106 @@ describe('minor identity dedupe', () => {
     expect(currentMlbComparisonRole({ plateAppearances: 0, pitchingOuts: 120 })).toBe('Pitcher')
     expect(currentMlbComparisonRole({ plateAppearances: 300, pitchingOuts: 3 })).toBe('Hitter')
     expect(currentMlbComparisonRole({ plateAppearances: 400, pitchingOuts: 255 })).toBe('Two-way')
+    expect(currentMlbComparisonRole({ plateAppearances: 70, pitchingOuts: 75 })).toBe('Two-way')
+    expect(currentMlbComparisonRole({ plateAppearances: 70, pitchingOuts: 750 })).toBe('Pitcher')
+  })
+
+  it('does not infer a modeled role change from token usage or a temporary two-way layoff', () => {
+    expect(currentRoleForModeledPlayer('Hitter', {
+      ...currentMlbRow,
+      b_pa: 0,
+      p_ip_outs: 3,
+    })).toBe('Hitter')
+    expect(currentRoleForModeledPlayer('Hitter', {
+      ...currentMlbRow,
+      b_pa: 0,
+      p_ip_outs: 60,
+    })).toBe('Pitcher')
+    expect(currentRoleForModeledPlayer('Two-way', {
+      ...currentMlbRow,
+      b_pa: 400,
+      p_ip_outs: 0,
+    })).toBe('Two-way')
+  })
+
+  it('does not present multi-team value aggregates as a current club', () => {
+    expect(currentMlbTeamContext('2TM', {
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+    })).toEqual({
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+      aggregate: true,
+    })
+    expect(currentMlbTeamContext('3TM')).toEqual({
+      organization: 'Multiple teams',
+      organizationCode: null,
+      aggregate: true,
+    })
+    expect(currentMlbTeamContext('LAD')).toEqual({
+      organization: 'Los Angeles Dodgers',
+      organizationCode: 'LAD',
+      aggregate: false,
+    })
+    expect(currentMlbTeamContext('MIA', {
+      organization: 'Miami Marlins',
+      organizationCode: 'MIA',
+    }).organization).toBe('Miami Marlins')
+  })
+
+  it('removes a stale single-role score when live usage establishes a new role', () => {
+    const preview = joeMackPreview()
+    preview.items[0]!.careerForecast = forecast(0.35, 42, 8, 0.7)
+    const liveTwoWayRow = {
+      ...currentMlbRow,
+      bbref_id: 'mackjo02',
+      player_name: 'Joe Mack',
+      observed_role: 'Two-way' as const,
+      team: 'LAD',
+      position: 'DH-P',
+      age: 24,
+      b_pa: 400,
+      p_ip: '85.0',
+      p_ip_outs: 255,
+      p_games: 14,
+      p_games_started: 14,
+      p_war: 2.5,
+      total_war: 5,
+    }
+
+    const [candidate] = mlbCandidates(
+      preview,
+      requireMlbIdentityCrosswalk(),
+      [liveTwoWayRow],
+    )
+
+    expect(candidate).toMatchObject({
+      playerType: 'Two-way',
+      organization: 'Los Angeles Dodgers',
+      organizationCode: 'LAD',
+      position: 'TWO_WAY',
+      age: 24,
+      recentCallupPrior: null,
+      currentStats: liveTwoWayRow,
+      careerForecast: {
+        publicationState: 'withheld',
+        rank: null,
+        hofCaliberProbability: null,
+        finalCareerWar: null,
+        confidenceState: 'Withheld',
+        warnings: ['current_role_transition_forecast_withheld'],
+      },
+    })
+    expect(assignStageRanks([candidate!])[0]!.careerForecast?.rank).toBeNull()
+    expect(playerHandlingAudit([candidate!]).byCode).toMatchObject({
+      two_way_model_scope: 1,
+      role_transition_model_scope: 1,
+    })
+  })
+
+  it('does not clone or withhold a forecast when live and modeled roles agree', () => {
+    const supported = forecast(0.2, 30, 10)
+    expect(withholdForecastForCurrentRoleTransition(supported, 'Hitter', 'Hitter')).toBe(supported)
   })
 
   it('suppresses nominal cross-page components from current MLB evidence', () => {
@@ -1380,6 +1577,19 @@ describe('minor identity dedupe', () => {
     })
   })
 
+  it('gives a pitching-only current MLB record a usable pitcher position', () => {
+    const [candidate] = currentOnlyMlbCandidates([{
+      ...currentMlbRow,
+      observed_role: 'Pitcher',
+      position: null,
+      b_pa: 0,
+      p_ip: '40.0',
+      p_ip_outs: 120,
+    }], null)
+
+    expect(candidate).toMatchObject({ playerType: 'Pitcher', position: 'P' })
+  })
+
   it('bridges a new MLB appearance back to its exact frozen prospect prior', () => {
     const preview = joeMackPreview()
     preview.items = []
@@ -1395,7 +1605,7 @@ describe('minor identity dedupe', () => {
     })
   })
 
-  it('uses exact debut history to remove current debuts from the prospect cohort', () => {
+  it('keeps exact debut history searchable until an MLB counterpart is actually present', () => {
     const baseRow = {
       profile_id: 'prospect-savant:682445',
       source_player_id: '682445',
@@ -1425,16 +1635,91 @@ describe('minor identity dedupe', () => {
 
     expect(result).toMatchObject({
       experiencedRowsExcludedFromProspectRankings: 2,
-      currentSeasonDebutRowsSuppressed: 1,
+      currentSeasonDebutRowsIdentified: 1,
       idsRecoveredFromExactCrosswalk: 2,
     })
-    expect(result.items).toHaveLength(1)
-    expect(result.items[0]).toMatchObject({
-      mlbamId: '660271',
+    expect(result.items).toHaveLength(2)
+    expect(result.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        mlbamId: '682445',
+        stage: 'post_debut_minors',
+        careerForecast: null,
+      }),
+      expect.objectContaining({
+        mlbamId: '660271',
+        stage: 'post_debut_minors',
+        careerForecast: null,
+        milbAlphaSignal: null,
+        milbImpactRanking: null,
+      }),
+    ]))
+
+    const bridged = mergeCurrentUniverse([
+      candidate('mlb-debut', {
+        source: 'mlb',
+        stage: 'recent_callup',
+        mlbamId: '682445',
+        minorProfileId: null,
+        currentStats: currentMlbRow,
+      }),
+    ], result.items)
+    expect(bridged.crossStageDuplicatesRemoved).toBe(1)
+    expect(bridged.canonicalMinors.map((item) => item.mlbamId)).toEqual(['660271'])
+  })
+
+  it('keeps a durable exact debut overlay linked after current MLB evidence disappears', () => {
+    const mlbamId = 999_001
+    const composed = composeMlbIdentityCrosswalk(
+      requireMlbIdentityCrosswalk(),
+      [{
+        bbref_id: 'freshaa01',
+        chadwick_key: 'abcd1234',
+        mlbam_id: mlbamId,
+        first_mlb_season: 2026,
+        first_observed_at: '2026-07-13T12:00:00.000Z',
+        last_observed_at: '2026-07-13T12:00:00.000Z',
+      }],
+      {
+        byKeyPerson(value) {
+          return value === 'abcd1234' ? mlbamId : null
+        },
+      },
+    ).crosswalk
+    const minorRow = {
+      profile_id: 'prospect-savant:999001',
+      source_player_id: String(mlbamId),
+      player_type: 'Hitter' as const,
+      display_name: 'Fresh Debut',
+      organization_code: 'MIA',
+      organization_name: 'Miami Marlins',
+      position: 'C',
+      age: 21,
+      level: 'AAA',
+      season: 2026,
+      mlbam_id: mlbamId,
+      known_at: '2026-07-13T12:00:00.000Z',
+      pa: 240,
+      ip: null,
+      pitches: null,
+    }
+
+    const [current] = currentOnlyMlbCandidates([{
+      ...currentMlbRow,
+      bbref_id: 'freshaa01',
+      mlbam_id: mlbamId,
+      player_name: 'Fresh Debut',
+    }], null, composed)
+    const minor = minorCandidates([minorRow], null, composed).items
+    expect(current).toMatchObject({ mlbamId: String(mlbamId), stage: 'recent_callup' })
+    expect(mergeCurrentUniverse([current!], minor).crossStageDuplicatesRemoved).toBe(1)
+
+    const nextSpring = minorCandidates([
+      { ...minorRow, season: 2027 },
+    ], null, composed).items[0]
+    expect(nextSpring).toMatchObject({
+      mlbamId: String(mlbamId),
       stage: 'post_debut_minors',
       careerForecast: null,
-      milbAlphaSignal: null,
-      milbImpactRanking: null,
     })
   })
 

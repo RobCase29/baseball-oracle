@@ -38,8 +38,27 @@ describe('player handling', () => {
     expect(handling.unclassifiedWithheld).toBe(true)
   })
 
+  it('does not let an identity note mask an unregistered withholding guard', () => {
+    const handling = classifyPlayerHandling({
+      playerType: 'Hitter',
+      stage: 'early_mlb',
+      careerForecast: {
+        publicationState: 'withheld',
+        warnings: ['new_guard_not_yet_registered'],
+      },
+      externalIds: { mlbam: null, bbref: 'example01' },
+    })
+
+    expect(handling.notes.map((note) => note.code)).toEqual([
+      'identity_link_missing',
+      'forecast_withheld_other',
+    ])
+    expect(handling.unclassifiedWithheld).toBe(true)
+  })
+
   it.each([
     ['broad_role_switch_target_not_supported_forecast_withheld', 'role_transition_model_scope'],
+    ['current_role_transition_forecast_withheld', 'role_transition_model_scope'],
     ['synthetic_hall_standard_forecast_withheld', 'hall_standard_model_scope'],
     ['bridge_debut_age_outside_supported_range_forecast_withheld', 'debut_age_model_scope'],
     ['bridge_debut_age_cell_missing_forecast_withheld', 'debut_age_model_scope'],
@@ -80,6 +99,7 @@ describe('player handling', () => {
 
     expect(handling.primary).toMatchObject({
       code: 'post_debut_minor_assignment',
+      label: 'MLB experience · current minor data',
       scoreTreatment: 'pending',
     })
   })

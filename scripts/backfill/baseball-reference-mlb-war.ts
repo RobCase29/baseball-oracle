@@ -17,14 +17,14 @@ const { JSDOM } = require('jsdom') as {
 }
 
 export const SOURCE_SLUG = 'baseball-reference-mlb-war'
-export const PARSER_VERSION = 'baseball-reference-mlb-war/v1'
+export const PARSER_VERSION = 'baseball-reference-mlb-war/v2'
 export const STATE_SCHEMA_VERSION = 'baseball-reference-mlb-war-state/v1'
 export const REQUEST_SCHEMA_VERSION = 'baseball-reference-mlb-war-request/v1'
 export const DATASET_SCHEMA_VERSION = 'baseball-reference-mlb-war-dataset/v1'
 export const REFERENCE_LOCK_SCHEMA_VERSION =
   'baseball-reference-mlb-war-reference-lock/v1'
 export const PROTOCOL_LOCK_PATH =
-  'data/reference-locks/baseball-reference-mlb-war-protocol-v1.json'
+  'data/reference-locks/baseball-reference-mlb-war-protocol-v2.json'
 export const PERMISSION_EVIDENCE_PATH =
   'docs/permissions/RESEARCH_SOURCE_ATTESTATIONS.md'
 export const USER_AGENT =
@@ -779,11 +779,19 @@ export function inferSeasonRole(input: {
   )
   const battingPa = input.battingPa ?? 0
   const pitchingIp = input.pitchingIp ?? 0
-  if (hasNonPitcherPosition && battingPa >= 60 && pitchingIp >= 20) {
-    return 'two_way'
-  }
   const battingWorkload = battingPa / 600
   const pitchingWorkload = pitchingIp / 180
+  const largerWorkload = Math.max(battingWorkload, pitchingWorkload)
+  const workloadRatio = largerWorkload > 0
+    ? Math.min(battingWorkload, pitchingWorkload) / largerWorkload
+    : 0
+  if (
+    battingPa >= 60 &&
+    pitchingIp >= 20 &&
+    workloadRatio >= 0.25
+  ) {
+    return 'two_way'
+  }
   return hasNonPitcherPosition && battingWorkload >= pitchingWorkload
     ? 'hitter'
     : 'pitcher'

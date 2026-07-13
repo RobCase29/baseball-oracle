@@ -43,7 +43,7 @@ export function stageCoverageForPlayers(players: PlayerRecord[]): { minors: numb
 
 export function stageLabel(stage: PlayerStage): string {
   if (stage === 'pre_debut') return 'Minor leagues'
-  if (stage === 'post_debut_minors') return 'MLB experience · minors'
+  if (stage === 'post_debut_minors') return 'MLB experience · current minor data'
   if (stage === 'recent_callup') return 'Rookie Track'
   if (stage === 'early_mlb') return 'Early MLB'
   if (stage === 'established_mlb') return 'Established MLB'

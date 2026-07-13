@@ -11,6 +11,7 @@ import {
 import { persistRawLanding } from './raw-landing.js'
 import {
   disambiguateSourceRecordKeys,
+  currentRefreshDatabaseOptions,
   idempotencyKey,
   normalizeRequestUrl,
   requestFingerprint,
@@ -26,6 +27,7 @@ const defaultUrl =
   'https://www.fangraphs.com/api/prospects/board/prospects-list-combined?pos=all&lg=2,4,5,6,7,8,9,10,11,14,12,13,15,16,17,18,30,32,33&stats=bat&qual=0&type=0&team=&season=2021&seasonend=2021&draft=2022prospect&valueheader=prospect-new&quickleaderboard=2021all'
 
 export interface IngestFangraphsProspectsOptions {
+  signal?: AbortSignal
   url?: string
 }
 
@@ -53,11 +55,13 @@ function uniqueRecordKeys(
 export async function ingestFangraphsProspects(
   options: IngestFangraphsProspectsOptions = {},
 ): Promise<IngestFangraphsProspectsResult> {
+  options.signal?.throwIfAborted()
   const url = normalizeRequestUrl(
     options.url ?? process.env.FANGRAPHS_PROSPECTS_URL ?? defaultUrl,
   )
-  const response = await fetchWithRetry(url)
+  const response = await fetchWithRetry(url, 3, options.signal)
   const body = await response.text()
+  options.signal?.throwIfAborted()
   const fetchedAt = new Date()
   const envelope = parseFangraphsEnvelope(body)
   const responseHash = sha256(body)
@@ -84,15 +88,12 @@ export async function ingestFangraphsProspects(
     })),
   ]
 
-  const sql = postgres(directDatabaseUrl(), {
-    max: 1,
-    prepare: false,
-    idle_timeout: 10,
-    connect_timeout: 15,
-  })
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 
   try {
+    options.signal?.throwIfAborted()
     const landing = await persistRawLanding(sql, {
+      signal: options.signal,
       sourceSlug: 'fangraphs',
       datasetKey: 'prospect-board',
       idempotencyKey: idempotencyKey(url, responseHash),
@@ -118,6 +119,7 @@ export async function ingestFangraphsProspects(
       },
       records,
     })
+    options.signal?.throwIfAborted()
 
     return {
       status: landing.status,

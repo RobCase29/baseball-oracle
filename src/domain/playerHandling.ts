@@ -77,6 +77,14 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     handling: 'A single-role Hall benchmark is not substituted; the career score stays out of rankings while observed performance remains visible.',
     scoreTreatment: 'withheld',
   },
+  current_role_transition_forecast_withheld: {
+    code: 'role_transition_model_scope',
+    category: 'model_scope',
+    label: 'Role transition model pending',
+    summary: 'Current-season usage no longer matches the role used by the completed-season career model.',
+    handling: 'Live performance remains visible, but the old single-role score and terminal forecast are removed from rankings until the new role has a supported completed-season model state.',
+    scoreTreatment: 'withheld',
+  },
   synthetic_hall_standard_forecast_withheld: {
     code: 'hall_standard_model_scope',
     category: 'model_scope',
@@ -163,6 +171,7 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
   const notes: PlayerHandlingNote[] = []
   const forecast = input.careerForecast
   const warnings = forecast?.warnings ?? []
+  const hasRegisteredForecastWarning = warnings.some((warning) => warningNotes[warning] !== undefined)
 
   for (const warning of warnings) {
     const note = warningNotes[warning]
@@ -173,9 +182,9 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
     notes.push({
       code: 'post_debut_minor_assignment',
       category: 'career_transition',
-      label: 'MLB experience, now in minors',
-      summary: 'This player has verified MLB experience and is currently represented by a minor-league assignment.',
-      handling: 'The player remains searchable in the full directory but is excluded from both pre-debut prospect rankings and the active-MLB board.',
+      label: 'MLB experience · current minor data',
+      summary: 'This player has verified MLB experience and current-season minor-league data.',
+      handling: 'The player remains searchable in the full directory but is excluded from both pre-debut prospect rankings and the active-MLB board until an authoritative current MLB row is present.',
       scoreTreatment: 'pending',
     })
   }
@@ -210,7 +219,11 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
   }
 
   let unclassifiedWithheld = false
-  if (forecast?.publicationState === 'withheld' && notes.length === 0) {
+  if (
+    forecast?.publicationState === 'withheld' &&
+    !hasRegisteredForecastWarning &&
+    input.playerType !== 'Two-way'
+  ) {
     unclassifiedWithheld = true
     notes.push({
       code: 'forecast_withheld_other',

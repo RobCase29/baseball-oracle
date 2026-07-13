@@ -613,7 +613,7 @@ describe('Oracle Board utilities', () => {
     expect(developmentChapterLabel('AA')).toBe('Upper-minors development')
     expect(developmentChapterLabel('Rk')).toBe('Rookie-ball development')
     expect(stageLabel('recent_callup')).toBe('Rookie Track')
-    expect(stageLabel('post_debut_minors')).toBe('MLB experience · minors')
+    expect(stageLabel('post_debut_minors')).toBe('MLB experience · current minor data')
     expect(stageLabel('established_mlb')).toBe('Established MLB')
   })
 

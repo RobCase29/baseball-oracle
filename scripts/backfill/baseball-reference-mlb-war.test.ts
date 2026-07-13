@@ -95,7 +95,7 @@ async function projectRoot(): Promise<string> {
   await writeFile(path.join(root, permissionPath), permissionBody)
   await mkdir(path.join(root, 'data/reference-locks'), { recursive: true })
   await writeFile(
-    path.join(root, 'data/reference-locks/baseball-reference-mlb-war-protocol-v1.json'),
+    path.join(root, 'data/reference-locks/baseball-reference-mlb-war-protocol-v2.json'),
     `${JSON.stringify({
       schemaVersion: 'baseball-reference-mlb-war-protocol/v1',
       source: 'baseball-reference-mlb-war',
@@ -234,6 +234,13 @@ describe('Baseball-Reference value and HOF parsers', () => {
       battingPa: 90,
       pitchingIp: 180,
       battingPosition: '1',
+      hasBattingRow: true,
+      hasPitchingRow: true,
+    })).toBe('pitcher')
+    expect(inferSeasonRole({
+      battingPa: 70,
+      pitchingIp: 250,
+      battingPosition: '1/H',
       hasBattingRow: true,
       hasPitchingRow: true,
     })).toBe('pitcher')

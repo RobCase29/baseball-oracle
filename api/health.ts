@@ -9,6 +9,15 @@ import {
   type RefreshRunStatus,
   type RefreshSourceStatus,
 } from './_freshness.js'
+import {
+  assessMlbIdentityCrosswalkFreshness,
+  requireMlbIdentityCrosswalk,
+} from './_mlb-identity-crosswalk.js'
+import { requireChadwickKeyMlbamLookup } from './_chadwick-key-mlbam.js'
+import {
+  composeMlbIdentityCrosswalk,
+  type MlbIdentityOverlayRow,
+} from './_mlb-identity-overlay.js'
 
 interface HealthRow {
   database_time: string
@@ -37,9 +46,15 @@ interface SourceRow {
 
 interface SliceCoverageRow {
   season: number
+  minimum_season: number
   observed_slices: string
   oldest_slice_at: string
   newest_slice_at: string
+}
+
+interface CurrentMlbIdentityRow {
+  bbref_id: string
+  mlbam_id: bigint | number | string | null
 }
 
 interface RefreshRow {
@@ -122,8 +137,11 @@ export default async function handler(
 
   try {
     const sql = neon(databaseUrl)
+    const staticIdentityCrosswalk = requireMlbIdentityCrosswalk()
+    const chadwickKeyMlbamLookup = requireChadwickKeyMlbamLookup()
     const [healthResult, directoryResult, sourceResult, prospectCoverageResult,
-      baseballReferenceCoverageResult, refreshResult] = await Promise.all([
+      baseballReferenceCoverageResult, currentMlbIdentityResult, refreshResult,
+      identityOverlayResult] = await Promise.all([
       sql`
         SELECT
           now()::text AS database_time,
@@ -183,7 +201,7 @@ export default async function handler(
         ORDER BY source.slug, dataset.dataset_key
       `,
       sql`
-        WITH latest_slice AS (
+        WITH successful_slice AS (
           SELECT DISTINCT ON (
             (run.parameters #>> '{slice,season}')::integer,
             run.parameters #>> '{slice,role}',
@@ -203,20 +221,39 @@ export default async function handler(
             AND run.parameters #>> '{slice,pitchQualifier}' = '1'
             AND run.parameters #>> '{slice,minAge}' = '16'
             AND run.parameters #>> '{slice,maxAge}' = '40'
+            AND run.parameters #>> '{slice,role}' IN ('hitters', 'pitchers')
+            AND run.parameters #>> '{slice,level}' IN ('Rk', 'A', 'A+', 'AA', 'AAA')
           ORDER BY
             (run.parameters #>> '{slice,season}')::integer,
             run.parameters #>> '{slice,role}',
             run.parameters #>> '{slice,level}',
-            source_fetch.fetched_at DESC
+            source_fetch.fetched_at DESC,
+            source_fetch.id DESC
+        ),
+        complete_level_season AS (
+          SELECT season, level
+          FROM successful_slice
+          GROUP BY season, level
+          HAVING count(*) = 2
+        ),
+        selected_level_season AS (
+          SELECT DISTINCT ON (level) season, level
+          FROM complete_level_season
+          ORDER BY level, season DESC
+        ),
+        latest_slice AS (
+          SELECT successful_slice.*
+          FROM successful_slice
+          JOIN selected_level_season USING (season, level)
         )
         SELECT
-          season,
+          max(season)::integer AS season,
+          min(season)::integer AS minimum_season,
           count(*)::text AS observed_slices,
           min(fetched_at)::text AS oldest_slice_at,
           max(fetched_at)::text AS newest_slice_at
         FROM latest_slice
-        WHERE season = (SELECT max(season) FROM latest_slice)
-        GROUP BY season
+        HAVING count(*) > 0
       `,
       sql`
         WITH latest_side AS (
@@ -250,6 +287,11 @@ export default async function handler(
         GROUP BY season
       `,
       sql`
+        SELECT bbref_id, mlbam_id
+        FROM app.current_mlb_value_snapshot
+        ORDER BY bbref_id
+      `,
+      sql`
         SELECT
           job_key,
           status,
@@ -263,12 +305,26 @@ export default async function handler(
         ORDER BY started_at DESC, id DESC
         LIMIT 200
       `,
+      sql`
+        SELECT
+          bbref_id,
+          chadwick_key,
+          mlbam_id,
+          first_mlb_season,
+          created_at::text AS first_observed_at,
+          updated_at::text AS last_observed_at
+        FROM core.mlb_exact_identity_overlay
+        ORDER BY bbref_id
+      `,
     ])
     const [health] = healthResult as unknown as HealthRow[]
     const [directory] = directoryResult as unknown as DirectoryRow[]
     const [prospectCoverage] = prospectCoverageResult as unknown as SliceCoverageRow[]
     const [baseballReferenceCoverage] =
       baseballReferenceCoverageResult as unknown as SliceCoverageRow[]
+    const currentMlbIdentityRows =
+      currentMlbIdentityResult as unknown as CurrentMlbIdentityRow[]
+    const identityOverlayRows = identityOverlayResult as unknown as MlbIdentityOverlayRow[]
     const sourceRows = sourceResult as unknown as SourceRow[]
     const refreshRows = refreshResult as unknown as RefreshRow[]
     const refreshRuns = refreshRows.map(freshnessRun)
@@ -282,6 +338,7 @@ export default async function handler(
       cronConfigured: Boolean(process.env.CRON_SECRET?.trim()),
       runs: refreshRuns,
       scheduleMinutesUtc: CURRENT_REFRESH_DAILY_MINUTES_UTC,
+      stuckAfterMinutes: 6,
       sources: [
         {
           key: 'prospectSavant',
@@ -313,14 +370,49 @@ export default async function handler(
         },
       ],
     })
+    const identityFreshness = assessMlbIdentityCrosswalkFreshness(
+      staticIdentityCrosswalk.summary.asOf,
+      new Date(health.database_time),
+    )
+    const composedIdentity = composeMlbIdentityCrosswalk(
+      staticIdentityCrosswalk,
+      identityOverlayRows,
+      chadwickKeyMlbamLookup,
+    )
+    const identityCrosswalk = composedIdentity.crosswalk
+    const currentMlbIdentityConflicts = currentMlbIdentityRows.filter((row) => {
+      const rowMlbamId = row.mlbam_id === null ? null : String(row.mlbam_id)
+      const resolved = identityCrosswalk.byBbref(row.bbref_id)
+      return rowMlbamId !== null && (
+        resolved === null || rowMlbamId !== String(resolved.mlbam)
+      )
+    })
+    const unmatchedCurrentBbrefIds = currentMlbIdentityRows
+      .map((row) => row.bbref_id)
+      .filter((bbrefId) => identityCrosswalk.byBbref(bbrefId) === null)
+    const identityReasonCodes = [
+      identityFreshness.status === 'invalid' ? 'identity_crosswalk_invalid' : null,
+      composedIdentity.overlay.conflicts.length > 0 ? 'identity_overlay_conflict' : null,
+      currentMlbIdentityConflicts.length > 0 ? 'identity_current_mlb_conflict' : null,
+      unmatchedCurrentBbrefIds.length > 0 ? 'identity_current_mlb_unmatched' : null,
+    ].filter((reason): reason is string => reason !== null)
+    const status = identityReasonCodes.length === 0
+      ? freshness.status
+      : freshness.status === 'stale'
+        ? 'stale'
+        : 'degraded'
+    const reasonCodes = [...new Set([
+      ...freshness.reasonCodes,
+      ...identityReasonCodes,
+    ])]
 
     response.statusCode = 200
     response.setHeader('Cache-Control', 'no-store')
     response.setHeader('Content-Type', 'application/json')
     response.end(
       JSON.stringify({
-        status: freshness.status,
-        reasonCodes: freshness.reasonCodes,
+        status,
+        reasonCodes,
         databaseTime: health.database_time,
         migrations: Number(health.migration_count),
         freshness,
@@ -357,7 +449,10 @@ export default async function handler(
         currentCoverage: {
           prospectSavant: prospectCoverage
             ? {
+                // Keep season as the maximum for existing consumers; a lower
+                // minimumSeason identifies the pre-June mixed-season window.
                 season: prospectCoverage.season,
+                minimumSeason: prospectCoverage.minimum_season,
                 observedSlices: Number(prospectCoverage.observed_slices),
                 expectedSlices: 10,
                 oldestSliceAt: prospectCoverage.oldest_slice_at,
@@ -373,6 +468,26 @@ export default async function handler(
                 newestSideAt: baseballReferenceCoverage.newest_slice_at,
               }
             : null,
+        },
+        identityCrosswalk: {
+          ...identityFreshness,
+          identityPolicy:
+            'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching',
+          records: identityCrosswalk.summary.recordCount,
+          chadwickLookupAsOf: chadwickKeyMlbamLookup.summary.asOf,
+          chadwickLookupRecords: chadwickKeyMlbamLookup.summary.recordCount,
+          chadwickLookupPolicy: chadwickKeyMlbamLookup.summary.identityPolicy,
+          overlayRecords: composedIdentity.overlay.acceptedRecords,
+          overlayConflicts: composedIdentity.overlay.conflicts.length,
+          overlayConflictSample: composedIdentity.overlay.conflicts.slice(0, 20),
+          overlayNewestObservedAt: composedIdentity.overlay.newestObservedAt,
+          currentMlbRows: currentMlbIdentityRows.length,
+          conflictingCurrentMlbIds: currentMlbIdentityConflicts.length,
+          conflictingCurrentMlbIdSample: currentMlbIdentityConflicts
+            .map((row) => row.bbref_id)
+            .slice(0, 20),
+          unmatchedCurrentBbrefIds: unmatchedCurrentBbrefIds.length,
+          unmatchedCurrentBbrefIdSample: unmatchedCurrentBbrefIds.slice(0, 20),
         },
         scheduledRefresh: {
           configured: Boolean(process.env.CRON_SECRET?.trim()),
