@@ -28,6 +28,7 @@ export interface FreshnessRun {
   startedAt: string
   finishedAt: string | null
   sourceStatuses?: Record<string, RefreshSourceStatus>
+  sourceErrors?: Record<string, string>
 }
 
 export interface FreshnessSourceInput {
@@ -144,7 +145,13 @@ export function nextDailyScheduleAt(
 }
 
 function publicRun(run: FreshnessRun | null): FreshnessRun | null {
-  return run ? { ...run, sourceStatuses: run.sourceStatuses ? { ...run.sourceStatuses } : undefined } : null
+  return run
+    ? {
+        ...run,
+        sourceStatuses: run.sourceStatuses ? { ...run.sourceStatuses } : undefined,
+        sourceErrors: run.sourceErrors ? { ...run.sourceErrors } : undefined,
+      }
+    : null
 }
 
 export function assessCurrentDataFreshness(

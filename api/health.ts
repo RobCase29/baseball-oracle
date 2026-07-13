@@ -91,6 +91,21 @@ function refreshSourceStatuses(
   return Object.keys(statuses).length > 0 ? statuses : undefined
 }
 
+function refreshSourceErrors(
+  result: Record<string, unknown> | null,
+): Record<string, string> | undefined {
+  if (!result) return undefined
+  const errors: Record<string, string> = {}
+  for (const key of refreshSourceKeys) {
+    const sourceResult = result[key]
+    if (!sourceResult || typeof sourceResult !== 'object') continue
+    const message = (sourceResult as { error?: { message?: unknown } }).error?.message
+    if (typeof message !== 'string' || !message.trim()) continue
+    errors[key] = message.trim().slice(0, 500)
+  }
+  return Object.keys(errors).length > 0 ? errors : undefined
+}
+
 function freshnessRun(row: RefreshRow): FreshnessRun {
   return {
     jobKey: row.job_key,
@@ -100,6 +115,7 @@ function freshnessRun(row: RefreshRow): FreshnessRun {
     startedAt: row.started_at,
     finishedAt: row.finished_at,
     sourceStatuses: refreshSourceStatuses(row.result),
+    sourceErrors: refreshSourceErrors(row.result),
   }
 }
 
