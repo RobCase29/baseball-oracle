@@ -1,31 +1,37 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   AlertTriangle,
+  ChartScatter,
   ChevronLeft,
   ChevronRight,
   Database,
   FilterX,
   LoaderCircle,
   Search,
-  Star,
+  SlidersHorizontal,
+  Table2,
 } from 'lucide-react'
 import type {
   BoardFilters,
-  PlayerRecord,
   PlayerFacetOption,
+  PlayerRecord,
   PlayersPage,
   PlayerType,
   StageFilter,
 } from '../domain/forecast'
 import {
-  eligibleAlphaSignal,
   developmentChapterLabel,
-  formatTopRankPercent,
   formatWar,
   isMlbStage,
   stageLabel,
 } from '../lib/forecast'
-import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
+import { oracleScoreFor, playerMapFor } from './playerMapView'
+import {
+  formatRookieWar,
+  formatRookieWarPercentile,
+  rookieMlbReadLabel,
+  rookieEvidenceLabel,
+} from './rookieTrackView'
 
 const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
@@ -38,18 +44,21 @@ interface ProspectBoardProps {
   pagination: PlayersPage
   loading: boolean
   error: string | null
-  watchlist: Set<string>
   facets?: {
     teams: PlayerFacetOption[]
     positions: PlayerFacetOption[]
   }
   onSelect: (playerId: string) => void
-  onToggleWatchlist: (playerId: string) => void
   onChangeFilters: (patch: Partial<BoardFilters>) => void
   onChangePage: (page: number) => void
 }
 
-const stages: StageFilter[] = ['All', 'Minors', 'MLB']
+const stages: Array<{ value: StageFilter; label: string }> = [
+  { value: 'All', label: 'All' },
+  { value: 'Minors', label: 'Prospects' },
+  { value: 'RC', label: 'Rookie Track' },
+  { value: 'MLB', label: 'MLB' },
+]
 const playerTypes: Array<'All' | PlayerType> = ['All', 'Hitter', 'Pitcher', 'Two-way']
 
 function withCurrentFacet(
@@ -62,20 +71,30 @@ function withCurrentFacet(
   return [{ value: current, label: current, count: 0 }, ...options]
 }
 
-function alphaMissLabel(player: PlayerRecord): string {
-  if (!isMlbStage(player.stage)) {
-    if (!player.researchEstimate) return 'Not enough matched data to estimate MLB arrival'
-    if (!player.milbAlphaSignal?.eligible) return 'MLB arrival is not confirmed yet'
-    if (!player.milbImpactRanking) return 'Not enough matched data for an impact score'
-    if (player.milbImpactRanking.rankPercentile < 90) return 'Outside the top 10% for five-year MLB impact'
-    return 'Five-year impact score unavailable'
+function boardHeading(filters: BoardFilters): { eyebrow: string; title: string } {
+  if (filters.stage === 'Minors') {
+    return { eyebrow: 'RUNWAY-ADJUSTED CAREER CEILING', title: 'Prospect Rankings' }
   }
-  const signal = player.careerForecast?.alphaSignal
-  if (!signal || signal.status === 'withheld') return 'No standout career signal yet'
-  if (!signal.gates.earlyCareer) return 'Past the early-career breakout window'
-  if (!signal.gates.prePrimeRunway) return 'Limited development time before the typical peak years'
-  if (!signal.gates.absoluteCeiling) return 'Projected ceiling is below the standout threshold'
-  return 'Career outlook does not beat the similar-player baseline'
+  if (filters.stage === 'RC') {
+    return { eyebrow: 'PROSPECT PRIOR + EARLY MLB READ', title: 'Rookie Track' }
+  }
+  if (filters.stage === 'MLB') {
+    return { eyebrow: 'HALL-LEVEL CAREER OUTLOOK', title: 'MLB Rankings' }
+  }
+  return { eyebrow: 'ACTIVE PLAYER OUTLOOKS', title: 'Player Rankings' }
+}
+
+function emptyStateCopy(stage: StageFilter): { title: string; detail: string } {
+  if (stage === 'RC') {
+    return {
+      title: 'No matching Rookie Track players',
+      detail: 'Adjust the search, team, position, or role filters.',
+    }
+  }
+  if (stage === 'MLB') {
+    return { title: 'No matching MLB players', detail: 'Adjust the search or player filters.' }
+  }
+  return { title: 'No matching players', detail: 'Adjust the search or player filters.' }
 }
 
 export function ProspectBoard({
@@ -85,18 +104,15 @@ export function ProspectBoard({
   pagination,
   loading,
   error,
-  watchlist,
   facets,
   onSelect,
-  onToggleWatchlist,
   onChangeFilters,
   onChangePage,
 }: ProspectBoardProps) {
+  const [displayMode, setDisplayMode] = useState<'table' | 'landscape'>('table')
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
   const hasPreviousPage = pagination.page > 1
   const hasNextPage = pagination.page < pagination.totalPages
-  const alphaView = filters.sort === 'alphaOpportunity'
-  const minorAlphaView = alphaView && filters.stage === 'Minors'
-  const mlbAlphaView = alphaView && filters.stage === 'MLB'
   const activeFilterCount = [
     filters.query.trim() ? filters.query : null,
     filters.playerType !== 'All' ? filters.playerType : null,
@@ -106,34 +122,45 @@ export function ProspectBoard({
   ].filter(Boolean).length
   const teamOptions = withCurrentFacet(facets?.teams ?? [], filters.team)
   const positionOptions = withCurrentFacet(facets?.positions ?? [], filters.position)
+  const heading = boardHeading(filters)
+  const activeDisplayMode = filters.stage === 'Minors' ? displayMode : 'table'
+  const noResults = emptyStateCopy(filters.stage)
 
   return (
     <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading}>
       <div className="board-heading">
         <div>
-          <span className="eyebrow">
-            {minorAlphaView
-              ? 'RUNWAY-ADJUSTED CAREER CEILING RANKING'
-              : mlbAlphaView
-                ? 'HALL-LEVEL CAREER RANKING'
-                : alphaView
-                  ? 'ONE SCORE, COMPARED WITH PLAYERS AT THE SAME STAGE'
-                  : 'PLAYER OUTLOOK RANKINGS'}
-          </span>
-          <h2 id="board-title">
-            {minorAlphaView
-              ? 'Prospect Rankings'
-              : mlbAlphaView
-                ? 'MLB Rankings'
-                : alphaView
-                  ? 'Player Rankings'
-                  : 'Oracle Rankings'}
-          </h2>
+          <span className="eyebrow">{heading.eyebrow}</span>
+          <h2 id="board-title">{heading.title}</h2>
         </div>
-        <span className="record-count">
-          {loading ? <LoaderCircle className="spin" size={12} aria-hidden="true" /> : null}
-          {pagination.total.toLocaleString()} players
-        </span>
+        <div className="board-heading-actions">
+          <span className="record-count">
+            {loading ? <LoaderCircle className="spin" size={12} aria-hidden="true" /> : null}
+            {pagination.total.toLocaleString()} players
+          </span>
+          {filters.stage === 'Minors' ? (
+            <div className="segmented-control board-view-control" aria-label="Prospect view">
+              <button
+                type="button"
+                className={activeDisplayMode === 'table' ? 'is-active' : ''}
+                aria-pressed={activeDisplayMode === 'table'}
+                onClick={() => setDisplayMode('table')}
+              >
+                <Table2 size={14} aria-hidden="true" />
+                Table
+              </button>
+              <button
+                type="button"
+                className={activeDisplayMode === 'landscape' ? 'is-active' : ''}
+                aria-pressed={activeDisplayMode === 'landscape'}
+                onClick={() => setDisplayMode('landscape')}
+              >
+                <ChartScatter size={14} aria-hidden="true" />
+                Landscape
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="board-filters" aria-label="Player filters">
@@ -151,44 +178,67 @@ export function ProspectBoard({
         <div className="segmented-control stage-control" aria-label="Career stage">
           {stages.map((stage) => (
             <button
-              key={stage}
+              key={stage.value}
               type="button"
-              className={filters.stage === stage ? 'is-active' : ''}
-              aria-pressed={filters.stage === stage}
+              className={filters.stage === stage.value ? 'is-active' : ''}
+              aria-pressed={filters.stage === stage.value}
               onClick={() => {
                 const sortIsUnavailable = (
-                  stage === 'Minors' && (
+                  stage.value === 'Minors' && (
                     filters.sort === 'nearTermImpact' || filters.sort === 'finalWar'
                   )
-                ) || (stage === 'MLB' && filters.sort === 'arrival36')
+                ) || (
+                  stage.value === 'MLB' && filters.sort === 'arrival36'
+                ) || (
+                  stage.value === 'RC' && (
+                    filters.sort === 'nearTermImpact' ||
+                    filters.sort === 'finalWar' ||
+                    filters.sort === 'arrival36'
+                  )
+                )
                 onChangeFilters({
-                  stage,
-                  ...(stage === 'MLB' ? { level: 'All' } : {}),
+                  stage: stage.value,
+                  ...(stage.value === 'MLB' || stage.value === 'RC' ? { level: 'All' } : {}),
                   ...(sortIsUnavailable ? { sort: 'alphaOpportunity' as const } : {}),
                 })
               }}
             >
-              {stage}
+              {stage.label}
             </button>
           ))}
         </div>
 
-        <label className="select-field">
-          <span>Role</span>
-          <select
-            aria-label="Player role"
-            value={filters.playerType}
-            onChange={(event) =>
-              onChangeFilters({ playerType: event.target.value as 'All' | PlayerType })
-            }
-          >
-            {playerTypes.map((type) => (
-              <option key={type} value={type}>
-                {type === 'All' ? 'All roles' : type === 'Two-way' ? 'Two-way' : `${type}s`}
-              </option>
-            ))}
-          </select>
-        </label>
+        <button
+          className={`mobile-filter-toggle${filtersExpanded ? ' is-open' : ''}`}
+          type="button"
+          onClick={() => setFiltersExpanded((current) => !current)}
+          aria-expanded={filtersExpanded}
+          aria-controls="advanced-player-filters"
+        >
+          <SlidersHorizontal size={15} aria-hidden="true" />
+          Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+        </button>
+
+        <div
+          id="advanced-player-filters"
+          className={`filter-advanced${filtersExpanded ? ' is-open' : ''}`}
+        >
+          <label className="select-field">
+            <span>Role</span>
+            <select
+              aria-label="Player role"
+              value={filters.playerType}
+              onChange={(event) =>
+                onChangeFilters({ playerType: event.target.value as 'All' | PlayerType })
+              }
+            >
+              {playerTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type === 'All' ? 'All roles' : type === 'Two-way' ? 'Two-way' : `${type}s`}
+                </option>
+              ))}
+            </select>
+          </label>
 
         <label className="select-field">
           <span>Team</span>
@@ -227,7 +277,7 @@ export function ProspectBoard({
           <select
             aria-label="Level"
             value={filters.level}
-            disabled={filters.stage === 'MLB'}
+            disabled={filters.stage === 'MLB' || filters.stage === 'RC'}
             onChange={(event) => onChangeFilters({ level: event.target.value })}
           >
             <option>All</option>
@@ -249,41 +299,38 @@ export function ProspectBoard({
             }
           >
             <option value="alphaOpportunity">Oracle Score</option>
-            {filters.stage !== 'Minors' ? <option value="nearTermImpact">Next 3-year upside</option> : null}
-            {filters.stage !== 'Minors' ? <option value="finalWar">Projected career WAR</option> : null}
-            {filters.stage !== 'MLB' ? <option value="arrival36">MLB arrival research rank</option> : null}
+            {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
+              <option value="nearTermImpact">Next 3-year upside</option>
+            ) : null}
+            {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
+              <option value="finalWar">Projected career WAR</option>
+            ) : null}
+            {filters.stage !== 'MLB' && filters.stage !== 'RC' ? (
+              <option value="arrival36">MLB arrival research rank</option>
+            ) : null}
             <option value="age">Youngest first</option>
             <option value="name">Name</option>
           </select>
         </label>
 
-        <button
-          className="filter-reset"
-          type="button"
-          disabled={activeFilterCount === 0}
-          onClick={() => onChangeFilters({
-            query: '',
-            playerType: 'All',
-            level: 'All',
-            team: 'All',
-            position: 'All',
-          })}
-          title="Clear player filters"
-        >
-          <FilterX size={14} aria-hidden="true" />
-          Clear{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
-        </button>
+          <button
+            className="filter-reset"
+            type="button"
+            disabled={activeFilterCount === 0}
+            onClick={() => onChangeFilters({
+              query: '',
+              playerType: 'All',
+              level: 'All',
+              team: 'All',
+              position: 'All',
+            })}
+            title="Clear player filters"
+          >
+            <FilterX size={14} aria-hidden="true" />
+            Clear{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
+          </button>
+        </div>
       </div>
-
-      {filters.stage === 'Minors' && players.length > 0 ? (
-        <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
-          <MilbOpportunityMap
-            players={players}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-        </Suspense>
-      ) : null}
 
       {error && players.length === 0 ? (
         <div className="empty-state empty-state--error" role="alert">
@@ -301,60 +348,59 @@ export function ProspectBoard({
         </div>
       ) : null}
 
-      {players.length > 0 ? (
+      {players.length > 0 && activeDisplayMode === 'landscape' ? (
+        <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
+          <MilbOpportunityMap
+            players={players}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        </Suspense>
+      ) : null}
+
+      {players.length > 0 && activeDisplayMode === 'table' ? (
         <div className="board-table-wrap">
           <table className="board-table oracle-board-table">
             <thead>
               <tr>
-                <th scope="col">Rank</th>
                 <th scope="col">Player / Oracle Score</th>
-                <th scope="col">Age / career stage</th>
-                <th scope="col">What the score ranks</th>
-                <th scope="col">Why it stands out</th>
-                <th scope="col">Career projection</th>
-                <th scope="col">Current path</th>
+                <th scope="col">Rank</th>
+                <th scope="col">Career outlook</th>
+                <th scope="col">Current signal</th>
                 <th scope="col">Evidence</th>
-                <th scope="col"><span className="sr-only">Save</span></th>
               </tr>
             </thead>
             <tbody>
               {players.map((player) => {
-                const saved = watchlist.has(player.id)
                 const selected = player.id === selectedId
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const forecast = player.careerForecast
-                const mlbStage = isMlbStage(player.stage)
-                const chapter = forecast?.careerChapter
-                const alpha = eligibleAlphaSignal(player)
                 const playerMap = playerMapFor(player)
                 const oracleScore = oracleScoreFor(player)
-                const impact = !mlbStage ? player.milbImpactRanking ?? null : null
-                const impactReliable = player.milbAlphaSignal?.gates?.minimumRawWorkload !== false
-                const rawAlpha = forecast?.alphaSignal
+                const isRookieTrack = player.stage === 'recent_callup' && player.recentCallup !== null
+                const hasProspectPrior = player.recentCallup?.prospectPrior != null
+                const mlbStage = isMlbStage(player.stage) && !isRookieTrack
+                const chapter = forecast?.careerChapter
                 const chapterLabel = mlbStage
                   ? chapter?.status === 'research'
                     ? chapter.label
-                    : chapter ? 'Chapter withheld' : 'Chapter unavailable'
-                  : developmentChapterLabel(player.level)
-                const displayedRank = oracleScore.rank
-                const rankScope = oracleScore.universe
-                  ? `of ${oracleScore.universe.toLocaleString()}`
-                  : playerMap.route === 'mlb' ? 'major leaguers' : 'prospects'
-                const evidenceDisplay = playerMap.route === 'milb'
-                  ? playerMap.scores.evidence.display.replace('pillars', 'data areas')
-                  : forecast?.confidenceState ?? 'Not available'
+                    : 'MLB career in progress'
+                  : isRookieTrack
+                    ? 'Rookie Track'
+                    : developmentChapterLabel(player.level)
+                const prospectForecast = player.recentCallup?.prospectPrior?.forecast ?? null
+                const careerHighCase = isRookieTrack
+                  ? prospectForecast?.finalCareerWar?.p90 ?? null
+                  : forecast?.finalCareerWar?.p90 ?? null
+                const evidenceDisplay = isRookieTrack
+                  ? rookieEvidenceLabel(player)
+                  : playerMap.route === 'milb'
+                    ? playerMap.scores.evidence.display.replace('pillars', 'data areas')
+                    : forecast?.confidenceState ?? 'Not available'
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
-                    <td className="rank-cell">
-                      <strong className="table-primary">
-                        {displayedRank ? `#${displayedRank}` : '—'}
-                      </strong>
-                      <small>
-                        {displayedRank ? rankScope : plainPlayerState(playerMap.state)}
-                      </small>
-                    </td>
                     <td>
                       <button
                         className="player-cell"
@@ -371,9 +417,6 @@ export function ProspectBoard({
                           <small>SCORE</small>
                         </span>
                         <span>
-                          <span className="mobile-player-rank">
-                            {displayedRank ? `Stage #${displayedRank} ${rankScope}` : 'Score pending'}
-                          </span>
                           <strong className="player-name">{player.name}</strong>
                           <small>
                             {organization} · {player.position ?? player.playerType} · Age {player.age ?? '—'} · {player.level ?? stageLabel(player.stage)}
@@ -385,117 +428,72 @@ export function ProspectBoard({
                         <ChevronRight className="row-chevron" size={16} aria-hidden="true" />
                       </button>
                     </td>
-                    <td>
-                      <strong className="table-primary">{player.age ?? '—'}</strong>
-                      <small>{chapterLabel}</small>
+                    <td className="rank-cell">
+                      <strong className="table-primary">
+                        {oracleScore.rank ? `#${oracleScore.rank.toLocaleString()}` : '—'}
+                      </strong>
+                      <small>
+                        {isRookieTrack
+                          ? hasProspectPrior
+                            ? `of ${oracleScore.universe?.toLocaleString() ?? '—'} prospect priors`
+                            : 'Prospect prior not matched'
+                          : oracleScore.universe
+                            ? `of ${oracleScore.universe.toLocaleString()}`
+                            : chapterLabel}
+                      </small>
                     </td>
                     <td>
                       <strong className="table-primary">
-                        {mlbStage ? 'Hall-level career stats' : 'Runway-adjusted career ceiling'}
+                        {mlbStage
+                          ? formatWar(forecast?.finalCareerWar?.p50 ?? null)
+                          : formatWar(careerHighCase)}
                       </strong>
-                      <small>Stage rank, not a probability</small>
+                      <small>
+                        {mlbStage
+                          ? `Middle career WAR · high case ${formatWar(careerHighCase)}`
+                          : isRookieTrack
+                            ? hasProspectPrior
+                              ? 'Prospect high case carried through call-up'
+                              : 'MLB evidence tracked while the prior is matched'
+                            : `High career case · projected arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}`}
+                      </small>
                     </td>
-                    <td className="alpha-cell">
-                      {alpha ? (
+                    <td className="signal-cell">
+                      {isRookieTrack ? (
                         <>
-                          <div className="alpha-cell-lead">
-                            <strong className="alpha-edge-value">Standout</strong>
-                            <span className={`alpha-tier alpha-tier--${alpha.tier}`}>
-                              {plainPlayerState(playerMap.state)}
-                            </span>
-                          </div>
-                          <small>Career outlook clears the early-career upside checks</small>
-                        </>
-                      ) : impact ? (
-                        <>
-                          <div className="alpha-cell-lead">
-                            <strong className="alpha-edge-value">
-                              {oracleScore.rank && oracleScore.universe
-                                ? formatTopRankPercent(oracleScore.rank, oracleScore.universe)
-                                : 'Mapped'}
-                            </strong>
-                            <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
-                              {plainPlayerState(playerMap.state)}
-                            </span>
-                          </div>
+                          <strong className="table-primary signal-positive">{rookieMlbReadLabel(player)}</strong>
                           <small>
-                            Career ceiling rank {oracleScore.rank ? `#${oracleScore.rank.toLocaleString()}` : 'pending'} · {impactReliable
-                              ? `five-year impact #${impact.rank.toLocaleString()}`
-                              : 'five-year impact needs a stable sample'}
+                            {formatRookieWar(player)} · {formatRookieWarPercentile(player)}
+                            {player.recentCallup?.currentMlbEvidence.opportunity
+                              ? ` · ${player.recentCallup.currentMlbEvidence.opportunity.value} ${player.recentCallup.currentMlbEvidence.opportunity.label}`
+                              : ''}
                           </small>
                         </>
-                      ) : (
+                      ) : mlbStage ? (
                         <>
-                          <div className="alpha-cell-lead">
-                            <strong className="alpha-withheld">
-                              {playerMap.scores.outcome.rank
-                                ? `#${playerMap.scores.outcome.rank.toLocaleString()}`
-                                : playerMap.scores.evidence.display}
-                            </strong>
-                            <span className={`alpha-tier alpha-tier--map-${playerMap.state}`}>
-                              {plainPlayerState(playerMap.state)}
-                            </span>
-                          </div>
-                          <small>
-                            {mlbStage
-                              ? rawAlpha?.status === 'research'
-                                ? 'Career outlook scored · no standout signal yet'
-                                : alphaMissLabel(player)
-                              : 'More data needed before an Oracle Score is assigned'}
-                          </small>
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      {mlbStage ? (
-                        <>
-                          <strong className="table-primary">
-                            {formatWar(forecast?.finalCareerWar?.p50 ?? null)}
-                          </strong>
-                          <small>Middle estimate · high case {formatWar(forecast?.finalCareerWar?.p90 ?? null)}</small>
+                          <strong className="table-primary">{chapterLabel}</strong>
+                          <small>{formatWar(forecast?.cumulativeWar ?? null)} career WAR to date</small>
                         </>
                       ) : (
                         <>
                           <strong className="table-primary">
-                            {formatWar(forecast?.finalCareerWar?.p90 ?? null)}
+                            {player.milbAlphaSignal?.rank ? `Arrival rank #${player.milbAlphaSignal.rank}` : 'Not confirmed'}
                           </strong>
-                          <small>
-                            High case · projected MLB arrival age {forecast?.decomposition.estimatedDebutAge ?? '—'}
-                          </small>
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      {mlbStage ? (
-                        <>
-                          <strong className="table-primary">{formatWar(forecast?.cumulativeWar ?? null)}</strong>
-                          <small>cumulative WAR</small>
-                        </>
-                      ) : (
-                        <>
-                          <strong className="table-primary">{player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : 'Not confirmed'}</strong>
-                          <small>
-                            {player.milbAlphaSignal?.rank
-                              ? 'MLB arrival signal rank'
-                              : 'Model has not confirmed near-term MLB arrival'}
-                          </small>
+                          <small>{playerMap.stateLabel}</small>
                         </>
                       )}
                     </td>
                     <td>
                       <strong className="table-primary confidence-value">{evidenceDisplay}</strong>
-                      <small>{playerMap.route === 'milb' ? 'current stat coverage' : 'support behind the career outlook'}</small>
-                    </td>
-                    <td>
-                      <button
-                        className={`icon-button${saved ? ' is-saved' : ''}`}
-                        type="button"
-                        onClick={() => onToggleWatchlist(player.id)}
-                        aria-label={saved ? `Remove ${player.name} from watchlist` : `Add ${player.name} to watchlist`}
-                        title={saved ? 'Remove from watchlist' : 'Add to watchlist'}
-                      >
-                        <Star size={16} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" />
-                      </button>
+                      <small>
+                        {isRookieTrack
+                          ? player.recentCallup?.currentMlbEvidence.opportunity
+                            ? `${player.recentCallup.currentMlbEvidence.opportunity.value} ${player.recentCallup.currentMlbEvidence.opportunity.label} of MLB evidence`
+                            : 'Awaiting MLB opportunity data'
+                          : playerMap.route === 'milb'
+                            ? 'current stat coverage'
+                            : 'support behind the career outlook'}
+                      </small>
                     </td>
                   </tr>
                 )
@@ -508,12 +506,8 @@ export function ProspectBoard({
       {!loading && !error && players.length === 0 ? (
         <div className="empty-state">
           {pagination.total === 0 ? <Search size={22} aria-hidden="true" /> : <Database size={22} aria-hidden="true" />}
-          <strong>{filters.stage === 'MLB' ? 'No matching MLB players' : 'No matching players'}</strong>
-          <span>
-            {filters.stage === 'MLB'
-              ? 'Adjust the search or role filters.'
-              : 'Adjust the search or player filters.'}
-          </span>
+          <strong>{noResults.title}</strong>
+          <span>{noResults.detail}</span>
         </div>
       ) : null}
 

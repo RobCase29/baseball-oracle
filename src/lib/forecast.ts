@@ -20,24 +20,29 @@ function compareNullableNumber(
 }
 
 export function isMlbStage(stage: PlayerStage): boolean {
-  return stage === 'early_mlb' || stage === 'established_mlb'
+  return stage === 'recent_callup' || stage === 'early_mlb' || stage === 'established_mlb'
 }
 
 export function matchesStageFilter(stage: PlayerStage, filter: StageFilter): boolean {
   if (filter === 'All') return stage !== 'inactive'
   if (filter === 'Minors') return stage === 'pre_debut'
-  return isMlbStage(stage)
+  if (filter === 'RC') return stage === 'recent_callup'
+  return stage === 'early_mlb' || stage === 'established_mlb'
 }
 
-export function stageCoverageForPlayers(players: PlayerRecord[]): { minors: number; mlb: number } {
+export function stageCoverageForPlayers(players: PlayerRecord[]): { minors: number; recentCallups: number; mlb: number } {
   return {
     minors: players.filter((player) => player.stage === 'pre_debut').length,
-    mlb: players.filter((player) => isMlbStage(player.stage)).length,
+    recentCallups: players.filter((player) => player.stage === 'recent_callup').length,
+    mlb: players.filter((player) => (
+      player.stage === 'early_mlb' || player.stage === 'established_mlb'
+    )).length,
   }
 }
 
 export function stageLabel(stage: PlayerStage): string {
   if (stage === 'pre_debut') return 'Minor leagues'
+  if (stage === 'recent_callup') return 'Rookie Track'
   if (stage === 'early_mlb') return 'Early MLB'
   if (stage === 'established_mlb') return 'Established MLB'
   return 'Inactive'
@@ -68,7 +73,7 @@ export function nearTermImpactProbability(player: PlayerRecord): number | null {
 }
 
 export function eligibleAlphaSignal(player: PlayerRecord): AlphaSignal | null {
-  if (!isMlbStage(player.stage)) return null
+  if (!isMlbStage(player.stage) || player.stage === 'recent_callup') return null
   const signal = player.careerForecast?.alphaSignal
   if (!signal || signal.status !== 'research' || !signal.eligible || !signal.edge) return null
   return signal
@@ -105,7 +110,7 @@ export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha
 }
 
 export function oracleOutcomeRank(player: PlayerRecord): number | null {
-  return player.careerForecast?.rank ?? null
+  return player.recentCallup?.prospectPrior?.rank ?? player.careerForecast?.rank ?? null
 }
 
 export function filterAndSortPlayers(
@@ -211,10 +216,14 @@ export function filterAndSortPlayers(
     return sortPlayers(filtered)
   }
   const sourceOrder = filters.sort === 'arrival36'
-    ? (['minor', 'mlb'] as const)
-    : (['mlb', 'minor'] as const)
+    ? (['minor', 'rookie', 'mlb'] as const)
+    : (['rookie', 'mlb', 'minor'] as const)
   return sourceOrder.flatMap((source) => sortPlayers(filtered.filter((player) =>
-    source === 'mlb' ? isMlbStage(player.stage) : player.stage === 'pre_debut',
+    source === 'minor'
+      ? player.stage === 'pre_debut'
+      : source === 'rookie'
+        ? player.stage === 'recent_callup'
+        : player.stage === 'early_mlb' || player.stage === 'established_mlb',
   )))
 }
 

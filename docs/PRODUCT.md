@@ -207,20 +207,20 @@ Comparison uses shared axes and definitions. It should show:
 - Risk and missing-data flags
 - Development trend differences
 - Common and divergent comparables
-- Current watchlist thesis, when present
+- Rookie Track status and the separation between the frozen prospect prior and
+  current MLB evidence
 
-### Watchlist
+### Rookie Track
 
-The MVP watchlist stores:
+The first partial MLB season is a distinct transition state. Rookie Track keeps
+the player visible while the major-league sample is still too small for the
+established-player career model:
 
-- Player
-- Research status such as `Watching`, `Priority`, or `Pass`
-- Thesis and primary risk
-- Target milestone and review date
-- Prediction snapshot at the time the player was added
-- Change since that snapshot
-
-Local persistence is acceptable for the prototype. Account-backed storage belongs in the first production phase.
+- Preserve the last matched prospect rank and high-case outcome as a frozen prior.
+- Show current MLB opportunity, WAR, and role-relative standing as separate evidence.
+- Label evidence depth so a hot first month is not presented as a settled forecast.
+- Never manufacture a prospect score when the player cannot be matched to an exact prior.
+- Move the player into the established MLB cohort only after the release-gated career model has sufficient evidence.
 
 ### Model Lab
 

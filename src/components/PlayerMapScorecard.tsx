@@ -1,6 +1,6 @@
 import { AlertCircle, Layers3, Radar, Route } from 'lucide-react'
 import type { PlayerRecord } from '../domain/forecast'
-import type { PlayerMapScore, PlayerMapSignal } from '../domain/playerMap'
+import type { PlayerMapRoute, PlayerMapScore, PlayerMapSignal } from '../domain/playerMap'
 import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
 
 function scoreWidth(score: PlayerMapScore): number | null {
@@ -23,7 +23,13 @@ function ordinalLabel(value: number): string {
   return `${rounded}${suffix} percentile`
 }
 
-function supportingLabel(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
+function supportingLabel(score: PlayerMapScore, route: PlayerMapRoute): string {
+  if (route === 'rookie') {
+    if (score.key === 'readiness') return 'MLB arrival'
+    if (score.key === 'trajectory') return 'Current MLB WAR standing'
+    if (score.key === 'best_trait') return 'Current MLB performance'
+    if (score.key === 'evidence') return 'MLB sample'
+  }
   if (score.key === 'outcome') return route === 'milb' ? 'Five-year MLB impact' : score.label
   if (score.key === 'readiness') return route === 'milb' ? 'MLB readiness' : 'Next 3-year upside'
   if (score.key === 'trajectory') return route === 'milb' ? 'Projected MLB arrival' : 'Career pace'
@@ -33,7 +39,7 @@ function supportingLabel(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
 
 function supportingDisplay(
   score: PlayerMapScore,
-  route: 'milb' | 'mlb',
+  route: PlayerMapRoute,
   player: PlayerRecord,
 ): string {
   if (score.key === 'readiness' && route === 'milb') {
@@ -53,7 +59,13 @@ function supportingDisplay(
   return score.display
 }
 
-function supportingBasis(score: PlayerMapScore, route: 'milb' | 'mlb'): string {
+function supportingBasis(score: PlayerMapScore, route: PlayerMapRoute): string {
+  if (route === 'rookie') {
+    if (score.key === 'readiness') return 'The MLB appearance is observed and confirms arrival.'
+    if (score.key === 'trajectory') return 'Current-role WAR standing, shown separately from the prospect score.'
+    if (score.key === 'best_trait') return score.basis
+    if (score.key === 'evidence') return 'Observed MLB opportunity changes evidence depth, not the prospect score.'
+  }
   if (score.key === 'readiness') {
     return route === 'milb'
       ? 'A separate model checks whether an MLB arrival is close enough to confirm.'
@@ -103,6 +115,14 @@ function plainSignal(signal: PlayerMapSignal): { label: string; detail: string }
       label: 'Career trending up',
       detail: 'The latest completed season improved the player’s long-term career path.',
     },
+    prospect_prior_preserved: {
+      label: 'Prospect trajectory preserved',
+      detail: 'The pre-debut career score stays visible while the first MLB sample develops.',
+    },
+    mlb_confirmation: {
+      label: 'MLB evidence is arriving',
+      detail: 'Current major-league performance is tracked beside the prior without being blended into it.',
+    },
   }
   return copy[signal.code]
 }
@@ -120,6 +140,8 @@ function plainNextStep(step: string): string {
   if (step === 'Create an exact frozen model snapshot match') return 'Match this player in the next complete model update'
   if (step === 'Refresh at the next completed-season model snapshot') return 'Re-score after the next completed season'
   if (step === 'Next completed-season Career Oracle snapshot') return 'Re-score after the next completed season'
+  if (step === 'Next daily MLB value refresh') return 'Refresh current MLB evidence each day'
+  if (step === 'First supported completed-season Career Oracle snapshot') return 'Hand off to the MLB career model after a supported complete season'
   if (step === 'Current MLB performance and tracking ingestion') return 'Add current MLB performance and tracking stats'
   if (step === 'Add current performance and tracking evidence') return 'Add current performance and tracking stats'
   return step
@@ -130,7 +152,9 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   const oracleScore = oracleScoreFor(player)
   const supportingScores = map.route === 'milb'
     ? [map.scores.outcome, map.scores.readiness, map.scores.trajectory, map.scores.evidence]
-    : [map.scores.readiness, map.scores.trajectory, map.scores.bestTrait, map.scores.evidence]
+    : map.route === 'rookie'
+      ? [map.scores.readiness, map.scores.trajectory, map.scores.evidence]
+      : [map.scores.readiness, map.scores.trajectory, map.scores.bestTrait, map.scores.evidence]
   const hasTraitProfile = map.strengths.length > 0 || map.risks.length > 0
 
   return (
@@ -157,7 +181,9 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
         <span>
           {map.route === 'milb'
             ? 'Higher is better. The minor-league score carries projected MLB arrival age into the career ceiling rank, so remaining career runway matters.'
-            : 'Higher is better. Oracle Score converts this player’s exact rank among all scored major-league players to a 0–100 scale.'}
+            : map.route === 'rookie'
+              ? 'The score preserves the frozen prospect career rank. Current MLB performance is shown separately and is not blended into it.'
+              : 'Higher is better. Oracle Score converts this player’s exact rank among all scored major-league players to a 0–100 scale.'}
         </span>
       </div>
 
@@ -248,7 +274,9 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
         <strong>Rank, not a guarantee.</strong>
         <span>{map.route === 'milb'
           ? 'This is a research rank from an MLB-arrival and debut-age career bridge, not a Hall of Fame probability, blended composite, or card-value estimate. Current stats refresh daily; model ranks change with a tested release.'
-          : 'Oracle Score is a stage-specific percentile, not a probability, blended composite, or card-value estimate. Current stats refresh daily; the score changes with a tested model release.'}</span>
+          : map.route === 'rookie'
+            ? 'This is the frozen prospect career rank carried through a call-up, not a new rookie probability or blended score. MLB evidence refreshes daily until a supported completed-season model takes over.'
+            : 'Oracle Score is a stage-specific percentile, not a probability, blended composite, or card-value estimate. Current stats refresh daily; the score changes with a tested model release.'}</span>
       </div>
     </section>
   )

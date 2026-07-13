@@ -130,7 +130,6 @@ Use bitemporal semantics where corrections matter. A corrected stat can have the
 - `ModelRun`: model, training window, code revision, data manifest, metrics, and artifact location
 - `PredictionSnapshot`: immutable model output for one player and as-of timestamp
 - `ComparableSnapshot`: stage-matched comparison set tied to a prediction snapshot
-- `Watchlist` and `WatchlistItem`: user research state tied to the prediction seen at decision time
 - `MarketObservation`: later bounded context for collectible price and liquidity evidence
 
 ### Prediction Snapshot Contract
@@ -192,7 +191,6 @@ This is a domain contract, not necessarily the wire format or database row shape
 - Training, calibration, and evaluation splits follow time, with an embargo where overlapping horizons could leak information.
 - Every model run references immutable data and feature manifests plus a code revision.
 - Every product forecast references exactly one prediction snapshot.
-- Watchlist decisions retain the snapshot ID that the user saw.
 - An API request without an explicit `asOf` returns the latest published snapshot and includes that timestamp in the response.
 
 Automated pipeline tests should fail closed when these invariants are violated.
@@ -320,4 +318,3 @@ Operations:
 10. Add the market-data bounded context only after the baseball forecasts are defensible.
 
 The key architectural milestone is not the first complex model. It is the first historical forecast that can be reproduced exactly from what was knowable at the time and understood in the product.
-

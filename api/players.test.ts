@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CareerForecast } from './_career-oracle-types.js'
+import type { CareerOraclePreview, CareerPreviewPlayer } from './_career-oracle-preview.js'
 import { researchMilbImpactRanking } from './_milb-impact.js'
 import { researchMilbAlphaSignal } from './_research-arrival.js'
 import {
@@ -8,6 +9,7 @@ import {
   dedupeMinorCandidates,
   matchesQuery,
   mergeCurrentUniverse,
+  mlbCandidates,
   normalizeQueryText,
   normalizeSearchText,
   parseQuery,
@@ -185,6 +187,7 @@ function candidate(
     arrivalProbability36: 0.5,
     minorProfileId: id,
     previewPlayer: null,
+    recentCallupPrior: null,
     ...patch,
   }
 }
@@ -206,6 +209,87 @@ function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
   }
 }
 
+function joeMackPreview(): CareerOraclePreview {
+  const mlbForecast = forecast(0.1, 10, 1, 0.5, 0.2)
+  mlbForecast.publicationState = 'withheld'
+  mlbForecast.rank = null
+  mlbForecast.hofCaliberProbability = null
+  mlbForecast.finalCareerWar = null
+  mlbForecast.peakSevenWar = null
+  mlbForecast.confidenceScore = null
+  mlbForecast.confidenceState = 'Withheld'
+  mlbForecast.warnings = [
+    'partial_only_unvalidated_forecast_withheld',
+    'partial_season_feature_fallback',
+  ]
+  if (mlbForecast.careerChapter) {
+    mlbForecast.careerChapter = {
+      ...mlbForecast.careerChapter,
+      status: 'withheld',
+      evidence: {
+        ...mlbForecast.careerChapter.evidence,
+        mlbSeasonNumber: 1,
+      },
+      exceptionalTrajectory: null,
+    }
+  }
+
+  const prospectForecast = forecast(0.0023681, 0, 167, 0.25)
+  prospectForecast.asOf = '2025-12-31T00:00:00.000Z'
+  prospectForecast.finalCareerWar = {
+    p10: -1.034,
+    p25: -0.355,
+    p50: 0,
+    p75: 2.494,
+    p90: 12.988,
+  }
+  prospectForecast.lineage.targetVersion = 'mlb-debut-age-mixed-final-standard-bridge-v1'
+
+  const player: CareerPreviewPlayer = {
+    id: 'bbref:mackjo02',
+    name: 'Joe Mack',
+    playerType: 'Hitter',
+    stage: 'early_mlb',
+    age: 23,
+    organization: 'Miami Marlins',
+    organizationCode: 'MIA',
+    position: 'C',
+    level: 'MLB',
+    batsThrows: 'L/R',
+    externalIds: { bbref: 'mackjo02', mlbam: 691788 },
+    careerForecast: mlbForecast,
+  }
+  const prospectForecasts = Object.fromEntries(Array.from(
+    { length: 6_455 },
+    (_, index) => {
+      const rank = index + 1
+      const isJoe = rank === 167
+      const key = isJoe ? '691788:hitter' : `${900_000 + index}:hitter`
+      return [key, {
+        key,
+        mlbamId: isJoe ? '691788' : String(900_000 + index),
+        playerType: 'Hitter' as const,
+        canonicalPlayerId: isJoe ? 'mlbam:691788:hitter' : null,
+        careerForecast: isJoe
+          ? prospectForecast
+          : { ...prospectForecast, rank },
+      }]
+    },
+  ))
+
+  return {
+    schemaVersion: 'career-oracle-preview/v1',
+    asOf: '2026-07-12T18:36:27.386Z',
+    modelVersion: 'career-oracle-jaws-tournament-v2',
+    targetVersion: 'hof-caliber-point-in-time-jaws-v1',
+    dataVersion: null,
+    providerVersion: null,
+    releaseEligible: false,
+    items: [player],
+    prospectForecasts,
+  }
+}
+
 describe('unified player ordering', () => {
   it('normalizes browser form-encoded spaces in player search text', () => {
     expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
@@ -219,6 +303,7 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players'))?.view).toBe('full')
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
+    expect(parseQuery(request('/api/players?stage=RC'))?.stage).toBe('RC')
   })
 
   it('accepts a bounded exact player-ID batch and rejects malformed batches', () => {
@@ -320,6 +405,7 @@ describe('unified player ordering', () => {
     const mlb = '2026-07-12T12:00:00.000Z'
 
     expect(stageRelevantDataAsOf('Minors', minors, mlb)).toBe(minors)
+    expect(stageRelevantDataAsOf('RC', minors, mlb)).toBe(mlb)
     expect(stageRelevantDataAsOf('MLB', minors, mlb)).toBe(mlb)
     expect(stageRelevantDataAsOf('All', minors, mlb)).toBe(mlb)
     expect(stageRelevantDataAsOf('All', minors, null)).toBeNull()
@@ -347,6 +433,46 @@ describe('unified player ordering', () => {
       .toEqual(['mlb-high', 'mlb-low', 'minor-high', 'minor-low'])
     expect(sortBoardCandidates(items, { stage: 'Minors', sort: 'hofProbability' }).map((item) => item.id))
       .toEqual(['minor-high', 'mlb-high', 'mlb-low', 'minor-low'])
+  })
+
+  it('surfaces Rookie Track as its own cohort using the frozen prospect-prior rank', () => {
+    const priorForecast = forecast(0.02, 15, 8)
+    const items = [
+      candidate('minor', { careerForecast: forecast(0.3, 30, 1) }),
+      candidate('mlb', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        minorProfileId: null,
+        careerForecast: forecast(0.4, 40, 1),
+      }),
+      candidate('rookie', {
+        source: 'mlb',
+        stage: 'recent_callup',
+        minorProfileId: null,
+        careerForecast: { ...forecast(0.1, 10, 2), rank: null },
+        recentCallupPrior: {
+          rank: 8,
+          universe: 6_455,
+          target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+          asOf: '2025-12-31T00:00:00.000Z',
+          forecast: priorForecast,
+        },
+      }),
+      candidate('rookie-coverage-gap', {
+        source: 'mlb',
+        stage: 'recent_callup',
+        minorProfileId: null,
+        careerForecast: forecast(0.99, 99, 1),
+        recentCallupPrior: null,
+      }),
+    ]
+
+    expect(sortBoardCandidates(items, { stage: 'All', sort: 'alphaOpportunity' })
+      .map((item) => item.id)).toEqual(['rookie', 'rookie-coverage-gap', 'mlb', 'minor'])
+    expect(sortBoardCandidates(
+      items.filter((item) => matchesQuery(item, query({ stage: 'RC' }))),
+      { stage: 'RC', sort: 'alphaOpportunity' },
+    ).map((item) => item.id)).toEqual(['rookie', 'rookie-coverage-gap'])
   })
 
   it('orders near-term MLB impact by an absolute three-year event and minors by arrival', () => {
@@ -679,5 +805,76 @@ describe('minor identity dedupe', () => {
 
     expect(result.items.map((item) => item.id)).toEqual(['mlb-player', 'unmapped-minor'])
     expect(result.crossStageDuplicatesRemoved).toBe(1)
+  })
+
+  it('preserves an exact prospect prior on a first-season partial-only MLB call-up', () => {
+    const preview = joeMackPreview()
+    const [joe] = mlbCandidates(preview)
+
+    expect(joe).toMatchObject({
+      id: 'bbref:mackjo02',
+      stage: 'recent_callup',
+      mlbamId: '691788',
+      recentCallupPrior: {
+        rank: 167,
+        universe: 6_455,
+        target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+        asOf: '2025-12-31T00:00:00.000Z',
+      },
+    })
+    expect(joe?.careerForecast?.rank).toBeNull()
+    expect(matchesQuery(joe!, query({ stage: 'RC' }))).toBe(true)
+    expect(matchesQuery(joe!, query({ stage: 'MLB' }))).toBe(false)
+    expect(matchesQuery(joe!, query({ stage: 'Minors' }))).toBe(false)
+
+    const merged = mergeCurrentUniverse(
+      [joe!],
+      [candidate('joe-minor', { mlbamId: '691788' })],
+    )
+    expect(merged.items).toHaveLength(1)
+    expect(merged.items[0]).toMatchObject({
+      id: 'bbref:mackjo02',
+      stage: 'recent_callup',
+      recentCallupPrior: { rank: 167, universe: 6_455 },
+    })
+    expect(merged.crossStageDuplicatesRemoved).toBe(1)
+  })
+
+  it('requires first-season partial-only state but keeps unmatched players in Rookie Track', () => {
+    const laterCareer = joeMackPreview()
+    const player = laterCareer.items[0]!
+    player.careerForecast.careerChapter!.evidence.mlbSeasonNumber = 2
+    expect(mlbCandidates(laterCareer)[0]).toMatchObject({
+      stage: 'early_mlb',
+      recentCallupPrior: null,
+    })
+
+    const roleMismatch = joeMackPreview()
+    roleMismatch.prospectForecasts['691788:hitter']!.playerType = 'Pitcher'
+    expect(mlbCandidates(roleMismatch)[0]).toMatchObject({
+      stage: 'recent_callup',
+      recentCallupPrior: null,
+    })
+
+    const missingPrior = joeMackPreview()
+    const unmatchedPlayer = missingPrior.items[0]!
+    unmatchedPlayer.id = 'bbref:coverage01'
+    unmatchedPlayer.name = 'Coverage Gap Rookie'
+    unmatchedPlayer.externalIds = { bbref: 'covera01', mlbam: 700_001 }
+    const [unmatched] = mlbCandidates(missingPrior)
+    expect(unmatched).toMatchObject({
+      id: 'bbref:coverage01',
+      stage: 'recent_callup',
+      mlbamId: '700001',
+      recentCallupPrior: null,
+    })
+    expect(matchesQuery(unmatched!, query({ stage: 'RC' }))).toBe(true)
+    expect(matchesQuery(unmatched!, query({ stage: 'MLB' }))).toBe(false)
+
+    const [matched] = mlbCandidates(joeMackPreview())
+    const rookieCohort = [unmatched!, matched!]
+    expect(rookieCohort.filter((candidate) => candidate.stage === 'recent_callup')).toHaveLength(2)
+    expect(sortBoardCandidates(rookieCohort, { stage: 'RC', sort: 'alphaOpportunity' })
+      .map((candidate) => candidate.id)).toEqual(['bbref:mackjo02', 'bbref:coverage01'])
   })
 })

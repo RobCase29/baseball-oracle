@@ -115,6 +115,12 @@ describe('Oracle Board utilities', () => {
     const players = [
       makePlayer({ id: 'one', name: 'Jackson Miller' }),
       makePlayer({
+        id: 'callup',
+        name: 'Rookie Transition',
+        stage: 'recent_callup',
+        level: 'MLB',
+      }),
+      makePlayer({
         id: 'two',
         name: 'Andre Lewis',
         playerType: 'Pitcher',
@@ -130,9 +136,13 @@ describe('Oracle Board utilities', () => {
       stage: 'MLB',
       playerType: 'Pitcher',
     }).map((player) => player.id)).toEqual(['two'])
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'RC',
+    }).map((player) => player.id)).toEqual(['callup'])
   })
 
-  it('filters exact teams and token-aware composite positions for saved players', () => {
+  it('filters exact teams and token-aware composite positions', () => {
     const players = [
       makePlayer({
         id: 'ath-catcher',
@@ -193,7 +203,7 @@ describe('Oracle Board utilities', () => {
     ])
   })
 
-  it('groups incomparable MLB outcomes and prospect proxies in the All view', () => {
+  it('groups rookie transitions, MLB outcomes, and prospect proxies in the All view', () => {
     const players = [
       makePlayer({
         id: 'minor-high',
@@ -205,9 +215,34 @@ describe('Oracle Board utilities', () => {
         level: null,
         careerForecast: makeForecast({ hofCaliberProbability: 0.01 }),
       }),
+      makePlayer({
+        id: 'rookie-transition',
+        stage: 'recent_callup',
+        level: 'MLB',
+        careerForecast: null,
+        recentCallup: {
+          version: 'rookie-track-v1',
+          status: 'monitoring',
+          reason: 'first_mlb_season_partial_only',
+          prospectPrior: {
+            rank: 167,
+            universe: 6455,
+            target: 'runway_adjusted_career_ceiling',
+            asOf: '2025-12-31T00:00:00.000Z',
+            forecast: makeForecast({ rank: 167 }),
+          },
+          currentMlbEvidence: {
+            asOf: '2026-07-12T00:00:00.000Z',
+            opportunity: { label: 'PA', value: '172' },
+            war: 1,
+            warPercentile: 72.7,
+          },
+        },
+      }),
     ]
 
     expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id)).toEqual([
+      'rookie-transition',
       'mlb-low',
       'minor-high',
     ])
@@ -322,7 +357,7 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-arrival', 'lower-arrival'])
   })
 
-  it('sorts MLB watchlist players by the career outcome rank behind Oracle Score', () => {
+  it('sorts MLB players by the career outcome rank behind Oracle Score', () => {
     const alphaSignal = (delta: number, eligible = true): NonNullable<CareerForecast['alphaSignal']> => ({
       version: 'alpha-signal-v1',
       status: 'research',
@@ -440,7 +475,7 @@ describe('Oracle Board utilities', () => {
     ])
   })
 
-  it('uses career-ceiling rank for a mapped MiLB watchlist player without an arrival trigger', () => {
+  it('uses career-ceiling rank for a mapped MiLB player without an arrival trigger', () => {
     const players = [
       makePlayer({ id: 'unmapped' }),
       makePlayer({
@@ -514,15 +549,17 @@ describe('Oracle Board utilities', () => {
     expect(formatWar(24.23)).toBe('24.2')
     expect(developmentChapterLabel('AA')).toBe('Upper-minors development')
     expect(developmentChapterLabel('Rk')).toBe('Rookie-ball development')
+    expect(stageLabel('recent_callup')).toBe('Rookie Track')
     expect(stageLabel('established_mlb')).toBe('Established MLB')
   })
 
-  it('summarizes the stage mix for filtered and saved player sets', () => {
+  it('summarizes prospects, rookie transitions, and established MLB cohorts separately', () => {
     expect(stageCoverageForPlayers([
       makePlayer({ id: 'minor' }),
+      makePlayer({ id: 'callup', stage: 'recent_callup' }),
       makePlayer({ id: 'rookie', stage: 'early_mlb' }),
       makePlayer({ id: 'veteran', stage: 'established_mlb' }),
       makePlayer({ id: 'inactive', stage: 'inactive' }),
-    ])).toEqual({ minors: 1, mlb: 2 })
+    ])).toEqual({ minors: 1, recentCallups: 1, mlb: 2 })
   })
 })

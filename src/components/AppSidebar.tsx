@@ -1,36 +1,28 @@
 import {
   BarChart3,
-  Database,
   FlaskConical,
   PanelLeftClose,
   PanelLeftOpen,
   ScanSearch,
-  ShieldCheck,
-  Star,
 } from 'lucide-react'
 
-export type WorkspaceView = 'Board' | 'Watchlist' | 'Validation' | 'Model lab' | 'Data health'
+export type WorkspaceView = 'Board' | 'Model lab'
 
 interface AppSidebarProps {
   activeView: WorkspaceView
   collapsed: boolean
-  watchlistCount: number
   onChangeView: (view: WorkspaceView) => void
   onToggleCollapsed: () => void
 }
 
 const navigation = [
   { label: 'Board' as const, displayLabel: 'Rankings', icon: BarChart3 },
-  { label: 'Watchlist' as const, displayLabel: 'Watchlist', icon: Star },
-  { label: 'Validation' as const, displayLabel: 'Accuracy', icon: ShieldCheck },
   { label: 'Model lab' as const, displayLabel: 'Model review', icon: FlaskConical },
-  { label: 'Data health' as const, displayLabel: 'Data updates', icon: Database },
 ]
 
 export function AppSidebar({
   activeView,
   collapsed,
-  watchlistCount,
   onChangeView,
   onToggleCollapsed,
 }: AppSidebarProps) {
@@ -58,9 +50,6 @@ export function AppSidebar({
           >
             <Icon size={18} aria-hidden="true" />
             <span>{displayLabel}</span>
-            {label === 'Watchlist' && watchlistCount > 0 ? (
-              <small>{watchlistCount}</small>
-            ) : null}
           </button>
         ))}
       </nav>

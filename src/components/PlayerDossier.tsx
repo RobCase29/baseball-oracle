@@ -11,7 +11,6 @@ import {
   Layers3,
   List,
   ShieldCheck,
-  Star,
   Target,
   TrendingUp,
 } from 'lucide-react'
@@ -31,6 +30,13 @@ import {
 } from '../lib/forecast'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
 import { oracleScoreFor, plainPlayerState, playerMapFor } from './playerMapView'
+import {
+  formatRookieWar,
+  formatRookieWarPercentile,
+  rookieMlbReadLabel,
+  rookieEvidenceLabel,
+  rookieEvidenceProgress,
+} from './rookieTrackView'
 
 const CareerArcChart = lazy(() =>
   import('./CareerArcChart').then((module) => ({ default: module.CareerArcChart })),
@@ -42,8 +48,6 @@ const MilbEvidenceProfile = lazy(() =>
 
 interface PlayerDossierProps {
   player: PlayerRecord
-  saved: boolean
-  onToggleWatchlist: (playerId: string) => void
   onReturnToBoard: () => void
 }
 
@@ -583,7 +587,7 @@ function ProspectCareerOutlookPanel({
         {player.name}&apos;s career rank now carries the projected MLB arrival age into the second leg of the outlook. A later arrival leaves fewer prime seasons to build career value.
       </p>
       <div className="forecast-metrics career-forecast-metrics" aria-label="Prospect career outlook summary">
-        <div className="metric-tile metric-tile--reach">
+        <div className="metric-tile">
           <span className="metric-label">PROJECTED MLB ARRIVAL</span>
           <strong className="metric-number">{debutAge === null ? '—' : `Age ${debutAge}`}</strong>
           <small>Age at arrival is an explicit career-ceiling input</small>
@@ -609,6 +613,72 @@ function ProspectCareerOutlookPanel({
         <div>
           <strong>Research bridge, not a finished career simulation</strong>
           <span>The model connects MLB arrival and projected debut age to historical career outcomes. Early MLB quality and year-by-year aging remain the next model upgrade.</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RookieTrackPanel({ player }: { player: PlayerRecord }) {
+  const transition = player.recentCallup
+  if (!transition) return null
+  const prior = transition.prospectPrior
+  const priorForecast = prior?.forecast ?? null
+  const opportunity = transition.currentMlbEvidence.opportunity
+  const progress = rookieEvidenceProgress(player)
+
+  return (
+    <section className="dossier-section rookie-track-panel" aria-labelledby="rookie-track-title">
+      <div className="section-heading-row">
+        <div>
+          <span className="eyebrow">PROSPECT TRAJECTORY + MLB EVIDENCE</span>
+          <h2 id="rookie-track-title">Rookie Track</h2>
+        </div>
+        <span className="rookie-track-status">{rookieMlbReadLabel(player)}</span>
+      </div>
+      <p className="career-chapter-note">
+        {prior
+          ? `${player.name}'s prospect career score stays in place while major-league evidence accumulates. The MLB read is shown separately, so a small debut sample cannot erase or silently rewrite the prior.`
+          : `${player.name} remains visible in Rookie Track while the exact pre-debut forecast match is completed. Current MLB evidence is still tracked without manufacturing a replacement score.`}
+      </p>
+      <div className="forecast-metrics rookie-track-metrics" aria-label="Rookie Track summary">
+        <div className="metric-tile metric-tile--reach">
+          <span className="metric-label">PROSPECT PRIOR</span>
+          <strong className="metric-number">{prior ? `#${prior.rank.toLocaleString()}` : '—'}</strong>
+          <small>{prior ? `of ${prior.universe.toLocaleString()} frozen prospect forecasts` : 'Exact frozen forecast not matched'}</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">PROSPECT HIGH CASE</span>
+          <strong className="metric-number">{formatWar(priorForecast?.finalCareerWar?.p90 ?? null)}</strong>
+          <small>{prior ? '90th-percentile career WAR carried through the call-up' : 'Available after the prospect identity match is resolved'}</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">EARLY MLB READ</span>
+          <strong className="metric-text">{rookieMlbReadLabel(player)}</strong>
+          <small>{formatRookieWar(player)} · {formatRookieWarPercentile(player)} current-role WAR</small>
+        </div>
+        <div className="metric-tile">
+          <span className="metric-label">EVIDENCE DEPTH</span>
+          <strong className="metric-text">{rookieEvidenceLabel(player)}</strong>
+          <small>{opportunity ? `${opportunity.value} ${opportunity.label}` : 'Opportunity data pending'}</small>
+        </div>
+      </div>
+      <div className="rookie-evidence-meter" aria-label="MLB evidence progress">
+        <span>
+          <strong>{rookieEvidenceLabel(player)}</strong>
+          <small>{progress === null ? 'Sample progress unavailable' : `${progress}% of the substantial-sample marker`}</small>
+        </span>
+        <div role="img" aria-label={progress === null ? 'MLB sample progress unavailable' : `MLB sample progress ${progress}%`}>
+          {progress === null ? null : <i style={{ width: `${progress}%` }} />}
+        </div>
+      </div>
+      <div className="research-warning" role="note">
+        <AlertTriangle size={18} aria-hidden="true" />
+        <div>
+          <strong>{prior ? 'No blended score' : 'Prospect prior not matched'}</strong>
+          <span>{prior
+            ? 'The Oracle Score remains the frozen prospect prior. Current MLB production is shown as a neutral early read until an exposure- and prior-aware transition model beats that prior in out-of-time testing.'
+            : 'Rookie Track keeps the player discoverable, but the Oracle Score stays unavailable until an exact frozen prospect identity match is established.'}</span>
         </div>
       </div>
     </section>
@@ -864,8 +934,6 @@ function formatRetrievedAt(value: string | null): string {
 
 export function PlayerDossier({
   player,
-  saved,
-  onToggleWatchlist,
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
@@ -915,20 +983,14 @@ export function PlayerDossier({
           >
             <List size={16} aria-hidden="true" />
           </button>
-          <button
-            className={`watch-button${saved ? ' is-saved' : ''}`}
-            type="button"
-            onClick={() => onToggleWatchlist(player.id)}
-          >
-            {saved ? <Check size={16} aria-hidden="true" /> : <Star size={16} aria-hidden="true" />}
-            {saved ? 'Saved' : 'Watch'}
-          </button>
         </div>
       </header>
 
       <PlayerMapScorecard player={player} />
 
-      {forecast && isMlbStage(player.stage) ? (
+      {player.stage === 'recent_callup' ? (
+        <RookieTrackPanel player={player} />
+      ) : forecast && isMlbStage(player.stage) ? (
         <CareerForecastPanel player={player} forecast={forecast} />
       ) : forecast && player.stage === 'pre_debut' ? (
         <ProspectCareerOutlookPanel player={player} forecast={forecast} />

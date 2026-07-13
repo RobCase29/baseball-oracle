@@ -2,9 +2,14 @@ import type { PlayerMapProfile } from './playerMap.js'
 
 export type PlayerType = 'Hitter' | 'Pitcher' | 'Two-way'
 
-export type PlayerStage = 'pre_debut' | 'early_mlb' | 'established_mlb' | 'inactive'
+export type PlayerStage =
+  | 'pre_debut'
+  | 'recent_callup'
+  | 'early_mlb'
+  | 'established_mlb'
+  | 'inactive'
 
-export type StageFilter = 'All' | 'Minors' | 'MLB'
+export type StageFilter = 'All' | 'Minors' | 'RC' | 'MLB'
 
 export type PublicationState = 'observed' | 'research' | 'released' | 'withheld'
 
@@ -245,6 +250,25 @@ export interface ObservedMetric {
 export interface PlayerOpportunity {
   label: string
   value: string
+}
+
+export interface RecentCallupContext {
+  version: 'rookie-track-v1'
+  status: 'monitoring'
+  reason: 'first_mlb_season_partial_only'
+  prospectPrior: {
+    rank: number
+    universe: number
+    target: string
+    asOf: string
+    forecast: CareerForecast
+  } | null
+  currentMlbEvidence: {
+    asOf: string | null
+    opportunity: PlayerOpportunity | null
+    war: number | null
+    warPercentile: number | null
+  }
 }
 
 export interface PlayerCoverage {
@@ -511,6 +535,7 @@ export interface PlayerRecord {
   milbImpactRanking?: MilbImpactRanking | null
   minorTraitEvidence?: MinorTraitEvidence | null
   careerForecast: CareerForecast | null
+  recentCallup?: RecentCallupContext | null
   playerMap?: PlayerMapProfile | null
 }
 
@@ -558,6 +583,7 @@ export interface PlayersResponseMeta {
   targetVersion?: string | null
   stageCoverage?: {
     minors: number
+    recentCallups?: number
     mlb: number
   } | null
   degraded?: boolean
@@ -566,6 +592,7 @@ export interface PlayersResponseMeta {
   stageRankAvailability?: {
     mlb: boolean
     minors: boolean
+    recentCallups?: boolean
   }
   playerMapVersion?: 'oracle-player-map/v1'
   playerMapCoverage?: number

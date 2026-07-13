@@ -273,4 +273,148 @@ describe('Player Map', () => {
     expect(profile.missingEvidence).not.toContain('Current MLB performance')
     expect(profile.comparableWithinStageOnly).toBe(true)
   })
+
+  it('keeps a Joe-like prospect prior while showing MLB confirmation separately', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Joe Mack',
+      stage: 'recent_callup',
+      age: 23,
+      level: 'MLB',
+      metrics: [
+        {
+          key: 'current-season-war',
+          label: 'Current-season WAR',
+          value: '1.0 WAR',
+          percentile: 72.7,
+          source: 'Baseball-Reference',
+        },
+      ],
+      careerForecast: {
+        asOf: '2026-07-12T18:08:42.478Z',
+        rank: null,
+        hofCaliberProbability: null,
+        confidenceScore: null,
+        confidenceState: 'Withheld',
+      },
+      recentCallup: {
+        version: 'rookie-track-v1',
+        status: 'monitoring',
+        reason: 'first_mlb_season_partial_only',
+        prospectPrior: {
+          rank: 167,
+          universe: 6_455,
+          target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+          asOf: '2025-12-31T00:00:00.000Z',
+          forecast: {
+            confidenceState: 'Low',
+            finalCareerWar: {
+              p10: -1.034,
+              p25: -0.355,
+              p50: 0,
+              p75: 2.494,
+              p90: 12.988,
+            },
+          },
+        },
+        currentMlbEvidence: {
+          asOf: '2026-07-13T13:19:52.068Z',
+          opportunity: { label: 'PA', value: '172' },
+          war: 1,
+          warPercentile: 72.7,
+        },
+      },
+    }), { mlbUniverse: 948, minorUniverse: 4_319 })
+
+    expect(profile.route).toBe('rookie')
+    expect(profile.mappingStatus).toBe('scored')
+    expect(profile.state).toBe('discovery')
+    expect(profile.oracleScore).toMatchObject({
+      value: 97,
+      route: 'rookie',
+      rank: 167,
+      universe: 6_455,
+      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+      asOf: '2025-12-31T00:00:00.000Z',
+    })
+    expect(profile.scores.outcome).toMatchObject({
+      display: 'P97',
+      rank: 167,
+      universe: 6_455,
+      status: 'research',
+    })
+    expect(profile.scores.readiness).toMatchObject({
+      display: 'Reached MLB',
+      status: 'observed',
+    })
+    expect(profile.scores.trajectory).toMatchObject({
+      label: 'Current MLB WAR standing',
+      value: 72.7,
+      display: 'P73',
+      status: 'observed',
+    })
+    expect(profile.scores.evidence).toMatchObject({
+      display: '172 PA',
+      status: 'observed',
+    })
+    expect(profile.signals.map((signal) => signal.code)).toEqual([
+      'prospect_prior_preserved',
+      'mlb_confirmation',
+    ])
+    expect(profile.summary).toContain('Live evidence does not change the prospect-prior score')
+  })
+
+  it('keeps an unmatched first-season player in Rookie Track without inventing an Oracle Score', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Coverage Gap Rookie',
+      stage: 'recent_callup',
+      age: 24,
+      level: 'MLB',
+      metrics: [],
+      careerForecast: {
+        asOf: '2026-07-12T18:08:42.478Z',
+        rank: null,
+        hofCaliberProbability: null,
+        confidenceScore: null,
+        confidenceState: 'Withheld',
+      },
+      recentCallup: {
+        version: 'rookie-track-v1',
+        status: 'monitoring',
+        reason: 'first_mlb_season_partial_only',
+        prospectPrior: null,
+        currentMlbEvidence: {
+          asOf: '2026-07-13T13:19:52.068Z',
+          opportunity: { label: 'PA', value: '61' },
+          war: 0.2,
+          warPercentile: 41,
+        },
+      },
+    }), { mlbUniverse: 948, minorUniverse: 4_319 })
+
+    expect(profile.route).toBe('rookie')
+    expect(profile.mappingStatus).toBe('coverage_gap')
+    expect(profile.claimStatus).toBe('withheld')
+    expect(profile.state).toBe('profile_only')
+    expect(profile.oracleScore).toMatchObject({
+      value: null,
+      route: 'rookie',
+      rank: null,
+      universe: null,
+      target: null,
+      asOf: null,
+    })
+    expect(profile.scores.outcome).toMatchObject({
+      value: null,
+      display: 'Unavailable',
+      status: 'withheld',
+    })
+    expect(profile.scores.trajectory).toMatchObject({
+      value: 41,
+      display: 'P41',
+      status: 'observed',
+    })
+    expect(profile.signals.map((signal) => signal.code)).toEqual(['mlb_confirmation'])
+    expect(profile.missingEvidence).toContain('Exact frozen prospect prior')
+    expect(profile.summary).toContain('exact frozen prospect prior is unavailable')
+  })
 })

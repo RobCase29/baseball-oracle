@@ -1,4 +1,4 @@
-import { lazy, Suspense, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useState } from 'react'
 import {
   AlertTriangle,
   CalendarDays,
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AppSidebar, type WorkspaceView } from './components/AppSidebar'
-import { DataHealth } from './components/DataHealth'
 import { ModelLab } from './components/ModelLab'
 import { PlayerDossier } from './components/PlayerDossier'
 import { ProspectBoard } from './components/ProspectBoard'
@@ -20,26 +19,8 @@ import type {
   PlayersResponse,
   PlayersResponseMeta,
 } from './domain/forecast'
-import {
-  filterAndSortPlayers,
-  stageCoverageForPlayers,
-} from './lib/forecast'
-import {
-  LEGACY_WATCHLIST_STORAGE_KEY,
-  loadStoredWatchlist,
-  mergeRefreshedWatchlist,
-  serializeWatchlist,
-  WATCHLIST_STORAGE_KEY,
-  watchlistIdBatches,
-} from './lib/watchlist'
 
 const PAGE_SIZE = 50
-
-const ValidationDashboard = lazy(() =>
-  import('./components/ValidationDashboard').then((module) => ({
-    default: module.ValidationDashboard,
-  })),
-)
 
 const defaultFilters: BoardFilters = {
   query: '',
@@ -57,7 +38,7 @@ function filtersFromUrl(): BoardFilters {
   const playerType = parameters.get('playerType')
   const level = parameters.get('level')
   const sort = parameters.get('sort')
-  const resolvedStage: BoardFilters['stage'] = stage === 'All' || stage === 'Minors' || stage === 'MLB'
+  const resolvedStage: BoardFilters['stage'] = stage === 'All' || stage === 'Minors' || stage === 'RC' || stage === 'MLB'
     ? stage
     : defaultFilters.stage
   const resolvedLevel: BoardFilters['level'] = level === 'AAA' || level === 'AA' || level === 'A+' || level === 'A' || level === 'Rk'
@@ -76,7 +57,13 @@ function filtersFromUrl(): BoardFilters {
     : defaultFilters.sort
   const stageSort = (resolvedStage === 'Minors' && (
     resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
-  )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36')
+  )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36') || (
+    resolvedStage === 'RC' && (
+      resolvedSort === 'nearTermImpact' ||
+      resolvedSort === 'finalWar' ||
+      resolvedSort === 'arrival36'
+    )
+  )
     ? defaultFilters.sort
     : resolvedSort
 
@@ -86,7 +73,7 @@ function filtersFromUrl(): BoardFilters {
     playerType: playerType === 'Hitter' || playerType === 'Pitcher' || playerType === 'Two-way'
       ? playerType
       : defaultFilters.playerType,
-    level: resolvedStage === 'MLB' ? 'All' : resolvedLevel,
+    level: resolvedStage === 'MLB' || resolvedStage === 'RC' ? 'All' : resolvedLevel,
     team: parameters.get('team') ?? defaultFilters.team,
     position: parameters.get('position') ?? defaultFilters.position,
     sort: stageSort,
@@ -111,13 +98,6 @@ const emptyMeta: PlayersResponseMeta = {
   coverage: 'Professional player universe awaiting Career Oracle preview',
   forecastStatus: 'research_only',
   source: 'Baseball Oracle research',
-}
-
-function loadWatchlist(): Map<string, PlayerRecord> {
-  return loadStoredWatchlist(
-    window.localStorage.getItem(WATCHLIST_STORAGE_KEY),
-    window.localStorage.getItem(LEGACY_WATCHLIST_STORAGE_KEY),
-  )
 }
 
 function formatDataDate(value: string | null): string {
@@ -149,12 +129,13 @@ function isPlayersResponse(value: unknown): value is PlayersResponse {
 }
 
 function normalizePlayerRecord(player: PlayerRecord): PlayerRecord {
-  const validStages = new Set(['pre_debut', 'early_mlb', 'established_mlb', 'inactive'])
+  const validStages = new Set(['pre_debut', 'recent_callup', 'early_mlb', 'established_mlb', 'inactive'])
   return {
     ...player,
     // players.v1 predates the unified artifact and contains only minor-league records.
     stage: validStages.has(player.stage) ? player.stage : 'pre_debut',
     careerForecast: player.careerForecast ?? null,
+    recentCallup: player.recentCallup ?? null,
   }
 }
 
@@ -168,61 +149,8 @@ function App() {
   const [meta, setMeta] = useState<PlayersResponseMeta>(emptyMeta)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [watchlist, setWatchlist] = useState<Map<string, PlayerRecord>>(loadWatchlist)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const deferredQuery = useDeferredValue(filters.query)
-  const isWatchlistView = activeView === 'Watchlist'
-  const watchlistIdsKey = useMemo(
-    () => Array.from(watchlist.keys()).toSorted().join('\n'),
-    [watchlist],
-  )
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        WATCHLIST_STORAGE_KEY,
-        serializeWatchlist(watchlist.values()),
-      )
-      window.localStorage.removeItem(LEGACY_WATCHLIST_STORAGE_KEY)
-    } catch {
-      // The in-memory watchlist remains usable if browser storage is unavailable.
-    }
-  }, [watchlist])
-
-  useEffect(() => {
-    if (!watchlistIdsKey) return
-    const controller = new AbortController()
-    const batches = watchlistIdBatches(watchlistIdsKey.split('\n'))
-
-    void Promise.allSettled(batches.map(async (ids) => {
-      const parameters = new URLSearchParams({
-        ids: ids.join(','),
-        page: '1',
-        limit: ids.length.toString(),
-        sort: 'name',
-        stage: 'All',
-      })
-      const response = await fetch(`/api/players?${parameters.toString()}`, {
-        cache: 'no-store',
-        signal: controller.signal,
-      })
-      if (!response.ok) throw new Error(`Player endpoint returned ${response.status}.`)
-      const result = (await response.json()) as unknown
-      if (!isPlayersResponse(result)) {
-        throw new Error('Player endpoint returned an unexpected response.')
-      }
-      return result.items.map(normalizePlayerRecord)
-    })).then((results) => {
-      if (controller.signal.aborted) return
-      const refreshed = results.flatMap((result) => (
-        result.status === 'fulfilled' ? result.value : []
-      ))
-      if (refreshed.length === 0) return
-      setWatchlist((current) => mergeRefreshedWatchlist(current, refreshed))
-    })
-
-    return () => controller.abort()
-  }, [isWatchlistView, watchlistIdsKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -287,22 +215,9 @@ function App() {
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
   }, [filters, page])
 
-  const savedPlayers = useMemo(
-    () => filterAndSortPlayers(Array.from(watchlist.values()), filters),
-    [filters, watchlist],
-  )
-  const visiblePlayers = isWatchlistView ? savedPlayers : players
-  const visiblePagination: PlayersPage = isWatchlistView
-    ? {
-        page: 1,
-        limit: Math.max(savedPlayers.length, 1),
-        total: savedPlayers.length,
-        totalPages: savedPlayers.length > 0 ? 1 : 0,
-      }
-    : pagination
-  const selectedPlayer =
-    visiblePlayers.find((player) => player.id === selectedId) ?? visiblePlayers[0] ?? null
-  const watchedIds = useMemo(() => new Set(watchlist.keys()), [watchlist])
+  const selectedPlayer = selectedId
+    ? players.find((player) => player.id === selectedId) ?? null
+    : null
 
   function changeView(view: WorkspaceView) {
     setActiveView(view)
@@ -310,56 +225,27 @@ function App() {
   }
 
   function changeFilters(patch: Partial<BoardFilters>) {
-    const compatiblePatch = patch.stage === 'MLB' ? { ...patch, level: 'All' } : patch
+    const compatiblePatch = patch.stage === 'MLB' || patch.stage === 'RC'
+      ? { ...patch, level: 'All' }
+      : patch
     setFilters((current) => ({ ...current, ...compatiblePatch }))
     setPage(1)
   }
 
-  function toggleWatchlist(playerId: string) {
-    setWatchlist((current) => {
-      const next = new Map(current)
-      if (next.has(playerId)) {
-        next.delete(playerId)
-        return next
-      }
-
-      const player = visiblePlayers.find((candidate) => candidate.id === playerId)
-      if (player) next.set(playerId, player)
-      return next
-    })
-  }
-
   function selectPlayer(playerId: string) {
     setSelectedId(playerId)
-    if (window.matchMedia('(max-width: 1120px)').matches) {
-      window.requestAnimationFrame(() => {
-        document.getElementById('player-dossier')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        })
-      })
-    }
   }
 
   function returnToBoard() {
-    document.getElementById('prospect-board')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
+    setSelectedId(null)
+    window.requestAnimationFrame(() => {
+      document.getElementById('prospect-board')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
     })
   }
 
-  const statcastCoverage = visiblePlayers.filter((player) => player.coverage.hasStatcast).length
-  const stageCoverage = isWatchlistView
-    ? stageCoverageForPlayers(visiblePlayers)
-    : meta.stageCoverage ?? stageCoverageForPlayers(visiblePlayers)
-  const loadedMappedOutlookCount = visiblePlayers.filter((player) => (
-    player.stage === 'pre_debut'
-      ? player.milbImpactRanking !== null && player.milbImpactRanking !== undefined
-      : player.careerForecast?.rank !== null && player.careerForecast?.rank !== undefined
-  )).length
-  const mappedOutlookCount = isWatchlistView
-    ? loadedMappedOutlookCount
-    : meta.matchingMappedCount ?? loadedMappedOutlookCount
   const topbarStatus = loading && players.length === 0
     ? 'loading'
     : error
@@ -367,15 +253,18 @@ function App() {
       : meta.degraded
         ? 'degraded'
         : 'live'
-  const modelVintage = selectedPlayer?.stage === 'pre_debut'
-    ? selectedPlayer.milbImpactRanking?.frozenAsOf ?? selectedPlayer.milbAlphaSignal?.asOf ?? null
-    : selectedPlayer?.careerForecast?.careerChapter?.featureSeason
-      ? `${selectedPlayer.careerForecast.careerChapter.featureSeason}-12-31T00:00:00.000Z`
-      : null
-  const evidenceBuildingCount = Math.max(0, visiblePagination.total - mappedOutlookCount)
+  const modelVintage = selectedPlayer
+    ? selectedPlayer.stage === 'pre_debut'
+      ? selectedPlayer.milbImpactRanking?.frozenAsOf ?? selectedPlayer.milbAlphaSignal?.asOf ?? null
+      : selectedPlayer.stage === 'recent_callup'
+        ? selectedPlayer.recentCallup?.prospectPrior?.asOf ?? meta.researchAsOf ?? null
+      : selectedPlayer.careerForecast?.careerChapter?.featureSeason
+        ? `${selectedPlayer.careerForecast.careerChapter.featureSeason}-12-31T00:00:00.000Z`
+        : meta.researchAsOf ?? null
+    : meta.researchAsOf ?? null
   const statsClockLabel = filters.stage === 'Minors'
     ? 'Minor-league stats checked'
-    : filters.stage === 'MLB'
+    : filters.stage === 'MLB' || filters.stage === 'RC'
       ? 'MLB stats checked'
       : 'All stats checked'
 
@@ -384,7 +273,6 @@ function App() {
       <AppSidebar
         activeView={activeView}
         collapsed={sidebarCollapsed}
-        watchlistCount={watchlist.size}
         onChangeView={changeView}
         onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
       />
@@ -414,32 +302,24 @@ function App() {
         </div>
 
         {activeView === 'Model lab' ? <ModelLab /> : null}
-        {activeView === 'Data health' ? <DataHealth /> : null}
-        {activeView === 'Validation' ? (
-          <Suspense fallback={<div className="workspace-page validation-loading">Loading validation workspace</div>}>
-            <ValidationDashboard />
-          </Suspense>
-        ) : null}
 
-        {activeView === 'Board' || activeView === 'Watchlist' ? (
+        {activeView === 'Board' ? (
           <main className="research-workspace">
-            <header className="workspace-header board-workspace-header">
-              <div>
-                <span className="eyebrow">PLAYER FORECASTS</span>
-                <h1>{isWatchlistView ? 'Watchlist' : 'Player Rankings'}</h1>
-                <p>
-                  {isWatchlistView
-                    ? 'Saved players, current Oracle Scores, and the stats behind each outlook.'
-                    : 'Start with the Oracle Score, then inspect the upside, readiness, and evidence behind each player.'}
-                </p>
-              </div>
-              <div className="snapshot-id">
-                <span>MODEL STATUS</span>
-                <strong>{meta.targetVersion ? 'Research predictions' : 'Model update pending'}</strong>
-              </div>
-            </header>
+            {!selectedPlayer ? (
+              <header className="workspace-header board-workspace-header">
+                <div>
+                  <span className="eyebrow">PLAYER FORECASTS</span>
+                  <h1>Player Rankings</h1>
+                  <p>Scan the table, compare players at the same career stage, and open any row for the full outlook.</p>
+                </div>
+                <div className="snapshot-id">
+                  <span>MODEL STATUS</span>
+                  <strong>{meta.targetVersion ? 'Research predictions' : 'Model update pending'}</strong>
+                </div>
+              </header>
+            ) : null}
 
-            {meta.degraded && !isWatchlistView ? (
+            {meta.degraded ? (
               <div className="degraded-source-banner" role="status">
                 <AlertTriangle size={16} aria-hidden="true" />
                 <strong>Partial player universe</strong>
@@ -447,73 +327,25 @@ function App() {
               </div>
             ) : null}
 
-            <section className="overview-strip" aria-label="Board summary">
-              <div>
-                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'MATCHING PLAYERS'}</span>
-                <strong>{visiblePagination.total.toLocaleString()}</strong>
-                <small>{isWatchlistView ? `${watchlist.size} saved total` : 'after the selected filters'}</small>
-              </div>
-              <div>
-                <span>ORACLE SCORES</span>
-                <strong>{mappedOutlookCount.toLocaleString()}</strong>
-                <small>
-                  {evidenceBuildingCount > 0
-                    ? `${evidenceBuildingCount.toLocaleString()} players still need more model data`
-                    : 'every matching player has a score'}
-                </small>
-              </div>
-              <div>
-                <span>MINORS / MLB</span>
-                <strong>{stageCoverage.minors.toLocaleString()} / {stageCoverage.mlb.toLocaleString()}</strong>
-                <small>
-                  {isWatchlistView
-                    ? 'stage mix in matching watchlist'
-                    : statcastCoverage > 0
-                      ? `${statcastCoverage} with current tracking stats`
-                      : 'players available at each stage'}
-                </small>
-              </div>
-              <div>
-                <span>WATCHLIST</span>
-                <strong>{watchlist.size}</strong>
-                <small>saved in this browser</small>
-              </div>
-            </section>
-
-            <div className="research-grid">
+            {selectedPlayer ? (
+              <PlayerDossier
+                player={selectedPlayer}
+                onReturnToBoard={returnToBoard}
+              />
+            ) : (
               <ProspectBoard
-                players={visiblePlayers}
-                selectedId={selectedPlayer?.id ?? null}
+                players={players}
+                selectedId={null}
                 filters={filters}
-                pagination={visiblePagination}
-                loading={!isWatchlistView && loading}
-                error={isWatchlistView ? null : error}
-                watchlist={watchedIds}
+                pagination={pagination}
+                loading={loading}
+                error={error}
                 facets={meta.facets}
                 onSelect={selectPlayer}
-                onToggleWatchlist={toggleWatchlist}
                 onChangeFilters={changeFilters}
-                onChangePage={isWatchlistView ? () => undefined : setPage}
+                onChangePage={setPage}
               />
-              {selectedPlayer ? (
-                <PlayerDossier
-                  player={selectedPlayer}
-                  saved={watchlist.has(selectedPlayer.id)}
-                  onToggleWatchlist={toggleWatchlist}
-                  onReturnToBoard={returnToBoard}
-                />
-              ) : (
-                <div className="dossier-empty">
-                  {loading && !isWatchlistView ? <LoaderCircle className="spin" size={22} aria-hidden="true" /> : null}
-                  <strong>{loading && !isWatchlistView ? 'Loading player profiles' : 'No player selected'}</strong>
-                  <span>
-                    {isWatchlistView
-                      ? 'Save a real player from the board to begin a watchlist.'
-                      : 'Choose a player to see the full outlook.'}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
           </main>
         ) : null}
       </div>

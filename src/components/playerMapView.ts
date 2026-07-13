@@ -77,8 +77,17 @@ export function oracleScoreFor(player: PlayerRecord): OracleScoreView {
   const map = playerMapFor(player)
   const value = map.oracleScore.value
   const isMinor = map.route === 'milb'
-  const comparisonLabel = isMinor ? 'scored minor-league players' : 'scored major-league players'
-  const outcomeLabel = isMinor ? 'Runway-adjusted career ceiling' : 'Hall of Fame career outlook'
+  const isRookieTrack = map.route === 'rookie'
+  const comparisonLabel = isMinor
+    ? 'scored minor-league players'
+    : isRookieTrack
+      ? 'frozen prospect forecasts'
+      : 'scored major-league players'
+  const outcomeLabel = isMinor
+    ? 'Runway-adjusted career ceiling'
+    : isRookieTrack
+      ? 'Prospect trajectory carried into MLB'
+      : 'Hall of Fame career outlook'
   const rankLabel = map.oracleScore.rank === null
     ? 'Stage rank unavailable'
     : map.oracleScore.universe === null
@@ -91,7 +100,9 @@ export function oracleScoreFor(player: PlayerRecord): OracleScoreView {
       : `above about ${value}% of ${comparisonLabel}`
   const explanation = value === null
     ? `There is not enough matched model data to assign an Oracle Score yet.`
-    : `A score of ${scoreDisplay(value)} puts ${player.name} ${standing} for ${outcomeLabel.replace(/^./u, (letter) => letter.toLocaleLowerCase())}.`
+    : isRookieTrack
+      ? `A score of ${scoreDisplay(value)} preserves where ${player.name} ranked before the call-up while MLB evidence accumulates separately.`
+      : `A score of ${scoreDisplay(value)} puts ${player.name} ${standing} for ${outcomeLabel.replace(/^./u, (letter) => letter.toLocaleLowerCase())}.`
 
   return {
     value,
