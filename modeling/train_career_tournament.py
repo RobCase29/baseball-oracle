@@ -9,6 +9,10 @@ import joblib
 import pandas as pd
 
 try:
+    from modeling.alpha_signal import (
+        HistoricalHallBaseline,
+        retrospective_alpha_diagnostic,
+    )
     from modeling.career_data import (
         build_career_landmarks,
         chronological_player_split,
@@ -25,6 +29,7 @@ try:
     from modeling.career_tournament import fit_final_scoring_bundle, run_career_tournament
     from modeling.provenance import file_sha256, json_sha256, producer_metadata
 except ModuleNotFoundError:
+    from alpha_signal import HistoricalHallBaseline, retrospective_alpha_diagnostic
     from career_data import (
         build_career_landmarks,
         chronological_player_split,
@@ -243,6 +248,13 @@ def main() -> None:
         latest_complete_season=as_of_year,
     )
     tournament.report["careerChapters"] = chapter_model.report
+    alpha_report = HistoricalHallBaseline(model_panel).report()
+    alpha_report["retrospectiveDiagnostic"] = retrospective_alpha_diagnostic(
+        model_panel,
+        tournament,
+        chapter_model.boundaries,
+    )
+    tournament.report["alphaSignal"] = alpha_report
     arrival_preview = load_arrival_preview(args.arrival_preview)
     lineage = {
         "dataVersion": file_sha256(source_manifest_path),
@@ -355,6 +367,7 @@ def main() -> None:
                 ROOT / "modeling/career_tournament.py",
                 ROOT / "modeling/career_preview.py",
                 ROOT / "modeling/career_chapters.py",
+                ROOT / "modeling/alpha_signal.py",
                 ROOT / "modeling/relative_standing.py",
             ],
             {

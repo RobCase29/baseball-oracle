@@ -326,6 +326,29 @@ For minor leaguers, `nearTermImpact` uses the separately defined 36-month arriva
 endpoint; it does not use Prospect Savant's composite or reinterpret the
 debut-age Hall bridge as a trained minor-league career model.
 
+## Alpha Radar Research Layer
+
+`alpha-signal-v1` is the default decision view for supported MLB players. It
+publishes no opaque score. The edge is the modeled Hall-caliber probability
+minus a player-equal post-1961 base rate from at least 500 prior resolved players
+on the same role track and broad experience/age band. Eligibility additionally
+requires six or fewer completed MLB seasons, two or more learned pre-prime years,
+and a P90 JAWS margin at or above the applicable Hall-caliber standard.
+
+The corrected player-disjoint development audit allows exactly one preregistered
+decision point per player: the earliest supported early-career snapshot. It
+evaluated 3,189 supported pre-prime players with 29 Hall-caliber events. Four
+players cleared every gate and one was an event. The observed 25% rate is based
+on too few selections to support a lift or performance claim. The development
+cohort was human-reviewed, chapter boundaries used the full post-1961 panel, and
+the exact current scoring refit is not cross-fitted. These results justify
+continued research and prospective tracking, not release or an edge claim.
+
+The current layer measures model abnormality against baseball history. It does
+not include memorabilia prices, external rankings, liquidity, fees, or market
+implied probabilities. Minor leaguers are labeled `Discovery only` and excluded
+from Alpha rank until a validated direct career-ceiling bridge is available.
+
 ## Trouble With The Curve Audit
 
 The referenced repository is a useful hypothesis source, not training truth. At

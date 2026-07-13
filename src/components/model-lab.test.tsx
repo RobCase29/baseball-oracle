@@ -18,6 +18,9 @@ describe('Model Lab release language', () => {
     expect(screen.getByText(/cannot inherit tournament metrics/u)).toBeInTheDocument()
     expect(screen.queryByText(/locked-test/u)).not.toBeInTheDocument()
     expect(screen.queryByText(/Brier 0\.0039/u)).not.toBeInTheDocument()
+    expect(screen.getByText('Alpha Radar audit')).toBeInTheDocument()
+    expect(screen.getByText(/only four gated players/u)).toBeInTheDocument()
+    expect(screen.getByText('Prospective Alpha cohort')).toBeInTheDocument()
   })
 
   it('keeps Hall-caliber selection provisional and release-gated', () => {

@@ -9,6 +9,11 @@ import numpy as np
 import pandas as pd
 
 try:
+    from modeling.alpha_signal import (
+        HistoricalHallBaseline,
+        build_alpha_signal,
+        rank_alpha_signals,
+    )
     from modeling.career_data import (
         build_career_landmarks,
         build_prospect_bridge,
@@ -32,6 +37,11 @@ try:
     )
     from modeling.relative_standing import HistoricalPaceReference
 except ModuleNotFoundError:
+    from alpha_signal import (
+        HistoricalHallBaseline,
+        build_alpha_signal,
+        rank_alpha_signals,
+    )
     from career_data import (
         build_career_landmarks,
         build_prospect_bridge,
@@ -240,6 +250,7 @@ def build_mlb_preview_players(
     )
     standards_by_key = standard_lookup(standards)
     pace_reference = HistoricalPaceReference(panel)
+    alpha_reference = HistoricalHallBaseline(panel)
     players: list[dict[str, Any]] = []
     for index, feature in scoring.reset_index(drop=True).iterrows():
         player_id = str(feature["bbref_id"])
@@ -405,6 +416,22 @@ def build_mlb_preview_players(
                 prior_war_per_season=prior_war_per_season,
             )
         )
+        chapter_track = career_chapter.get("roleTrack")
+        prime_start_age = (
+            chapter_model.boundaries.get(str(chapter_track), {}).get("primeStartAge")
+            if chapter_model is not None
+            else None
+        )
+        alpha_signal = build_alpha_signal(
+            feature,
+            modeled_probability=probability,
+            jaws_margin=jaws_margin_distribution,
+            career_chapter=career_chapter,
+            historical_signal=historical_signal,
+            baseline_reference=alpha_reference,
+            prime_start_age=prime_start_age,
+            partial_feature=bool(context["featurePartial"]),
+        )
         forecast_as_of = (
             str(current.get("known_at") or roster_row.get("known_at"))
             if context["featurePartial"]
@@ -503,6 +530,7 @@ def build_mlb_preview_players(
                 "warnings": sorted(set(warnings)),
                 "relativeSignal": historical_signal,
                 "careerChapter": career_chapter,
+                "alphaSignal": alpha_signal,
                 "decomposition": {
                     "arrivalProbability": 1.0,
                     "conditionalHofCaliberProbability": (
@@ -535,6 +563,7 @@ def build_mlb_preview_players(
                 },
             }
         )
+    rank_alpha_signals(players)
     players.sort(
         key=lambda player: (
             player["hofCaliberProbability"] is None,

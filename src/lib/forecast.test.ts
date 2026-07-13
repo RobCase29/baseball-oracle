@@ -5,6 +5,7 @@ import {
   developmentChapterLabel,
   formatOrdinal,
   formatPercentileRank,
+  formatPercentagePointDelta,
   formatProbability,
   formatScore,
   formatSigned,
@@ -276,6 +277,85 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-arrival', 'lower-arrival'])
   })
 
+  it('sorts only eligible MLB alpha by empirical probability edge', () => {
+    const alphaSignal = (delta: number, eligible = true): NonNullable<CareerForecast['alphaSignal']> => ({
+      version: 'alpha-signal-v1',
+      status: 'research',
+      tier: eligible ? 'watch' : 'none',
+      basis: 'completed_seasons_only',
+      featureSeason: 2025,
+      eligible,
+      rank: eligible ? 1 : null,
+      rankScope: eligible ? 'current_mlb_eligible_absolute_alpha' : null,
+      modeledProbability: 0.12,
+      baseline: {
+        probability: 0.02,
+        minimumSeason: 1961,
+        players: 800,
+        landmarks: 2000,
+        roleTrack: 'hitter',
+        experienceBand: 'first',
+        seasonNumberMin: 1,
+        seasonNumberMax: 1,
+        ageMin: 20,
+        ageMax: 24,
+        ageWindow: 2,
+        resolvedOnly: true,
+        referenceSeasonsBeforeFeature: true,
+        playerEqualWeighted: true,
+      },
+      edge: { probabilityDelta: delta, liftMultiple: 6 },
+      ceiling: {
+        p90JawsMargin: 5,
+        gatePassed: eligible,
+        target: 'final_jaws_minus_career_to_date_standard',
+      },
+      runway: {
+        age: 22,
+        learnedTrackPrimeStartAge: 28,
+        yearsToPrime: 6,
+        minimumRequiredYears: 2,
+        gatePassed: true,
+      },
+      nearTermImpact: {
+        probability: 0.5,
+        referenceBaseRate: 0.1,
+        liftMultiple: 5,
+        target: 'next_three_war_ge_global_training_q90',
+      },
+      historicalPace: null,
+      gates: {
+        supportedBaseline: true,
+        completedEvidence: true,
+        earlyCareer: true,
+        prePrimeRunway: true,
+        absoluteCeiling: eligible,
+      },
+      warnings: [],
+    })
+    const players = [
+      makePlayer({
+        id: 'lower-alpha',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.08) }),
+      }),
+      makePlayer({
+        id: 'higher-alpha',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.2) }),
+      }),
+      makePlayer({
+        id: 'failed-ceiling-gate',
+        stage: 'early_mlb',
+        careerForecast: makeForecast({ alphaSignal: alphaSignal(0.9, false) }),
+      }),
+      makePlayer({ id: 'minor-discovery' }),
+    ]
+
+    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'alphaOpportunity' }).map((player) => player.id))
+      .toEqual(['higher-alpha', 'lower-alpha', 'failed-ceiling-gate', 'minor-discovery'])
+  })
+
   it('sorts frozen arrival estimates while keeping unmatched profiles last', () => {
     const estimate = (probability: number) => ({
       status: 'research_only' as const,
@@ -304,6 +384,8 @@ describe('Oracle Board utilities', () => {
   it('formats model values without converting invalid probabilities', () => {
     expect(formatSigned(3.2, ' pts')).toBe('+3.2 pts')
     expect(formatSigned(-1.5, ' pts')).toBe('-1.5 pts')
+    expect(formatPercentagePointDelta(0.148)).toBe('+14.8 pp')
+    expect(formatPercentagePointDelta(-0.02)).toBe('-2.0 pp')
     expect(formatOrdinal(91.4)).toBe('91st')
     expect(formatPercentileRank(99.8)).toBe('P99.8')
     expect(formatScore(72.25)).toBe('72.3')

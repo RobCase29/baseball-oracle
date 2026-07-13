@@ -44,6 +44,69 @@ const chapter: NonNullable<CareerForecast['careerChapter']> = {
   warnings: ['exceptional_trajectory_not_hall_probability'],
 }
 
+const alphaSignal: NonNullable<CareerForecast['alphaSignal']> = {
+  version: 'alpha-signal-v1',
+  status: 'research',
+  tier: 'priority',
+  basis: 'completed_seasons_only',
+  featureSeason: 2025,
+  eligible: true,
+  rank: 3,
+  rankScope: 'current_mlb_eligible_absolute_alpha',
+  modeledProbability: 0.16,
+  baseline: {
+    probability: 0.012,
+    minimumSeason: 1961,
+    players: 812,
+    landmarks: 2400,
+    roleTrack: 'hitter',
+    experienceBand: 'first',
+    seasonNumberMin: 1,
+    seasonNumberMax: 1,
+    ageMin: 20,
+    ageMax: 24,
+    ageWindow: 2,
+    resolvedOnly: true,
+    referenceSeasonsBeforeFeature: true,
+    playerEqualWeighted: true,
+  },
+  edge: { probabilityDelta: 0.148, liftMultiple: 13.333 },
+  ceiling: {
+    p90JawsMargin: 8.4,
+    gatePassed: true,
+    target: 'final_jaws_minus_career_to_date_standard',
+  },
+  runway: {
+    age: 23,
+    learnedTrackPrimeStartAge: 28,
+    yearsToPrime: 5,
+    minimumRequiredYears: 2,
+    gatePassed: true,
+  },
+  nearTermImpact: {
+    probability: 0.43,
+    referenceBaseRate: 0.1,
+    liftMultiple: 4.3,
+    target: 'next_three_war_ge_global_training_q90',
+  },
+  historicalPace: {
+    percentile: 99.1,
+    referencePlayers: 804,
+    metric: 'career_war_to_date',
+  },
+  gates: {
+    supportedBaseline: true,
+    completedEvidence: true,
+    earlyCareer: true,
+    prePrimeRunway: true,
+    absoluteCeiling: true,
+  },
+  warnings: [
+    'alpha_edge_is_not_expected_investment_return',
+    'p90_ceiling_is_tail_scenario_not_most_likely_outcome',
+  ],
+}
+
 const forecast: CareerForecast = {
   publicationState: 'research',
   releaseEligible: false,
@@ -180,10 +243,11 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('heading', { name: 'Oracle Board' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minors' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'P(HOF caliber)' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Career chapter' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Alpha signal' })).toBeInTheDocument()
     expect(screen.getByText('8.1%')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('P(MLB · 36m) 61.0%')).toBeInTheDocument()
+    expect(screen.getByText('Discovery only')).toBeInTheDocument()
+    expect(screen.getByText('61.0%')).toBeInTheDocument()
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
     expect(screen.queryByText('Peer signal')).not.toBeInTheDocument()
 
@@ -217,17 +281,17 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('No matching MLB players')).toBeInTheDocument()
   })
 
-  it('shows MLB chapter and absolute three-year impact without a current-census rank', () => {
+  it('shows model alpha and uses the eligible alpha rank without a narrow current-peer rank', () => {
     render(
       <ProspectBoard
         players={[{
           ...player,
           stage: 'early_mlb',
           level: 'MLB',
-          careerForecast: { ...forecast, careerChapter: chapter },
+          careerForecast: { ...forecast, careerChapter: chapter, alphaSignal },
         }]}
         selectedId={player.id}
-        filters={{ query: '', stage: 'MLB', playerType: 'All', level: 'All', sort: 'nearTermImpact' }}
+        filters={{ query: '', stage: 'MLB', playerType: 'All', level: 'All', sort: 'alphaOpportunity' }}
         pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
         loading={false}
         error={null}
@@ -240,7 +304,10 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
-    expect(screen.getByText('P(3Y impact) 43.0%')).toBeInTheDocument()
+    expect(screen.getByText('+14.8 pp')).toBeInTheDocument()
+    expect(screen.getByText('model priority')).toBeInTheDocument()
+    expect(screen.getByText('#3')).toBeInTheDocument()
+    expect(screen.getByText('alpha')).toBeInTheDocument()
     expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
@@ -280,8 +347,10 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText(/retrospective development holdout/u)).toBeInTheDocument()
     expect(screen.getByText(/Prospective validation is not complete/u)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career chapter' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Alpha Radar' })).toBeInTheDocument()
+    expect(screen.getByText('Discovery only')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('P(MLB · 36M)')).toBeInTheDocument()
+    expect(screen.getAllByText('P(MLB · 36M)')).toHaveLength(2)
     expect(screen.getByText(/MLB career chapter begins only after supported completed-season/u)).toBeInTheDocument()
     expect(screen.queryByText('Ahead of the curve')).not.toBeInTheDocument()
     expect(screen.queryByText('#4 of 512 · moderate reliability')).not.toBeInTheDocument()
@@ -300,6 +369,7 @@ describe('unified Oracle Board shell', () => {
             hofCaliberProbability: 0.16,
             cumulativeWar: 8.67,
             careerChapter: chapter,
+            alphaSignal,
             relativeSignal: {
               version: 'relative-standing-v1',
               kind: 'hall_track',
@@ -356,10 +426,17 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('img', { name: 'HOF CALIBER: 16%' })).toBeInTheDocument()
+    expect(screen.getByText('Priority model alpha')).toBeInTheDocument()
+    expect(screen.getByText('+14.8 pp')).toBeInTheDocument()
+    expect(screen.getByText(/16\.0% modeled vs 1\.2% historical/u)).toBeInTheDocument()
+    expect(screen.getByText(/13\.3× lift/u)).toBeInTheDocument()
+    expect(screen.getByText('+8.4 JAWS')).toBeInTheDocument()
+    expect(screen.getByText('5.0 years')).toBeInTheDocument()
+    expect(screen.getByText('Market price not modeled.')).toBeInTheDocument()
     expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
     expect(screen.getByText('breakout · hitter track')).toBeInTheDocument()
     expect(screen.getByText('P(3Y IMPACT)')).toBeInTheDocument()
-    expect(screen.getByText('43.0%')).toBeInTheDocument()
+    expect(screen.getAllByText('43.0%')).toHaveLength(2)
     expect(screen.getByText('HISTORICAL WAR PACE')).toBeInTheDocument()
     expect(screen.getByText('P99.1')).toBeInTheDocument()
     expect(screen.getByText('+0.8 WAR')).toBeInTheDocument()

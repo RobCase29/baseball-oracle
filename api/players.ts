@@ -19,6 +19,7 @@ const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'MLB'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
+  'alphaOpportunity',
   'hofProbability',
   'nearTermImpact',
   'finalWar',
@@ -53,7 +54,7 @@ const querySchema = z.object({
   stage: z.enum(playerStages).default('All'),
   playerType: z.enum(playerTypes).default('All'),
   level: z.enum(playerLevels).default('All'),
-  sort: z.enum(playerSorts).default('hofProbability'),
+  sort: z.enum(playerSorts).default('alphaOpportunity'),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 })
@@ -584,6 +585,44 @@ export function sortUnifiedCandidates(
         idTie
       )
     }
+    if (sort === 'alphaOpportunity') {
+      const leftAlpha = left.source === 'mlb' &&
+          left.careerForecast?.alphaSignal?.status === 'research' &&
+          left.careerForecast.alphaSignal.eligible
+        ? left.careerForecast.alphaSignal
+        : null
+      const rightAlpha = right.source === 'mlb' &&
+          right.careerForecast?.alphaSignal?.status === 'research' &&
+          right.careerForecast.alphaSignal.eligible
+        ? right.careerForecast.alphaSignal
+        : null
+      return (
+        compareNullableNumber(
+          leftAlpha?.edge?.probabilityDelta ?? null,
+          rightAlpha?.edge?.probabilityDelta ?? null,
+          'descending',
+        ) ||
+        compareNullableNumber(
+          leftAlpha?.nearTermImpact?.probability ?? (
+            left.source === 'mlb'
+              ? left.careerForecast?.careerChapter?.status === 'research'
+                ? left.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
+                : null
+              : left.arrivalProbability36
+          ),
+          rightAlpha?.nearTermImpact?.probability ?? (
+            right.source === 'mlb'
+              ? right.careerForecast?.careerChapter?.status === 'research'
+                ? right.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
+                : null
+              : right.arrivalProbability36
+          ),
+          'descending',
+        ) ||
+        compareNullableNumber(left.age, right.age, 'ascending') ||
+        idTie
+      )
+    }
     if (sort === 'finalWar') {
       return (
         compareNullableNumber(
@@ -859,6 +898,13 @@ function degradedStaticResponse(
         (candidate) => candidate.careerForecast?.careerChapter?.status === 'research',
       ).length,
       careerChapterVersion: 'career-chapter-v1',
+      alphaSignalCoverage: candidates.filter(
+        (candidate) => candidate.careerForecast?.alphaSignal?.status === 'research',
+      ).length,
+      alphaSignalEligible: candidates.filter(
+        (candidate) => candidate.careerForecast?.alphaSignal?.eligible === true,
+      ).length,
+      alphaSignalVersion: 'alpha-signal-v1',
       researchAsOf: preview.asOf,
       releaseEligible: preview.releaseEligible,
       targetVersion: preview.targetVersion,
@@ -1061,6 +1107,13 @@ export default async function handler(
             (candidate) => candidate.careerForecast?.careerChapter?.status === 'research',
           ).length,
           careerChapterVersion: careerPreview ? 'career-chapter-v1' : null,
+          alphaSignalCoverage: currentUniverse.filter(
+            (candidate) => candidate.careerForecast?.alphaSignal?.status === 'research',
+          ).length,
+          alphaSignalEligible: currentUniverse.filter(
+            (candidate) => candidate.careerForecast?.alphaSignal?.eligible === true,
+          ).length,
+          alphaSignalVersion: careerPreview ? 'alpha-signal-v1' : null,
           researchAsOf: careerPreview?.asOf ?? researchPreviewSummary.asOf,
           releaseEligible: careerPreview?.releaseEligible ?? false,
           targetVersion: careerPreview?.targetVersion ?? null,

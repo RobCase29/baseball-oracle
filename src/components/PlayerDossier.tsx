@@ -10,6 +10,7 @@ import {
   Info,
   Layers3,
   List,
+  Radar,
   ShieldCheck,
   Star,
   Target,
@@ -19,6 +20,7 @@ import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import {
   developmentChapterLabel,
   formatOrdinal,
+  formatPercentagePointDelta,
   formatPercentileRank,
   formatProbability,
   formatSigned,
@@ -181,6 +183,172 @@ function chapterWarningLabel(warning: string): string {
   return /[.!?]$/u.test(normalized) ? normalized : `${normalized}.`
 }
 
+function alphaWarningLabel(warning: string): string {
+  const labels: Record<string, string> = {
+    research_only: 'Alpha Signal is a research output.',
+    alpha_edge_is_not_expected_investment_return:
+      'Model edge is not expected investment return; market price is not part of this signal.',
+    current_scoring_refit_not_prospectively_validated:
+      'The current-player scoring refit has not been prospectively validated.',
+    p90_ceiling_is_tail_scenario_not_most_likely_outcome:
+      'The P90 ceiling is a high-end scenario, not the most likely outcome.',
+    historical_baseline_is_descriptive_not_causal:
+      'The historical baseline is descriptive, not causal.',
+    market_price_not_modeled:
+      'Market price, liquidity, transaction costs, and external consensus are not modeled.',
+    partial_season_feature_not_eligible_for_alpha:
+      'Partial-season evidence is not eligible for Alpha Signal.',
+    historical_hall_baseline_insufficient_support:
+      'The historical Hall-caliber baseline lacks sufficient support.',
+  }
+  if (labels[warning]) return labels[warning]
+  const normalized = warning.trim().replaceAll('_', ' ').replace(/^./u, (letter) => letter.toUpperCase())
+  return /[.!?]$/u.test(normalized) ? normalized : `${normalized}.`
+}
+
+function AlphaRadarPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
+  const mlbStage = isMlbStage(player.stage)
+  const signal = forecast.alphaSignal
+  const researchSignal = signal?.status === 'research' ? signal : null
+  const baseline = researchSignal?.baseline ?? null
+  const edge = researchSignal?.edge ?? null
+  const ceiling = researchSignal?.ceiling ?? null
+  const runway = researchSignal?.runway ?? null
+  const impact = researchSignal?.nearTermImpact ?? null
+  const tierLabel = researchSignal?.eligible
+    ? researchSignal.tier === 'priority' ? 'Priority model alpha' : 'Watch model alpha'
+    : researchSignal ? 'No alpha trigger' : 'Alpha withheld'
+  const experienceLabel = baseline?.experienceBand
+    .replace('seasons_', 'MLB seasons ')
+    .replace('season_', 'MLB season ')
+    .replace('_plus', '+')
+    .replace('_', '–')
+    .replace('first', 'first MLB season') ?? 'supported experience'
+
+  if (!mlbStage) {
+    return (
+      <section className="alpha-radar alpha-radar--discovery" aria-labelledby="alpha-radar-title">
+        <div className="section-heading-row">
+          <div>
+            <span className="eyebrow">SEPARATE EARLY-DISCOVERY TRACK</span>
+            <h2 id="alpha-radar-title">Alpha Radar</h2>
+          </div>
+          <Radar size={18} aria-hidden="true" />
+        </div>
+        <div className="alpha-discovery-grid">
+          <div>
+            <span>STATUS</span>
+            <strong>Discovery only</strong>
+            <small>Alpha withheld until supported completed-season MLB evidence</small>
+          </div>
+          <div>
+            <span>P(MLB · 36M)</span>
+            <strong>{formatProbability(forecast.arrivalProbability36)}</strong>
+            <small>Frozen minor-league arrival endpoint</small>
+          </div>
+          <div>
+            <span>P(HOF CALIBER | MLB)</span>
+            <strong>{formatProbability(forecast.decomposition.hofCaliberGivenMlbProbability)}</strong>
+            <small>Conditional research bridge, not Alpha Signal</small>
+          </div>
+        </div>
+        <p className="alpha-radar-note">
+          Minor-league discovery remains useful, but it is not ranked against the MLB Alpha universe. A direct, validated MiLB-to-career-ceiling model is required before publishing prospect alpha.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className={`alpha-radar alpha-radar--${researchSignal?.tier ?? 'withheld'}`} aria-labelledby="alpha-radar-title">
+      <div className="section-heading-row alpha-radar-heading">
+        <div>
+          <span className="eyebrow">EARLY-CAREER CEILING ANOMALY</span>
+          <h2 id="alpha-radar-title">Alpha Radar</h2>
+        </div>
+        <div className="alpha-radar-status">
+          <span className={`alpha-tier alpha-tier--${researchSignal?.tier ?? 'withheld'}`}>{tierLabel}</span>
+          {researchSignal?.rank ? <strong>#{researchSignal.rank} eligible MLB</strong> : null}
+        </div>
+      </div>
+
+      {researchSignal && baseline && edge && ceiling && runway ? (
+        <>
+          <div className="alpha-thesis">
+            <div className="alpha-thesis-edge">
+              <span>MODEL EDGE</span>
+              <strong>{formatPercentagePointDelta(edge.probabilityDelta)}</strong>
+              <small>
+                {formatProbability(researchSignal.modeledProbability)} modeled vs {formatProbability(baseline.probability)} historical
+                {edge.liftMultiple === null ? '' : ` · ${edge.liftMultiple.toFixed(1)}× lift`}
+              </small>
+            </div>
+            <div>
+              <span>ABSOLUTE CEILING</span>
+              <strong>{formatSigned(ceiling.p90JawsMargin, ' JAWS')}</strong>
+              <small>P90 margin to the career-to-date Hall standard · {ceiling.gatePassed ? 'gate cleared' : 'gate missed'}</small>
+            </div>
+            <div>
+              <span>RUNWAY TO PRIME</span>
+              <strong>{runway.yearsToPrime.toFixed(1)} years</strong>
+              <small>Age {runway.age.toFixed(1)} vs learned {baseline.roleTrack} prime at {runway.learnedTrackPrimeStartAge.toFixed(1)}</small>
+            </div>
+            <div>
+              <span>3Y IMPACT CONFIRMATION</span>
+              <strong>{formatProbability(impact?.probability ?? null)}</strong>
+              <small>{impact ? `${impact.liftMultiple?.toFixed(1) ?? '—'}× the ${formatProbability(impact.referenceBaseRate)} reference rate` : 'Near-term confirmation unavailable'}</small>
+            </div>
+          </div>
+
+          <div className="alpha-explanation">
+            <strong>{researchSignal.eligible ? 'Why it surfaced' : 'Why it did not trigger'}</strong>
+            <span>
+              {researchSignal.eligible
+                ? `The model is ${formatPercentagePointDelta(edge.probabilityDelta)} above a broad, prior-only historical Hall-caliber baseline while its P90 JAWS ceiling clears the absolute standard with ${runway.yearsToPrime.toFixed(1)} pre-prime years remaining.`
+                : `This completed-season forecast did not clear every Alpha gate. Positive relative edge alone is insufficient without early-career status, pre-prime runway, and an absolute P90 ceiling above the Hall-caliber standard.`}
+            </span>
+          </div>
+
+          <div className="alpha-reference">
+            <span>
+              Baseline: post-{baseline.minimumSeason} {baseline.roleTrack} · {experienceLabel} · ages {baseline.ageMin}–{baseline.ageMax}
+            </span>
+            <small>{baseline.players.toLocaleString()} resolved players · {baseline.landmarks.toLocaleString()} prior-season landmarks · player-equal weighted</small>
+          </div>
+          <div className="alpha-gates" aria-label="Alpha eligibility gates">
+            {([
+              ['Completed evidence', researchSignal.gates.completedEvidence],
+              ['Supported baseline', researchSignal.gates.supportedBaseline],
+              ['Early career', researchSignal.gates.earlyCareer],
+              ['Pre-prime runway', researchSignal.gates.prePrimeRunway],
+              ['Absolute ceiling', researchSignal.gates.absoluteCeiling],
+            ] as const).map(([label, passed]) => (
+              <span key={label} className={passed ? 'is-pass' : 'is-fail'}>
+                {passed ? <Check size={11} aria-hidden="true" /> : <AlertTriangle size={11} aria-hidden="true" />}
+                {label}
+              </span>
+            ))}
+          </div>
+          <p className="alpha-market-disclosure">
+            <strong>Market price not modeled.</strong> This is model alpha against a historical baseball baseline, not evidence of market mispricing or expected return.
+          </p>
+        </>
+      ) : (
+        <div className="alpha-withheld-state">
+          <strong>Alpha Signal is withheld</strong>
+          <span>The required completed-season forecast, broad historical baseline, ceiling tail, or learned runway boundary is unavailable.</span>
+        </div>
+      )}
+
+      {signal && signal.warnings.length > 0 ? (
+        <ul className="alpha-radar-warnings">
+          {signal.warnings.map((warning) => <li key={warning}>{alphaWarningLabel(warning)}</li>)}
+        </ul>
+      ) : null}
+    </section>
+  )
+}
+
 function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
   const mlbStage = isMlbStage(player.stage)
   const chapter = forecast.careerChapter
@@ -328,6 +496,8 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
           </small>
         </div>
       </section>
+
+      <AlphaRadarPanel player={player} forecast={forecast} />
 
       <section className="confidence-strip" aria-label="Forecast confidence">
         <Gauge size={17} aria-hidden="true" />

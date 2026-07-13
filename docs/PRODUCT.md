@@ -91,11 +91,17 @@ that the next three completed seasons total at least the global training-fold
 not another Hall-caliber probability. Historical completed-season WAR pace is
 descriptive context only.
 
+Alpha Radar is the default MLB decision surface. It only ranks players who clear
+the early-career, learned-runway, broad historical-support, positive-edge, and
+absolute P90 JAWS ceiling gates. The hero value is the percentage-point gap
+between the modeled Hall-caliber probability and the supported post-1961 base
+rate. It is model alpha, not market alpha; price is explicitly shown as missing.
+
 ## First Shippable Workflow
 
 The first release supports one complete loop:
 
-1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, absolute near-term impact, terminal career WAR, or arrival probability.
+1. **Scan:** Open Alpha Radar to see gated MLB ceiling anomalies, or switch to the Oracle Board's Hall-caliber, near-term-impact, terminal-WAR, and MiLB-arrival views.
 2. **Narrow:** Search and filter by player type, organization, position, level, age, and forecast confidence.
 3. **Compare:** Select two to four players and compare outcome distributions, timelines, drivers, and data coverage on the same scale.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
@@ -115,7 +121,7 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort by MLB probability, near-term impact, terminal outcome, or arrival horizon
+- Sort by Alpha opportunity, MLB probability, near-term impact, terminal outcome, or arrival horizon
 - Compare selection
 - Add-to-watchlist action
 
@@ -202,6 +208,11 @@ Use labels that make statistical meaning explicit:
 - `Near-term impact`: calibrated probability that the next three completed MLB
   seasons clear the frozen global training-fold WAR threshold
 - `Historical WAR pace`: completed-season descriptive context, not a forecast
+- `Alpha opportunity`: modeled Hall-caliber probability minus a supported broad
+  historical base rate, gated by early runway and absolute P90 JAWS ceiling
+- `Model alpha`: abnormality versus baseball history; not market mispricing or
+  expected investment return
+- `Discovery only`: MiLB arrival research that is excluded from Alpha rank
 - `Forecast confidence`: High, Medium, or Low based on data sufficiency and stability
 - `Data quality`: coverage, freshness, missingness, and source reliability
 - `Ceiling`: a named upper quantile such as P90, not a best-case story

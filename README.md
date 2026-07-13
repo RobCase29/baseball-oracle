@@ -89,6 +89,15 @@ probability or a rank within a narrow current-player cohort. Completed-season
 historical WAR pace remains descriptive context and never changes an outcome
 probability. Minor-league near-term ranking continues to use the separately
 defined 36-month MLB-arrival probability.
+
+The default `alpha-signal-v1` view is an early-career anomaly detector, not a
+single opaque score. A player must have no more than six completed MLB seasons,
+at least two years of runway to the learned role-track prime, a supported
+post-1961 historical baseline of at least 500 resolved players, and a P90 JAWS
+ceiling above the applicable Hall-caliber standard. Eligible players are ranked
+by the percentage-point gap between the modeled Hall-caliber probability and
+that broad historical base rate. Market price and external consensus are not yet
+modeled, so this is model alpha rather than evidence of market mispricing.
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
 results, and the gates that remain before forecasts can be published.
 
@@ -152,6 +161,7 @@ filters, research outcome sorting, and pagination:
 
 ```text
 GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
+GET /api/players?stage=MLB&sort=alphaOpportunity&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
 ```
@@ -160,8 +170,8 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Oracle board:** real minor and major leaguers, stage/role/level filters, stage-specific Hall-caliber, career-outcome, arrival, and near-term-impact ranks, pagination, and a browser-local watchlist.
-- **Player dossier:** observed evidence, learned career chapter, absolute three-season impact probability, historical completed-season WAR pace, identity provenance, actual cumulative WAR, terminal career WAR/peak-seven/JAWS distributions, Hall standard, warnings, and model lineage.
+- **Alpha Radar / Oracle board:** gated early-career model anomalies, real minor and major leaguers, stage/role/level filters, stage-specific outcome ranks, pagination, and a browser-local watchlist.
+- **Player dossier:** Alpha thesis and gates, observed evidence, learned career chapter, absolute three-season impact probability, historical completed-season WAR pace, terminal career distributions, Hall standard, warnings, and model lineage.
 - **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
 - **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
 - **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.

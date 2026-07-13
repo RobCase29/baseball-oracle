@@ -35,6 +35,8 @@ const targets: Record<
       { label: 'Point-in-time integrity', status: 'Active careers are masked and 2026 is scoring-only', measured: true },
       { label: 'Career chapter layer', status: 'Hitter, starter, and reliever chapters use post-1961 unconditional next-WAR change and continuation curves', measured: true },
       { label: 'Absolute near-term endpoint', status: 'Three completed seasons are scored against one global training-fold WAR threshold; this is not HOF probability', measured: true },
+      { label: 'Alpha Radar audit', status: 'One-snapshot development audit produced only four gated players; too small for a performance claim', measured: true },
+      { label: 'Prospective Alpha cohort', status: 'A newly frozen forward cohort is required before an early-identification or market-edge claim', measured: false },
       { label: 'Development holdout', status: 'Player-disjoint chronological results are retrospective descriptive evidence, not a prospective test', measured: true },
       { label: 'Current scoring refit', status: 'The 2022 refit is not cross-fitted or evaluated and cannot inherit tournament metrics', measured: false },
       { label: 'Interval release gates', status: 'Final WAR, JAWS, and peak-seven interval gates have not all cleared for release', measured: false },
@@ -142,6 +144,7 @@ export function ModelLab() {
             <p><strong>Calibration ships with the score.</strong> A probability without cohort reliability is incomplete.</p>
             <p><strong>Lifecycle is not destiny.</strong> A career chapter describes the historical path; only the separately calibrated impact event is a probability.</p>
             <p><strong>Historical pace stays descriptive.</strong> Completed-season context never becomes a second probability or changes a calibrated outcome.</p>
+            <p><strong>Model alpha is not market alpha.</strong> Historical abnormality is separate from price, liquidity, costs, and external consensus.</p>
           </div>
         </section>
       </div>
@@ -159,7 +162,8 @@ export function ModelLab() {
           <li className="is-current"><span>02</span><div><strong>Arrival candidate</strong><small>Retrospective skill observed; calibration and drift remediation active</small></div></li>
           <li className="is-current"><span>03</span><div><strong>Career and JAWS baseline</strong><small>Paired terminal research distributions with active release gates</small></div></li>
           <li><span>04</span><div><strong>Annual path simulator</strong><small>Opportunity, aging, attrition, and correlated value paths</small></div></li>
-          <li><span>05</span><div><strong>Decision layer</strong><small>Career chapters, watch triggers, and forecast revisions</small></div></li>
+          <li className="is-current"><span>05</span><div><strong>Alpha decision layer</strong><small>Broad historical edge, absolute ceiling gates, and watch triggers</small></div></li>
+          <li><span>06</span><div><strong>Market residual</strong><small>Time-aligned prices, consensus expectations, liquidity, and realized returns</small></div></li>
         </ol>
       </section>
     </main>

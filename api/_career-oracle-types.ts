@@ -163,6 +163,69 @@ export interface CareerChapter {
   warnings: string[]
 }
 
+export interface AlphaSignal {
+  version: 'alpha-signal-v1'
+  status: 'research' | 'withheld'
+  tier: 'priority' | 'watch' | 'none' | 'withheld'
+  basis: 'completed_seasons_only'
+  featureSeason: number
+  eligible: boolean
+  rank: number | null
+  rankScope: 'current_mlb_eligible_absolute_alpha' | null
+  modeledProbability: number | null
+  baseline: {
+    probability: number
+    minimumSeason: 1961
+    players: number
+    landmarks: number
+    roleTrack: CareerRoleTrack
+    experienceBand: string
+    seasonNumberMin: number
+    seasonNumberMax: number
+    ageMin: number
+    ageMax: number
+    ageWindow: number
+    resolvedOnly: true
+    referenceSeasonsBeforeFeature: true
+    playerEqualWeighted: true
+  } | null
+  edge: {
+    probabilityDelta: number
+    liftMultiple: number | null
+  } | null
+  ceiling: {
+    p90JawsMargin: number
+    gatePassed: boolean
+    target: 'final_jaws_minus_career_to_date_standard'
+  } | null
+  runway: {
+    age: number
+    learnedTrackPrimeStartAge: number
+    yearsToPrime: number
+    minimumRequiredYears: number
+    gatePassed: boolean
+  } | null
+  nearTermImpact: {
+    probability: number
+    referenceBaseRate: number
+    liftMultiple: number | null
+    target: 'next_three_war_ge_global_training_q90'
+  } | null
+  historicalPace: {
+    percentile: number | null
+    referencePlayers: number | null
+    metric: 'career_war_to_date'
+  } | null
+  gates: {
+    supportedBaseline: boolean
+    completedEvidence: boolean
+    earlyCareer: boolean
+    prePrimeRunway: boolean
+    absoluteCeiling: boolean
+  }
+  warnings: string[]
+}
+
 export interface CareerForecast {
   publicationState: PublicationState
   releaseEligible: boolean
@@ -187,4 +250,5 @@ export interface CareerForecast {
   lineage: CareerForecastLineage
   relativeSignal?: RelativeSignal | null
   careerChapter?: CareerChapter | null
+  alphaSignal?: AlphaSignal | null
 }

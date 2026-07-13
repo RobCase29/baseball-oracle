@@ -132,6 +132,65 @@ function previewFixture() {
             },
             warnings: ['research_only'],
           },
+          alphaSignal: {
+            version: 'alpha-signal-v1',
+            status: 'research',
+            tier: 'watch',
+            basis: 'completed_seasons_only',
+            featureSeason: 2025,
+            eligible: true,
+            rank: 1,
+            rankScope: 'current_mlb_eligible_absolute_alpha',
+            modeledProbability: 0.08,
+            baseline: {
+              probability: 0.01,
+              minimumSeason: 1961,
+              players: 1500,
+              landmarks: 2200,
+              roleTrack: 'hitter',
+              experienceBand: 'first',
+              seasonNumberMin: 1,
+              seasonNumberMax: 1,
+              ageMin: 20,
+              ageMax: 24,
+              ageWindow: 2,
+              resolvedOnly: true,
+              referenceSeasonsBeforeFeature: true,
+              playerEqualWeighted: true,
+            },
+            edge: { probabilityDelta: 0.07, liftMultiple: 8 },
+            ceiling: {
+              p90JawsMargin: 4.5,
+              gatePassed: true,
+              target: 'final_jaws_minus_career_to_date_standard',
+            },
+            runway: {
+              age: 22,
+              learnedTrackPrimeStartAge: 28,
+              yearsToPrime: 6,
+              minimumRequiredYears: 2,
+              gatePassed: true,
+            },
+            nearTermImpact: {
+              probability: 0.42,
+              referenceBaseRate: 0.1,
+              liftMultiple: 4.2,
+              target: 'next_three_war_ge_global_training_q90',
+            },
+            historicalPace: {
+              percentile: 99.2,
+              referencePlayers: 850,
+              metric: 'career_war_to_date',
+            },
+            gates: {
+              supportedBaseline: true,
+              completedEvidence: true,
+              earlyCareer: true,
+              prePrimeRunway: true,
+              absoluteCeiling: true,
+            },
+            warnings: ['research_only'],
+          },
         },
       },
     ],
@@ -159,6 +218,12 @@ describe('Career Oracle preview loader', () => {
       chapter: 'launch',
       label: 'Breakout',
       exceptionalTrajectory: { probability: 0.42, thresholdWar: 7.5 },
+    })
+    expect(parsed.items[0]?.careerForecast.alphaSignal).toMatchObject({
+      eligible: true,
+      rank: 1,
+      edge: { probabilityDelta: 0.07, liftMultiple: 8 },
+      baseline: { probability: 0.01, players: 1500, ageWindow: 2 },
     })
   })
 
@@ -230,6 +295,67 @@ describe('Career Oracle preview loader', () => {
     const invalidChapterFixture = previewFixture()
     invalidChapterFixture.players[0]!.forecast.careerChapter.exceptionalTrajectory.probability = 42
     expect(() => parseCareerOraclePreview(invalidChapterFixture)).toThrow(/between 0 and 1/u)
+
+    const invalidAlphaFixture = previewFixture()
+    invalidAlphaFixture.players[0]!.forecast.alphaSignal.edge.probabilityDelta = 0.5
+    expect(() => parseCareerOraclePreview(invalidAlphaFixture)).toThrow(/probabilityDelta disagrees/u)
+  })
+
+  it('rejects Alpha gate flags that disagree with ceiling, runway, or career stage evidence', () => {
+    const invalidCeilingGate = previewFixture()
+    invalidCeilingGate.players[0]!.forecast.alphaSignal.gates.absoluteCeiling = false
+    expect(() => parseCareerOraclePreview(invalidCeilingGate)).toThrow(
+      /gates\.absoluteCeiling disagrees/u,
+    )
+
+    const invalidRunwayGate = previewFixture()
+    invalidRunwayGate.players[0]!.forecast.alphaSignal.gates.prePrimeRunway = false
+    expect(() => parseCareerOraclePreview(invalidRunwayGate)).toThrow(
+      /gates\.prePrimeRunway disagrees/u,
+    )
+
+    const invalidCareerGate = previewFixture()
+    invalidCareerGate.players[0]!.forecast.alphaSignal.gates.earlyCareer = false
+    expect(() => parseCareerOraclePreview(invalidCareerGate)).toThrow(
+      /gates\.earlyCareer disagrees/u,
+    )
+  })
+
+  it('rejects Alpha eligibility, ranks, and tiers that disagree with the registered policy', () => {
+    const invalidEligibility = previewFixture()
+    const eligibilitySignal = invalidEligibility.players[0]!.forecast.alphaSignal
+    eligibilitySignal.eligible = false
+    eligibilitySignal.rank = null as never
+    eligibilitySignal.rankScope = null as never
+    eligibilitySignal.tier = 'none'
+    expect(() => parseCareerOraclePreview(invalidEligibility)).toThrow(
+      /eligible disagrees/u,
+    )
+
+    const invalidRank = previewFixture()
+    invalidRank.players[0]!.forecast.alphaSignal.rank = null as never
+    expect(() => parseCareerOraclePreview(invalidRank)).toThrow(
+      /rank inconsistent/u,
+    )
+
+    const invalidTier = previewFixture()
+    invalidTier.players[0]!.forecast.alphaSignal.tier = 'priority'
+    expect(() => parseCareerOraclePreview(invalidTier)).toThrow(
+      /10pp priority threshold/u,
+    )
+  })
+
+  it('rejects a positive Alpha claim when the modeled probability has no positive edge', () => {
+    const fixture = previewFixture()
+    const player = fixture.players[0]!
+    player.forecast.hofCaliberProbability = 0.005
+    player.forecast.alphaSignal.modeledProbability = 0.005
+    player.forecast.alphaSignal.edge = {
+      probabilityDelta: -0.005,
+      liftMultiple: 0.5,
+    }
+
+    expect(() => parseCareerOraclePreview(fixture)).toThrow(/eligible disagrees/u)
   })
 
   it('rejects prospect keys whose role disagrees with the forecast', () => {

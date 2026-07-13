@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import type {
+  AlphaSignal,
   CareerChapter,
   CareerForecast,
   CareerForecastArcPoint,
@@ -16,6 +17,17 @@ import type {
 } from './_career-oracle-types.js'
 
 type JsonRecord = Record<string, unknown>
+
+const alphaPriorityDelta = 0.10
+const alphaMinimumRunwayYears = 2
+const alphaMaximumEarlySeason = 6
+const alphaExperienceBandRanges: Record<string, readonly [number, number]> = {
+  first: [1, 1],
+  seasons_2_3: [2, 3],
+  seasons_4_6: [4, 6],
+  seasons_7_10: [7, 10],
+  season_11_plus: [11, 100],
+}
 
 export interface CareerPreviewPlayer {
   id: string
@@ -124,6 +136,11 @@ function requiredProbability(value: unknown, label: string): number {
 
 function booleanValue(value: unknown, fallback: boolean, label: string): boolean {
   if (value === undefined) return fallback
+  if (typeof value !== 'boolean') throw new Error(`${label} must be boolean`)
+  return value
+}
+
+function requiredBoolean(value: unknown, label: string): boolean {
   if (typeof value !== 'boolean') throw new Error(`${label} must be boolean`)
   return value
 }
@@ -623,6 +640,330 @@ function careerChapter(value: unknown, label: string): CareerChapter | null {
   }
 }
 
+function alphaSignal(value: unknown, label: string): AlphaSignal | null {
+  if (value === null || value === undefined) return null
+  const input = record(value, label)
+  const status = oneOf(input.status, ['research', 'withheld'], `${label}.status`)
+  const tier = oneOf(
+    input.tier,
+    ['priority', 'watch', 'none', 'withheld'],
+    `${label}.tier`,
+  )
+  const eligible = requiredBoolean(input.eligible, `${label}.eligible`)
+  const rawRank = finiteNumber(input.rank, `${label}.rank`)
+  if (rawRank !== null && (!Number.isInteger(rawRank) || rawRank < 1)) {
+    throw new Error(`${label}.rank must be a positive integer or null`)
+  }
+  const rankScope = input.rankScope === null || input.rankScope === undefined
+    ? null
+    : oneOf(
+        input.rankScope,
+        ['current_mlb_eligible_absolute_alpha'],
+        `${label}.rankScope`,
+      )
+  const modeledProbability = probability(
+    input.modeledProbability,
+    `${label}.modeledProbability`,
+  )
+  const baseline = input.baseline === null || input.baseline === undefined
+    ? null
+    : (() => {
+        const baselineInput = record(input.baseline, `${label}.baseline`)
+        const seasonNumberMin = positiveInteger(
+          baselineInput.seasonNumberMin,
+          `${label}.baseline.seasonNumberMin`,
+        )
+        const seasonNumberMax = positiveInteger(
+          baselineInput.seasonNumberMax,
+          `${label}.baseline.seasonNumberMax`,
+        )
+        const ageMin = requiredFiniteNumber(baselineInput.ageMin, `${label}.baseline.ageMin`)
+        const ageMax = requiredFiniteNumber(baselineInput.ageMax, `${label}.baseline.ageMax`)
+        if (seasonNumberMin > seasonNumberMax || ageMin > ageMax) {
+          throw new Error(`${label}.baseline range is invalid`)
+        }
+        if (
+          baselineInput.resolvedOnly !== true ||
+          baselineInput.referenceSeasonsBeforeFeature !== true ||
+          baselineInput.playerEqualWeighted !== true
+        ) {
+          throw new Error(`${label}.baseline must preserve the registered reference policy`)
+        }
+        const minimumSeason = positiveInteger(
+          baselineInput.minimumSeason,
+          `${label}.baseline.minimumSeason`,
+        )
+        if (minimumSeason !== 1961) {
+          throw new Error(`${label}.baseline.minimumSeason must be 1961`)
+        }
+        const experienceBand = requiredString(
+          baselineInput.experienceBand,
+          `${label}.baseline.experienceBand`,
+        )
+        const registeredBand = alphaExperienceBandRanges[experienceBand]
+        if (
+          !registeredBand ||
+          seasonNumberMin !== registeredBand[0] ||
+          seasonNumberMax !== registeredBand[1]
+        ) {
+          throw new Error(`${label}.baseline experience band is not registered`)
+        }
+        return {
+          probability: requiredProbability(
+            baselineInput.probability,
+            `${label}.baseline.probability`,
+          ),
+          minimumSeason: 1961 as const,
+          players: positiveInteger(baselineInput.players, `${label}.baseline.players`),
+          landmarks: positiveInteger(baselineInput.landmarks, `${label}.baseline.landmarks`),
+          roleTrack: oneOf(
+            baselineInput.roleTrack,
+            ['hitter', 'starter', 'reliever'],
+            `${label}.baseline.roleTrack`,
+          ),
+          experienceBand,
+          seasonNumberMin,
+          seasonNumberMax,
+          ageMin,
+          ageMax,
+          ageWindow: nonNegativeInteger(
+            baselineInput.ageWindow,
+            `${label}.baseline.ageWindow`,
+          ),
+          resolvedOnly: true as const,
+          referenceSeasonsBeforeFeature: true as const,
+          playerEqualWeighted: true as const,
+        }
+      })()
+  const edge = input.edge === null || input.edge === undefined
+    ? null
+    : (() => {
+        const edgeInput = record(input.edge, `${label}.edge`)
+        const liftMultiple = edgeInput.liftMultiple === null || edgeInput.liftMultiple === undefined
+          ? null
+          : requiredFiniteNumber(edgeInput.liftMultiple, `${label}.edge.liftMultiple`)
+        if (liftMultiple !== null && liftMultiple < 0) {
+          throw new Error(`${label}.edge.liftMultiple cannot be negative`)
+        }
+        return {
+          probabilityDelta: requiredFiniteNumber(
+            edgeInput.probabilityDelta,
+            `${label}.edge.probabilityDelta`,
+          ),
+          liftMultiple,
+        }
+      })()
+  const ceiling = input.ceiling === null || input.ceiling === undefined
+    ? null
+    : (() => {
+        const ceilingInput = record(input.ceiling, `${label}.ceiling`)
+        return {
+          p90JawsMargin: requiredFiniteNumber(
+            ceilingInput.p90JawsMargin,
+            `${label}.ceiling.p90JawsMargin`,
+          ),
+          gatePassed: requiredBoolean(
+            ceilingInput.gatePassed,
+            `${label}.ceiling.gatePassed`,
+          ),
+          target: oneOf(
+            ceilingInput.target,
+            ['final_jaws_minus_career_to_date_standard'],
+            `${label}.ceiling.target`,
+          ),
+        }
+      })()
+  const runway = input.runway === null || input.runway === undefined
+    ? null
+    : (() => {
+        const runwayInput = record(input.runway, `${label}.runway`)
+        return {
+          age: requiredFiniteNumber(runwayInput.age, `${label}.runway.age`),
+          learnedTrackPrimeStartAge: requiredFiniteNumber(
+            runwayInput.learnedTrackPrimeStartAge,
+            `${label}.runway.learnedTrackPrimeStartAge`,
+          ),
+          yearsToPrime: requiredFiniteNumber(
+            runwayInput.yearsToPrime,
+            `${label}.runway.yearsToPrime`,
+          ),
+          minimumRequiredYears: requiredFiniteNumber(
+            runwayInput.minimumRequiredYears,
+            `${label}.runway.minimumRequiredYears`,
+          ),
+          gatePassed: requiredBoolean(runwayInput.gatePassed, `${label}.runway.gatePassed`),
+        }
+      })()
+  const nearTermImpact = input.nearTermImpact === null || input.nearTermImpact === undefined
+    ? null
+    : (() => {
+        const impactInput = record(input.nearTermImpact, `${label}.nearTermImpact`)
+        const liftMultiple = impactInput.liftMultiple === null || impactInput.liftMultiple === undefined
+          ? null
+          : requiredFiniteNumber(
+              impactInput.liftMultiple,
+              `${label}.nearTermImpact.liftMultiple`,
+            )
+        if (liftMultiple !== null && liftMultiple < 0) {
+          throw new Error(`${label}.nearTermImpact.liftMultiple cannot be negative`)
+        }
+        return {
+          probability: requiredProbability(
+            impactInput.probability,
+            `${label}.nearTermImpact.probability`,
+          ),
+          referenceBaseRate: requiredProbability(
+            impactInput.referenceBaseRate,
+            `${label}.nearTermImpact.referenceBaseRate`,
+          ),
+          liftMultiple,
+          target: oneOf(
+            impactInput.target,
+            ['next_three_war_ge_global_training_q90'],
+            `${label}.nearTermImpact.target`,
+          ),
+        }
+      })()
+  const historicalPace = input.historicalPace === null || input.historicalPace === undefined
+    ? null
+    : (() => {
+        const paceInput = record(input.historicalPace, `${label}.historicalPace`)
+        const pacePercentile = paceInput.percentile === null || paceInput.percentile === undefined
+          ? null
+          : percentile(paceInput.percentile, `${label}.historicalPace.percentile`)
+        const referencePlayers = paceInput.referencePlayers === null ||
+            paceInput.referencePlayers === undefined
+          ? null
+          : positiveInteger(
+              paceInput.referencePlayers,
+              `${label}.historicalPace.referencePlayers`,
+            )
+        return {
+          percentile: pacePercentile,
+          referencePlayers,
+          metric: oneOf(
+            paceInput.metric,
+            ['career_war_to_date'],
+            `${label}.historicalPace.metric`,
+          ),
+        }
+      })()
+  const gatesInput = record(input.gates, `${label}.gates`)
+  const gates = {
+    supportedBaseline: requiredBoolean(
+      gatesInput.supportedBaseline,
+      `${label}.gates.supportedBaseline`,
+    ),
+    completedEvidence: requiredBoolean(
+      gatesInput.completedEvidence,
+      `${label}.gates.completedEvidence`,
+    ),
+    earlyCareer: requiredBoolean(gatesInput.earlyCareer, `${label}.gates.earlyCareer`),
+    prePrimeRunway: requiredBoolean(
+      gatesInput.prePrimeRunway,
+      `${label}.gates.prePrimeRunway`,
+    ),
+    absoluteCeiling: requiredBoolean(
+      gatesInput.absoluteCeiling,
+      `${label}.gates.absoluteCeiling`,
+    ),
+  }
+
+  if (status === 'research' && (!baseline || !edge || !ceiling || !runway || modeledProbability === null)) {
+    throw new Error(`${label} publishes a research alpha signal without complete evidence`)
+  }
+  if (status === 'research' && baseline && edge && modeledProbability !== null) {
+    const expectedDelta = modeledProbability - baseline.probability
+    if (Math.abs(edge.probabilityDelta - expectedDelta) > 1e-6) {
+      throw new Error(`${label}.edge.probabilityDelta disagrees with modeled and baseline probabilities`)
+    }
+    const expectedLift = baseline.probability <= 0
+      ? null
+      : modeledProbability / baseline.probability
+    if (
+      (expectedLift === null && edge.liftMultiple !== null) ||
+      (expectedLift !== null && (
+        edge.liftMultiple === null || Math.abs(edge.liftMultiple - expectedLift) > 0.001
+      ))
+    ) {
+      throw new Error(`${label}.edge.liftMultiple disagrees with modeled and baseline probabilities`)
+    }
+  }
+  if (ceiling && ceiling.gatePassed !== (ceiling.p90JawsMargin >= 0)) {
+    throw new Error(`${label}.ceiling.gatePassed disagrees with the P90 JAWS margin`)
+  }
+  if (runway) {
+    if (Math.abs(runway.minimumRequiredYears - alphaMinimumRunwayYears) > 1e-9) {
+      throw new Error(`${label}.runway.minimumRequiredYears is not registered`)
+    }
+    if (
+      Math.abs(
+        runway.yearsToPrime - (runway.learnedTrackPrimeStartAge - runway.age),
+      ) > 1e-6
+    ) {
+      throw new Error(`${label}.runway.yearsToPrime disagrees with age and learned prime`)
+    }
+    if (runway.gatePassed !== (runway.yearsToPrime >= runway.minimumRequiredYears)) {
+      throw new Error(`${label}.runway.gatePassed disagrees with the registered runway threshold`)
+    }
+  }
+
+  const expectedGates = {
+    supportedBaseline: baseline !== null,
+    completedEvidence: status === 'research',
+    earlyCareer: baseline !== null && baseline.seasonNumberMax <= alphaMaximumEarlySeason,
+    prePrimeRunway: runway?.gatePassed ?? false,
+    absoluteCeiling: ceiling?.gatePassed ?? false,
+  }
+  for (const key of Object.keys(expectedGates) as Array<keyof typeof expectedGates>) {
+    if (gates[key] !== expectedGates[key]) {
+      throw new Error(`${label}.gates.${key} disagrees with the alpha evidence`)
+    }
+  }
+
+  const expectedEligible = Boolean(
+    status === 'research' &&
+    edge !== null &&
+    edge.probabilityDelta > 0 &&
+    Object.values(expectedGates).every(Boolean),
+  )
+  if (eligible !== expectedEligible) {
+    throw new Error(`${label}.eligible disagrees with the registered alpha gates`)
+  }
+
+  const expectedTier = status === 'withheld'
+    ? 'withheld'
+    : eligible
+      ? edge!.probabilityDelta >= alphaPriorityDelta ? 'priority' : 'watch'
+      : 'none'
+  if (tier !== expectedTier) {
+    throw new Error(`${label}.tier disagrees with the registered 10pp priority threshold`)
+  }
+  if (eligible ? rawRank === null || rankScope === null : rawRank !== null || rankScope !== null) {
+    throw new Error(`${label} publishes a rank inconsistent with alpha eligibility`)
+  }
+
+  return {
+    version: oneOf(input.version, ['alpha-signal-v1'], `${label}.version`),
+    status,
+    tier,
+    basis: oneOf(input.basis, ['completed_seasons_only'], `${label}.basis`),
+    featureSeason: positiveInteger(input.featureSeason, `${label}.featureSeason`),
+    eligible,
+    rank: rawRank,
+    rankScope,
+    modeledProbability,
+    baseline,
+    edge,
+    ceiling,
+    runway,
+    nearTermImpact,
+    historicalPace,
+    gates,
+    warnings: stringArray(input.warnings, `${label}.warnings`),
+  }
+}
+
 type PreviewBase = Omit<CareerOraclePreview, 'items' | 'prospectForecasts'>
 
 function parseForecast(
@@ -660,6 +1001,18 @@ function parseForecast(
     forecastInput.lineage ?? input.lineage,
     `${label}.lineage`,
   )
+  const parsedAlphaSignal = alphaSignal(
+    forecastInput.alphaSignal ?? input.alphaSignal,
+    `${label}.alphaSignal`,
+  )
+  if (
+    parsedAlphaSignal?.modeledProbability !== null &&
+    parsedAlphaSignal?.modeledProbability !== undefined &&
+    (hofCaliberProbability === null ||
+      Math.abs(parsedAlphaSignal.modeledProbability - hofCaliberProbability) > 1e-8)
+  ) {
+    throw new Error(`${label}.alphaSignal.modeledProbability disagrees with hofCaliberProbability`)
+  }
 
   return {
     publicationState,
@@ -724,6 +1077,7 @@ function parseForecast(
       forecastInput.careerChapter ?? input.careerChapter,
       `${label}.careerChapter`,
     ),
+    alphaSignal: parsedAlphaSignal,
     lineage: {
       ...rawLineage,
       modelVersion: requiredString(

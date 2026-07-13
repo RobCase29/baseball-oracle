@@ -18,7 +18,9 @@ function forecast(
   artifactRank: number,
   confidenceScore = 0.5,
   nearTermProbability: number | null = null,
+  alphaDelta: number | null = null,
 ): CareerForecast {
+  const alphaBaseline = alphaDelta === null ? null : probability - alphaDelta
   return {
     publicationState: 'research',
     releaseEligible: false,
@@ -82,6 +84,64 @@ function forecast(
         referenceLandmarks: 12000,
         expectedNextWarChange: 0.2,
         continuationRate: 0.8,
+      },
+      warnings: ['research_only'],
+    },
+    alphaSignal: alphaDelta === null ? null : {
+      version: 'alpha-signal-v1',
+      status: 'research',
+      tier: alphaDelta >= 0.1 ? 'priority' : 'watch',
+      basis: 'completed_seasons_only',
+      featureSeason: 2025,
+      eligible: true,
+      rank: artifactRank,
+      rankScope: 'current_mlb_eligible_absolute_alpha',
+      modeledProbability: probability,
+      baseline: {
+        probability: alphaBaseline!,
+        minimumSeason: 1961,
+        players: 1000,
+        landmarks: 1500,
+        roleTrack: 'hitter',
+        experienceBand: 'seasons_2_3',
+        seasonNumberMin: 2,
+        seasonNumberMax: 3,
+        ageMin: 21,
+        ageMax: 25,
+        ageWindow: 2,
+        resolvedOnly: true,
+        referenceSeasonsBeforeFeature: true,
+        playerEqualWeighted: true,
+      },
+      edge: {
+        probabilityDelta: alphaDelta,
+        liftMultiple: alphaBaseline! <= 0 ? null : probability / alphaBaseline!,
+      },
+      ceiling: {
+        p90JawsMargin: 4,
+        gatePassed: true,
+        target: 'final_jaws_minus_career_to_date_standard',
+      },
+      runway: {
+        age: 23,
+        learnedTrackPrimeStartAge: 28,
+        yearsToPrime: 5,
+        minimumRequiredYears: 2,
+        gatePassed: true,
+      },
+      nearTermImpact: nearTermProbability === null ? null : {
+        probability: nearTermProbability,
+        referenceBaseRate: 0.1,
+        liftMultiple: nearTermProbability / 0.1,
+        target: 'next_three_war_ge_global_training_q90',
+      },
+      historicalPace: null,
+      gates: {
+        supportedBaseline: true,
+        completedEvidence: true,
+        earlyCareer: true,
+        prePrimeRunway: true,
+        absoluteCeiling: true,
       },
       warnings: ['research_only'],
     },
@@ -216,6 +276,51 @@ describe('unified player ordering', () => {
       { stage: 'MLB', sort: 'nearTermImpact' },
     ).map((item) => item.id))
       .toEqual(['mlb-high-impact', 'mlb-low-impact-high-hof', 'mlb-withheld-impact'])
+  })
+
+  it('orders Alpha Radar by eligible probability edge and never promotes discovery-only minors', () => {
+    const ineligible = forecast(0.9, 60, 3, 0.5, 0.95, 0.8)
+    if (ineligible.alphaSignal) {
+      ineligible.alphaSignal.eligible = false
+      ineligible.alphaSignal.tier = 'none'
+      ineligible.alphaSignal.rank = null
+      ineligible.alphaSignal.rankScope = null
+      ineligible.alphaSignal.gates.absoluteCeiling = false
+      if (ineligible.alphaSignal.ceiling) {
+        ineligible.alphaSignal.ceiling.p90JawsMargin = -1
+        ineligible.alphaSignal.ceiling.gatePassed = false
+      }
+    }
+    const items = [
+      candidate('minor-discovery', { arrivalProbability36: 0.99 }),
+      candidate('mlb-second-alpha', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        minorProfileId: null,
+        careerForecast: forecast(0.3, 30, 2, 0.5, 0.8, 0.2),
+      }),
+      candidate('mlb-first-alpha', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        minorProfileId: null,
+        careerForecast: forecast(0.5, 40, 1, 0.5, 0.7, 0.4),
+      }),
+      candidate('mlb-ineligible', {
+        source: 'mlb',
+        stage: 'early_mlb',
+        minorProfileId: null,
+        careerForecast: ineligible,
+      }),
+    ]
+
+    expect(sortBoardCandidates(items, { stage: 'All', sort: 'alphaOpportunity' })
+      .map((item) => item.id))
+      .toEqual([
+        'mlb-first-alpha',
+        'mlb-second-alpha',
+        'mlb-ineligible',
+        'minor-discovery',
+      ])
   })
 })
 

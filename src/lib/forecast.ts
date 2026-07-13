@@ -1,4 +1,5 @@
 import type {
+  AlphaSignal,
   BoardFilters,
   PlayerRecord,
   PlayerStage,
@@ -64,6 +65,17 @@ export function nearTermImpactProbability(player: PlayerRecord): number | null {
   return probability !== null && Number.isFinite(probability) ? probability : null
 }
 
+export function eligibleAlphaSignal(player: PlayerRecord): AlphaSignal | null {
+  if (!isMlbStage(player.stage)) return null
+  const signal = player.careerForecast?.alphaSignal
+  if (!signal || signal.status !== 'research' || !signal.eligible || !signal.edge) return null
+  return signal
+}
+
+export function alphaOpportunityEdge(player: PlayerRecord): number | null {
+  return eligibleAlphaSignal(player)?.edge?.probabilityDelta ?? null
+}
+
 export function filterAndSortPlayers(
   players: PlayerRecord[],
   filters: BoardFilters,
@@ -109,6 +121,22 @@ export function filterAndSortPlayers(
             right.careerForecast?.hofCaliberProbability ?? null,
             'descending',
           ) ||
+          left.id.localeCompare(right.id)
+        )
+      }
+      if (filters.sort === 'alphaOpportunity') {
+        return (
+          compareNullableNumber(
+            alphaOpportunityEdge(left),
+            alphaOpportunityEdge(right),
+            'descending',
+          ) ||
+          compareNullableNumber(
+            nearTermImpactProbability(left),
+            nearTermImpactProbability(right),
+            'descending',
+          ) ||
+          compareNullableNumber(left.age, right.age, 'ascending') ||
           left.id.localeCompare(right.id)
         )
       }
@@ -161,6 +189,13 @@ export function formatWar(value: number | null, digits = 1): string {
 export function formatSigned(value: number, suffix = ''): string {
   const sign = value > 0 ? '+' : ''
   return `${sign}${value.toFixed(1)}${suffix}`
+}
+
+export function formatPercentagePointDelta(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—'
+  const percentagePoints = value * 100
+  const sign = percentagePoints > 0 ? '+' : ''
+  return `${sign}${percentagePoints.toFixed(1)} pp`
 }
 
 export function probabilityTone(value: number): 'strong' | 'medium' | 'soft' {

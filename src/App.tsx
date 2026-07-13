@@ -35,7 +35,7 @@ const initialFilters: BoardFilters = {
   stage: 'All',
   playerType: 'All',
   level: 'All',
-  sort: 'hofProbability',
+  sort: 'alphaOpportunity',
 }
 
 const emptyPage: PlayersPage = {

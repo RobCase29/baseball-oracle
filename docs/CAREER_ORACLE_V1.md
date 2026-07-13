@@ -153,6 +153,48 @@ For minor leaguers, `nearTermImpact` sorts by the separately defined 36-month ML
 arrival probability. The product labels that endpoint explicitly and does not
 reinterpret it as the MLB three-season impact event.
 
+## Alpha Radar
+
+`alpha-signal-v1` asks a narrower decision question: which supported current MLB
+players have an unusually strong absolute Hall-caliber ceiling while there is
+still time to identify them early? It is deliberately not another probability
+model or a weighted composite score.
+
+The historical base rate uses prior, resolved, target-eligible careers from 1961
+forward. It matches the player's hitter/starter/reliever track and broad
+experience band, begins with a plus-or-minus two-year age window, expands only
+for support, and requires at least 500 distinct players. Every player has equal
+total weight even if multiple landmarks enter the reference.
+
+A current player is eligible only when all registered gates pass:
+
+- no more than six completed MLB seasons;
+- at least two years before the role track's learned prime boundary;
+- a supported completed-season historical base rate;
+- positive modeled Hall-caliber probability minus that base rate;
+- P90 final JAWS margin at or above the career-to-date Hall standard.
+
+Eligible players rank by probability-point delta, then absolute three-year
+impact probability, then age. `Priority` requires a delta of at least 10
+percentage points; other eligible players are `Watch`. Historical WAR pace and
+the three-year impact endpoint explain the signal but do not independently make
+a player eligible.
+
+The player-disjoint development audit now preregisters exactly one decision
+point per player: the earliest supported early-career snapshot. Among 3,189
+supported pre-prime players, 29 eventually reached the Hall-caliber endpoint.
+Only four cleared every Alpha gate, and one was an event. That 25% observed rate
+is directionally encouraging but far too small to support a lift or performance
+claim. The cohort was also human-reviewed and the chapter boundaries used the
+full post-1961 panel. A newly frozen prospective cohort is required before this
+can be called early-identification evidence, expected investment return, or
+market mispricing.
+
+Minor leaguers remain on a separate `Discovery only` track. Prospect alpha is
+withheld until a direct, validated MiLB-to-career-ceiling model exists. Market
+alpha additionally requires price history, liquidity, transaction costs, and an
+external-consensus or market-implied baseline; none enters `alpha-signal-v1`.
+
 Prospect Savant's composite score, FanGraphs FV, public rankings, and other
 provider judgments are excluded from the default model and rank. Raw named
 measurements can enter future preregistered ablation challengers after provenance,
@@ -214,6 +256,9 @@ Missing results are never replaced with a heuristic that looks like a forecast.
   global training-fold threshold where supported;
 - completed-season historical WAR-pace percentile for MLB players where its
   resolved landmark cohort meets the registered support floor.
+- Alpha eligibility, rank scope, modeled and historical probabilities,
+  probability-point delta and lift, reference support, P90 JAWS margin, learned
+  runway, gate results, and market-data warning.
 
 ## Known Limits and Next Model
 
@@ -228,6 +273,9 @@ Missing results are never replaced with a heuristic that looks like a forecast.
   and censoring-aware evaluation.
 - Validate the career-chapter and absolute near-term-impact layer on a newly
   frozen prediction-origin cohort before making an early-identification claim.
+- Freeze Alpha Radar without further tuning and score a new prospective cohort;
+  then add a separately evaluated market-residual layer using time-aligned price
+  and external-consensus data.
 - Add preregistered normalized era/context features; raw calendar year is excluded
   from this version.
 - Build annual opportunity, performance, exit/re-entry, aging, and injury
