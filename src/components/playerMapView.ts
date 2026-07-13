@@ -14,7 +14,7 @@ import {
 export interface CareerIndexView {
   value: number | null
   display: string
-  label: 'Career Index' | 'Frozen prospect Career Index'
+  label: 'Career Index' | 'Ceiling if MLB' | 'Frozen ceiling if MLB'
   rank: number | null
   universe: number | null
   rankLabel: string
@@ -26,9 +26,22 @@ export interface CareerIndexView {
   tone: 'elite' | 'high' | 'standard' | 'unavailable'
 }
 
+export interface ProspectScoreView {
+  value: number | null
+  display: string
+  label: 'Prospect Score'
+  rank: number | null
+  universe: number | null
+  rankLabel: string
+  targetLabel: string
+  explanation: string
+  tone: CareerIndexView['tone']
+  status: 'research' | 'withheld'
+}
+
 const plainStateLabels: Record<PlayerMapState, string> = {
   conviction: 'Strong model signal',
-  discovery: 'High career upside, more proof needed',
+  discovery: 'Strong five-year impact, more proof needed',
   rising: 'Career trending up',
   monitor: 'Worth monitoring',
   mapped: 'Outlook available',
@@ -51,6 +64,19 @@ function indexTone(value: number | null): CareerIndexView['tone'] {
   if (value === null) return 'unavailable'
   if (value >= 80) return 'elite'
   if (value >= 55) return 'high'
+  return 'standard'
+}
+
+function prospectScoreDisplay(value: number | null): string {
+  if (value === null) return '--'
+  if (value === 100) return '100'
+  return value >= 99 ? value.toFixed(2) : value.toFixed(1)
+}
+
+function prospectScoreTone(value: number | null): CareerIndexView['tone'] {
+  if (value === null) return 'unavailable'
+  if (value >= 99) return 'elite'
+  if (value >= 90) return 'high'
   return 'standard'
 }
 
@@ -146,6 +172,36 @@ export function plainPlayerState(state: PlayerMapState): string {
   return plainStateLabels[state]
 }
 
+export function prospectScoreFor(
+  player: PlayerRecord,
+  map: PlayerMapProfile = playerMapFor(player),
+): ProspectScoreView {
+  const score = map.route === 'milb' ? map.scores.outcome : null
+  const value = score?.scale === 'ordinal_percentile' ? score.value : null
+  const rank = score?.rank ?? null
+  const universe = score?.universe ?? null
+  const rankLabel = rank === null
+    ? 'Prospect rank unavailable'
+    : universe === null
+      ? `#${rank.toLocaleString()} prospect`
+      : `#${rank.toLocaleString()} of ${universe.toLocaleString()} prospects`
+
+  return {
+    value,
+    display: prospectScoreDisplay(value),
+    label: 'Prospect Score',
+    rank,
+    universe,
+    rankLabel,
+    targetLabel: 'At least 5 MLB WAR during 2026-2030',
+    explanation: value === null
+      ? 'There is not enough supported model data to calculate a Prospect Score yet.'
+      : `${player.name}'s Prospect Score is an individualized rank built from age, level, role, and performance for reaching at least 5 MLB WAR during 2026-2030. It is a research ranking, not a probability.${player.level === 'Rk' ? ' Rookie-level calibration is thin, so treat this score as an early signal.' : ''}`,
+    tone: prospectScoreTone(value),
+    status: score?.status === 'research' ? 'research' : 'withheld',
+  }
+}
+
 export function careerIndexFor(
   player: PlayerRecord,
   map: PlayerMapProfile = playerMapFor(player),
@@ -176,7 +232,11 @@ export function careerIndexFor(
   return {
     value,
     display: indexDisplay(value),
-    label: isRookieTrack ? 'Frozen prospect Career Index' : 'Career Index',
+    label: isRookieTrack
+      ? 'Frozen ceiling if MLB'
+      : map.route === 'milb'
+        ? 'Ceiling if MLB'
+        : 'Career Index',
     rank: standing.rank,
     universe: standing.universe,
     rankLabel,

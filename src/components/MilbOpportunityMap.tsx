@@ -30,9 +30,7 @@ interface MilbOpportunityMapProps {
   onSelect: (playerId: string) => void
 }
 
-interface OpportunityPlotPoint extends MilbOpportunityPoint {
-  ageAxisValue: number
-}
+type OpportunityPlotPoint = MilbOpportunityPoint
 
 interface OpportunityTooltipProps {
   active?: boolean
@@ -53,11 +51,9 @@ function formatCareerIndex(value: number): string {
   return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)
 }
 
-function formatTopPercent(value: number): string {
-  const digits = value < 0.1 ? 2 : value < 10 ? 1 : 0
-  const factor = 10 ** digits
-  const conservativeValue = Math.ceil(value * factor) / factor
-  return `Top ${conservativeValue.toFixed(digits)}%`
+function formatProspectScore(value: number): string {
+  if (value === 100) return '100'
+  return value >= 99 ? value.toFixed(2) : value.toFixed(1)
 }
 
 function percentile(values: number[], position: number): number {
@@ -85,15 +81,19 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
           <strong>{point.name}</strong>
           <span>{point.organization} · {point.position} · Age {point.age ?? '—'} · {point.level}</span>
         </div>
-        <b aria-label={`Career Index ${formatCareerIndex(point.careerIndex)}`}>
-          {formatCareerIndex(point.careerIndex)}
-          <small>CI</small>
+        <b aria-label={`Prospect Score ${formatProspectScore(point.prospectScore)}`}>
+          {formatProspectScore(point.prospectScore)}
+          <small>SCORE</small>
         </b>
       </div>
       <dl>
         <div>
-          <dt>Prospect rank</dt>
-          <dd>#{point.stageRank.toLocaleString()} · {formatTopPercent(point.stageTopPercent)}</dd>
+          <dt>Five-year impact rank</dt>
+          <dd>#{point.prospectRank.toLocaleString()} of {point.prospectUniverse.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Ceiling if MLB</dt>
+          <dd>{formatCareerIndex(point.careerIndex)} Career Index · long-term rank #{point.stageRank.toLocaleString()}</dd>
         </div>
         <div>
           <dt>Age advantage</dt>
@@ -104,7 +104,7 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
           <dd>{point.coveredPillars}/{point.totalPillars} data areas · {point.sampleSummary}</dd>
         </div>
       </dl>
-      <small>Current evidence changes how much to trust the outlook, not the Career Index itself.</small>
+      <small>The Prospect Score is a research rank, not a probability. Current evidence shows how much to trust the read.</small>
     </div>
   )
 }
@@ -125,7 +125,7 @@ function OpportunityDot({
   const keyboardReachable = featured || selected || pointCount <= 10
   const markerRadius = payload.evidenceCoverage >= 75 ? 6.2 : 5.2
   const fillOpacity = Math.min(0.96, 0.42 + payload.evidenceCoverage / 100 * 0.54)
-  const labelOnLeft = (payload.ageAdvantage ?? 0) >= 78
+  const labelOnLeft = payload.prospectScore >= 99
   const labelOffsets = [-24, -4, 18]
   const labelY = cy + (labelOffsets[featuredIndex] ?? 0)
   const labelX = labelOnLeft ? cx - 12 : cx + 12
@@ -145,7 +145,7 @@ function OpportunityDot({
       className={`opportunity-point${selected ? ' is-selected' : ''}`}
       role="button"
       tabIndex={keyboardReachable ? 0 : -1}
-      aria-label={`${payload.name}, ${payload.playerType}, Career Index ${formatCareerIndex(payload.careerIndex)}, ${payload.stageTailBand} prospect standing, ${ageContext}, ${payload.evidenceCoverage.toFixed(0)} percent current evidence coverage`}
+      aria-label={`${payload.name}, ${payload.playerType}, Prospect Score ${formatProspectScore(payload.prospectScore)}, rank ${payload.prospectRank}, Ceiling if MLB ${formatCareerIndex(payload.careerIndex)}, ${ageContext}, ${payload.evidenceCoverage.toFixed(0)} percent current evidence coverage`}
       onClick={selectPoint}
       onKeyDown={handleKeyDown}
       style={{ cursor: 'pointer' }}
@@ -223,37 +223,23 @@ export function MilbOpportunityMap({
   const minorCount = players.filter((player) => player.stage === 'pre_debut').length
   const matchingCount = totalCount ?? minorCount
   const careerIndexDomain = careerIndexChartDomain(points, scale)
-  const missingAgeCount = points.filter((point) => point.ageAdvantage === null).length
+  const prospectScoreDomain = scale === 'full'
+    ? { minimum: 0, maximum: 100, ticks: [0, 25, 50, 75, 100] }
+    : careerIndexChartDomain(
+        points.map((point) => ({ careerIndex: point.prospectScore })),
+        'focus',
+      )
   const fullEvidenceCount = points.filter((point) => point.evidenceCoverage >= 75).length
-  const edgeThreshold = percentile(points.map((point) => point.careerIndex), 0.8)
+  const scoreThreshold = percentile(points.map((point) => point.prospectScore), 0.8)
+  const ceilingThreshold = percentile(points.map((point) => point.careerIndex), 0.8)
   const earlyEdge = points.filter((point) => (
-    point.ageAdvantage !== null && point.ageAdvantage >= 85 && point.careerIndex >= edgeThreshold
+    point.prospectScore >= scoreThreshold && point.careerIndex >= ceilingThreshold
   ))
-  const standouts = (earlyEdge.length > 0 ? earlyEdge : points).slice(0, 4)
+  const standouts = (earlyEdge.length > 0 ? earlyEdge : points)
+    .toSorted((left, right) => left.prospectRank - right.prospectRank || right.careerIndex - left.careerIndex)
+    .slice(0, 4)
   const featuredIds = (points.length <= 3 ? points : standouts.slice(0, 3)).map((point) => point.playerId)
-  const plotPoints: OpportunityPlotPoint[] = points.map((point) => ({
-    ...point,
-    ageAxisValue: point.ageAdvantage ?? -8,
-  }))
-  const ageValues = points.flatMap((point) => point.ageAdvantage === null ? [] : [point.ageAdvantage])
-  const focusedAgeMinimum = ageValues.length === 0
-    ? 0
-    : Math.max(0, Math.floor((Math.min(...ageValues) - 2) / 10) * 10)
-  const ageDomain: [number, number] = missingAgeCount > 0
-    ? [-12, 100]
-    : scale === 'focus'
-      ? [focusedAgeMinimum, 100]
-      : [0, 100]
-  const ageTicks = missingAgeCount > 0
-    ? [-8, 0, 25, 50, 75, 100]
-    : scale === 'focus'
-      ? Array.from(
-          { length: Math.floor((100 - focusedAgeMinimum) / 20) + 1 },
-          (_, index) => focusedAgeMinimum + index * 20,
-        ).filter((value) => value <= 100).concat(
-          (100 - focusedAgeMinimum) % 20 === 0 ? [] : [100],
-        )
-      : [0, 25, 50, 75, 100]
+  const plotPoints: OpportunityPlotPoint[] = points
   const referenceAnchors = CAREER_INDEX_WAR_ANCHORS.filter((anchor) => (
     anchor.value > careerIndexDomain.minimum && anchor.value < careerIndexDomain.maximum
   ))
@@ -262,7 +248,7 @@ export function MilbOpportunityMap({
     : points.find((point) => point.playerId === selectedId) ?? null
   const plottedBeyondCount = Math.max(0, matchingCount - points.length)
   const scopeLabel = usingCohortFeed
-    ? `Top ${points.length.toLocaleString()} by Career Index`
+    ? `Top ${points.length.toLocaleString()} by Prospect Score`
     : `${points.length.toLocaleString()} on this table page`
 
   return (
@@ -270,11 +256,30 @@ export function MilbOpportunityMap({
       <div className="opportunity-map-heading">
         <div className="opportunity-map-title">
           <span className="eyebrow">PROSPECT LANDSCAPE</span>
-          <h3 id="opportunity-map-title">Ceiling &amp; age advantage</h3>
-          <p>Higher means more projected career value if MLB is reached. Farther right means unusually young for the same level.</p>
+          <h3 id="opportunity-map-title">Impact &amp; career ceiling</h3>
+          <p>Farther right means a stronger individualized five-year impact rank. Higher means more career value if MLB is reached.</p>
         </div>
         <div className="opportunity-map-controls">
-          <div className="segmented-control chart-scale-control" aria-label="Career Index chart scale">
+          <label className="opportunity-player-picker">
+            <span>Open plotted player</span>
+            <select
+              aria-label="Open a plotted prospect"
+              value={selectedPoint?.playerId ?? ''}
+              onChange={(event) => {
+                if (event.target.value) onSelect(event.target.value)
+              }}
+            >
+              <option value="">Select player</option>
+              {points
+                .toSorted((left, right) => left.prospectRank - right.prospectRank)
+                .map((point) => (
+                  <option key={point.playerId} value={point.playerId}>
+                    #{point.prospectRank} {point.name} ({formatProspectScore(point.prospectScore)})
+                  </option>
+                ))}
+            </select>
+          </label>
+          <div className="segmented-control chart-scale-control" aria-label="Prospect landscape chart scale">
             <button
               type="button"
               className={scale === 'focus' ? 'is-active' : ''}
@@ -308,13 +313,13 @@ export function MilbOpportunityMap({
           <small>{scopeLabel}</small>
         </div>
         <div>
-          <span>Young + high ceiling</span>
+          <span>Impact + ceiling leaders</span>
           <strong>{earlyEdge.length.toLocaleString()}</strong>
           <small>Upper-right standouts in this view</small>
         </div>
         <div>
-          <span>Median Career Index</span>
-          <strong>{points.length > 0 ? formatCareerIndex(percentile(points.map((point) => point.careerIndex), 0.5)) : '—'}</strong>
+          <span>Median Prospect Score</span>
+          <strong>{points.length > 0 ? percentile(points.map((point) => point.prospectScore), 0.5).toFixed(1) : '—'}</strong>
           <small>Middle of the plotted group</small>
         </div>
         <div>
@@ -332,7 +337,7 @@ export function MilbOpportunityMap({
 
       {points.length === 0 ? (
         <div className="opportunity-map-empty" role="status">
-          <strong>No prospects with a Career Index in these results</strong>
+          <strong>No prospects with both scores in these results</strong>
           <span>Adjust the filters or choose a player with a matched model record.</span>
         </div>
       ) : (
@@ -341,15 +346,15 @@ export function MilbOpportunityMap({
             <div
               className="opportunity-map-chart"
               role="group"
-              aria-label={`${points.length} prospects plotted by conditional Career Index and age advantage. Higher and farther right indicates higher projected MLB career value at a younger relative age.`}
+              aria-label={`${points.length} prospects plotted by Prospect Score and Ceiling if MLB. Higher and farther right indicates stronger modeled five-year impact and career ceiling.`}
             >
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                 <ScatterChart margin={{ top: 28, right: 28, bottom: 42, left: 4 }}>
                   <CartesianGrid stroke="var(--line)" strokeDasharray="2 6" />
                   <ReferenceArea
-                    x1={85}
-                    x2={100}
-                    y1={edgeThreshold}
+                    x1={scoreThreshold}
+                    x2={prospectScoreDomain.maximum}
+                    y1={ceilingThreshold}
                     y2={careerIndexDomain.maximum}
                     fill="var(--green-soft)"
                     fillOpacity={0.62}
@@ -362,7 +367,7 @@ export function MilbOpportunityMap({
                       stroke="var(--line-strong)"
                       strokeDasharray="5 5"
                       label={{
-                        value: `CI ${anchor.value}`,
+                        value: `Ceiling ${anchor.value}`,
                         position: 'insideBottomLeft',
                         fill: 'var(--muted)',
                         fontSize: 9,
@@ -371,15 +376,15 @@ export function MilbOpportunityMap({
                   ))}
                   <XAxis
                     type="number"
-                    dataKey="ageAxisValue"
-                    domain={ageDomain}
-                    ticks={ageTicks}
+                    dataKey="prospectScore"
+                    domain={[prospectScoreDomain.minimum, prospectScoreDomain.maximum]}
+                    ticks={prospectScoreDomain.ticks}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: 'var(--muted)', fontSize: 11 }}
-                    tickFormatter={(value: number) => value < 0 ? 'N/A' : `${value}`}
+                    tickFormatter={(value: number) => Number.isInteger(value) ? `${value}` : value.toFixed(1)}
                     label={{
-                      value: 'YOUNGER THAN HISTORICAL LEVEL PEERS (%)',
+                      value: 'PROSPECT SCORE (FIVE-YEAR IMPACT RANK)',
                       position: 'insideBottom',
                       offset: -28,
                       fill: 'var(--muted)',
@@ -397,7 +402,7 @@ export function MilbOpportunityMap({
                     width={48}
                     tickFormatter={(value: number) => `${Math.round(value)}`}
                     label={{
-                      value: 'CAREER INDEX',
+                      value: 'CEILING IF MLB',
                       angle: -90,
                       position: 'insideLeft',
                       fill: 'var(--muted)',
@@ -424,16 +429,16 @@ export function MilbOpportunityMap({
               </ResponsiveContainer>
             </div>
             <div className="opportunity-map-axis-note">
-              <span>{scale === 'focus' ? `Focused view: CI ${careerIndexDomain.minimum}–${careerIndexDomain.maximum} · age percentile ${ageDomain[0]}–100` : 'Full fixed Career Index and age-percentile scales: 0–100'}</span>
+              <span>{scale === 'focus' ? `Focused view: score ${prospectScoreDomain.minimum}–${prospectScoreDomain.maximum} · ceiling ${careerIndexDomain.minimum}–${careerIndexDomain.maximum}` : 'Full Prospect Score and Ceiling if MLB scales: 0–100'}</span>
               <strong>Dot fill reflects current evidence depth</strong>
             </div>
           </div>
 
           <aside className="opportunity-standouts" aria-labelledby="opportunity-standouts-title">
             <div className="opportunity-standouts-heading">
-              <span>EARLY EDGE</span>
+              <span>PROSPECT LEADERS</span>
               <strong id="opportunity-standouts-title">Upper-right standouts</strong>
-              <small>High career ceiling with unusual age advantage</small>
+              <small>Strong five-year impact rank and conditional career ceiling</small>
             </div>
             <div className="opportunity-standout-list">
               {standouts.map((point) => (
@@ -443,14 +448,14 @@ export function MilbOpportunityMap({
                   className={point.playerId === selectedId ? 'is-selected' : ''}
                   onClick={() => onSelect(point.playerId)}
                 >
-                  <span className="opportunity-standout-rank">#{point.stageRank.toLocaleString()}</span>
+                  <span className="opportunity-standout-rank">#{point.prospectRank.toLocaleString()}</span>
                   <span className="opportunity-standout-player">
                     <strong>{point.name}</strong>
                     <small>{point.organization} · {point.position} · Age {point.age ?? '—'}</small>
                   </span>
                   <span className="opportunity-standout-score">
-                    <strong>{formatCareerIndex(point.careerIndex)}</strong>
-                    <small>CI</small>
+                    <strong>{formatProspectScore(point.prospectScore)}</strong>
+                    <small>SCORE</small>
                   </span>
                 </button>
               ))}
@@ -463,9 +468,8 @@ export function MilbOpportunityMap({
         <span>
           {points.length.toLocaleString()} plotted
           {plottedBeyondCount > 0 ? ` · ${plottedBeyondCount.toLocaleString()} filtered prospects beyond this view` : ''}
-          {missingAgeCount > 0 ? ` · ${missingAgeCount.toLocaleString()} without an age comparison` : ''}
         </span>
-        <strong>Prospect Career Index is conditional on MLB arrival; arrival confidence remains separate</strong>
+        <strong>Prospect Score is an ordinal research rank; Ceiling if MLB remains conditional on arrival</strong>
       </div>
 
       {openingPlayerId ? (

@@ -592,7 +592,7 @@ export interface PlayerRecord {
   playerMap?: PlayerMapProfile | null
 }
 
-export type SortKey = 'careerIndex' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
+export type SortKey = 'prospectScore' | 'careerIndex' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -657,7 +657,7 @@ export interface PlayersResponseMeta {
     minors: boolean
     recentCallups?: boolean
   }
-  playerMapVersion?: 'oracle-player-map/v1' | 'oracle-player-map/v2' | 'oracle-player-map/v3'
+  playerMapVersion?: 'oracle-player-map/v1' | 'oracle-player-map/v2' | 'oracle-player-map/v3' | 'oracle-player-map/v4'
   playerMapCoverage?: number
   matchingPlayerCount?: number
   matchingMappedCount?: number
@@ -679,6 +679,39 @@ export interface PlayersResponseMeta {
     stageStandingIsFilteredResultOrdinal: false
     legacyMetric: 'oracleScore'
     legacyDeprecated: true
+  }
+  prospectScoreContract?: {
+    version: 'prospect-score/v1'
+    metric: 'prospectScore'
+    route: 'milb'
+    sort: 'prospectScore'
+    valueField: 'playerMap.scores.outcome.value'
+    compactValueField: 'assessment.scores.outcome.value'
+    rankField: 'playerMap.scores.outcome.rank'
+    compactRankField: 'assessment.scores.outcome.rank'
+    universeField: 'playerMap.scores.outcome.universe'
+    compactUniverseField: 'assessment.scores.outcome.universe'
+    targetField: 'playerMap.scores.outcome.target'
+    compactTargetField: 'assessment.scores.outcome.target'
+    statusField: 'playerMap.scores.outcome.status'
+    compactStatusField: 'assessment.scores.outcome.status'
+    asOfField: 'playerMap.scores.outcome.asOf'
+    compactAsOfField: 'assessment.scores.outcome.asOf'
+    scale: 'ordinal_percentile'
+    target: 'mlb_war_next_5_ge_5'
+    targetLabel: 'At least 5 total MLB WAR during 2026-2030'
+    windowStartSeason: 2026
+    windowEndSeason: 2030
+    featureCutoffAsOf: string
+    rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)'
+    activation: 'explicit_sort_opt_in'
+    legacyDefaultSort: 'careerIndex'
+    higherIsBetter: true
+    comparableWithinFrozenProspectUniverseOnly: true
+    comparableAcrossRoutes: false
+    calibratedProbability: false
+    currentSeasonEvidenceBlended: false
+    status: 'research_only'
   }
   ordering?: {
     requestedSort: SortKey
@@ -755,7 +788,7 @@ export interface PlayerFacetOption {
 }
 
 export interface PlayerMapFeedResponseMeta extends PlayersResponseMeta {
-  playerMapVersion: 'oracle-player-map/v3'
+  playerMapVersion: 'oracle-player-map/v4'
   playerMapCoverage: number
   matchingPlayerCount: number
   matchingMappedCount: number
@@ -768,6 +801,7 @@ export interface PlayerMapFeedResponseMeta extends PlayersResponseMeta {
   legacyScoreSemantics: 'stage_specific_ordinal_not_market_value'
   scoreSemanticsDeprecated: true
   rankingContract: NonNullable<PlayersResponseMeta['rankingContract']>
+  prospectScoreContract?: NonNullable<PlayersResponseMeta['prospectScoreContract']>
   ordering: NonNullable<PlayersResponseMeta['ordering']>
 }
 

@@ -152,6 +152,9 @@ describe('MiLB decision visualizations', () => {
     expect(points).toHaveLength(2)
     expect(points[0]).toEqual(expect.objectContaining({
       playerId: 'player-1',
+      prospectScore: 99.94,
+      prospectRank: 4,
+      prospectUniverse: 6_455,
       careerIndex: 15.3,
       stageRank: 4,
       stageUniverse: 6_455,
@@ -162,6 +165,9 @@ describe('MiLB decision visualizations', () => {
     }))
     expect(points[1]).toEqual(expect.objectContaining({
       playerId: 'aiva-like',
+      prospectScore: 96.02,
+      prospectRank: 258,
+      prospectUniverse: 6_455,
       careerIndex: 15.3,
       stageRank: 258,
       stageUniverse: 6_455,
@@ -173,7 +179,7 @@ describe('MiLB decision visualizations', () => {
       missingPillars: ['Damage', 'Expected output'],
       sampleState: 'provisional',
       sampleSummary: '122 PA',
-      tier: 'context',
+      tier: 'strong',
     }))
     expect(points[0]?.stageTopPercent).toBeCloseTo(0.062, 3)
     expect(points[1]?.stageTopPercent).toBeCloseTo(3.9969, 4)
@@ -199,8 +205,8 @@ describe('MiLB decision visualizations', () => {
     const rows = buildMilbEvidenceRows(playerFixture())
 
     expect(rows.map((row) => [row.id, row.kind, row.value])).toEqual([
-      ['stage-standing', 'model_rank', 100],
       ['impact-rank', 'model_rank', 99.94],
+      ['stage-standing', 'model_rank', 100],
       ['age-context', 'age_context', 92],
       ['trait-contact', 'descriptive_trait', 95],
     ])
@@ -231,7 +237,7 @@ describe('MiLB decision visualizations', () => {
     })
   })
 
-  it('builds the lean landscape feed into the same age, ceiling, and evidence contract', () => {
+  it('builds the lean landscape feed into the same score, ceiling, and evidence contract', () => {
     const player = playerFixture()
     const feedItem: PlayerMapFeedItem = {
       playerId: player.id,
@@ -254,6 +260,9 @@ describe('MiLB decision visualizations', () => {
       expect.objectContaining({
         playerId: 'player-1',
         name: 'Young Prospect',
+        prospectScore: 99.94,
+        prospectRank: 4,
+        prospectUniverse: 6_455,
         careerIndex: 15.3,
         ageAdvantage: 92,
         ageReferencePlayers: 1200,

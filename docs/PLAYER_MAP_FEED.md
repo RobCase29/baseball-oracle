@@ -36,6 +36,12 @@ For an explicit cross-stage Career Index order, request:
 GET /api/players?view=map&stage=All&sort=careerIndex&limit=100&page=1
 ```
 
+For the primary prospect leaderboard, request:
+
+```http
+GET /api/players?view=map&stage=Minors&sort=prospectScore&limit=100&page=1
+```
+
 `stage=All` without `sort` remains an alphabetical directory. An explicit
 `sort=careerIndex` is ordered descending across all scored routes, with nulls
 last and display name, player ID, and Player Map route as deterministic
@@ -55,8 +61,13 @@ The compact feed contains:
   scouting evidence. These fields remain separate from model scores.
 - `assessment`: the universal Player Map vector, state, evidence, flags, target,
   comparison universe, version, and as-of dates.
+- `assessment.scores.outcome` on the MiLB route: the primary Prospect Score,
+  exact impact rank, universe, target, status, and model as-of date. It ranks the
+  target of at least 5 MLB WAR during 2026-2030 and is not a
+  probability.
 - `assessment.careerIndex`: the primary fixed-scale career-value magnitude
-  signal, including version, route, basis, research status, definition, forecast
+  signal for MLB and the prospect **Ceiling if MLB**, including version, route,
+  basis, research status, definition, forecast
   model/target/data/provider lineage, and as-of date. Prospect and Rookie Track
   values are conditional on MLB arrival; arrival confidence remains separate.
 - `assessment.stageStanding`: versioned exact stage rank, metric, target,
@@ -85,7 +96,12 @@ Unresolved or conflicting evidence stays separate for review.
 
 ## Score Semantics
 
-`assessment.careerIndex.value` is the primary Player Map v2 product score. It is
+`assessment.scores.outcome.value` is the primary prospect score on the MiLB
+route. Its exact contract and audit are defined in
+[`PROSPECT_SCORE_V1.md`](./PROSPECT_SCORE_V1.md). `sort=prospectScore` orders by
+the exact rank, not the rounded display value.
+
+`assessment.careerIndex.value` is the fixed career-magnitude score. It is
 the weighted P50/P75/P90 summary of the player's final-career WAR distribution
 mapped onto frozen career-value anchors. It is not a probability, percentile,
 confidence score, expected WAR, or investment-return estimate. The exact formula,
@@ -123,6 +139,16 @@ Every compact response includes `meta.rankingContract` with version
 `player-ranking-contract/v1`. It declares `careerIndex` as the primary metric and
 sort, confirms that Career Index is comparable across routes, restricts stage
 standing to within-stage comparison, and marks `oracleScore` deprecated.
+The unparameterized `stage=Minors` API remains Career Index ordered for backward
+compatibility. MiLB consumers opt into the route-primary score with
+`sort=prospectScore`; those responses also include
+`meta.prospectScoreContract`. It declares the full and compact value, rank,
+universe, target, status, and as-of field paths; the fixed 2026-2030 target
+window; the 2025-12-31 feature cutoff; the exact percentile formula; comparison
+scope; and research status. It also confirms that the score is neither a
+calibrated probability nor blended with current-season evidence. This is an
+additive opt-in extension to v4, so previously captured v4 payloads remain valid
+under the current schema.
 
 `meta.ordering.requestedSort` records the accepted query, while
 `meta.ordering.appliedSort` resolves legacy `alphaOpportunity` requests to the
@@ -158,6 +184,8 @@ Backstop should persist this lineage with every derived card recommendation:
 - Player Map version;
 - signal target and model as-of timestamp;
 - Career Index value, version, route, status, and as-of date;
+- Prospect Score value, exact rank, universe, target, status, and as-of date for
+  MiLB records;
 - stage rank, universe, top-share percentage, tail band, cohort, and as-of date;
 - legacy Oracle Score only where migration compatibility requires it;
 - mapping and evidence state.

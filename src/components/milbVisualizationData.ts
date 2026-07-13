@@ -23,6 +23,9 @@ export interface MilbOpportunityPoint {
   missingPillars: string[]
   sampleState: 'unavailable' | 'insufficient' | 'provisional' | 'sufficient'
   sampleSummary: string
+  prospectScore: number
+  prospectRank: number
+  prospectUniverse: number
   careerIndex: number
   stageRank: number
   stageUniverse: number
@@ -52,14 +55,11 @@ export interface CareerIndexChartDomain {
 
 export type CareerIndexChartScale = 'focus' | 'full'
 
-function resolveTier(player: PlayerRecord): OpportunityTier {
-  const topPercent = playerMapFor(player).stageStanding.topPercent
-  const arrival = player.milbAlphaSignal
-
-  if (!arrival?.eligible || topPercent === null || topPercent > 10) return 'context'
-  if (arrival.tier === 'priority' && topPercent <= 1) return 'priority'
-  if (topPercent <= 5) return 'strong'
-  return 'watch'
+function resolveTier(prospectScore: number): OpportunityTier {
+  if (prospectScore >= 99) return 'priority'
+  if (prospectScore >= 95) return 'strong'
+  if (prospectScore >= 90) return 'watch'
+  return 'context'
 }
 
 function validPercentile(value: number | null | undefined): value is number {
@@ -130,10 +130,14 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
 
     const map = playerMapFor(player)
     const careerIndex = map.careerIndex.value
+    const prospectScore = map.scores.outcome
     const standing = map.stageStanding
     const ageContext = player.milbAlphaSignal?.ageContext
     if (
       !validPercentile(careerIndex) ||
+      !validPercentile(prospectScore.value) ||
+      prospectScore.rank === null ||
+      prospectScore.universe === null ||
       standing.rank === null ||
       standing.universe === null ||
       standing.topPercent === null ||
@@ -175,6 +179,9 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       missingPillars: traitEvidence?.coverage.missingPillars ?? [],
       sampleState: traitEvidence?.opportunity.state ?? 'unavailable',
       sampleSummary: sampleSummary(player),
+      prospectScore: prospectScore.value,
+      prospectRank: prospectScore.rank,
+      prospectUniverse: prospectScore.universe,
       careerIndex,
       stageRank: standing.rank,
       stageUniverse: standing.universe,
@@ -183,11 +190,11 @@ export function buildMilbOpportunityPoints(players: PlayerRecord[]): MilbOpportu
       arrivalGateCleared: player.milbAlphaSignal?.eligible === true,
       playerType: player.playerType,
       traitCorroborated: traitEvidence?.corroboration?.passesAllDescriptiveGates === true,
-      tier: resolveTier(player),
+      tier: resolveTier(prospectScore.value),
     }]
   }).sort((left, right) => {
-    const standingDifference = left.stageRank - right.stageRank
-    if (standingDifference !== 0) return standingDifference
+    const scoreDifference = left.prospectRank - right.prospectRank
+    if (scoreDifference !== 0) return scoreDifference
     return left.name.localeCompare(right.name)
   })
 }
@@ -207,16 +214,6 @@ function feedSampleSummary(state: MilbOpportunityPoint['sampleState']): string {
   return 'Current sample unavailable'
 }
 
-function feedOpportunityTier(
-  arrivalGateCleared: boolean,
-  topPercent: number,
-): OpportunityTier {
-  if (!arrivalGateCleared || topPercent > 10) return 'context'
-  if (topPercent <= 1) return 'priority'
-  if (topPercent <= 5) return 'strong'
-  return 'watch'
-}
-
 export function buildMilbOpportunityPointsFromFeed(
   items: PlayerMapFeedItem[],
 ): MilbOpportunityPoint[] {
@@ -225,9 +222,13 @@ export function buildMilbOpportunityPointsFromFeed(
     if (context.stage !== 'pre_debut' || assessment.route !== 'milb') return []
 
     const careerIndex = assessment.careerIndex.value
+    const prospectScore = assessment.scores.outcome
     const standing = assessment.stageStanding
     if (
       !validPercentile(careerIndex) ||
+      !validPercentile(prospectScore.value) ||
+      prospectScore.rank === null ||
+      prospectScore.universe === null ||
       standing.rank === null ||
       standing.universe === null ||
       standing.topPercent === null ||
@@ -261,6 +262,9 @@ export function buildMilbOpportunityPointsFromFeed(
       missingPillars: assessment.missingEvidence,
       sampleState,
       sampleSummary: feedSampleSummary(sampleState),
+      prospectScore: prospectScore.value,
+      prospectRank: prospectScore.rank,
+      prospectUniverse: prospectScore.universe,
       careerIndex,
       stageRank: standing.rank,
       stageUniverse: standing.universe,
@@ -269,11 +273,11 @@ export function buildMilbOpportunityPointsFromFeed(
       arrivalGateCleared,
       playerType: context.playerType,
       traitCorroborated: assessment.signals.some((signal) => signal.code === 'trait_corroborated'),
-      tier: feedOpportunityTier(arrivalGateCleared, standing.topPercent),
+      tier: resolveTier(prospectScore.value),
     }]
   }).sort((left, right) => {
-    const standingDifference = left.stageRank - right.stageRank
-    if (standingDifference !== 0) return standingDifference
+    const scoreDifference = left.prospectRank - right.prospectRank
+    if (scoreDifference !== 0) return scoreDifference
     return left.name.localeCompare(right.name)
   })
 }
@@ -289,7 +293,22 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
   if (player.stage !== 'pre_debut') return []
 
   const rows: MilbEvidenceRow[] = []
-  const standing = playerMapFor(player).stageStanding
+  const map = playerMapFor(player)
+  const impactScore = map.scores.outcome
+  if (
+    impactScore.rank !== null &&
+    impactScore.universe !== null &&
+    validPercentile(impactScore.value)
+  ) {
+    rows.push({
+      id: 'impact-rank',
+      label: 'Prospect Score',
+      value: impactScore.value,
+      kind: 'model_rank',
+      detail: `#${impactScore.rank.toLocaleString()} of ${impactScore.universe.toLocaleString()} for reaching at least 5 MLB WAR during 2026-2030`,
+    })
+  }
+  const standing = map.stageStanding
   const standingPercentile = standing.rank === null || standing.universe === null
     ? null
     : stageStandingPercentile(standing.rank, standing.universe)
@@ -306,18 +325,6 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
       detail: `#${standing.rank.toLocaleString()} of ${standing.universe.toLocaleString()} · ${standing.tailBand ?? 'stage band unavailable'} in frozen prospect forecasts`,
     })
   }
-  const impact = player.milbImpactRanking
-  const impactWorkloadSupported = player.milbAlphaSignal?.gates?.minimumRawWorkload !== false
-  if (impact && impactWorkloadSupported && validPercentile(impact.rankPercentile)) {
-    rows.push({
-      id: 'impact-rank',
-      label: '5Y impact rank',
-      value: impact.rankPercentile,
-      kind: 'model_rank',
-      detail: `#${impact.rank.toLocaleString()} of ${impact.universeRows.toLocaleString()} in the direct, unconditional five-year MLB impact ranking`,
-    })
-  }
-
   const ageContext = player.milbAlphaSignal?.ageContext
   const liveAgePercentile = validPercentile(player.agePercentile) ? player.agePercentile : null
   if (liveAgePercentile !== null || (ageContext && validPercentile(ageContext.youngerThanPercent))) {

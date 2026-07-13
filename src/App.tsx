@@ -12,6 +12,7 @@ import { AppSidebar, type WorkspaceView } from './components/AppSidebar'
 import { ModelLab } from './components/ModelLab'
 import { PlayerDossier } from './components/PlayerDossier'
 import { ProspectBoard, type BoardDisplayMode } from './components/ProspectBoard'
+import { defaultBoardFilters, filtersFromUrl } from './boardFilters'
 import type {
   BoardFilters,
   PlayerMapFeedItem,
@@ -25,68 +26,6 @@ import type {
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
 const CLIENT_REVALIDATE_MS = 15 * 60 * 1_000
-
-const defaultFilters: BoardFilters = {
-  query: '',
-  stage: 'Minors',
-  playerType: 'All',
-  level: 'All',
-  team: 'All',
-  position: 'All',
-  sort: 'careerIndex',
-}
-
-function filtersFromUrl(): BoardFilters {
-  const parameters = new URLSearchParams(window.location.search)
-  const stage = parameters.get('stage')
-  const playerType = parameters.get('playerType')
-  const level = parameters.get('level')
-  const sort = parameters.get('sort')
-  const resolvedStage: BoardFilters['stage'] = stage === 'All' || stage === 'Minors' || stage === 'RC' || stage === 'MLB'
-    ? stage
-    : defaultFilters.stage
-  const resolvedLevel: BoardFilters['level'] = level === 'AAA' || level === 'AA' || level === 'A+' || level === 'A' || level === 'Rk'
-    ? level
-    : defaultFilters.level
-  const validSorts = new Set<BoardFilters['sort']>([
-    'careerIndex',
-    'stageStanding',
-    'alphaOpportunity',
-    'nearTermImpact',
-    'finalWar',
-    'arrival36',
-    'age',
-    'name',
-  ])
-  const resolvedSort = sort && validSorts.has(sort as BoardFilters['sort'])
-    ? sort as BoardFilters['sort']
-    : defaultFilters.sort
-  const stageSort = resolvedStage === 'All'
-    ? 'name'
-    : (resolvedStage === 'Minors' && (
-        resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
-      )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36') || (
-        resolvedStage === 'RC' && (
-          resolvedSort === 'nearTermImpact' ||
-          resolvedSort === 'finalWar' ||
-          resolvedSort === 'arrival36'
-        )
-      )
-      ? defaultFilters.sort
-      : resolvedSort
-
-  return {
-    query: parameters.get('q') ?? defaultFilters.query,
-    stage: resolvedStage,
-    playerType: playerType === 'Hitter' || playerType === 'Pitcher' || playerType === 'Two-way'
-      ? playerType
-      : defaultFilters.playerType,
-    level: resolvedStage === 'MLB' || resolvedStage === 'RC' ? 'All' : resolvedLevel,
-    team: parameters.get('team') ?? defaultFilters.team,
-    position: parameters.get('position') ?? defaultFilters.position,
-    sort: stageSort,
-  }
-}
 
 function pageFromUrl(): number {
   const value = Number.parseInt(new URLSearchParams(window.location.search).get('page') ?? '', 10)
@@ -276,7 +215,7 @@ function App() {
       stage: 'Minors',
       page: '1',
       limit: LANDSCAPE_SIZE.toString(),
-      sort: 'careerIndex',
+      sort: 'prospectScore',
       view: 'map',
     })
     const query = deferredQuery.trim()
@@ -328,12 +267,12 @@ function App() {
   useEffect(() => {
     const parameters = new URLSearchParams()
     if (filters.query.trim()) parameters.set('q', filters.query.trim())
-    if (filters.stage !== defaultFilters.stage) parameters.set('stage', filters.stage)
+    if (filters.stage !== defaultBoardFilters.stage) parameters.set('stage', filters.stage)
     if (filters.playerType !== 'All') parameters.set('playerType', filters.playerType)
     if (filters.level !== 'All') parameters.set('level', filters.level)
     if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
     if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
-    if (filters.sort !== defaultFilters.sort) parameters.set('sort', filters.sort)
+    if (filters.sort !== defaultBoardFilters.sort) parameters.set('sort', filters.sort)
     if (page > 1) parameters.set('page', page.toString())
     const query = parameters.toString()
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)

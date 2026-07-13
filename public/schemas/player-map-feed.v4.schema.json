@@ -293,7 +293,7 @@
       ],
       "properties": {
         "version": {
-          "const": "oracle-player-map/v3"
+          "enum": ["oracle-player-map/v3", "oracle-player-map/v4"]
         },
         "asOf": {
           "$ref": "#/$defs/nullableDateTime"
@@ -822,7 +822,7 @@
           "enum": ["not_published", "research_only", "published"]
         },
         "playerMapVersion": {
-          "const": "oracle-player-map/v3"
+          "enum": ["oracle-player-map/v3", "oracle-player-map/v4"]
         },
         "playerMapCoverage": {
           "type": "integer",
@@ -864,6 +864,9 @@
         },
         "rankingContract": {
           "$ref": "#/$defs/rankingContract"
+        },
+        "prospectScoreContract": {
+          "$ref": "#/$defs/prospectScoreContract"
         },
         "ordering": {
           "$ref": "#/$defs/ordering"
@@ -918,15 +921,85 @@
       },
       "additionalProperties": false
     },
+    "prospectScoreContract": {
+      "type": "object",
+      "required": [
+        "version",
+        "metric",
+        "route",
+        "sort",
+        "valueField",
+        "compactValueField",
+        "rankField",
+        "compactRankField",
+        "universeField",
+        "compactUniverseField",
+        "targetField",
+        "compactTargetField",
+        "statusField",
+        "compactStatusField",
+        "asOfField",
+        "compactAsOfField",
+        "scale",
+        "target",
+        "targetLabel",
+        "windowStartSeason",
+        "windowEndSeason",
+        "featureCutoffAsOf",
+        "rankPercentileFormula",
+        "activation",
+        "legacyDefaultSort",
+        "higherIsBetter",
+        "comparableWithinFrozenProspectUniverseOnly",
+        "comparableAcrossRoutes",
+        "calibratedProbability",
+        "currentSeasonEvidenceBlended",
+        "status"
+      ],
+      "properties": {
+        "version": { "const": "prospect-score/v1" },
+        "metric": { "const": "prospectScore" },
+        "route": { "const": "milb" },
+        "sort": { "const": "prospectScore" },
+        "valueField": { "const": "playerMap.scores.outcome.value" },
+        "compactValueField": { "const": "assessment.scores.outcome.value" },
+        "rankField": { "const": "playerMap.scores.outcome.rank" },
+        "compactRankField": { "const": "assessment.scores.outcome.rank" },
+        "universeField": { "const": "playerMap.scores.outcome.universe" },
+        "compactUniverseField": { "const": "assessment.scores.outcome.universe" },
+        "targetField": { "const": "playerMap.scores.outcome.target" },
+        "compactTargetField": { "const": "assessment.scores.outcome.target" },
+        "statusField": { "const": "playerMap.scores.outcome.status" },
+        "compactStatusField": { "const": "assessment.scores.outcome.status" },
+        "asOfField": { "const": "playerMap.scores.outcome.asOf" },
+        "compactAsOfField": { "const": "assessment.scores.outcome.asOf" },
+        "scale": { "const": "ordinal_percentile" },
+        "target": { "const": "mlb_war_next_5_ge_5" },
+        "targetLabel": { "const": "At least 5 total MLB WAR during 2026-2030" },
+        "windowStartSeason": { "const": 2026 },
+        "windowEndSeason": { "const": 2030 },
+        "featureCutoffAsOf": { "const": "2025-12-31T00:00:00.000Z" },
+        "rankPercentileFormula": { "const": "100 * (universeRows - rank) / (universeRows - 1)" },
+        "activation": { "const": "explicit_sort_opt_in" },
+        "legacyDefaultSort": { "const": "careerIndex" },
+        "higherIsBetter": { "const": true },
+        "comparableWithinFrozenProspectUniverseOnly": { "const": true },
+        "comparableAcrossRoutes": { "const": false },
+        "calibratedProbability": { "const": false },
+        "currentSeasonEvidenceBlended": { "const": false },
+        "status": { "const": "research_only" }
+      },
+      "additionalProperties": false
+    },
     "ordering": {
       "type": "object",
       "required": ["requestedSort", "appliedSort", "legacyAliasUsed", "metric", "field", "fieldExposed", "direction", "scope", "nulls", "tieBreakers"],
       "properties": {
         "requestedSort": {
-          "enum": ["careerIndex", "stageStanding", "alphaOpportunity", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
+          "enum": ["prospectScore", "careerIndex", "stageStanding", "alphaOpportunity", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
         },
         "appliedSort": {
-          "enum": ["careerIndex", "stageStanding", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
+          "enum": ["prospectScore", "careerIndex", "stageStanding", "hofProbability", "nearTermImpact", "finalWar", "arrival36", "age", "name"]
         },
         "legacyAliasUsed": {
           "description": "True only when requestedSort=alphaOpportunity was normalized to appliedSort=stageStanding.",

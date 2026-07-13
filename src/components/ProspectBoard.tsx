@@ -29,7 +29,7 @@ import {
   isMlbStage,
   stageLabel,
 } from '../lib/forecast'
-import { careerIndexFor, playerMapFor } from './playerMapView'
+import { careerIndexFor, playerMapFor, prospectScoreFor } from './playerMapView'
 import { currentMinorEvidence, currentMinorSignal } from './currentMinorView'
 import {
   formatRookieWar,
@@ -89,7 +89,7 @@ function withCurrentFacet(
 
 function boardHeading(filters: BoardFilters): { eyebrow: string; title: string } {
   if (filters.stage === 'Minors') {
-    return { eyebrow: 'PROJECTED CAREER VALUE', title: 'Prospect Rankings' }
+    return { eyebrow: 'FIVE-YEAR IMPACT OUTLOOK', title: 'Prospect Rankings' }
   }
   if (filters.stage === 'RC') {
     return { eyebrow: 'PROSPECT OUTLOOK + MLB EVIDENCE', title: 'Rookie Track' }
@@ -219,6 +219,8 @@ export function ProspectBoard({
                     filters.sort === 'nearTermImpact' || filters.sort === 'finalWar'
                   )
                 ) || (
+                  (stage.value === 'MLB' || stage.value === 'RC') && filters.sort === 'prospectScore'
+                ) || (
                   stage.value === 'MLB' && filters.sort === 'arrival36'
                 ) || (
                   stage.value === 'RC' && (
@@ -232,10 +234,12 @@ export function ProspectBoard({
                   ...(stage.value === 'All' || stage.value === 'MLB' || stage.value === 'RC' ? { level: 'All' } : {}),
                   ...(stage.value === 'All'
                     ? { sort: 'name' as const }
-                    : filters.stage === 'All'
-                      ? { sort: 'careerIndex' as const }
+                    : stage.value === 'Minors' && filters.stage !== 'Minors'
+                      ? { sort: 'prospectScore' as const }
+                      : filters.stage === 'All'
+                      ? { sort: stage.value === 'Minors' ? 'prospectScore' as const : 'careerIndex' as const }
                       : sortIsUnavailable
-                        ? { sort: 'careerIndex' as const }
+                        ? { sort: stage.value === 'Minors' ? 'prospectScore' as const : 'careerIndex' as const }
                         : {}),
                 })
               }}
@@ -342,8 +346,11 @@ export function ProspectBoard({
               </>
             ) : (
               <>
-                <option value="careerIndex">Career Index</option>
-                <option value="stageStanding">Stage standing</option>
+                {filters.stage === 'Minors' ? (
+                  <option value="prospectScore">Prospect Score</option>
+                ) : null}
+                <option value="careerIndex">{filters.stage === 'MLB' ? 'Career Index' : 'Ceiling if MLB'}</option>
+                <option value="stageStanding">{filters.stage === 'MLB' ? 'MLB outlook rank' : 'Long-term potential rank'}</option>
                 {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
                   <option value="nearTermImpact">Next 3-year upside</option>
                 ) : null}
@@ -454,9 +461,9 @@ export function ProspectBoard({
           <table className="board-table oracle-board-table">
             <thead>
               <tr>
-                <th scope="col">Player / Career Index</th>
-                <th scope="col">Stage standing</th>
-                <th scope="col">Career projection</th>
+                <th scope="col">{filters.stage === 'Minors' ? 'Player / Prospect Score' : 'Player / Career Index'}</th>
+                <th scope="col">{filters.stage === 'Minors' ? 'Impact rank' : 'Stage standing'}</th>
+                <th scope="col">{filters.stage === 'Minors' ? 'Ceiling if MLB' : 'Career projection'}</th>
                 <th scope="col">Current signal</th>
                 <th scope="col">Evidence</th>
               </tr>
@@ -470,6 +477,13 @@ export function ProspectBoard({
                 const playerMap = playerMapFor(player)
                 const handling = playerMap.handling?.primary ?? null
                 const careerIndex = careerIndexFor(player, playerMap)
+                const prospectScore = filters.stage === 'Minors' && playerMap.route === 'milb'
+                  ? prospectScoreFor(player, playerMap)
+                  : null
+                const primaryScore = prospectScore ?? careerIndex
+                const primaryScoreLabel = prospectScore?.label ?? (
+                  filters.stage === 'All' ? 'Career Index' : careerIndex.label
+                )
                 const isRookieTrack = player.stage === 'recent_callup' && player.recentCallup !== null
                 const rawProspectPrior = player.recentCallup?.prospectPrior ?? null
                 const prospectPrior = rawProspectPrior?.forecast.publicationState === 'withheld'
@@ -510,12 +524,12 @@ export function ProspectBoard({
                         aria-current={selected ? 'true' : undefined}
                       >
                         <span
-                          className={`career-index-badge career-index-badge--${careerIndex.tone}`}
-                          aria-label={`Career Index ${careerIndex.display}`}
-                          title={careerIndex.explanation}
+                          className={`career-index-badge career-index-badge--${primaryScore.tone}`}
+                          aria-label={`${primaryScoreLabel} ${primaryScore.display}`}
+                          title={primaryScore.explanation}
                         >
-                          <strong>{careerIndex.display}</strong>
-                          <small>INDEX</small>
+                          <strong>{primaryScore.display}</strong>
+                          <small>{prospectScore ? 'SCORE' : 'INDEX'}</small>
                         </span>
                         <span>
                           <strong className="player-name">{player.name}</strong>
@@ -532,10 +546,16 @@ export function ProspectBoard({
                     </td>
                     <td className="rank-cell">
                       <strong className="table-primary">
-                        {careerIndex.rank ? `#${careerIndex.rank.toLocaleString()}` : '—'}
+                        {(prospectScore ? prospectScore.rank : careerIndex.rank)
+                          ? `#${(prospectScore ? prospectScore.rank : careerIndex.rank)?.toLocaleString()}`
+                          : '—'}
                       </strong>
                       <small>
-                        {careerIndex.topLabel && careerIndex.universe
+                        {prospectScore?.rank && prospectScore.universe
+                          ? `of ${prospectScore.universe.toLocaleString()} prospects · five-year impact`
+                          : prospectScore
+                            ? 'Prospect rank unavailable or withheld'
+                          : careerIndex.topLabel && careerIndex.universe
                           ? `${careerIndex.topLabel} of ${careerIndex.universe.toLocaleString()} ${careerIndex.cohortLabel}`
                           : isRookieTrack && !hasProspectPrior
                             ? 'Prospect prior not matched'
@@ -545,10 +565,16 @@ export function ProspectBoard({
                     </td>
                     <td>
                       <strong className="table-primary">
-                        {careerMiddleCase === null && handling ? 'Not scored' : formatWar(careerMiddleCase)}
+                        {prospectScore
+                          ? careerIndex.display
+                          : careerMiddleCase === null && handling ? 'Not scored' : formatWar(careerMiddleCase)}
                       </strong>
                       <small>
-                        {handling && careerMiddleCase === null
+                        {prospectScore
+                          ? careerIndex.value === null
+                            ? 'Career ceiling not yet mapped'
+                            : `Conditional career index · middle ${formatWar(careerMiddleCase)} · high ${formatWar(careerHighCase)} · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}`
+                          : handling && careerMiddleCase === null
                           ? handling.summary
                           : isRookieTrack && !hasProspectPrior
                           ? 'Career projection available after the prospect prior is matched'

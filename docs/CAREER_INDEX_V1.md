@@ -1,8 +1,8 @@
-# Oracle Career Index V1
+# Oracle Career Index
 
 Status: research-only product index
-Version: `career-index-war-v1`
-Player Map version: `oracle-player-map/v2`
+Version: `career-index-war-v2`
+Player Map version: `oracle-player-map/v4`
 
 ## Purpose
 
@@ -45,7 +45,7 @@ without a new index version.
 
 ## Three Separate Signals
 
-Player Map v2 keeps three concepts separate:
+Player Map v4 keeps three concepts separate:
 
 1. `careerIndex`: absolute modeled career-value magnitude on the fixed scale.
 2. `stageStanding`: exact rank, universe, top-share percentage, and tail band
@@ -59,8 +59,8 @@ exceptional stage rank; that is expected for rare but highly uncertain prospects
 
 ## Stage Policy
 
-- **Prospects:** use the unconditional terminal WAR distribution. The zero-value
-  no-arrival component remains in the forecast. Stage standing uses the frozen
+- **Prospects:** use the terminal WAR distribution conditional on MLB arrival.
+  The product labels this reading **Ceiling if MLB**. Stage standing uses the frozen
   6,455-player prospect artifact, even when the active directory contains fewer
   matched players.
 - **Rookie Track:** carry the exact frozen prospect Career Index and prospect
@@ -93,9 +93,10 @@ reliability still differ by route.
 The current prospect bridge is not a directly trained MiLB-to-career model.
 Minor-league performance shapes the arrival component, while the conditional
 career distribution is primarily role and projected-debut-age based. Its arrival
-model failed registered external release gates. Low absolute prospect index
-values are therefore an honest consequence of the unconditional distribution,
-not a reason to stretch the scale.
+model failed registered external release gates. Prospect values are therefore
+conditional ceiling context, not an individualized prospect leaderboard. The
+separate Prospect Score is the primary MiLB ranking; see
+[`PROSPECT_SCORE_V1.md`](./PROSPECT_SCORE_V1.md).
 
 The MLB model is a terminal landmark distribution, not a simulated annual aging,
 injury, playing-time, or exit path. Position-specific JAWS proximity remains a
@@ -104,7 +105,7 @@ prospect bridge does not export a coherent position-specific JAWS distribution.
 
 ## Partner Contract
 
-Player Map v2 publishes:
+Player Map v4 publishes:
 
 ```text
 assessment.careerIndex.version

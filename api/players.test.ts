@@ -583,6 +583,8 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players'))?.view).toBe('full')
     expect(parseQuery(request('/api/players'))?.sort).toBe('name')
     expect(parseQuery(request('/api/players?stage=Minors'))?.sort).toBe('careerIndex')
+    expect(parseQuery(request('/api/players?stage=MLB&sort=prospectScore'))).toBeNull()
+    expect(parseQuery(request('/api/players?stage=All&sort=prospectScore'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=All&sort=careerIndex'))?.sort).toBe('careerIndex')
     expect(parseQuery(request('/api/players?stage=All&sort=stageStanding'))).toBeNull()
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
@@ -643,6 +645,17 @@ describe('unified player ordering', () => {
       field: 'milbAlphaSignal.rank',
       fieldExposed: true,
       direction: 'ascending',
+    })
+
+    const prospectScore = parseQuery(request('/api/players?view=map&stage=Minors&sort=prospectScore'))
+    expect(prospectScore && responseOrdering(prospectScore)).toMatchObject({
+      requestedSort: 'prospectScore',
+      appliedSort: 'prospectScore',
+      metric: 'prospect_score_rank',
+      field: 'assessment.scores.outcome.rank',
+      fieldExposed: true,
+      direction: 'ascending',
+      scope: 'stage',
     })
 
     const compactMlbWar = parseQuery(request('/api/players?view=map&stage=MLB&sort=finalWar'))
@@ -845,6 +858,31 @@ describe('unified player ordering', () => {
       metric: 'milb_alpha_signal_rank',
       direction: 'ascending',
     })
+  })
+
+  it('orders prospects by the exact individualized impact rank with nulls last', () => {
+    const firstImpact = researchMilbImpactRanking('804606', 'Hitter')
+    const thirdImpact = researchMilbImpactRanking('815908', 'Hitter')
+    const aivaImpact = researchMilbImpactRanking('804109', 'Hitter')
+    expect([firstImpact?.rank, thirdImpact?.rank, aivaImpact?.rank]).toEqual([1, 3, 258])
+
+    const sorted = sortUnifiedCandidates([
+      candidate('unscored', { milbImpactRanking: null, milbAlphaSignal: null }),
+      candidate('aiva', {
+        milbImpactRanking: aivaImpact,
+        milbAlphaSignal: researchMilbAlphaSignal('804109', 'Hitter'),
+      }),
+      candidate('third', {
+        milbImpactRanking: thirdImpact,
+        milbAlphaSignal: researchMilbAlphaSignal('815908', 'Hitter'),
+      }),
+      candidate('first', {
+        milbImpactRanking: firstImpact,
+        milbAlphaSignal: researchMilbAlphaSignal('804606', 'Hitter'),
+      }),
+    ], 'prospectScore')
+
+    expect(sorted.map((item) => item.id)).toEqual(['first', 'third', 'aiva', 'unscored'])
   })
 
   it('orders Career Index by fixed career-value magnitude before stage standing', () => {
@@ -1268,7 +1306,7 @@ describe('player-map feed contract', () => {
     expect(JSON.stringify(item)).not.toContain('0.73')
 
     expect(playerMapResponseMeta([])).toMatchObject({
-      playerMapVersion: 'oracle-player-map/v3',
+      playerMapVersion: 'oracle-player-map/v4',
       primaryScoreSemantics: 'fixed_career_value_index',
       scoreSemantics: 'stage_specific_ordinal_not_market_value',
       rankingContract: {
@@ -1281,6 +1319,28 @@ describe('player-map feed contract', () => {
         stageStandingIsFilteredResultOrdinal: false,
         legacyMetric: 'oracleScore',
         legacyDeprecated: true,
+      },
+    })
+    expect(playerMapResponseMeta([]).prospectScoreContract).toBeUndefined()
+    expect(playerMapResponseMeta([], query({ stage: 'Minors', sort: 'prospectScore' }))).toMatchObject({
+      prospectScoreContract: {
+        version: 'prospect-score/v1',
+        metric: 'prospectScore',
+        route: 'milb',
+        sort: 'prospectScore',
+        target: 'mlb_war_next_5_ge_5',
+        targetLabel: 'At least 5 total MLB WAR during 2026-2030',
+        windowStartSeason: 2026,
+        windowEndSeason: 2030,
+        featureCutoffAsOf: '2025-12-31T00:00:00.000Z',
+        rankField: 'playerMap.scores.outcome.rank',
+        compactRankField: 'assessment.scores.outcome.rank',
+        rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)',
+        activation: 'explicit_sort_opt_in',
+        legacyDefaultSort: 'careerIndex',
+        scale: 'ordinal_percentile',
+        calibratedProbability: false,
+        currentSeasonEvidenceBlended: false,
       },
     })
 

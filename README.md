@@ -5,14 +5,17 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 1. Which professional minor-league players have the strongest path to meaningful MLB impact.
 2. Which active major leaguers have the strongest remaining career path toward Hall of Fame-caliber statistics.
 
-The product leads with the **Oracle Career Index**, a fixed 0-100 summary of the
-magnitude in a player's modeled final-career WAR distribution. It is shown beside
+The prospect board leads with an individualized **Prospect Score** for meaningful
+five-year MLB impact; the MLB board leads with the **Oracle Career Index**, a
+fixed 0-100 summary of modeled final-career WAR magnitude. They are shown beside
 the player's exact stage standing and evidence depth so absolute career value,
 relative rarity, and forecast support never collapse into one claim. Career Index
 is not a probability, percentile, confidence score, expected WAR, or
 investment-return score. The legacy stage-percentile `oracleScore` remains in the
 partner feed only for migration compatibility. See the
 [Career Index contract](docs/CAREER_INDEX_V1.md).
+The prospect ranking contract and July 2026 age audit are in
+[Prospect Score v1](docs/PROSPECT_SCORE_V1.md).
 
 The repository ships a working React research cockpit backed by authorized
 Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
@@ -135,9 +138,9 @@ The post-hoc 36-month diagnostic selected 223 players with 110 arrivals, but the
 external calibration and population-shift gates failed, so no probability is
 presented as validated confidence.
 
-The Minors stage standing preserves the frozen 6,455-player prospect forecast
-universe. The separate probability-free `milb-impact-five-calendar-year-war-v1`
-rank and MLB arrival check remain supporting context and never alter Career Index.
+The Minors board now leads with the probability-free
+`milb-impact-five-calendar-year-war-v1` rank across its frozen 6,455-player
+universe. Career Index is labeled Ceiling if MLB and remains separate.
 The direct-impact target is
 at least 5 total MLB WAR in 2026-2030. The champion produced 8.10x top-decile lift
 across player-purged forward folds, but extreme-tail calibration failed, so the
@@ -207,6 +210,7 @@ filters, research outcome sorting, and pagination:
 
 ```text
 GET /api/players?view=map&stage=All&sort=careerIndex&page=1&limit=100
+GET /api/players?view=map&stage=Minors&sort=prospectScore&page=1&limit=100
 GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
 GET /api/players?stage=Minors&sort=stageStanding&page=1&limit=50
 GET /api/players?stage=MLB&sort=stageStanding&page=1&limit=50
@@ -214,7 +218,10 @@ GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=5
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
 ```
 
-Career Index is the primary, cross-route score. Stage standing is a separate
+Prospect Score is the primary Minors product ranking; Career Index remains the
+primary MLB and cross-route career-magnitude score. Existing API calls that omit
+`sort` keep the legacy Minors default of `careerIndex`; consumers opt into the
+new score and its machine contract with `sort=prospectScore`. Stage standing is a separate
 declared-model-cohort rank and is never a filtered-result row number. In stage-
 specific requests, the legacy `alphaOpportunity` sort remains an alias for
 `stageStanding`; unsupported competitive sorts with `stage=All` return HTTP 400.
@@ -225,7 +232,7 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Rankings:** Career Index, exact stage rank and tail band, real players,
+- **Rankings:** Prospect Score for MiLB, Career Index for MLB, exact ranks, real players,
   team/position/stage filters, and current evidence in a table-first workflow.
 - **Directory:** an identity and coverage view across stages. It defaults to
   player name, also supports age, and neither order is a baseball ranking.

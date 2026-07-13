@@ -29,7 +29,8 @@ role/position standard)`. For minor leaguers, it composes a separately evaluated
 different endpoints, so MLB and MiLB ranks are stage-specific. Directory defaults
 to player-name order, also supports an age sort, and never implies a combined rank.
 
-Player Map v2 presents three separate decision signals. Career Index measures the
+Player Map v4 presents separate decision signals. Prospect Score is the primary
+individualized MiLB impact rank. Career Index measures the
 absolute magnitude of the final-career WAR distribution on frozen career-value
 anchors. Stage standing reports rank and tail band inside the declared prospect
 or MLB universe. Evidence reports sample and coverage strength. The first two are
@@ -67,7 +68,11 @@ plausible-looking heuristic.
 ## Universal Player Map
 
 Every active player receives a Player Map profile even when no release-grade
-probability exists. Player Map v2 leads with three intentionally separate fields:
+probability exists. Player Map v4 leads with intentionally separate fields:
+
+- **Prospect Score:** the primary MiLB ordinal rank for at least 5 MLB WAR during
+  2026-2030 from features cut off at 2025-12-31. It is not a probability and is
+  not compared across routes.
 
 - **Career Index:** fixed-scale career-value magnitude from final WAR P50, P75,
   and P90. It is not a probability, percentile, or expected WAR.
@@ -156,8 +161,8 @@ rate. It is model alpha, not market alpha; price is explicitly shown as missing.
 
 The first release supports one complete loop:
 
-1. **Scan:** Open a stage ranking and compare Career Index, stage standing, and
-   evidence without conflating them.
+1. **Scan:** Open a stage ranking and compare Prospect Score for MiLB or Career
+   Index for MLB with ceiling and evidence without conflating them.
 2. **Narrow:** Search and filter by player type, organization, position, and minor-league level; every filter is reflected in the shareable URL.
 3. **Compare:** Move among players on the same filtered stage while keeping rank definitions, evidence scales, and uncertainty marks consistent.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
@@ -168,8 +173,8 @@ The current build uses real players and real source evidence; missing or unsuppo
 
 The decision surface separates prospects, Rookie Track, and MLB visually. The
 MiLB board pairs team, position, role, level, and search filters with a prospect
-landscape that plots Career Index against current data coverage. The player
-dossier keeps stage standing, age context, and current raw-trait evidence on separate
+landscape that plots Prospect Score against Ceiling if MLB. The player dossier
+keeps long-term rank, age context, and current raw-trait evidence on separate
 scales. For MLB players, recorded cumulative WAR is connected through the latest
 completed season, while future uncertainty is rendered only as a discrete
 terminal distribution. The product does not imply an unsupported annual path.
@@ -185,13 +190,13 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort by Career Index, stage standing, near-term impact, terminal outcome, or arrival horizon
+- Sort prospects by Prospect Score, Ceiling if MLB, long-term potential, arrival horizon, age, or name
 - Compare selection
 
 Required row fields:
 
 - Player, organization, position, age, and current level
-- Career Index, exact stage rank, tail band, and evidence state
+- Prospect Score and exact impact rank for MiLB; Career Index, long-term rank, and evidence state
 - Three-year MLB probability and expected debut window
 - Median and upper-quantile career outcome, explicitly marked conditional where needed
 - Forecast confidence/data quality

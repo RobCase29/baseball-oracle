@@ -6,7 +6,7 @@ Baseball Oracle keeps three pre-debut quantities separate:
 
 1. `P(MLB within 36 months)`: a frozen arrival estimate.
 2. `milb-alpha-signal-v1`: model arrival probability minus a broad historical path.
-3. `milb-impact-five-calendar-year-war-v1`: a probability-withheld rank for reaching at least 5 MLB WAR in the next five calendar seasons.
+3. `milb-impact-five-calendar-year-war-v1`: a probability-withheld rank for reaching at least 5 MLB WAR during the frozen 2026-2030 calendar window.
 
 None of these is Hall of Fame induction probability or expected investment return.
 Market price, liquidity, fees, and external consensus are outside the baseball model.

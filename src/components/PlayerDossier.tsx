@@ -33,7 +33,7 @@ import {
   bestCurrentScoutingGrade,
   currentMinorSlashLine,
 } from './currentMinorView'
-import { careerIndexFor, plainPlayerState, playerMapFor } from './playerMapView'
+import { careerIndexFor, plainPlayerState, playerMapFor, prospectScoreFor } from './playerMapView'
 import {
   formatRookieWar,
   formatRookieWarPercentile,
@@ -800,9 +800,11 @@ function SpecialHandlingPanel({ player, forecast }: { player: PlayerRecord; fore
             : mlbStage ? 'Current workload unavailable' : 'Current minor-league workload unavailable'}</small>
         </div>
         <div>
-          <span>CAREER INDEX</span>
+          <span>{mlbStage ? 'CAREER INDEX' : 'CEILING IF MLB'}</span>
           <strong>Withheld</strong>
-          <small>Excluded from score-based ranking</small>
+          <small>{mlbStage
+            ? 'Excluded from Career Index ranking'
+            : 'Career ceiling withheld; Prospect Score remains separate'}</small>
         </div>
       </div>
       {handling.notes.length > 1 ? (
@@ -815,9 +817,10 @@ function SpecialHandlingPanel({ player, forecast }: { player: PlayerRecord; fore
 }
 
 function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
+  const playerMap = playerMapFor(player)
   const stageValue = isMlbStage(player.stage)
     ? formatWar(forecast.finalJaws?.p50 ?? null)
-    : player.milbImpactRanking?.rank ? `#${player.milbImpactRanking.rank}` : '—'
+    : playerMap.scores.outcome.rank ? `#${playerMap.scores.outcome.rank}` : '—'
   const stageMetric = isMlbStage(player.stage)
     ? 'HALL BENCHMARK PROGRESS'
     : 'FIVE-YEAR IMPACT RANK'
@@ -831,7 +834,9 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
             {forecast.releaseEligible ? 'Tested career forecast' : 'Research career estimate'}
           </strong>
           <span>
-            Career Index is the primary career-magnitude reading. Stage standing and evidence remain separate, and the forecast is not a Hall of Fame election prediction.
+            {isMlbStage(player.stage)
+              ? 'Career Index is the primary career-magnitude reading. MLB outlook rank and evidence remain separate, and the forecast is not a Hall of Fame election prediction.'
+              : 'Prospect Score is the primary five-year impact rank. Ceiling if MLB and current evidence remain separate, and neither score is a probability.'}
           </span>
         </div>
       </div>
@@ -1058,6 +1063,7 @@ export function PlayerDossier({
   const forecast = player.careerForecast
   const playerMap = playerMapFor(player)
   const careerIndex = careerIndexFor(player, playerMap)
+  const prospectScore = playerMap.route === 'milb' ? prospectScoreFor(player, playerMap) : null
   const organization = player.organization ?? player.organizationCode ?? 'Organization unavailable'
   const externalIds = Object.entries(player.provenance.externalIds).filter(([, value]) => value !== null)
   const cohort = player.provenance.cohort
@@ -1069,7 +1075,11 @@ export function PlayerDossier({
           <div>
             <div className="identity-line">
               <span className="eyebrow">
-                {careerIndex.value === null
+                {prospectScore
+                  ? prospectScore.value === null
+                    ? 'PROSPECT SCORE PENDING'
+                    : `${prospectScore.rankLabel.toLocaleUpperCase()} · SCORE ${prospectScore.display}`
+                  : careerIndex.value === null
                   ? 'CAREER INDEX PENDING'
                   : careerIndex.rank === null
                     ? `CAREER INDEX ${careerIndex.display} · STAGE STANDING PENDING`
@@ -1226,7 +1236,9 @@ export function PlayerDossier({
         <span><Layers3 size={14} aria-hidden="true" /> {stageLabel(player.stage)}</span>
         <span><Info size={14} aria-hidden="true" /> Research use only</span>
         <span className="footer-score">
-          Career Index: {careerIndex.display} · {careerIndex.rankLabel}{careerIndex.topLabel ? ` · ${careerIndex.topLabel}` : ''}
+          {prospectScore
+            ? `Prospect Score: ${prospectScore.display} · ${prospectScore.rankLabel} · Ceiling if MLB: ${careerIndex.display}`
+            : `Career Index: ${careerIndex.display} · ${careerIndex.rankLabel}${careerIndex.topLabel ? ` · ${careerIndex.topLabel}` : ''}`}
         </span>
       </footer>
     </article>

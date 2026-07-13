@@ -3,7 +3,7 @@ import {
   type PlayerHandlingProfile,
 } from './playerHandling.js'
 
-export const PLAYER_MAP_VERSION = 'oracle-player-map/v3' as const
+export const PLAYER_MAP_VERSION = 'oracle-player-map/v4' as const
 export const CAREER_INDEX_VERSION = 'career-index-war-v2' as const
 export const FROZEN_PROSPECT_FORECAST_UNIVERSE = 6_455 as const
 export const CAREER_INDEX_DEFINITION = 'Fixed career-value index from final-career WAR P50, P75, and P90 mapped to versioned WAR anchors; prospect and Rookie Track values are conditional on MLB arrival, which is scored separately; not a probability, percentile, confidence score, or expected WAR' as const
@@ -638,16 +638,16 @@ function buildMinorMap(
   )
   const bestTrait = strengths[0] ?? traitRows.toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
   const evidenceState = traits?.opportunity.state ?? 'unavailable'
-  const dualConfirmed = arrival?.eligible === true && (careerValue ?? -1) >= 90
+  const dualConfirmed = arrival?.eligible === true && (impactValue ?? -1) >= 90
   const traitConfirmed = traits?.corroboration.passesAllDescriptiveGates === true
 
   const state: PlayerMapState = dualConfirmed && traitConfirmed
     ? 'conviction'
-    : (careerValue ?? -1) >= 90
+    : (impactValue ?? -1) >= 90
       ? 'discovery'
-      : (careerValue ?? -1) >= 75 || traitConfirmed
+      : (impactValue ?? -1) >= 75 || traitConfirmed
         ? 'monitor'
-        : careerValue !== null
+        : impactValue !== null || careerValue !== null
           ? 'mapped'
           : traitRows.length > 0
             ? 'evidence_building'
@@ -658,21 +658,21 @@ function buildMinorMap(
     signals.push({
       code: 'dual_confirmed',
       label: 'Dual-confirmed upside',
-      detail: 'The runway-adjusted career rank and separate MLB arrival gate both cleared.',
+      detail: 'The individualized Prospect Score and separate MLB arrival gate both cleared.',
     })
   }
-  if ((careerValue ?? -1) >= 90 && arrival?.eligible !== true) {
+  if ((impactValue ?? -1) >= 90 && arrival?.eligible !== true) {
     signals.push({
       code: 'ceiling_readiness_split',
       label: 'Ceiling / readiness split',
-      detail: 'The career ceiling route is top decile, while the separate arrival confirmation did not clear.',
+      detail: 'The Prospect Score is top decile, while the separate arrival confirmation did not clear.',
     })
   }
-  if ((careerValue ?? -1) >= 90 && evidenceState !== 'sufficient') {
+  if ((impactValue ?? -1) >= 90 && evidenceState !== 'sufficient') {
     signals.push({
       code: 'thin_data_upside',
       label: 'Thin-data upside',
-      detail: `The career rank is high while current evidence remains ${evidenceState}.`,
+      detail: `The Prospect Score is high while current evidence remains ${evidenceState}.`,
     })
   }
   if (traitConfirmed) {
@@ -690,9 +690,9 @@ function buildMinorMap(
     })
   }
 
-  const outlookText = careerValue === null
-    ? 'does not yet have a matched runway-adjusted career rank'
-    : `ranks ${rankDisplay(careerRank, careerUniverse)} on the runway-adjusted career ceiling route`
+  const outlookText = impactValue === null
+    ? 'does not yet have a supported Prospect Score'
+    : `has a Prospect Score of ${impactValue.toFixed(1)} (${rankDisplay(impact?.rank ?? null, impact?.universeRows ?? null)}) for 2026-2030 MLB impact`
   const runwayText = estimatedDebutAge === null
     ? ''
     : ` Projected MLB arrival age is ${estimatedDebutAge}, which shapes the remaining career runway.`
@@ -707,12 +707,12 @@ function buildMinorMap(
     version: PLAYER_MAP_VERSION,
     asOf: career?.asOf ?? impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
     route: 'milb',
-    mappingStatus: careerIndex.value !== null
+    mappingStatus: impactValue !== null || careerIndex.value !== null
       ? 'scored'
       : evidenceState === 'insufficient' || evidenceState === 'provisional'
         ? 'insufficient_sample'
         : 'coverage_gap',
-    claimStatus: careerIndex.value !== null ? 'research_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
+    claimStatus: impactValue !== null || careerIndex.value !== null ? 'research_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
     archetype: minorArchetype(strengths, risks),
@@ -737,7 +737,7 @@ function buildMinorMap(
     scores: {
       outcome: score({
         key: 'outcome',
-        label: 'Five-year MLB impact',
+        label: 'Prospect Score',
         value: impactValue,
         display: !impact
           ? 'Unmapped'
@@ -748,7 +748,7 @@ function buildMinorMap(
         status: impact && impactWorkloadSupported ? 'research' : 'withheld',
         basis: impact && !impactWorkloadSupported
           ? 'The completed-season model input did not clear its minimum workload gate'
-          : 'Separate frozen five-calendar-year MLB impact rank',
+          : `Individualized frozen rank for reaching at least 5 total MLB WAR during 2026-2030; age, level, role, and performance are modeled together${player.level === 'Rk' ? '; Rookie-level calibration remains thin and should be read with extra caution' : ''}`,
         target: impact?.target?.id ?? null,
         rank: impactWorkloadSupported ? impact?.rank ?? null : null,
         universe: impact?.universeRows ?? null,
@@ -823,6 +823,7 @@ function buildMinorMap(
       ...(careerRank === null ? ['Runway-adjusted career estimate'] : []),
       ...(!impact ? ['Frozen five-year impact rank'] : []),
       ...(impact && !impactWorkloadSupported ? ['Stable completed-season impact sample'] : []),
+      ...(player.level === 'Rk' ? ['Prospective Rookie-level calibration'] : []),
       ...(!arrival?.ageContext ? ['Historical role-level age context'] : []),
     ],
     nextEvidence: minorNextEvidence(player),

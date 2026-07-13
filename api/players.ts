@@ -67,6 +67,7 @@ const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
+  'prospectScore',
   'careerIndex',
   'stageStanding',
   'alphaOpportunity',
@@ -490,13 +491,18 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
     )
     if (!parsed.success) return null
 
-    const sort = parsed.data.sort ?? (parsed.data.stage === 'All' ? 'name' : 'careerIndex')
+    const sort = parsed.data.sort ?? (
+      parsed.data.stage === 'All'
+        ? 'name'
+        : 'careerIndex'
+    )
     if (
       parsed.data.stage === 'All' &&
       sort !== 'name' &&
       sort !== 'age' &&
       sort !== 'careerIndex'
     ) return null
+    if (sort === 'prospectScore' && parsed.data.stage !== 'Minors') return null
 
     return { ...parsed.data, sort }
   } catch {
@@ -1585,6 +1591,12 @@ function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
   )
 }
 
+function candidateProspectScoreRank(candidate: UnifiedBoardCandidate): number | null {
+  if (candidate.source !== 'minor' || candidate.stage !== 'pre_debut') return null
+  if (candidate.milbAlphaSignal?.gates.minimumRawWorkload === false) return null
+  return candidate.milbImpactRanking?.rank ?? null
+}
+
 function candidateCareerWar(candidate: UnifiedBoardCandidate) {
   return careerIndexWarQuantiles(
     candidatePlayerMapRoute(candidate),
@@ -1640,6 +1652,17 @@ export function sortUnifiedCandidates(
           candidateOutcomeForecast(right)?.hofCaliberProbability ?? null,
           'descending',
         ) ||
+        idTie
+      )
+    }
+    if (sort === 'prospectScore') {
+      return (
+        compareNullableNumber(
+          candidateProspectScoreRank(left),
+          candidateProspectScoreRank(right),
+          'ascending',
+        ) ||
+        compareNullableNumber(candidateCareerIndex(left), candidateCareerIndex(right), 'descending') ||
         idTie
       )
     }
@@ -1735,6 +1758,9 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
   const stageStandingField = compact
     ? 'assessment.stageStanding.rank'
     : 'playerMap.stageStanding.rank'
+  const prospectScoreRankField = compact
+    ? 'assessment.scores.outcome.rank'
+    : 'playerMap.scores.outcome.rank'
   const playerIdField = compact ? 'playerId' : 'id'
   const nameField = compact ? 'identity.name' : 'name'
   const routeField = compact ? 'assessment.route' : 'playerMap.route'
@@ -1751,6 +1777,7 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
   )
 
   const primaryBySort: Record<typeof appliedSort, Metric> = {
+    prospectScore: metric('prospect_score_rank', 'ascending', prospectScoreRankField),
     careerIndex: metric('career_index', 'descending', careerIndexField),
     stageStanding: metric('stage_standing', 'ascending', stageStandingField),
     hofProbability: metric(
@@ -1788,7 +1815,9 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
     metric('player_id', 'ascending', playerIdField),
     metric('player_map_route', 'ascending', routeField),
   ]
-  const tieBreakers = appliedSort === 'careerIndex'
+  const tieBreakers = appliedSort === 'prospectScore'
+    ? [metric('career_index', 'descending', careerIndexField), ...stableIdentityTies]
+    : appliedSort === 'careerIndex'
     ? query.stage === 'All'
       ? [metric('display_name', 'ascending', nameField), ...stableIdentityTies]
       : [metric('stage_standing', 'ascending', stageStandingField), ...stableIdentityTies]
@@ -2617,7 +2646,11 @@ function hasMappedOutcome(candidate: UnifiedBoardCandidate): boolean {
   return candidateCareerIndex(candidate) !== null
 }
 
-export function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
+export function playerMapResponseMeta(
+  candidates: UnifiedBoardCandidate[],
+  query?: Pick<PlayerQuery, 'stage' | 'sort'>,
+) {
+  const includeProspectScoreContract = query?.stage === 'Minors' && query.sort === 'prospectScore'
   return {
     playerMapVersion: PLAYER_MAP_VERSION,
     playerMapCoverage: candidates.length,
@@ -2640,6 +2673,41 @@ export function playerMapResponseMeta(candidates: UnifiedBoardCandidate[]) {
       legacyMetric: 'oracleScore' as const,
       legacyDeprecated: true as const,
     },
+    ...(includeProspectScoreContract ? {
+      prospectScoreContract: {
+        version: 'prospect-score/v1' as const,
+        metric: 'prospectScore' as const,
+        route: 'milb' as const,
+        sort: 'prospectScore' as const,
+        valueField: 'playerMap.scores.outcome.value' as const,
+        compactValueField: 'assessment.scores.outcome.value' as const,
+        rankField: 'playerMap.scores.outcome.rank' as const,
+        compactRankField: 'assessment.scores.outcome.rank' as const,
+        universeField: 'playerMap.scores.outcome.universe' as const,
+        compactUniverseField: 'assessment.scores.outcome.universe' as const,
+        targetField: 'playerMap.scores.outcome.target' as const,
+        compactTargetField: 'assessment.scores.outcome.target' as const,
+        statusField: 'playerMap.scores.outcome.status' as const,
+        compactStatusField: 'assessment.scores.outcome.status' as const,
+        asOfField: 'playerMap.scores.outcome.asOf' as const,
+        compactAsOfField: 'assessment.scores.outcome.asOf' as const,
+        scale: 'ordinal_percentile' as const,
+        target: 'mlb_war_next_5_ge_5' as const,
+        targetLabel: 'At least 5 total MLB WAR during 2026-2030' as const,
+        windowStartSeason: 2026 as const,
+        windowEndSeason: 2030 as const,
+        featureCutoffAsOf: researchMilbImpactSummary.frozenAsOf,
+        rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)' as const,
+        activation: 'explicit_sort_opt_in' as const,
+        legacyDefaultSort: 'careerIndex' as const,
+        higherIsBetter: true as const,
+        comparableWithinFrozenProspectUniverseOnly: true as const,
+        comparableAcrossRoutes: false as const,
+        calibratedProbability: false as const,
+        currentSeasonEvidenceBlended: false as const,
+        status: 'research_only' as const,
+      },
+    } : {}),
   }
 }
 
@@ -2677,6 +2745,9 @@ export function snapshotId(parts: {
         careerWar?.p90 ?? null,
         candidate.arrivalProbability36,
         candidate.milbAlphaSignal?.rank ?? null,
+        candidateProspectScoreRank(candidate),
+        candidate.milbImpactRanking?.rankPercentile ?? null,
+        candidate.milbImpactRanking?.modelVersion ?? null,
         candidate.careerForecast?.careerChapter?.exceptionalTrajectory?.probability ?? null,
         Object.entries(outcome?.lineage ?? {}).sort(([left], [right]) => left.localeCompare(right)),
       ]
@@ -2771,7 +2842,7 @@ function degradedStaticResponse(
         candidates: universe,
       }),
       snapshotScope: 'ranking_and_census' as const,
-      ...playerMapResponseMeta(candidates),
+      ...playerMapResponseMeta(candidates, query),
       ordering: responseOrdering(query),
       facets: buildPlayerFacets(universe, query),
       searchRecovery: searchRecovery(universe, candidates, query),
@@ -3338,7 +3409,7 @@ export default async function handler(
             candidates: currentUniverse,
           }),
           snapshotScope: 'ranking_and_census' as const,
-          ...playerMapResponseMeta(filtered),
+          ...playerMapResponseMeta(filtered, query),
           ordering: responseOrdering(query),
           facets,
           searchRecovery: searchRecovery(currentUniverse, filtered, query),

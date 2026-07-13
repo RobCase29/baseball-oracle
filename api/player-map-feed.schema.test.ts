@@ -153,7 +153,12 @@ describe('player-map-feed.v4 JSON Schema', () => {
   })
 
   it('rejects ranking semantic drift and incomplete migration markers', () => {
-    const drifted = structuredClone(representativeResponse()) as unknown as {
+    const response = representativeResponse()
+    response.meta.prospectScoreContract = playerMapResponseMeta([], {
+      stage: 'Minors',
+      sort: 'prospectScore',
+    }).prospectScoreContract
+    const drifted = structuredClone(response) as unknown as {
       items: Array<{
         assessment: {
           careerIndex: { scale: string }
@@ -163,6 +168,9 @@ describe('player-map-feed.v4 JSON Schema', () => {
       }>
       meta: {
         snapshotId: string
+        prospectScoreContract: {
+          calibratedProbability: boolean
+        }
         ordering: {
           requestedSort: string
           appliedSort: string
@@ -176,6 +184,7 @@ describe('player-map-feed.v4 JSON Schema', () => {
     drifted.items[0].assessment.stageStanding.cohort = 'current_mlb'
     delete drifted.items[0].assessment.oracleScore.deprecated
     drifted.meta.snapshotId = 'moving-target'
+    drifted.meta.prospectScoreContract.calibratedProbability = true
     drifted.meta.ordering.fieldExposed = false
     drifted.meta.ordering.requestedSort = 'alphaOpportunity'
     drifted.meta.ordering.appliedSort = 'name'
@@ -186,6 +195,7 @@ describe('player-map-feed.v4 JSON Schema', () => {
     expect(errors).toContain('/assessment/stageStanding/cohort')
     expect(errors).toContain('/assessment/oracleScore must have required property')
     expect(errors).toContain('/meta/snapshotId must match pattern')
+    expect(errors).toContain('/meta/prospectScoreContract/calibratedProbability must be equal to constant')
     expect(errors).toContain('/meta/ordering/field must be null')
     expect(errors).toContain('/meta/ordering/appliedSort must be equal to constant')
     expect(errors).toContain('/meta/ordering/legacyAliasUsed must be equal to constant')

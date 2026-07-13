@@ -806,6 +806,33 @@
   gap: 10px;
 }
 
+.opportunity-player-picker {
+  display: grid;
+  gap: 4px;
+  width: 244px;
+}
+
+.opportunity-player-picker span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.opportunity-player-picker select {
+  width: 100%;
+  height: 34px;
+  padding: 0 28px 0 9px;
+  overflow: hidden;
+  color: var(--ink);
+  font: 700 10px/1 var(--sans);
+  text-overflow: ellipsis;
+  background: #ffffff;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+}
+
 .chart-scale-control {
   display: grid;
   width: 168px;
@@ -1589,8 +1616,8 @@
 
 .career-index-badge {
   display: grid;
-  flex: 0 0 40px;
-  width: 40px;
+  flex: 0 0 46px;
+  width: 46px;
   height: 40px;
   place-content: center;
   text-align: center;
@@ -4341,6 +4368,10 @@
     align-items: flex-start;
   }
 
+  .opportunity-player-picker {
+    width: min(100%, 320px);
+  }
+
   .segmented-control.chart-scale-control {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4513,15 +4544,15 @@
   }
 
   .player-cell {
-    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr);
     gap: 7px;
     min-width: 0;
   }
 
   .player-cell .career-index-badge {
-    width: 34px;
+    width: 42px;
     height: 34px;
-    flex-basis: 34px;
+    flex-basis: 42px;
   }
 
   .player-cell .career-index-badge strong {

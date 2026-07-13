@@ -113,6 +113,67 @@ describe('Player Map', () => {
     expect(profile.scores.trajectory).toMatchObject({ value: 99.6 })
   })
 
+  it('keeps individualized young-player scores distinct when the conditional ceiling is tied', () => {
+    const sharedForecast: NonNullable<PlayerMapInput['careerForecast']> = {
+      asOf: '2025-12-31T00:00:00.000Z',
+      rank: 100,
+      hofCaliberProbability: 0.002,
+      confidenceScore: 0.25,
+      confidenceState: 'Low',
+      finalCareerWar: { p10: 0, p25: 0, p50: 0, p75: 0, p90: 0 },
+      finalCareerWarConditionalOnArrival: {
+        p10: -1.08,
+        p25: -0.27,
+        p50: 0.33,
+        p75: 10.17,
+        p90: 29.425,
+      },
+      decomposition: { estimatedDebutAge: 21 },
+    }
+    const players = [
+      ['Edward Florentino', 34, 99.49],
+      ['Dauri Fernandez', 163, 97.49],
+      ['Jorge Quintana', 329, 94.92],
+      ['Anderson Araujo', 2_280, 64.69],
+      ['Daniel Hernandez', 4_585, 28.97],
+    ] as const
+    const profiles = players.map(([name, rank, percentile]) => buildPlayerMap(makePlayer({
+      name,
+      age: 19,
+      level: 'A',
+      careerForecast: sharedForecast,
+      milbImpactRanking: {
+        rank,
+        rankPercentile: percentile,
+        universeRows: 6_455,
+        frozenAsOf: '2025-12-31T00:00:00.000Z',
+        target: { id: 'mlb_war_next_5_ge_5' },
+      },
+    })))
+
+    expect(new Set(profiles.map((profile) => profile.careerIndex.value))).toEqual(new Set([20.1]))
+    expect(profiles.map((profile) => profile.scores.outcome.value)).toEqual([
+      99.49,
+      97.49,
+      94.92,
+      64.69,
+      28.97,
+    ])
+    expect(profiles.map((profile) => profile.scores.outcome.rank)).toEqual([
+      34,
+      163,
+      329,
+      2_280,
+      4_585,
+    ])
+    expect(profiles[0]?.scores.outcome).toMatchObject({
+      label: 'Prospect Score',
+      target: 'mlb_war_next_5_ge_5',
+      universe: 6_455,
+      status: 'research',
+    })
+  })
+
   it('withholds both index and standing when a forecast is explicitly withheld', () => {
     const profile = buildPlayerMap(makePlayer({
       stage: 'early_mlb',
