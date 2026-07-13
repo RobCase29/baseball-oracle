@@ -1029,7 +1029,15 @@ export function buildPlayerFacets(
     if (!facet) continue
     const key = facet.value.toLocaleLowerCase('en-US')
     const existing = teamOptions.get(key)
-    teamOptions.set(key, existing ? { ...existing, count: existing.count + 1 } : { ...facet, count: 1 })
+    if (!existing) {
+      teamOptions.set(key, { ...facet, count: 1 })
+      continue
+    }
+
+    const label = existing.label === existing.value && facet.label !== facet.value
+      ? facet.label
+      : existing.label
+    teamOptions.set(key, { ...existing, label, count: existing.count + 1 })
   }
 
   const positionOptions = new Map<string, PlayerFacetOption>()

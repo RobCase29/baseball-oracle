@@ -445,6 +445,23 @@ describe('player board facets', () => {
       { value: 'C', label: 'C', count: 1 },
     ])
   })
+
+  it('prefers a full organization name over an earlier code-only facet label', () => {
+    const facets = buildPlayerFacets([
+      candidate('mil-code-only', {
+        organization: 'MIL',
+        organizationCode: 'MIL',
+      }),
+      candidate('mil-named', {
+        organization: 'Milwaukee Brewers',
+        organizationCode: 'MIL',
+      }),
+    ], query())
+
+    expect(facets.teams).toEqual([
+      { value: 'MIL', label: 'Milwaukee Brewers (MIL)', count: 2 },
+    ])
+  })
 })
 
 describe('source display quality', () => {
