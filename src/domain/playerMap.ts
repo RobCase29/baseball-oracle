@@ -1005,6 +1005,10 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     .slice(0, 3)
   const bestCurrentTrait = currentTraits
     .toSorted((left, right) => right.percentile - left.percentile)[0] ?? null
+  const observedCurrentMetric = player.metrics.find(
+    (metric) => metric.key === 'current-season-war' && metric.value !== null,
+  ) ?? player.metrics.find((metric) => metric.value !== null) ?? null
+  const hasCurrentPerformance = bestCurrentTrait !== null || observedCurrentMetric !== null
   const rank = forecastSupported ? forecast?.rank ?? null : null
   const universe = context.mlbUniverse ?? null
   const outlookValue = ordinalPercentile(rank, universe)
@@ -1056,7 +1060,9 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
     : `ranks ${rankDisplay(rank, universe)} on the current MLB terminal-outcome route`
   const paceText = paceValue === null ? '' : ` Historical WAR pace is ${percentileDisplay(paceValue)}.`
   const currentText = bestCurrentTrait === null
-    ? ''
+    ? observedCurrentMetric === null
+      ? ''
+      : ` ${observedCurrentMetric.label} is ${observedCurrentMetric.value}.`
     : ` ${bestCurrentTrait.label} is ${percentileDisplay(bestCurrentTrait.percentile)}.`
   const handlingSummary = handling.primary === null
     ? null
@@ -1135,12 +1141,16 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
         key: 'best_trait',
         label: 'Current-season performance',
         value: bestCurrentTrait?.percentile ?? null,
-        display: bestCurrentTrait ? percentileDisplay(bestCurrentTrait.percentile) : 'Not available',
+        display: bestCurrentTrait
+          ? percentileDisplay(bestCurrentTrait.percentile)
+          : observedCurrentMetric?.value ?? 'Not available',
         scale: 'descriptive_percentile',
-        status: bestCurrentTrait ? 'observed' : 'withheld',
+        status: hasCurrentPerformance ? 'observed' : 'withheld',
         basis: bestCurrentTrait
           ? `${bestCurrentTrait.label} (${bestCurrentTrait.value ?? 'value unavailable'})`
-          : 'Current role-relative performance is not available',
+          : observedCurrentMetric
+            ? `${observedCurrentMetric.label} (${observedCurrentMetric.value}) is observed; a supported role-relative percentile is unavailable`
+            : 'Current role-relative performance is not available',
         target: null,
         rank: null,
         universe: null,
@@ -1169,11 +1179,11 @@ function buildMlbMap(player: PlayerMapInput, context: PlayerMapBuildContext): Pl
           ? 'Validated two-way career target and forecast'
           : 'Supported terminal forecast',
       ] : []),
-      ...(!bestCurrentTrait ? ['Current MLB performance'] : []),
+      ...(!hasCurrentPerformance ? ['Current MLB performance'] : []),
     ],
     nextEvidence: [
       'Next completed-season Career Oracle snapshot',
-      ...(!bestCurrentTrait ? ['Current MLB performance and tracking ingestion'] : []),
+      ...(!hasCurrentPerformance ? ['Current MLB performance and tracking ingestion'] : []),
     ],
     marketIndependent: true,
     marketInputsIncluded: false,

@@ -105,6 +105,15 @@ describe('Player Map', () => {
       playerType: 'Two-way',
       stage: 'established_mlb',
       level: 'MLB',
+      metrics: [
+        {
+          key: 'current-season-war',
+          label: 'Current-season WAR',
+          value: '6.0 WAR',
+          percentile: null,
+          source: 'Baseball-Reference',
+        },
+      ],
       provenance: {
         retrievedAt: '2026-07-13T12:00:00.000Z',
         externalIds: { mlbam: '660271', bbref: 'ohtansh01' },
@@ -127,6 +136,14 @@ describe('Player Map', () => {
     })
     expect(profile.summary.toLocaleLowerCase()).toContain('two-way')
     expect(profile.missingEvidence).toContain('Validated two-way career target and forecast')
+    expect(profile.missingEvidence).not.toContain('Current MLB performance')
+    expect(profile.nextEvidence).not.toContain('Current MLB performance and tracking ingestion')
+    expect(profile.scores.bestTrait).toMatchObject({
+      display: '6.0 WAR',
+      status: 'observed',
+      value: null,
+    })
+    expect(profile.scores.bestTrait.basis).toContain('role-relative percentile is unavailable')
     expect(profile.careerIndex.value).toBeNull()
     expect(profile.stageStanding.rank).toBeNull()
   })

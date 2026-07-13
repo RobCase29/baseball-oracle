@@ -55,7 +55,9 @@ function supportingDisplay(
   if (score.key === 'evidence' && route === 'mlb') {
     return player.careerForecast?.confidenceState ?? 'Not available'
   }
-  if (score.key === 'best_trait' && score.value === null) return 'Stats not loaded'
+  if (score.key === 'best_trait' && score.value === null) {
+    return score.status === 'observed' ? score.display : 'Stats not loaded'
+  }
   return score.display
 }
 
@@ -78,7 +80,9 @@ function supportingBasis(score: PlayerMapScore, route: PlayerMapRoute): string {
       : 'Career value to date compared with similar players at the same age and experience.'
   }
   if (score.key === 'best_trait') {
-    return score.value === null ? 'Current tracking stats are not available in this profile.' : score.basis
+    return score.value === null && score.status !== 'observed'
+      ? 'Current tracking stats are not available in this profile.'
+      : score.basis
   }
   return route === 'milb'
     ? 'How many key areas of the current player profile are represented.'
