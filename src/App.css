@@ -2787,6 +2787,8 @@
   .board-table td:nth-child(1),
   .board-table th:nth-child(3),
   .board-table td:nth-child(3),
+  .board-table th:nth-child(4),
+  .board-table td:nth-child(4),
   .board-table th:nth-child(6),
   .board-table td:nth-child(6),
   .board-table th:nth-child(7),
@@ -2798,17 +2800,12 @@
 
   .oracle-board-table th:nth-child(2),
   .oracle-board-table td:nth-child(2) {
-    width: 50%;
-  }
-
-  .oracle-board-table th:nth-child(4),
-  .oracle-board-table td:nth-child(4) {
-    width: 17%;
+    width: 62%;
   }
 
   .oracle-board-table th:nth-child(5),
   .oracle-board-table td:nth-child(5) {
-    width: 23%;
+    width: 28%;
   }
 
   .oracle-board-table th:nth-child(9),
@@ -2867,6 +2864,12 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .board-table .alpha-cell small {
+    display: block;
+    margin-top: 4px;
+    max-width: 100%;
   }
 
   .row-chevron {
@@ -3349,6 +3352,13 @@
   .overview-strip > div:last-child,
   .data-status-grid > div:last-child {
     border-bottom: 0;
+  }
+
+  .overview-strip small {
+    overflow: visible;
+    line-height: 1.35;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .identity-line {
