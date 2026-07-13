@@ -106,6 +106,41 @@ export interface RelativeStandingSignal {
   warnings: string[]
 }
 
+export interface CareerChapter {
+  version: 'career-chapter-v1'
+  status: 'research' | 'withheld'
+  chapter: 'launch' | 'development' | 'prime_plateau' | 'decline' | 'late_career' | 'uncertain'
+  label: string
+  trajectoryState: 'breakout' | 'rising' | 'maintaining' | 'plateau' | 'declining' | 'uncertain'
+  roleTrack: 'hitter' | 'starter' | 'reliever'
+  basis: 'completed_seasons_only'
+  featureSeason: number
+  evidence: {
+    age: number
+    mlbSeasonNumber: number
+    seasonWar: number
+    recentWarPerSeason: number
+    priorWarPerSeason: number | null
+    warTrend: number | null
+    historicalPacePercentile: number | null
+  }
+  exceptionalTrajectory: {
+    probability: number
+    target: 'next_three_war_ge_global_training_q90'
+    thresholdWar: number
+    horizonSeasons: 3
+    referenceBaseRate: number
+    rankScope: 'current_mlb_absolute_trajectory'
+  } | null
+  support: {
+    referencePlayers: number
+    referenceLandmarks: number
+    expectedNextWarChange: number
+    continuationRate: number
+  }
+  warnings: string[]
+}
+
 export interface CareerForecast {
   publicationState: PublicationState
   releaseEligible: boolean
@@ -129,6 +164,7 @@ export interface CareerForecast {
   warnings: string[]
   lineage: CareerForecastLineage
   relativeSignal?: RelativeStandingSignal | null
+  careerChapter?: CareerChapter | null
 }
 
 export interface ObservedMetric {
@@ -216,7 +252,7 @@ export interface PlayerRecord {
   careerForecast: CareerForecast | null
 }
 
-export type SortKey = 'hofProbability' | 'peerSignal' | 'finalWar' | 'arrival36' | 'age' | 'name'
+export type SortKey = 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
 export interface BoardFilters {
   query: string
@@ -240,8 +276,8 @@ export interface PlayersResponseMeta {
   forecastStatus: 'not_published' | 'research_only' | 'published'
   source: string
   researchCoverage?: number | null
-  peerSignalCoverage?: number | null
-  relativeSignalVersion?: 'relative-standing-v1' | null
+  careerChapterCoverage?: number | null
+  careerChapterVersion?: 'career-chapter-v1' | null
   researchAsOf?: string | null
   releaseEligible?: boolean
   targetVersion?: string | null

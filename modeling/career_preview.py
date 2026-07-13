@@ -26,6 +26,10 @@ try:
         CareerTournament,
         quantile_dict,
     )
+    from modeling.career_chapters import (
+        CareerChapterModel,
+        withheld_career_chapter,
+    )
     from modeling.relative_standing import HistoricalPaceReference
 except ModuleNotFoundError:
     from career_data import (
@@ -45,6 +49,7 @@ except ModuleNotFoundError:
         CareerTournament,
         quantile_dict,
     )
+    from career_chapters import CareerChapterModel, withheld_career_chapter
     from relative_standing import HistoricalPaceReference
 
 
@@ -209,6 +214,7 @@ def build_mlb_preview_players(
     scoring_bundle: CareerScoringBundle,
     roster: pd.DataFrame | None = None,
     external_ids: Mapping[str, int] | None = None,
+    chapter_model: CareerChapterModel | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     seasons = normalize_player_seasons(player_seasons)
     scoring, contexts, current_season = _current_scoring_rows(
@@ -365,6 +371,40 @@ def build_mlb_preview_players(
             )
         )
         standard = standards_by_key[str(feature["standard_key"])]
+        historical_signal = pace_reference.relative_signal(
+            feature,
+            partial_feature=bool(context["featurePartial"]),
+        )
+        historical_pace = historical_signal.get("historicalPace")
+        historical_percentile = (
+            float(historical_pace["percentile"])
+            if isinstance(historical_pace, Mapping)
+            and historical_pace.get("percentile") is not None
+            else None
+        )
+        completed_feature_history = history.loc[
+            history["season"].le(int(feature["season"]))
+        ]
+        completed_war = completed_feature_history[_actual_value_column(role)].fillna(0.0)
+        prior_war_per_season = (
+            float(completed_war.iloc[:-1].tail(3).mean())
+            if len(completed_war) > 1
+            else None
+        )
+        career_chapter = (
+            chapter_model.forecast(
+                feature,
+                historical_pace_percentile=historical_percentile,
+                prior_war_per_season=prior_war_per_season,
+                partial_feature=bool(context["featurePartial"]),
+            )
+            if chapter_model is not None
+            else withheld_career_chapter(
+                feature,
+                historical_pace_percentile=historical_percentile,
+                prior_war_per_season=prior_war_per_season,
+            )
+        )
         forecast_as_of = (
             str(current.get("known_at") or roster_row.get("known_at"))
             if context["featurePartial"]
@@ -461,10 +501,8 @@ def build_mlb_preview_players(
                     )
                 ),
                 "warnings": sorted(set(warnings)),
-                "relativeSignal": pace_reference.relative_signal(
-                    feature,
-                    partial_feature=bool(context["featurePartial"]),
-                ),
+                "relativeSignal": historical_signal,
+                "careerChapter": career_chapter,
                 "decomposition": {
                     "arrivalProbability": 1.0,
                     "conditionalHofCaliberProbability": (
@@ -664,10 +702,17 @@ def build_preview_payload(
     arrival_preview: Mapping[str, Any] | None = None,
     roster: pd.DataFrame | None = None,
     external_ids: Mapping[str, int] | None = None,
+    chapter_model: CareerChapterModel | None = None,
     lineage: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     players, census = build_mlb_preview_players(
-        panel, player_seasons, standards, scoring_bundle, roster, external_ids
+        panel,
+        player_seasons,
+        standards,
+        scoring_bundle,
+        roster,
+        external_ids,
+        chapter_model,
     )
     bridge = build_prospect_bridge(panel)
     prospect_forecasts = build_prospect_forecasts(arrival_preview, bridge)

@@ -21,6 +21,7 @@ try:
         load_arrival_preview,
         validate_preview_sanity,
     )
+    from modeling.career_chapters import fit_career_chapter_model
     from modeling.career_tournament import fit_final_scoring_bundle, run_career_tournament
     from modeling.provenance import file_sha256, json_sha256, producer_metadata
 except ModuleNotFoundError:
@@ -32,6 +33,7 @@ except ModuleNotFoundError:
         read_records,
     )
     from career_preview import build_preview_payload, load_arrival_preview, validate_preview_sanity
+    from career_chapters import fit_career_chapter_model
     from career_tournament import fit_final_scoring_bundle, run_career_tournament
     from provenance import file_sha256, json_sha256, producer_metadata
 
@@ -236,6 +238,11 @@ def main() -> None:
             tournament.report.get("rookieRankingGate", {}).get("passed")
         ),
     )
+    chapter_model = fit_career_chapter_model(
+        model_panel,
+        latest_complete_season=as_of_year,
+    )
+    tournament.report["careerChapters"] = chapter_model.report
     arrival_preview = load_arrival_preview(args.arrival_preview)
     lineage = {
         "dataVersion": file_sha256(source_manifest_path),
@@ -291,6 +298,7 @@ def main() -> None:
         arrival_preview=arrival_preview,
         roster=roster,
         external_ids=external_ids,
+        chapter_model=chapter_model,
         lineage=lineage,
     )
     validate_preview_sanity(preview)
@@ -307,6 +315,7 @@ def main() -> None:
         {
             "tournament": tournament,
             "scoringBundle": scoring_bundle,
+            "chapterModel": chapter_model,
         },
         model_path,
         compress=3,
@@ -345,6 +354,7 @@ def main() -> None:
                 ROOT / "modeling/career_data.py",
                 ROOT / "modeling/career_tournament.py",
                 ROOT / "modeling/career_preview.py",
+                ROOT / "modeling/career_chapters.py",
                 ROOT / "modeling/relative_standing.py",
             ],
             {

@@ -9,6 +9,41 @@ import { ProspectBoard } from './ProspectBoard'
 
 afterEach(cleanup)
 
+const chapter: NonNullable<CareerForecast['careerChapter']> = {
+  version: 'career-chapter-v1',
+  status: 'research',
+  chapter: 'launch',
+  label: 'Launch / breakout',
+  trajectoryState: 'breakout',
+  roleTrack: 'hitter',
+  basis: 'completed_seasons_only',
+  featureSeason: 2025,
+  evidence: {
+    age: 22,
+    mlbSeasonNumber: 1,
+    seasonWar: 5.04,
+    recentWarPerSeason: 5.04,
+    priorWarPerSeason: null,
+    warTrend: null,
+    historicalPacePercentile: 99.1,
+  },
+  exceptionalTrajectory: {
+    probability: 0.43,
+    target: 'next_three_war_ge_global_training_q90',
+    thresholdWar: 10.5,
+    horizonSeasons: 3,
+    referenceBaseRate: 0.1,
+    rankScope: 'current_mlb_absolute_trajectory',
+  },
+  support: {
+    referencePlayers: 1240,
+    referenceLandmarks: 3800,
+    expectedNextWarChange: 0.8,
+    continuationRate: 0.67,
+  },
+  warnings: ['exceptional_trajectory_not_hall_probability'],
+}
+
 const forecast: CareerForecast = {
   publicationState: 'research',
   releaseEligible: false,
@@ -145,17 +180,17 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('heading', { name: 'Oracle Board' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minors' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'P(HOF caliber)' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Peer signal' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Career chapter' })).toBeInTheDocument()
     expect(screen.getByText('8.1%')).toBeInTheDocument()
-    expect(screen.getByText('P98.4')).toHaveAccessibleName(/rank 4 of 512/u)
-    expect(screen.getByText('#4 of 512 · arrival peers · descriptive')).toBeInTheDocument()
+    expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
+    expect(screen.getByText('P(MLB · 36m) 61.0%')).toBeInTheDocument()
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
-    expect(screen.queryByText('99th')).not.toBeInTheDocument()
+    expect(screen.queryByText('Peer signal')).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Rank by' }), {
-      target: { value: 'peerSignal' },
+      target: { value: 'nearTermImpact' },
     })
-    expect(onChangeFilters).toHaveBeenCalledWith({ sort: 'peerSignal' })
+    expect(onChangeFilters).toHaveBeenCalledWith({ sort: 'nearTermImpact' })
 
     fireEvent.click(screen.getByRole('button', { name: 'MLB' }))
     expect(onChangeFilters).toHaveBeenCalledWith({ stage: 'MLB', level: 'All' })
@@ -180,6 +215,33 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByRole('combobox', { name: 'Level' })).toBeDisabled()
     expect(screen.getByText('No matching MLB players')).toBeInTheDocument()
+  })
+
+  it('shows MLB chapter and absolute three-year impact without a current-census rank', () => {
+    render(
+      <ProspectBoard
+        players={[{
+          ...player,
+          stage: 'early_mlb',
+          level: 'MLB',
+          careerForecast: { ...forecast, careerChapter: chapter },
+        }]}
+        selectedId={player.id}
+        filters={{ query: '', stage: 'MLB', playerType: 'All', level: 'All', sort: 'nearTermImpact' }}
+        pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
+        loading={false}
+        error={null}
+        watchlist={new Set()}
+        onSelect={vi.fn()}
+        onToggleWatchlist={vi.fn()}
+        onChangeFilters={vi.fn()}
+        onChangePage={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
+    expect(screen.getByText('P(3Y impact) 43.0%')).toBeInTheDocument()
+    expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
   it('leads the dossier with unconditional career output and rank-independent confidence', () => {
@@ -217,15 +279,15 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText(/early-career peak-seven interval/u)).toBeInTheDocument()
     expect(screen.getByText(/retrospective development holdout/u)).toBeInTheDocument()
     expect(screen.getByText(/Prospective validation is not complete/u)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Ahead of the curve' })).toBeInTheDocument()
-    expect(screen.getByText('MLB ARRIVAL · 36M')).toBeInTheDocument()
-    expect(screen.getByText('P98.4')).toBeInTheDocument()
-    expect(screen.getByText('#4 of 512 · moderate reliability')).toBeInTheDocument()
-    expect(screen.getByText(/Arrival peer signal compares the 36-month MLB arrival estimate/u)).toBeInTheDocument()
-    expect(screen.getByText(/descriptive census comparison, not historical validation/u)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career chapter' })).toBeInTheDocument()
+    expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
+    expect(screen.getByText('P(MLB · 36M)')).toBeInTheDocument()
+    expect(screen.getByText(/MLB career chapter begins only after supported completed-season/u)).toBeInTheDocument()
+    expect(screen.queryByText('Ahead of the curve')).not.toBeInTheDocument()
+    expect(screen.queryByText('#4 of 512 · moderate reliability')).not.toBeInTheDocument()
   })
 
-  it('separates a current Hall-track peer comparison from completed-season historical pace', () => {
+  it('separates a learned career chapter and near-term event from the Hall outcome', () => {
     render(
       <PlayerDossier
         player={{
@@ -237,6 +299,7 @@ describe('unified Oracle Board shell', () => {
             ...forecast,
             hofCaliberProbability: 0.16,
             cumulativeWar: 8.67,
+            careerChapter: chapter,
             relativeSignal: {
               version: 'relative-standing-v1',
               kind: 'hall_track',
@@ -292,15 +355,18 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByText('HOF-CALIBER OUTCOME')).toBeInTheDocument()
-    expect(screen.getByText('16.0%')).toBeInTheDocument()
-    expect(screen.getByText('#2 of 63 · moderate reliability')).toBeInTheDocument()
-    expect(screen.getByText('1.2%')).toBeInTheDocument()
-    expect(screen.getByText('+14.8 pts vs median')).toBeInTheDocument()
-    expect(screen.getByText('COMPLETED-SEASON HISTORICAL PACE')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'HOF CALIBER: 16%' })).toBeInTheDocument()
+    expect(screen.getByText('Launch / breakout')).toBeInTheDocument()
+    expect(screen.getByText('breakout · hitter track')).toBeInTheDocument()
+    expect(screen.getByText('P(3Y IMPACT)')).toBeInTheDocument()
+    expect(screen.getByText('43.0%')).toBeInTheDocument()
+    expect(screen.getByText('HISTORICAL WAR PACE')).toBeInTheDocument()
     expect(screen.getByText('P99.1')).toBeInTheDocument()
-    expect(screen.getByText(/5\.0 career WAR through age 22 \(2025\)/u)).toBeInTheDocument()
-    expect(screen.getByText(/uses completed-season evidence/u)).toBeInTheDocument()
+    expect(screen.getByText('+0.8 WAR')).toBeInTheDocument()
+    expect(screen.getByText(/67\.0% continuation/u)).toBeInTheDocument()
+    expect(screen.getByText(/Through 2025 · age 22 · MLB season 1 · 5\.0 season WAR/u)).toBeInTheDocument()
+    expect(screen.getByText(/P\(3Y impact\) is not a Hall-caliber probability/u)).toBeInTheDocument()
+    expect(screen.queryByText('#2 of 63 · moderate reliability')).not.toBeInTheDocument()
   })
 
   it('distinguishes an unavailable live rank from a withheld forecast', () => {

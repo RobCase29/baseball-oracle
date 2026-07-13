@@ -98,6 +98,40 @@ function previewFixture() {
             },
             warnings: ['completed_season_historical_pace_only'],
           },
+          careerChapter: {
+            version: 'career-chapter-v1',
+            status: 'research',
+            chapter: 'launch',
+            label: 'Breakout',
+            trajectoryState: 'breakout',
+            roleTrack: 'hitter',
+            basis: 'completed_seasons_only',
+            featureSeason: 2025,
+            evidence: {
+              age: 22,
+              mlbSeasonNumber: 1,
+              seasonWar: 5.1,
+              recentWarPerSeason: 5.1,
+              priorWarPerSeason: null,
+              warTrend: null,
+              historicalPacePercentile: 99.2,
+            },
+            exceptionalTrajectory: {
+              probability: 0.42,
+              target: 'next_three_war_ge_global_training_q90',
+              thresholdWar: 7.5,
+              horizonSeasons: 3,
+              referenceBaseRate: 0.1,
+              rankScope: 'current_mlb_absolute_trajectory',
+            },
+            support: {
+              referencePlayers: 5000,
+              referenceLandmarks: 12000,
+              expectedNextWarChange: 0.3,
+              continuationRate: 0.84,
+            },
+            warnings: ['research_only'],
+          },
         },
       },
     ],
@@ -120,6 +154,11 @@ describe('Career Oracle preview loader', () => {
       percentile: 99.2,
       cohortSize: 850,
       playerValue: 5.1,
+    })
+    expect(parsed.items[0]?.careerForecast.careerChapter).toMatchObject({
+      chapter: 'launch',
+      label: 'Breakout',
+      exceptionalTrajectory: { probability: 0.42, thresholdWar: 7.5 },
     })
   })
 
@@ -187,12 +226,35 @@ describe('Career Oracle preview loader', () => {
     const invalidRelativeFixture = previewFixture()
     invalidRelativeFixture.players[0]!.forecast.relativeSignal.historicalPace.percentile = 101
     expect(() => parseCareerOraclePreview(invalidRelativeFixture)).toThrow(/between 0 and 100/u)
+
+    const invalidChapterFixture = previewFixture()
+    invalidChapterFixture.players[0]!.forecast.careerChapter.exceptionalTrajectory.probability = 42
+    expect(() => parseCareerOraclePreview(invalidChapterFixture)).toThrow(/between 0 and 1/u)
   })
 
   it('rejects prospect keys whose role disagrees with the forecast', () => {
     const fixture = previewFixture()
     fixture.prospectForecasts['765432:hitter'].playerType = 'pitcher'
     expect(() => parseCareerOraclePreview(fixture)).toThrow(/does not match its key/u)
+  })
+
+  it('accepts an unsupported withheld chapter without publishing impact', () => {
+    const fixture = previewFixture()
+    const chapter = fixture.players[0]!.forecast.careerChapter
+    chapter.status = 'withheld'
+    chapter.chapter = 'uncertain'
+    chapter.trajectoryState = 'uncertain'
+    chapter.exceptionalTrajectory = null as never
+    chapter.support.referencePlayers = 0
+    chapter.support.referenceLandmarks = 0
+
+    const parsed = parseCareerOraclePreview(fixture)
+
+    expect(parsed.items[0]?.careerForecast.careerChapter).toMatchObject({
+      status: 'withheld',
+      exceptionalTrajectory: null,
+      support: { referencePlayers: 0, referenceLandmarks: 0 },
+    })
   })
 
   it('returns null when the optional static artifact does not exist', () => {

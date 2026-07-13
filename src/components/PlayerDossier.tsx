@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import {
+  developmentChapterLabel,
   formatOrdinal,
   formatPercentileRank,
   formatProbability,
@@ -167,115 +168,99 @@ function ForecastDecomposition({ player, forecast }: { player: PlayerRecord; for
   )
 }
 
-function relativeWarningLabel(warning: string): string {
+function chapterWarningLabel(warning: string): string {
   const labels: Record<string, string> = {
-    current_census_descriptive_only:
-      'The current peer percentile is a descriptive census comparison, not historical validation.',
-    current_peer_not_historical_validation:
-      'The current peer percentile is a descriptive census comparison, not historical validation.',
-    current_census_peer_comparison_not_historical_validation:
-      'The current peer percentile is a descriptive census comparison, not historical validation.',
-    historical_pace_resolved_careers_only:
-      'Historical pace uses completed-season landmarks from resolved careers.',
-    resolved_career_reference_cohort:
-      'Historical pace uses completed-season landmarks from resolved careers.',
-    reference_seasons_precede_feature_season:
-      'Every historical reference season predates the player\'s completed feature season.',
-    descriptive_historical_pace_not_calibrated_probability:
-      'Historical WAR pace is a descriptive percentile, not a calibrated outcome probability.',
-    historical_pace_age_window_expanded_for_support:
-      'The historical comparison expanded its age window to reach the registered support floor.',
-    partial_season_feature_not_eligible_for_historical_pace:
-      'A partial-season-only feature state is not eligible for historical pace comparison.',
-    historical_pace_insufficient_support:
-      'The matched historical cohort did not meet the registered support floor.',
-    historical_pace_feature_state_invalid:
-      'The completed-season feature state is insufficient for a historical pace comparison.',
-    historical_pace_role_not_supported:
-      'Historical pace is not published for this player role.',
-    peer_cohort_age_window_expanded:
-      'The peer comparison expanded its age window to reach a usable cohort size.',
-    peer_cohort_level_fallback:
-      'The minor-league comparison expanded beyond the player\'s exact level to reach a usable cohort size.',
-    arrival_peer_signal_not_hall_probability:
-      'The minor-league peer signal compares MLB arrival estimates, not Hall-caliber probability.',
-    peer_cohort_support_insufficient:
-      'A supported current peer comparison is not available for this player.',
+    research_only: 'The career chapter and near-term impact probability are research outputs.',
+    completed_seasons_only: 'The chapter uses completed-season evidence only.',
+    exceptional_trajectory_not_hall_probability:
+      'The three-year impact probability is a near-term event estimate, not Hall-caliber probability.',
+    partial_season_excluded: 'The current partial season does not change the chapter evidence state.',
   }
   if (labels[warning]) return labels[warning]
   const normalized = warning.trim().replaceAll('_', ' ').replace(/^./u, (letter) => letter.toUpperCase())
   return /[.!?]$/u.test(normalized) ? normalized : `${normalized}.`
 }
 
-function RelativeStandingPanel({ forecast }: { forecast: CareerForecast }) {
-  const signal = forecast.relativeSignal
-  if (!signal) return null
-  const peer = signal.status === 'research' ? signal.currentPeer : null
-  const pace = signal.status === 'research' ? signal.historicalPace : null
-  const arrivalTrack = signal.kind === 'arrival_track'
+function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
+  const mlbStage = isMlbStage(player.stage)
+  const chapter = forecast.careerChapter
+  const researchChapter = chapter?.status === 'research' ? chapter : null
+  const pace = forecast.relativeSignal?.historicalPace ?? null
+  const exceptional = researchChapter?.exceptionalTrajectory ?? null
+  const chapterLabel = mlbStage
+    ? researchChapter?.label ?? (chapter ? 'Chapter withheld' : 'Chapter unavailable')
+    : developmentChapterLabel(player.level)
+  const nearTermProbability = mlbStage
+    ? exceptional?.probability ?? null
+    : forecast.arrivalProbability36
 
   return (
-    <section className="relative-standing" aria-labelledby="relative-standing-title">
+    <section className="career-chapter" aria-labelledby="career-chapter-title">
       <div className="section-heading-row">
         <div>
-          <span className="eyebrow">RELATIVE STANDING</span>
-          <h2 id="relative-standing-title">Ahead of the curve</h2>
+          <span className="eyebrow">COMPLETED-SEASON LIFECYCLE</span>
+          <h2 id="career-chapter-title">Career chapter</h2>
         </div>
         <TrendingUp size={18} aria-hidden="true" />
       </div>
 
-      {peer ? (
-        <div className="relative-standing-grid">
-          <div>
-            <span>{arrivalTrack ? 'MLB ARRIVAL · 36M' : 'HOF-CALIBER OUTCOME'}</span>
-            <strong>{formatProbability(peer.value)}</strong>
-            <small>Absolute model probability</small>
-          </div>
-          <div className="relative-standing-lead">
-            <span>CURRENT PEER SIGNAL</span>
-            <strong>{formatPercentileRank(peer.percentile)}</strong>
-            <small>#{peer.rank} of {peer.cohortSize} · {peer.reliability} reliability</small>
-          </div>
-          <div>
-            <span>PEER MEDIAN</span>
-            <strong>{formatProbability(peer.median)}</strong>
-            <small>{formatSigned(peer.difference * 100, ' pts')} vs median</small>
-          </div>
-          <div>
-            <span>MATCHED COHORT</span>
-            <strong className="relative-cohort-label">{peer.cohort.label}</strong>
-            <small>Current census · descriptive only</small>
-          </div>
+      <div className="career-chapter-grid">
+        <div className="career-chapter-lead">
+          <span>LIFECYCLE</span>
+          <strong>{chapterLabel}</strong>
+          <small>
+            {researchChapter
+              ? `${researchChapter.trajectoryState} · ${researchChapter.roleTrack} track`
+              : mlbStage ? 'Completed-season chapter not published' : `${player.level ?? 'Minor leagues'} · development context`}
+          </small>
         </div>
-      ) : (
-        <div className="relative-standing-empty">
-          <CircleDashed size={18} aria-hidden="true" />
-          <span>{signal.status === 'withheld' ? 'Peer comparison withheld.' : 'Current peer comparison unavailable.'}</span>
+        <div>
+          <span>{mlbStage ? 'P(3Y IMPACT)' : 'P(MLB · 36M)'}</span>
+          <strong>{formatProbability(nearTermProbability)}</strong>
+          <small>
+            {mlbStage && exceptional
+              ? `At least ${formatWar(exceptional.thresholdWar)} WAR · ${formatProbability(exceptional.referenceBaseRate)} reference rate`
+              : mlbStage ? 'Near-term event estimate withheld' : 'Frozen arrival endpoint'}
+          </small>
         </div>
-      )}
+        <div>
+          <span>HISTORICAL WAR PACE</span>
+          <strong>{pace ? formatPercentileRank(pace.percentile) : '—'}</strong>
+          <small>
+            {pace
+              ? `${formatWar(pace.playerValue)} WAR through age ${pace.featureAge} · ${pace.cohortSize.toLocaleString()} landmarks`
+              : 'Completed-season comparison unavailable'}
+          </small>
+        </div>
+        <div>
+          <span>LEARNED NEXT-WAR PATH</span>
+          <strong>{researchChapter ? formatSigned(researchChapter.support.expectedNextWarChange, ' WAR') : '—'}</strong>
+          <small>
+            {researchChapter
+              ? `${formatProbability(researchChapter.support.continuationRate)} continuation · ${researchChapter.support.referencePlayers.toLocaleString()} players`
+              : 'Available after a supported MLB chapter'}
+          </small>
+        </div>
+      </div>
 
-      {pace ? (
-        <div className="historical-pace">
-          <div>
-            <span>COMPLETED-SEASON HISTORICAL PACE</span>
-            <strong>{formatPercentileRank(pace.percentile)}</strong>
-          </div>
-          <p>
-            {formatWar(pace.playerValue)} career WAR through age {pace.featureAge} ({pace.featureSeason}),
-            compared with {pace.cohortSize.toLocaleString()} matched historical landmarks.
-          </p>
-          <small>{pace.cohort.label} · {pace.reliability} reliability</small>
-        </div>
-      ) : null}
+      <div className="chapter-evidence">
+        <strong>Evidence state</strong>
+        <span>
+          {researchChapter
+            ? `Through ${researchChapter.featureSeason} · age ${researchChapter.evidence.age} · MLB season ${researchChapter.evidence.mlbSeasonNumber} · ${formatWar(researchChapter.evidence.seasonWar)} season WAR`
+            : mlbStage ? 'Completed-season chapter evidence withheld' : `${player.level ?? 'Current minor-league level'} · arrival model context`}
+        </span>
+        {researchChapter ? <small>{researchChapter.support.referenceLandmarks.toLocaleString()} reference landmarks</small> : null}
+      </div>
 
-      <p className="relative-standing-note">
-        {arrivalTrack
-          ? 'Arrival peer signal compares the 36-month MLB arrival estimate with current minor-league peers. It does not replace the lower-bound career outcome.'
-          : 'Current-census peer standing is descriptive and does not change the absolute Hall-caliber probability. Historical pace, when shown, uses completed-season evidence.'}
+      <p className="career-chapter-note">
+        {mlbStage
+          ? 'Career chapter and three-year impact are learned research outputs from completed seasons. P(3Y impact) is not a Hall-caliber probability and does not change the absolute career outcome above.'
+          : 'Minor-league development context uses the separate 36-month MLB arrival estimate. An MLB career chapter begins only after supported completed-season major-league evidence.'}
       </p>
-      {signal.warnings.length > 0 ? (
-        <ul className="relative-standing-warnings">
-          {signal.warnings.map((warning) => <li key={warning}>{relativeWarningLabel(warning)}</li>)}
+      {chapter && chapter.warnings.length > 0 ? (
+        <ul className="career-chapter-warnings">
+          {chapter.warnings.map((warning) => <li key={warning}>{chapterWarningLabel(warning)}</li>)}
         </ul>
       ) : null}
     </section>
@@ -356,7 +341,7 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
         <p>Confidence describes evidence coverage and uncertainty. It is never multiplied into the ranking probability.</p>
       </section>
 
-      <RelativeStandingPanel forecast={forecast} />
+      <CareerChapterPanel player={player} forecast={forecast} />
 
       <ForecastDecomposition player={player} forecast={forecast} />
 

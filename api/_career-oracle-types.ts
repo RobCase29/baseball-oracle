@@ -108,6 +108,61 @@ export interface RelativeSignal {
   warnings: string[]
 }
 
+export type CareerChapterKey =
+  | 'launch'
+  | 'development'
+  | 'prime_plateau'
+  | 'decline'
+  | 'late_career'
+  | 'uncertain'
+
+export type CareerTrajectoryState =
+  | 'breakout'
+  | 'rising'
+  | 'maintaining'
+  | 'plateau'
+  | 'declining'
+  | 'uncertain'
+
+export type CareerRoleTrack = 'hitter' | 'starter' | 'reliever'
+
+export interface ExceptionalTrajectoryForecast {
+  probability: number
+  target: 'next_three_war_ge_global_training_q90'
+  thresholdWar: number
+  horizonSeasons: 3
+  referenceBaseRate: number
+  rankScope: 'current_mlb_absolute_trajectory'
+}
+
+export interface CareerChapter {
+  version: 'career-chapter-v1'
+  status: 'research' | 'withheld'
+  chapter: CareerChapterKey
+  label: string
+  trajectoryState: CareerTrajectoryState
+  roleTrack: CareerRoleTrack
+  basis: 'completed_seasons_only'
+  featureSeason: number
+  evidence: {
+    age: number
+    mlbSeasonNumber: number
+    seasonWar: number
+    recentWarPerSeason: number
+    priorWarPerSeason: number | null
+    warTrend: number | null
+    historicalPacePercentile: number | null
+  }
+  exceptionalTrajectory: ExceptionalTrajectoryForecast | null
+  support: {
+    referencePlayers: number
+    referenceLandmarks: number
+    expectedNextWarChange: number
+    continuationRate: number
+  }
+  warnings: string[]
+}
+
 export interface CareerForecast {
   publicationState: PublicationState
   releaseEligible: boolean
@@ -131,4 +186,5 @@ export interface CareerForecast {
   warnings: string[]
   lineage: CareerForecastLineage
   relativeSignal?: RelativeSignal | null
+  careerChapter?: CareerChapter | null
 }

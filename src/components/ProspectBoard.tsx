@@ -16,7 +16,7 @@ import type {
 } from '../domain/forecast'
 import {
   arrivalProbability36,
-  formatPercentileRank,
+  developmentChapterLabel,
   formatProbability,
   formatWar,
   isMlbStage,
@@ -144,7 +144,7 @@ export function ProspectBoard({
             }
           >
             <option value="hofProbability">P(HOF caliber)</option>
-            <option value="peerSignal">Peer signal</option>
+            <option value="nearTermImpact">Near-term impact</option>
             <option value="finalWar">Final WAR P50</option>
             <option value="arrival36">P(MLB) · 36m</option>
             <option value="age">Age</option>
@@ -178,7 +178,7 @@ export function ProspectBoard({
                 <th scope="col">Player / stage</th>
                 <th scope="col">Age / context</th>
                 <th scope="col">P(HOF caliber)</th>
-                <th scope="col">Peer signal</th>
+                <th scope="col">Career chapter</th>
                 <th scope="col">Final WAR</th>
                 <th scope="col">Arrival / actual</th>
                 <th scope="col">Confidence</th>
@@ -195,10 +195,17 @@ export function ProspectBoard({
                 const hofProbability = forecast?.hofCaliberProbability ?? null
                 const arrival36 = arrivalProbability36(player)
                 const mlbStage = isMlbStage(player.stage)
-                const relativeSignal = forecast?.relativeSignal
-                const currentPeer = relativeSignal?.status === 'research'
-                  ? relativeSignal.currentPeer
-                  : null
+                const chapter = forecast?.careerChapter
+                const chapterLabel = mlbStage
+                  ? chapter?.status === 'research'
+                    ? chapter.label
+                    : chapter ? 'Chapter withheld' : 'Chapter unavailable'
+                  : developmentChapterLabel(player.level)
+                const nearTermProbability = mlbStage
+                  ? chapter?.status === 'research'
+                    ? chapter.exceptionalTrajectory?.probability ?? null
+                    : null
+                  : arrival36
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -254,24 +261,14 @@ export function ProspectBoard({
                           : forecast?.publicationState ?? 'no career model'}
                       </small>
                     </td>
-                    <td className="peer-signal-cell">
-                      {currentPeer === null ? (
-                        <strong className="table-primary">—</strong>
-                      ) : (
-                        <strong
-                          className="table-primary peer-signal-value"
-                          aria-label={`${currentPeer.percentile.toFixed(1)} percentile, rank ${currentPeer.rank} of ${currentPeer.cohortSize} in ${currentPeer.cohort.label}`}
-                          title={currentPeer.cohort.label}
-                        >
-                          {formatPercentileRank(currentPeer.percentile)}
-                        </strong>
-                      )}
+                    <td className="chapter-cell">
+                      <strong className={`chapter-label chapter-label--${chapter?.chapter ?? 'development'}`}>
+                        {chapterLabel}
+                      </strong>
                       <small>
-                        {currentPeer === null
-                          ? relativeSignal?.status === 'withheld' ? 'comparison withheld' : 'not available'
-                          : relativeSignal?.kind === 'arrival_track'
-                            ? `#${currentPeer.rank} of ${currentPeer.cohortSize} · arrival peers · descriptive`
-                            : `#${currentPeer.rank} of ${currentPeer.cohortSize} · current census · descriptive`}
+                        {mlbStage
+                          ? `P(3Y impact) ${formatProbability(nearTermProbability)}`
+                          : `P(MLB · 36m) ${formatProbability(nearTermProbability)}`}
                       </small>
                     </td>
                     <td>

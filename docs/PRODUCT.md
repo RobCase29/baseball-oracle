@@ -83,11 +83,19 @@ voting rules, eligibility, era, and committee paths are separate mechanisms. The
 positive class is rare, so the research probability and ranking remain unreleased
 until a newly frozen forward cohort and all distribution/calibration gates pass.
 
+The career chapter is a separate lifecycle description learned for hitters,
+starters, and relievers from post-1961 unconditional next-season WAR change and
+continuation curves. Its near-term MLB endpoint is the calibrated probability
+that the next three completed seasons total at least the global training-fold
+90th-percentile WAR threshold. That probability is globally comparable and is
+not another Hall-caliber probability. Historical completed-season WAR pace is
+descriptive context only.
+
 ## First Shippable Workflow
 
 The first release supports one complete loop:
 
-1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, peer standing, terminal career WAR, or arrival probability.
+1. **Scan:** Open the Oracle Board and rank either the MiLB or MLB universe by Hall-caliber probability, absolute near-term impact, terminal career WAR, or arrival probability.
 2. **Narrow:** Search and filter by player type, organization, position, level, age, and forecast confidence.
 3. **Compare:** Select two to four players and compare outcome distributions, timelines, drivers, and data coverage on the same scale.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
@@ -107,7 +115,7 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort by MLB probability, ETA, ceiling, risk, or forecast change
+- Sort by MLB probability, near-term impact, terminal outcome, or arrival horizon
 - Compare selection
 - Add-to-watchlist action
 
@@ -117,7 +125,7 @@ Required row fields:
 - Three-year MLB probability and expected debut window
 - Median and upper-quantile career outcome, explicitly marked conditional where needed
 - Forecast confidence/data quality
-- Peer percentile, rank, cohort size, and a concise matched-cohort label
+- Career chapter and its explicitly named near-term endpoint where supported
 - Change since prior snapshot
 - Data freshness and as-of date
 
@@ -141,8 +149,9 @@ The overview should include:
 - Milestone probabilities and development archetype
 - Positive and negative drivers with direction and magnitude
 - Historical comparable cohort with stage-matched context
-- A separate current peer percentile and completed-season historical WAR-pace
-  percentile; neither is presented as another outcome probability
+- Learned career chapter, absolute three-season impact probability, and
+  completed-season historical WAR-pace percentile; each is labeled as a distinct
+  concept
 - Snapshot-to-snapshot change log
 
 Supporting tabs can group normalized minor/major statistics, development trends, comparable players, and model evidence. Raw statistics should always show league, park, age, and level context where available.
@@ -189,6 +198,10 @@ Use labels that make statistical meaning explicit:
 
 - `MLB probability`: calibrated probability of the defined outcome by a named horizon
 - `Career arc`: a distribution of future outcomes, not a point estimate
+- `Career chapter`: a learned lifecycle state, not an outcome probability
+- `Near-term impact`: calibrated probability that the next three completed MLB
+  seasons clear the frozen global training-fold WAR threshold
+- `Historical WAR pace`: completed-season descriptive context, not a forecast
 - `Forecast confidence`: High, Medium, or Low based on data sufficiency and stability
 - `Data quality`: coverage, freshness, missingness, and source reliability
 - `Ceiling`: a named upper quantile such as P90, not a best-case story

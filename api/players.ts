@@ -13,9 +13,6 @@ import {
 } from './_career-oracle-preview.js'
 import type {
   CareerForecast,
-  RelativeCurrentPeer,
-  RelativeSignal,
-  RelativeSignalReliability,
 } from './_career-oracle-types.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
@@ -23,7 +20,7 @@ const playerStages = ['All', 'Minors', 'MLB'] as const
 const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
   'hofProbability',
-  'peerSignal',
+  'nearTermImpact',
   'finalWar',
   'arrival36',
   'age',
@@ -548,183 +545,6 @@ function candidateKey(candidate: UnifiedBoardCandidate): string {
   return `${candidate.source}:${candidate.id}`
 }
 
-const minimumPeerCohortSize = 12
-
-function currentPeerValue(candidate: UnifiedBoardCandidate): {
-  basis: RelativeCurrentPeer['basis']
-  value: number
-} | null {
-  if (candidate.careerForecast === null || candidate.playerType === 'Two-way') return null
-  const value = candidate.source === 'mlb'
-    ? candidate.careerForecast.hofCaliberProbability
-    : candidate.arrivalProbability36
-  if (value === null || !Number.isFinite(value) || value < 0 || value > 1) return null
-  return {
-    basis: candidate.source === 'mlb'
-      ? 'hof_caliber_probability'
-      : 'arrival_probability_36',
-    value,
-  }
-}
-
-function peerReliability(cohortSize: number): RelativeSignalReliability {
-  if (cohortSize >= 50) return 'high'
-  if (cohortSize >= 25) return 'moderate'
-  return 'low'
-}
-
-function peerStageLabel(candidate: UnifiedBoardCandidate): string {
-  if (candidate.stage === 'pre_debut') return candidate.level ?? 'minor-league'
-  if (candidate.stage === 'early_mlb') return 'early MLB'
-  return 'established MLB'
-}
-
-function peerRoleLabel(candidate: UnifiedBoardCandidate): string {
-  return candidate.playerType === 'Hitter' ? 'hitters' : 'pitchers'
-}
-
-function median(values: number[]): number {
-  const ordered = values.toSorted((left, right) => left - right)
-  const middle = Math.floor(ordered.length / 2)
-  return ordered.length % 2 === 0
-    ? (ordered[middle - 1]! + ordered[middle]!) / 2
-    : ordered[middle]!
-}
-
-interface PeerCohortSelection {
-  items: UnifiedBoardCandidate[]
-  ageWindow: number
-  levelFallback: boolean
-}
-
-type PeerCohortIndex = Map<string, UnifiedBoardCandidate[]>
-
-function peerCohortKey(
-  candidate: UnifiedBoardCandidate,
-  level: string | null,
-): string {
-  return [candidate.source, candidate.stage, candidate.playerType, level ?? '*'].join(':')
-}
-
-function buildPeerCohortIndex(candidates: UnifiedBoardCandidate[]): PeerCohortIndex {
-  const index: PeerCohortIndex = new Map()
-  for (const candidate of candidates) {
-    if (candidate.age === null || currentPeerValue(candidate) === null) continue
-    const keys = candidate.source === 'minor'
-      ? [peerCohortKey(candidate, candidate.level), peerCohortKey(candidate, null)]
-      : [peerCohortKey(candidate, null)]
-    for (const key of new Set(keys)) {
-      const group = index.get(key) ?? []
-      group.push(candidate)
-      index.set(key, group)
-    }
-  }
-  return index
-}
-
-function selectPeerCohort(
-  index: PeerCohortIndex,
-  subject: UnifiedBoardCandidate,
-): PeerCohortSelection | null {
-  if (subject.age === null || currentPeerValue(subject) === null) return null
-  const attempts = subject.source === 'minor'
-    ? [
-        { ageWindow: 1, levelFallback: false },
-        { ageWindow: 2, levelFallback: false },
-        { ageWindow: 2, levelFallback: true },
-      ]
-    : [
-        { ageWindow: 1, levelFallback: false },
-        { ageWindow: 2, levelFallback: false },
-      ]
-
-  let largest: PeerCohortSelection | null = null
-  for (const attempt of attempts) {
-    const level = subject.source === 'minor' && !attempt.levelFallback ? subject.level : null
-    const items = (index.get(peerCohortKey(subject, level)) ?? []).filter(
-      (candidate) => candidate.age !== null &&
-        Math.abs(candidate.age - subject.age!) <= attempt.ageWindow,
-    )
-    const selection = { items, ...attempt }
-    if (largest === null || items.length > largest.items.length) largest = selection
-    if (items.length >= minimumPeerCohortSize) return selection
-  }
-  return largest && largest.items.length >= minimumPeerCohortSize ? largest : null
-}
-
-function currentPeerStanding(
-  index: PeerCohortIndex,
-  subject: UnifiedBoardCandidate,
-): { peer: RelativeCurrentPeer; warnings: string[] } | null {
-  const selection = selectPeerCohort(index, subject)
-  const subjectValue = currentPeerValue(subject)
-  if (!selection || !subjectValue || subject.age === null) return null
-  const values = selection.items.map((candidate) => currentPeerValue(candidate)!.value)
-  const greater = values.filter((value) => value > subjectValue.value).length
-  const equal = values.filter((value) => value === subjectValue.value).length
-  const percentile = ((values.length - greater - equal + equal * 0.5) / values.length) * 100
-  const cohortMedian = median(values)
-  const ageMin = subject.age - selection.ageWindow
-  const ageMax = subject.age + selection.ageWindow
-  const warnings = ['current_census_peer_comparison_not_historical_validation']
-  if (selection.ageWindow > 1) warnings.push('peer_cohort_age_window_expanded')
-  if (selection.levelFallback) warnings.push('peer_cohort_level_fallback')
-  if (subject.source === 'minor') warnings.push('arrival_peer_signal_not_hall_probability')
-  return {
-    peer: {
-      percentile: Math.round(percentile * 10) / 10,
-      rank: greater + 1,
-      cohortSize: values.length,
-      value: subjectValue.value,
-      median: Math.round(cohortMedian * 100_000_000) / 100_000_000,
-      difference: Math.round((subjectValue.value - cohortMedian) * 100_000_000) / 100_000_000,
-      basis: subjectValue.basis,
-      reliability: peerReliability(values.length),
-      cohort: {
-        scope: 'current_census',
-        label: `Ages ${ageMin}–${ageMax} · ${peerStageLabel(subject)} ${peerRoleLabel(subject)}`,
-        playerType: subject.playerType,
-        stage: subject.stage,
-        ageMin,
-        ageMax,
-        ageWindow: selection.ageWindow,
-        level: subject.source === 'minor' && !selection.levelFallback ? subject.level : null,
-      },
-    },
-    warnings,
-  }
-}
-
-export function assignRelativeSignals(
-  candidates: UnifiedBoardCandidate[],
-): UnifiedBoardCandidate[] {
-  const index = buildPeerCohortIndex(candidates)
-  return candidates.map((candidate) => {
-    if (candidate.careerForecast === null) return candidate
-    const standing = currentPeerStanding(index, candidate)
-    const existing = candidate.careerForecast.relativeSignal
-    const historicalPace = existing?.historicalPace ?? null
-    const signal: RelativeSignal = {
-      version: 'relative-standing-v1',
-      kind: candidate.source === 'mlb' ? 'hall_track' : 'arrival_track',
-      status: standing || historicalPace ? 'research' : 'withheld',
-      currentPeer: standing?.peer ?? null,
-      historicalPace,
-      warnings: [...new Set([
-        ...(existing?.warnings ?? []),
-        ...(standing?.warnings ?? ['peer_cohort_support_insufficient']),
-      ])].sort(),
-    }
-    return {
-      ...candidate,
-      careerForecast: {
-        ...candidate.careerForecast,
-        relativeSignal: signal,
-      },
-    }
-  })
-}
-
 export function sortUnifiedCandidates(
   items: UnifiedBoardCandidate[],
   sort: PlayerSort,
@@ -741,11 +561,19 @@ export function sortUnifiedCandidates(
         idTie
       )
     }
-    if (sort === 'peerSignal') {
+    if (sort === 'nearTermImpact') {
       return (
         compareNullableNumber(
-          left.careerForecast?.relativeSignal?.currentPeer?.percentile ?? null,
-          right.careerForecast?.relativeSignal?.currentPeer?.percentile ?? null,
+          left.source === 'mlb'
+            ? left.careerForecast?.careerChapter?.status === 'research'
+              ? left.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
+              : null
+            : left.arrivalProbability36,
+          right.source === 'mlb'
+            ? right.careerForecast?.careerChapter?.status === 'research'
+              ? right.careerForecast.careerChapter.exceptionalTrajectory?.probability ?? null
+              : null
+            : right.arrivalProbability36,
           'descending',
         ) ||
         compareNullableNumber(
@@ -902,7 +730,7 @@ export function mergeCurrentUniverse(
     (candidate) => candidate.mlbamId === null || !currentMlbamIds.has(candidate.mlbamId),
   )
   return {
-    items: assignRelativeSignals(assignStageRanks([...mlb, ...canonicalMinors])),
+    items: assignStageRanks([...mlb, ...canonicalMinors]),
     canonicalMinors,
     crossStageDuplicatesRemoved: minors.length - canonicalMinors.length,
   }
@@ -1003,7 +831,7 @@ function degradedStaticResponse(
   reason: string,
 ): void {
   const candidates = sortBoardCandidates(
-    assignRelativeSignals(assignStageRanks(mlbCandidates(preview)))
+    assignStageRanks(mlbCandidates(preview))
       .filter((candidate) => matchesQuery(candidate, query)),
     query,
   )
@@ -1027,10 +855,10 @@ function degradedStaticResponse(
       researchCoverage: candidates.filter(
         (candidate) => candidate.careerForecast?.hofCaliberProbability != null,
       ).length,
-      peerSignalCoverage: candidates.filter(
-        (candidate) => candidate.careerForecast?.relativeSignal?.currentPeer != null,
+      careerChapterCoverage: candidates.filter(
+        (candidate) => candidate.careerForecast?.careerChapter?.status === 'research',
       ).length,
-      relativeSignalVersion: 'relative-standing-v1',
+      careerChapterVersion: 'career-chapter-v1',
       researchAsOf: preview.asOf,
       releaseEligible: preview.releaseEligible,
       targetVersion: preview.targetVersion,
@@ -1229,10 +1057,10 @@ export default async function handler(
           researchCoverage: currentUniverse.filter(
             (candidate) => candidate.careerForecast?.hofCaliberProbability != null,
           ).length,
-          peerSignalCoverage: currentUniverse.filter(
-            (candidate) => candidate.careerForecast?.relativeSignal?.currentPeer != null,
+          careerChapterCoverage: currentUniverse.filter(
+            (candidate) => candidate.careerForecast?.careerChapter?.status === 'research',
           ).length,
-          relativeSignalVersion: 'relative-standing-v1',
+          careerChapterVersion: careerPreview ? 'career-chapter-v1' : null,
           researchAsOf: careerPreview?.asOf ?? researchPreviewSummary.asOf,
           releaseEligible: careerPreview?.releaseEligible ?? false,
           targetVersion: careerPreview?.targetVersion ?? null,

@@ -49,11 +49,19 @@ export function arrivalProbability36(player: PlayerRecord): number | null {
     ?.probability ?? null
 }
 
-export function peerSignalPercentile(player: PlayerRecord): number | null {
-  const signal = player.careerForecast?.relativeSignal
-  if (!signal || signal.status === 'withheld') return null
-  const percentile = signal.currentPeer?.percentile ?? null
-  return percentile !== null && Number.isFinite(percentile) ? percentile : null
+export function developmentChapterLabel(level: string | null): string {
+  if (level === 'AAA' || level === 'AA') return 'Upper-minors development'
+  if (level === 'A+' || level === 'A') return 'Full-season development'
+  if (level === 'Rk') return 'Rookie-ball development'
+  return 'Minor-league development'
+}
+
+export function nearTermImpactProbability(player: PlayerRecord): number | null {
+  if (!isMlbStage(player.stage)) return arrivalProbability36(player)
+  const chapter = player.careerForecast?.careerChapter
+  if (!chapter || chapter.status === 'withheld') return null
+  const probability = chapter.exceptionalTrajectory?.probability ?? null
+  return probability !== null && Number.isFinite(probability) ? probability : null
 }
 
 export function filterAndSortPlayers(
@@ -89,11 +97,11 @@ export function filterAndSortPlayers(
           left.id.localeCompare(right.id)
         )
       }
-      if (filters.sort === 'peerSignal') {
+      if (filters.sort === 'nearTermImpact') {
         return (
           compareNullableNumber(
-            peerSignalPercentile(left),
-            peerSignalPercentile(right),
+            nearTermImpactProbability(left),
+            nearTermImpactProbability(right),
             'descending',
           ) ||
           compareNullableNumber(

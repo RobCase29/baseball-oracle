@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BoardFilters, CareerForecast, PlayerRecord } from '../domain/forecast'
 import {
   filterAndSortPlayers,
+  developmentChapterLabel,
   formatOrdinal,
   formatPercentileRank,
   formatProbability,
@@ -187,62 +188,92 @@ describe('Oracle Board utilities', () => {
     ])
   })
 
-  it('sorts the separate peer signal without changing the outcome rank', () => {
-    const relativeSignal = (percentile: number | null) => ({
-      version: 'relative-standing-v1' as const,
-      kind: 'hall_track' as const,
-      status: percentile === null ? 'withheld' as const : 'research' as const,
-      currentPeer: percentile === null ? null : {
-        percentile,
-        rank: percentile > 90 ? 2 : 40,
-        cohortSize: 80,
-        value: 0.08,
-        median: 0.02,
-        difference: 0.06,
-        basis: 'hof_caliber_probability' as const,
-        reliability: 'moderate' as const,
-        cohort: {
-          scope: 'current_census' as const,
-          label: 'Ages 22–24 early MLB hitters',
-          playerType: 'Hitter' as const,
-          stage: 'early_mlb' as const,
-          ageMin: 22,
-          ageMax: 24,
-          ageWindow: 1,
-          level: 'MLB',
-        },
+  it('sorts the separate near-term endpoint without changing the Hall outcome rank', () => {
+    const careerChapter = (probability: number | null) => ({
+      version: 'career-chapter-v1' as const,
+      status: probability === null ? 'withheld' as const : 'research' as const,
+      chapter: 'launch' as const,
+      label: 'Launch / breakout',
+      trajectoryState: 'breakout' as const,
+      roleTrack: 'hitter' as const,
+      basis: 'completed_seasons_only' as const,
+      featureSeason: 2025,
+      evidence: {
+        age: 22,
+        mlbSeasonNumber: 1,
+        seasonWar: 5,
+        recentWarPerSeason: 5,
+        priorWarPerSeason: null,
+        warTrend: null,
+        historicalPacePercentile: 99,
       },
-      historicalPace: null,
+      exceptionalTrajectory: probability === null ? null : {
+        probability,
+        target: 'next_three_war_ge_global_training_q90' as const,
+        thresholdWar: 10,
+        horizonSeasons: 3 as const,
+        referenceBaseRate: 0.1,
+        rankScope: 'current_mlb_absolute_trajectory' as const,
+      },
+      support: {
+        referencePlayers: 500,
+        referenceLandmarks: 900,
+        expectedNextWarChange: 0.5,
+        continuationRate: 0.7,
+      },
       warnings: [],
     })
     const players = [
       makePlayer({
-        id: 'higher-outcome-lower-peer',
+        id: 'higher-outcome-lower-impact',
         stage: 'early_mlb',
         careerForecast: makeForecast({
           hofCaliberProbability: 0.4,
-          relativeSignal: relativeSignal(60),
+          careerChapter: careerChapter(0.2),
         }),
       }),
       makePlayer({
-        id: 'lower-outcome-higher-peer',
+        id: 'lower-outcome-higher-impact',
         stage: 'early_mlb',
         careerForecast: makeForecast({
-          hofCaliberProbability: 0.08,
-          relativeSignal: relativeSignal(98),
+          hofCaliberProbability: 0.09,
+          careerChapter: careerChapter(0.8),
         }),
       }),
       makePlayer({
-        id: 'peer-withheld',
+        id: 'impact-withheld',
         stage: 'early_mlb',
-        careerForecast: makeForecast({ relativeSignal: relativeSignal(null) }),
+        careerForecast: makeForecast({ careerChapter: careerChapter(null) }),
       }),
     ]
 
-    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'peerSignal' }).map((player) => player.id))
-      .toEqual(['lower-outcome-higher-peer', 'higher-outcome-lower-peer', 'peer-withheld'])
+    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'nearTermImpact' }).map((player) => player.id))
+      .toEqual(['lower-outcome-higher-impact', 'higher-outcome-lower-impact', 'impact-withheld'])
     expect(filterAndSortPlayers(players, baseFilters).map((player) => player.id))
-      .toEqual(['higher-outcome-lower-peer', 'lower-outcome-higher-peer', 'peer-withheld'])
+      .toEqual(['higher-outcome-lower-impact', 'lower-outcome-higher-impact', 'impact-withheld'])
+  })
+
+  it('uses the arrival endpoint as the minor-league near-term impact sort', () => {
+    const estimate = (probability: number) => ({
+      status: 'research_only' as const,
+      releaseEligible: false as const,
+      asOf: '2025-12-31T00:00:00.000Z',
+      modelVersion: 'locked-model',
+      snapshotId: `snapshot-${probability}`,
+      coldStart: false,
+      priorLevel: 'AA',
+      modelAge: 21,
+      currentStatusVerified: false as const,
+      horizons: [{ months: 36, probability, baselineProbability: 0.2, externallyValidated: true }],
+      lineage: { predictionManifestSha256: 'a', evaluationReportSha256: 'b' },
+    })
+    const players = [
+      makePlayer({ id: 'lower-arrival', researchEstimate: estimate(0.2) }),
+      makePlayer({ id: 'higher-arrival', researchEstimate: estimate(0.8) }),
+    ]
+
+    expect(filterAndSortPlayers(players, { ...baseFilters, sort: 'nearTermImpact' }).map((player) => player.id))
+      .toEqual(['higher-arrival', 'lower-arrival'])
   })
 
   it('sorts frozen arrival estimates while keeping unmatched profiles last', () => {
@@ -280,6 +311,8 @@ describe('Oracle Board utilities', () => {
     expect(formatProbability(0.123)).toBe('12.3%')
     expect(formatProbability(84)).toBe('—')
     expect(formatWar(24.23)).toBe('24.2')
+    expect(developmentChapterLabel('AA')).toBe('Upper-minors development')
+    expect(developmentChapterLabel('Rk')).toBe('Rookie-ball development')
     expect(stageLabel('established_mlb')).toBe('Established MLB')
   })
 

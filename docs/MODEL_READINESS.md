@@ -293,23 +293,38 @@ not eventual arrival probability and not direct MiLB-to-Hall training. According
 the product assigns stage-specific MLB and MiLB ranks and excludes Prospect
 Savant's composite from the default model and sort.
 
-## Relative Standing Research Layer
+## Career Chapter Research Layer
 
-The deployed `relative-standing-v1` layer is intentionally separate from the
-outcome probabilities. MLB current-peer standing compares the research
-Hall-caliber estimate within role, early/established stage, and an adaptive age
-band. Historical MLB pace compares completed-season career WAR at the forecast
-landmark against resolved players in the same role, experience band, and
-adaptive age cohort. The historical reference never reads the current 2026
-partial-season value.
+The deployed `career-chapter-v1` layer is intentionally separate from the
+terminal outcome and statistical Hall-caliber models. It learns hitter, starter,
+and reliever lifecycle curves from post-1961 completed-season landmarks. The
+curves combine unconditional next-season WAR change, with a non-return season
+recorded as zero, and continuation probability. This design preserves attrition
+instead of estimating development only among survivors. Learned
+prime/decline/late boundaries are ages 28/33/38 for hitters, 26/33/37 for
+starters, and 30/34/38 for relievers.
 
-The minor-league standing compares the 36-month arrival endpoint within current
-role, level, and age peers. It does not use Prospect Savant's composite and does
-not reinterpret the debut-age Hall bridge as a trained minor-league career
-model. Current-census percentiles are descriptive. A release claim still
-requires player-disjoint rolling prediction-origin forecasts, an out-of-fold
-reference distribution, censoring-aware outcomes, and prospective top-cohort
-precision and lift.
+The accompanying MLB endpoint is the calibrated probability that the next three
+completed MLB seasons total at least 4.68 WAR, the global player-weighted
+training-fold 90th-percentile threshold. The fixed absolute threshold supports
+comparison across ages, roles, and career chapters. It is not a Hall-caliber
+probability and does not imply that the terminal career model simulates annual
+WAR paths.
+
+The prediction-origin split trains through 2011, calibrates with sigmoid scaling
+on 2012-2017, and tests 2018-2022. The calibrated test contains 7,076 landmarks
+and 932 events with a player-weighted event rate of 9.745%. ROC AUC is 0.87516,
+average precision is 0.54871, Brier score is 0.06145, and log loss is 0.21669.
+Current scoring publishes 1,134 research chapters and withholds 157 unsupported
+states. These are retrospective research diagnostics; release still requires a
+newly frozen prospective prediction-origin cohort and cohort calibration review.
+
+Historical MLB pace remains a completed-season descriptive percentile against
+resolved landmarks. The historical reference never reads the current 2026
+partial-season value and never modifies the chapter or an outcome probability.
+For minor leaguers, `nearTermImpact` uses the separately defined 36-month arrival
+endpoint; it does not use Prospect Savant's composite or reinterpret the
+debut-age Hall bridge as a trained minor-league career model.
 
 ## Trouble With The Curve Audit
 

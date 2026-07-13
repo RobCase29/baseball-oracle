@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import type {
+  CareerChapter,
   CareerForecast,
   CareerForecastArcPoint,
   CareerForecastDecomposition,
@@ -89,6 +90,14 @@ function positiveInteger(value: unknown, label: string): number {
   const parsed = requiredFiniteNumber(value, label)
   if (!Number.isInteger(parsed) || parsed < 1) {
     throw new Error(`${label} must be a positive integer`)
+  }
+  return parsed
+}
+
+function nonNegativeInteger(value: unknown, label: string): number {
+  const parsed = requiredFiniteNumber(value, label)
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${label} must be a non-negative integer`)
   }
   return parsed
 }
@@ -476,6 +485,144 @@ function relativeSignal(value: unknown, label: string): RelativeSignal | null {
   }
 }
 
+function careerChapter(value: unknown, label: string): CareerChapter | null {
+  if (value === null || value === undefined) return null
+  const input = record(value, label)
+  const evidence = record(input.evidence, `${label}.evidence`)
+  const support = record(input.support, `${label}.support`)
+  const exceptional = input.exceptionalTrajectory === null || input.exceptionalTrajectory === undefined
+    ? null
+    : (() => {
+        const trajectory = record(
+          input.exceptionalTrajectory,
+          `${label}.exceptionalTrajectory`,
+        )
+        const horizonSeasons = positiveInteger(
+          trajectory.horizonSeasons,
+          `${label}.exceptionalTrajectory.horizonSeasons`,
+        )
+        if (horizonSeasons !== 3) {
+          throw new Error(`${label}.exceptionalTrajectory.horizonSeasons must be three`)
+        }
+        return {
+          probability: requiredProbability(
+            trajectory.probability,
+            `${label}.exceptionalTrajectory.probability`,
+          ),
+          target: oneOf(
+            trajectory.target,
+            ['next_three_war_ge_global_training_q90'],
+            `${label}.exceptionalTrajectory.target`,
+          ),
+          thresholdWar: requiredFiniteNumber(
+            trajectory.thresholdWar,
+            `${label}.exceptionalTrajectory.thresholdWar`,
+          ),
+          horizonSeasons: 3 as const,
+          referenceBaseRate: requiredProbability(
+            trajectory.referenceBaseRate,
+            `${label}.exceptionalTrajectory.referenceBaseRate`,
+          ),
+          rankScope: oneOf(
+            trajectory.rankScope,
+            ['current_mlb_absolute_trajectory'],
+            `${label}.exceptionalTrajectory.rankScope`,
+          ),
+        }
+      })()
+  const historicalPacePercentile = evidence.historicalPacePercentile === null ||
+      evidence.historicalPacePercentile === undefined
+    ? null
+    : percentile(
+        evidence.historicalPacePercentile,
+        `${label}.evidence.historicalPacePercentile`,
+      )
+  const priorWarPerSeason = evidence.priorWarPerSeason === null ||
+      evidence.priorWarPerSeason === undefined
+    ? null
+    : requiredFiniteNumber(
+        evidence.priorWarPerSeason,
+        `${label}.evidence.priorWarPerSeason`,
+      )
+  const warTrend = evidence.warTrend === null || evidence.warTrend === undefined
+    ? null
+    : requiredFiniteNumber(evidence.warTrend, `${label}.evidence.warTrend`)
+  const status = oneOf(input.status, ['research', 'withheld'], `${label}.status`)
+  const referencePlayers = nonNegativeInteger(
+    support.referencePlayers,
+    `${label}.support.referencePlayers`,
+  )
+  const referenceLandmarks = nonNegativeInteger(
+    support.referenceLandmarks,
+    `${label}.support.referenceLandmarks`,
+  )
+  if (status === 'research' && exceptional === null) {
+    throw new Error(`${label} publishes a research chapter without three-year impact`)
+  }
+  if (status === 'withheld' && exceptional !== null) {
+    throw new Error(`${label} publishes a withheld chapter with three-year impact`)
+  }
+  if (status === 'research' && (referencePlayers === 0 || referenceLandmarks === 0)) {
+    throw new Error(`${label} publishes a research chapter without historical support`)
+  }
+
+  return {
+    version: oneOf(input.version, ['career-chapter-v1'], `${label}.version`),
+    status,
+    chapter: oneOf(
+      input.chapter,
+      ['launch', 'development', 'prime_plateau', 'decline', 'late_career', 'uncertain'],
+      `${label}.chapter`,
+    ),
+    label: requiredString(input.label, `${label}.label`),
+    trajectoryState: oneOf(
+      input.trajectoryState,
+      ['breakout', 'rising', 'maintaining', 'plateau', 'declining', 'uncertain'],
+      `${label}.trajectoryState`,
+    ),
+    roleTrack: oneOf(
+      input.roleTrack,
+      ['hitter', 'starter', 'reliever'],
+      `${label}.roleTrack`,
+    ),
+    basis: oneOf(
+      input.basis,
+      ['completed_seasons_only'],
+      `${label}.basis`,
+    ),
+    featureSeason: positiveInteger(input.featureSeason, `${label}.featureSeason`),
+    evidence: {
+      age: requiredFiniteNumber(evidence.age, `${label}.evidence.age`),
+      mlbSeasonNumber: positiveInteger(
+        evidence.mlbSeasonNumber,
+        `${label}.evidence.mlbSeasonNumber`,
+      ),
+      seasonWar: requiredFiniteNumber(evidence.seasonWar, `${label}.evidence.seasonWar`),
+      recentWarPerSeason: requiredFiniteNumber(
+        evidence.recentWarPerSeason,
+        `${label}.evidence.recentWarPerSeason`,
+      ),
+      priorWarPerSeason,
+      warTrend,
+      historicalPacePercentile,
+    },
+    exceptionalTrajectory: exceptional,
+    support: {
+      referencePlayers,
+      referenceLandmarks,
+      expectedNextWarChange: requiredFiniteNumber(
+        support.expectedNextWarChange,
+        `${label}.support.expectedNextWarChange`,
+      ),
+      continuationRate: requiredProbability(
+        support.continuationRate,
+        `${label}.support.continuationRate`,
+      ),
+    },
+    warnings: stringArray(input.warnings, `${label}.warnings`),
+  }
+}
+
 type PreviewBase = Omit<CareerOraclePreview, 'items' | 'prospectForecasts'>
 
 function parseForecast(
@@ -572,6 +719,10 @@ function parseForecast(
     relativeSignal: relativeSignal(
       forecastInput.relativeSignal ?? input.relativeSignal,
       `${label}.relativeSignal`,
+    ),
+    careerChapter: careerChapter(
+      forecastInput.careerChapter ?? input.careerChapter,
+      `${label}.careerChapter`,
     ),
     lineage: {
       ...rawLineage,
