@@ -9,6 +9,7 @@ import {
   formatProbability,
   formatScore,
   formatSigned,
+  formatTopRankPercent,
   formatWar,
   stageCoverageForPlayers,
   stageLabel,
@@ -356,7 +357,49 @@ describe('Oracle Board utilities', () => {
       .toEqual(['higher-alpha', 'lower-alpha', 'failed-ceiling-gate', 'minor-discovery'])
   })
 
-  it('sorts frozen arrival estimates while keeping unmatched profiles last', () => {
+  it('sorts dual-gated MiLB ceiling alpha by the probability-free impact rank', () => {
+    const milbSignal = (rank: number) => ({
+      status: 'research',
+      eligible: true,
+      tier: 'priority',
+      rank,
+    }) as NonNullable<PlayerRecord['milbAlphaSignal']>
+    const impactRanking = (rank: number, rankPercentile: number) => ({
+      rank,
+      rankPercentile,
+    }) as NonNullable<PlayerRecord['milbImpactRanking']>
+    const players = [
+      makePlayer({ id: 'minor-untriggered' }),
+      makePlayer({
+        id: 'minor-impact-second',
+        milbAlphaSignal: milbSignal(1),
+        milbImpactRanking: impactRanking(3, 99.9),
+      }),
+      makePlayer({
+        id: 'minor-impact-first',
+        milbAlphaSignal: milbSignal(10),
+        milbImpactRanking: impactRanking(1, 100),
+      }),
+      makePlayer({
+        id: 'minor-outside-top-decile',
+        milbAlphaSignal: milbSignal(2),
+        milbImpactRanking: impactRanking(900, 86),
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      stage: 'Minors',
+      sort: 'alphaOpportunity',
+    }).map((player) => player.id)).toEqual([
+      'minor-impact-first',
+      'minor-impact-second',
+      'minor-outside-top-decile',
+      'minor-untriggered',
+    ])
+  })
+
+  it('sorts the frozen arrival-anomaly rank without presenting raw probability order', () => {
     const estimate = (probability: number) => ({
       status: 'research_only' as const,
       releaseEligible: false as const,
@@ -372,13 +415,21 @@ describe('Oracle Board utilities', () => {
     })
     const players = [
       makePlayer({ id: 'unmatched' }),
-      makePlayer({ id: 'lower', researchEstimate: estimate(0.4) }),
-      makePlayer({ id: 'higher', researchEstimate: estimate(0.7) }),
+      makePlayer({
+        id: 'lower',
+        researchEstimate: estimate(0.4),
+        milbAlphaSignal: { status: 'research', eligible: true, rank: 1 } as NonNullable<PlayerRecord['milbAlphaSignal']>,
+      }),
+      makePlayer({
+        id: 'higher',
+        researchEstimate: estimate(0.7),
+        milbAlphaSignal: { status: 'research', eligible: true, rank: 2 } as NonNullable<PlayerRecord['milbAlphaSignal']>,
+      }),
     ]
 
     expect(
       filterAndSortPlayers(players, { ...baseFilters, sort: 'arrival36' }).map((player) => player.id),
-    ).toEqual(['higher', 'lower', 'unmatched'])
+    ).toEqual(['lower', 'higher', 'unmatched'])
   })
 
   it('formats model values without converting invalid probabilities', () => {
@@ -388,6 +439,8 @@ describe('Oracle Board utilities', () => {
     expect(formatPercentagePointDelta(-0.02)).toBe('-2.0 pp')
     expect(formatOrdinal(91.4)).toBe('91st')
     expect(formatPercentileRank(99.8)).toBe('P99.8')
+    expect(formatTopRankPercent(3, 6455)).toBe('Top <0.1%')
+    expect(formatTopRankPercent(323, 6455)).toBe('Top 5.0%')
     expect(formatScore(72.25)).toBe('72.3')
     expect(formatScore(null)).toBe('—')
     expect(formatProbability(0.123)).toBe('12.3%')

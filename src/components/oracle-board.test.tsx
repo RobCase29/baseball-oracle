@@ -107,6 +107,126 @@ const alphaSignal: NonNullable<CareerForecast['alphaSignal']> = {
   ],
 }
 
+const milbAlphaSignal: NonNullable<PlayerRecord['milbAlphaSignal']> = {
+  version: 'milb-alpha-signal-v1',
+  status: 'research',
+  releaseEligible: false,
+  target: 'first_mlb_arrival_within_36_months',
+  eligible: true,
+  tier: 'priority',
+  rank: 5,
+  rankScope: 'frozen_2025_milb_arrival_alpha',
+  asOf: '2025-12-31T00:00:00.000Z',
+  primaryEdge: {
+    horizonMonths: 36,
+    probability: 0.91,
+    baselineProbability: 0.18,
+    probabilityDelta: 0.73,
+    liftMultiple: 5.06,
+  },
+  longHorizonEdge: {
+    horizonMonths: 60,
+    probability: 0.97,
+    baselineProbability: 0.31,
+    probabilityDelta: 0.66,
+    liftMultiple: 3.13,
+    externallyValidated: false,
+  },
+  ageContext: {
+    age: 20.4,
+    percentileWithinRoleLevel: 12,
+    youngerThanPercent: 88,
+    referencePlayers: 1200,
+    referenceRows: 2500,
+    role: 'hitter',
+    priorLevel: 'AA',
+    playerEqualWeighted: true,
+  },
+  workload: { kind: 'PA', value: 310, minimum: 75 },
+  baselineSupport: {
+    minimumRows: 240,
+    minimumEvents: 12,
+    horizons: [
+      { horizonMonths: 36, scope: 'role_level_age_band', rows: 260, events: 12 },
+      { horizonMonths: 60, scope: 'role_level_age_band', rows: 240, events: 19 },
+    ],
+    referenceSeasons: [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019],
+  },
+  descriptiveDrivers: [],
+  gates: {
+    supportedHistoricalContext: true,
+    youngForRoleAndLevel: true,
+    minimumRawWorkload: true,
+    minimumPrimaryProbability: true,
+    positivePrimaryModelEdge: true,
+    positiveLongHorizonModelEdge: true,
+  },
+  releaseGates: {
+    externalValidationPassed: false,
+    probabilityCalibrationPassed: false,
+    currentFeatureAlignmentPassed: false,
+  },
+  validation: {
+    status: 'external_validation_failed',
+    releaseEligible: false,
+    validatedHorizons: [],
+    retrospectiveRankingDiagnosticOnly: [36],
+  },
+  inputPolicy: 'raw_stats_age_level_role_no_composite_score_or_external_rank',
+  warnings: [
+    'research_only',
+    'external_validation_failed_no_horizon_validated',
+    'arrival_target_not_hall_ceiling',
+  ],
+}
+
+const milbImpactRanking: NonNullable<PlayerRecord['milbImpactRanking']> = {
+  rank: 3,
+  rankPercentile: 99.969012,
+  role: 'hitter',
+  status: 'research_only',
+  releaseEligible: false,
+  frozenAsOf: '2025-12-31T00:00:00.000Z',
+  modelVersion: 'milb-impact-five-calendar-year-war-v1',
+  selectedModel: 'regularized_logistic',
+  universeRows: 6455,
+  target: {
+    id: 'mlb_war_next_5_ge_5',
+    label: 'At least 5 total MLB WAR in the next five calendar seasons',
+    scope: 'unconditional',
+    windowStartSeason: 2026,
+    windowEndSeason: 2030,
+    hallOfFameProbability: false,
+  },
+  oofRankEvidence: {
+    method: 'player-purged expanding prediction-origin out-of-fold evaluation',
+    rows: 35747,
+    players: 15326,
+    eventPlayers: 197,
+    topDecileLift: 8.0984,
+    brierSkillVsTransparentBaseline: 0.0425,
+    foldTopDecileLiftRange: {
+      minimum: 7.2377,
+      maximum: 8.2759,
+      folds: 5,
+      validationSeasons: [2015, 2016, 2017, 2018, 2019],
+    },
+  },
+  gates: {
+    tailCalibrationPassed: false,
+    prospectiveValidationPassed: false,
+    knowledgeTimeVerified: false,
+  },
+  lineage: {
+    runContentSha256: 'a'.repeat(64),
+    currentScoresSha256: 'b'.repeat(64),
+  },
+  warnings: [
+    'Research-only retrospective ranking; it is not a released forecast.',
+    'Raw impact probabilities are intentionally withheld because extreme-tail calibration failed.',
+  ],
+}
+
 const forecast: CareerForecast = {
   publicationState: 'research',
   releaseEligible: false,
@@ -246,8 +366,10 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('columnheader', { name: 'Alpha signal' })).toBeInTheDocument()
     expect(screen.getByText('8.1%')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getByText('Discovery only')).toBeInTheDocument()
-    expect(screen.getByText('61.0%')).toBeInTheDocument()
+    expect(screen.getByText('Not triggered')).toBeInTheDocument()
+    expect(screen.getByText('Withheld')).toBeInTheDocument()
+    expect(screen.getByText('arrival confidence not calibrated')).toBeInTheDocument()
+    expect(screen.queryByText('61.0%')).not.toBeInTheDocument()
     expect(screen.queryByText('PS Score')).not.toBeInTheDocument()
     expect(screen.queryByText('Peer signal')).not.toBeInTheDocument()
 
@@ -311,6 +433,52 @@ describe('unified Oracle Board shell', () => {
     expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
+  it('shows probability-free, dual-gated MiLB ceiling rank on the board', () => {
+    render(
+      <ProspectBoard
+        players={[{ ...player, milbAlphaSignal, milbImpactRanking }]}
+        selectedId={player.id}
+        filters={{ query: '', stage: 'Minors', playerType: 'All', level: 'All', sort: 'alphaOpportunity' }}
+        pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
+        loading={false}
+        error={null}
+        watchlist={new Set()}
+        onSelect={vi.fn()}
+        onToggleWatchlist={vi.fn()}
+        onChangeFilters={vi.fn()}
+        onChangePage={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
+    expect(screen.getByText('Top <0.1%')).toBeInTheDocument()
+    expect(screen.getByText('priority research')).toBeInTheDocument()
+    expect(screen.getByText('#3')).toBeInTheDocument()
+    expect(screen.getByText('of 6,455')).toBeInTheDocument()
+    expect(screen.getByText(/5-year impact rank/u)).toBeInTheDocument()
+    expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
+  })
+
+  it('explains the MiLB impact rank, dual gates, and withheld tail probability in the dossier', () => {
+    render(
+      <PlayerDossier
+        player={{ ...player, milbAlphaSignal, milbImpactRanking }}
+        saved={false}
+        onToggleWatchlist={vi.fn()}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
+    expect(screen.getByText('#3 of 6,455 impact rank')).toBeInTheDocument()
+    expect(screen.getByText('8.10x')).toBeInTheDocument()
+    expect(screen.getByText('88%')).toBeInTheDocument()
+    expect(screen.getByText('Impact top decile')).toBeInTheDocument()
+    expect(screen.getByText('Tail calibrated')).toBeInTheDocument()
+    expect(screen.getByText(/raw impact probability is intentionally withheld/u)).toBeInTheDocument()
+    expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
+  })
+
   it('leads the dossier with unconditional career output and rank-independent confidence', () => {
     render(
       <PlayerDossier
@@ -347,10 +515,10 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText(/retrospective development holdout/u)).toBeInTheDocument()
     expect(screen.getByText(/Prospective validation is not complete/u)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career chapter' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Alpha Radar' })).toBeInTheDocument()
-    expect(screen.getByText('Discovery only')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
+    expect(screen.getByText('Impact rank unavailable')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getAllByText('P(MLB · 36M)')).toHaveLength(2)
+    expect(screen.getAllByText('P(MLB · 36M)')).toHaveLength(1)
     expect(screen.getByText(/MLB career chapter begins only after supported completed-season/u)).toBeInTheDocument()
     expect(screen.queryByText('Ahead of the curve')).not.toBeInTheDocument()
     expect(screen.queryByText('#4 of 512 · moderate reliability')).not.toBeInTheDocument()

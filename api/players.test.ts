@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CareerForecast } from './_career-oracle-types.js'
+import { researchMilbImpactRanking } from './_milb-impact.js'
+import { researchMilbAlphaSignal } from './_research-arrival.js'
 import {
   assignStageRanks,
   dedupeMinorCandidates,
@@ -166,6 +168,8 @@ function candidate(
     mlbamId: id.replace(/\D/gu, '') || null,
     opportunityScore: 100,
     careerForecast: forecast(0.1, 20, 900),
+    milbAlphaSignal: null,
+    milbImpactRanking: null,
     arrivalProbability36: 0.5,
     minorProfileId: id,
     previewPlayer: null,
@@ -278,7 +282,7 @@ describe('unified player ordering', () => {
       .toEqual(['mlb-high-impact', 'mlb-low-impact-high-hof', 'mlb-withheld-impact'])
   })
 
-  it('orders Alpha Radar by eligible probability edge and never promotes discovery-only minors', () => {
+  it('orders MLB Alpha by edge and dual-gated MiLB Alpha by direct impact rank', () => {
     const ineligible = forecast(0.9, 60, 3, 0.5, 0.95, 0.8)
     if (ineligible.alphaSignal) {
       ineligible.alphaSignal.eligible = false
@@ -291,8 +295,24 @@ describe('unified player ordering', () => {
         ineligible.alphaSignal.ceiling.gatePassed = false
       }
     }
+    const jesusArrival = researchMilbAlphaSignal('815908', 'Hitter')
+    const konnorArrival = researchMilbAlphaSignal('804606', 'Hitter')
+    const jesusImpact = researchMilbImpactRanking('815908', 'Hitter')
+    const konnorImpact = researchMilbImpactRanking('804606', 'Hitter')
+    expect(jesusArrival?.rank).toBe(1)
+    expect(konnorArrival?.rank).toBe(10)
+    expect(jesusImpact?.rank).toBe(3)
+    expect(konnorImpact?.rank).toBe(1)
     const items = [
       candidate('minor-discovery', { arrivalProbability36: 0.99 }),
+      candidate('minor-second-alpha', {
+        milbAlphaSignal: jesusArrival,
+        milbImpactRanking: jesusImpact,
+      }),
+      candidate('minor-first-alpha', {
+        milbAlphaSignal: konnorArrival,
+        milbImpactRanking: konnorImpact,
+      }),
       candidate('mlb-second-alpha', {
         source: 'mlb',
         stage: 'early_mlb',
@@ -319,8 +339,16 @@ describe('unified player ordering', () => {
         'mlb-first-alpha',
         'mlb-second-alpha',
         'mlb-ineligible',
+        'minor-first-alpha',
+        'minor-second-alpha',
         'minor-discovery',
       ])
+    expect(sortBoardCandidates(
+      items.filter((item) => item.source === 'minor'),
+      { stage: 'Minors', sort: 'alphaOpportunity' },
+    )
+      .map((item) => item.id))
+      .toEqual(['minor-first-alpha', 'minor-second-alpha', 'minor-discovery'])
   })
 })
 

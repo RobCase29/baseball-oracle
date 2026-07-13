@@ -5,17 +5,33 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 import pandas as pd
 
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from modeling.arrival_hazard_baseline import ArrivalHazardBaselineModel
+from modeling.milb_alpha_signal import (
+    MILB_ALPHA_SIGNAL_VERSION,
+    MilbAlphaReference,
+    build_milb_alpha_signal,
+    rank_milb_alpha_signals,
+    retrospective_milb_alpha_diagnostic,
+)
+from modeling.provenance import file_sha256
+
 PREDICTIONS = ROOT / "artifacts/arrival-external-v1-amendment-001/predictions.parquet"
 SNAPSHOTS = ROOT / "data/processed/arrival-external-v1/snapshots.parquet"
 PREDICTION_MANIFEST = ROOT / "artifacts/arrival-external-v1-amendment-001/prediction_manifest.json"
 EVALUATION_REPORT = ROOT / "artifacts/arrival-external-v1-amendment-001/evaluation_report.json"
+EVALUATED_ROWS = ROOT / "artifacts/arrival-external-v1-amendment-001/evaluated_rows.parquet"
 LOCK = ROOT / "data/model-locks/arrival-post-pandemic-v1-amendment-001.json"
+POPULATION_SNAPSHOTS = ROOT / "data/processed/arrival-population-v1/snapshots.parquet"
+BASELINE_MODEL = ROOT / "artifacts/arrival-calibration-v1/censoring_aware_baseline.json"
 OUTPUT = ROOT / "api/_data/research-arrival-2025.json"
 STATUS_OUTPUT = ROOT / "api/_data/model-status.json"
 HORIZONS = (12, 24, 36, 48, 60)
@@ -38,16 +54,46 @@ def main() -> None:
     lock = read_json(LOCK)
     predictions = pd.read_parquet(PREDICTIONS)
     snapshots = pd.read_parquet(SNAPSHOTS)
+    population_snapshots = pd.read_parquet(POPULATION_SNAPSHOTS)
+    evaluated_rows = pd.read_parquet(EVALUATED_ROWS)
 
     prediction_sha = prediction_manifest.get("output", {}).get("sha256")
     if prediction_sha != "8dda7eb4fe18841c2ac24960d0e225f3498c3f4f5ea4a6c8d76f2dc34fb443b2":
         raise ValueError("The frozen prediction artifact digest changed")
     if evaluation.get("status") != "external_validation_fail_not_release_eligible":
         raise ValueError("Research preview requires the frozen non-release evaluation status")
+    expected_baseline_sha = (
+        prediction_manifest.get("frozen_inputs", {})
+        .get("primary_comparator", {})
+        .get("artifact_sha256")
+    )
+    if file_sha256(BASELINE_MODEL) != expected_baseline_sha:
+        raise ValueError("The frozen hierarchical baseline artifact changed")
+    baseline_model = ArrivalHazardBaselineModel.from_json(
+        BASELINE_MODEL.read_text(encoding="utf-8")
+    )
+    alpha_reference = MilbAlphaReference(population_snapshots, baseline_model)
 
+    alpha_feature_columns = [
+        "prior_batting_pa",
+        "prior_pitching_ip",
+        "prior_iso",
+        "prior_bb_rate",
+        "prior_k_rate",
+        "prior_k_minus_bb_rate",
+        "prior_era",
+        "prior_whip",
+    ]
     cohort = snapshots.loc[
         snapshots["edition"].eq(2025),
-        ["snapshot_id", "mlbam_id", "role", "prior_level", "age"],
+        [
+            "snapshot_id",
+            "mlbam_id",
+            "role",
+            "prior_level",
+            "age",
+            *alpha_feature_columns,
+        ],
     ].copy()
     cohort["mlbam_id"] = cohort["mlbam_id"].astype("string")
     cohort = cohort.loc[cohort["mlbam_id"].notna()]
@@ -81,6 +127,37 @@ def main() -> None:
                 for value in ordered["hierarchical_baseline_probability"]
             ],
         }
+        estimates[key]["milbAlphaSignal"] = build_milb_alpha_signal(
+            first.to_dict(),
+            horizons=ordered["horizon_months"].astype(int).tolist(),
+            probabilities=ordered["candidate_probability"].astype(float).tolist(),
+            baselines=ordered["hierarchical_baseline_probability"].astype(float).tolist(),
+            cold_start=bool(first["cold_start"]),
+            as_of="2025-12-31T00:00:00.000Z",
+            arrival_status="external_validation_failed_research_only",
+            reference=alpha_reference,
+        )
+
+    alpha_eligible = rank_milb_alpha_signals(estimates)
+    alpha_priority = sum(
+        estimate["milbAlphaSignal"]["tier"] == "priority"
+        for estimate in estimates.values()
+    )
+    alpha_report = alpha_reference.report()
+    alpha_report["currentCohort"] = {
+        "asOf": "2025-12-31T00:00:00.000Z",
+        "players": len(estimates),
+        "eligible": alpha_eligible,
+        "priority": alpha_priority,
+    }
+    alpha_report["retrospectiveDiagnostic"] = retrospective_milb_alpha_diagnostic(
+        snapshots,
+        evaluated_rows,
+        alpha_reference,
+    )
+    for estimate in estimates.values():
+        if estimate["milbAlphaSignal"]["eligible"] is not True:
+            estimate.pop("milbAlphaSignal")
 
     preview = {
         "schemaVersion": "research-arrival-preview/v1",
@@ -93,6 +170,8 @@ def main() -> None:
         "predictionManifestSha256": prediction_manifest.get("manifest_sha256"),
         "predictionTableSha256": prediction_sha,
         "evaluationReportSha256": evaluation.get("report_sha256"),
+        "milbAlphaSignalVersion": MILB_ALPHA_SIGNAL_VERSION,
+        "milbAlphaReport": alpha_report,
         "estimates": estimates,
     }
 
@@ -111,6 +190,7 @@ def main() -> None:
             "externalPlayers": 13976,
             "predictionOnly2025": len(estimates),
             "predictionRows": prediction_manifest.get("output", {}).get("rows"),
+            "milbAlphaEligible": alpha_eligible,
         },
         "headline": {
             "sufficientCells": 8,

@@ -690,6 +690,7 @@ def build_prospect_forecasts(
                 "rankIndependent": True,
             },
             "warnings": sorted(warnings),
+            "milbAlphaSignal": estimate.get("milbAlphaSignal"),
             "decomposition": {
                 "arrivalHorizonMonths": 60,
                 "arrivalProbability": round(arrival60, 8),
@@ -777,6 +778,11 @@ def build_preview_payload(
         "players": players,
         "prospectBridge": bridge,
         "prospectForecasts": prospect_forecasts,
+        "milbAlphaSignalReport": (
+            None
+            if arrival_preview is None
+            else arrival_preview.get("milbAlphaReport")
+        ),
         "coverage": {
             "mlbCensus": census,
             "resolvedCareerPlayers": int(
@@ -784,6 +790,11 @@ def build_preview_payload(
             ),
             "careerLandmarks": int(len(panel)),
             "prospectForecasts": len(prospect_forecasts),
+            "milbAlphaEligible": sum(
+                forecast.get("milbAlphaSignal", {}).get("eligible") is True
+                for forecast in prospect_forecasts.values()
+                if isinstance(forecast.get("milbAlphaSignal"), Mapping)
+            ),
         },
         "lineage": {
             **dict(lineage or {}),
@@ -799,6 +810,7 @@ def build_preview_payload(
             "2026 is an in-season census; completed-season features remain the default scoring state.",
             "Season-one-to-three Hall-event tail behavior is a failed research diagnostic; central interval coverage is descriptive, and P95/P99, expected-shortfall, and learned elite-tail evaluation are still required.",
             "Prospect forecasts combine a separately evaluated arrival research model with an MLB debut-age bridge baseline.",
+            "MiLB alpha is an age-and-level-adjusted MLB-arrival ranking signal; external validation failed, no horizon is validated, and it is not a Hall-ceiling or return forecast.",
         ],
     }
 

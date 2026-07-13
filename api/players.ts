@@ -4,8 +4,16 @@ import { z } from 'zod'
 import {
   researchArrivalEstimate,
   researchArrivalProbability,
+  researchMilbAlphaSignal,
   researchPreviewSummary,
+  type ResearchMilbAlphaSignal,
 } from './_research-arrival.js'
+import { minorTraitEvidence } from './_minor-trait-evidence.js'
+import {
+  researchMilbImpactRanking,
+  researchMilbImpactSummary,
+  type ResearchMilbImpactRanking,
+} from './_milb-impact.js'
 import {
   loadCareerOraclePreview,
   type CareerOraclePreview,
@@ -385,11 +393,17 @@ function opportunity(row: PlayerRow): { label: string; value: string } | null {
   return pitches === null ? null : { label: 'Pitches', value: pitches }
 }
 
-function playerRecord(row: PlayerRow, careerForecast: CareerForecast | null) {
+function playerRecord(
+  row: PlayerRow,
+  careerForecast: CareerForecast | null,
+  milbAlphaSignal: ResearchMilbAlphaSignal | null,
+  milbImpactRanking: ResearchMilbImpactRanking | null,
+) {
   const bats = row.bats && row.bats !== '0' ? row.bats : null
   const throws = row.throws && row.throws !== '0' ? row.throws : null
   const batsThrows = bats && throws ? `${bats}/${throws}` : bats ?? throws
 
+  const metrics = observedMetrics(row)
   return {
     id: row.profile_id,
     name: row.display_name,
@@ -406,7 +420,7 @@ function playerRecord(row: PlayerRow, careerForecast: CareerForecast | null) {
     psPercentile: percentileOrNull(row.ps_percentile),
     agePercentile: percentileOrNull(row.age_percentile),
     opportunity: opportunity(row),
-    metrics: observedMetrics(row),
+    metrics,
     coverage: {
       label: coverageLabel(row),
       hasStatcast: row.has_statcast === true,
@@ -436,6 +450,17 @@ function playerRecord(row: PlayerRow, careerForecast: CareerForecast | null) {
       },
     },
     researchEstimate: researchArrivalEstimate(row.mlbam_id, row.player_type),
+    milbAlphaSignal,
+    milbImpactRanking,
+    minorTraitEvidence: minorTraitEvidence({
+      playerType: row.player_type,
+      metrics,
+      opportunity: {
+        plateAppearances: row.pa,
+        inningsPitched: row.ip,
+        pitches: row.pitches,
+      },
+    }),
     careerForecast,
   }
 }
@@ -487,6 +512,9 @@ function previewPlayerRecord(
       externalIds: player.externalIds,
     },
     researchEstimate: null,
+    milbAlphaSignal: null,
+    milbImpactRanking: null,
+    minorTraitEvidence: null,
     careerForecast,
   }
 }
@@ -537,6 +565,8 @@ export interface UnifiedBoardCandidate {
   mlbamId: string | null
   opportunityScore: number
   careerForecast: CareerForecast | null
+  milbAlphaSignal: ResearchMilbAlphaSignal | null
+  milbImpactRanking: ResearchMilbImpactRanking | null
   arrivalProbability36: number | null
   minorProfileId: string | null
   previewPlayer: CareerPreviewPlayer | null
@@ -557,6 +587,12 @@ export function sortUnifiedCandidates(
       return compareNullableNumber(left.age, right.age, 'ascending') || idTie
     }
     if (sort === 'arrival36') {
+      if (left.source === 'minor' && right.source === 'minor') {
+        return (
+          compareNullableNumber(left.milbAlphaSignal?.rank ?? null, right.milbAlphaSignal?.rank ?? null, 'ascending') ||
+          idTie
+        )
+      }
       return (
         compareNullableNumber(left.arrivalProbability36, right.arrivalProbability36, 'descending') ||
         idTie
@@ -596,10 +632,37 @@ export function sortUnifiedCandidates(
           right.careerForecast.alphaSignal.eligible
         ? right.careerForecast.alphaSignal
         : null
+      const leftMilbAlpha = left.source === 'minor' && left.milbAlphaSignal?.eligible
+        ? left.milbAlphaSignal
+        : null
+      const rightMilbAlpha = right.source === 'minor' && right.milbAlphaSignal?.eligible
+        ? right.milbAlphaSignal
+        : null
+      const leftMilbImpact = leftMilbAlpha &&
+          left.milbImpactRanking && left.milbImpactRanking.rankPercentile >= 90
+        ? left.milbImpactRanking
+        : null
+      const rightMilbImpact = rightMilbAlpha &&
+          right.milbImpactRanking && right.milbImpactRanking.rankPercentile >= 90
+        ? right.milbImpactRanking
+        : null
+
+      if (left.source === 'minor' && right.source === 'minor') {
+        return (
+          compareNullableNumber(leftMilbImpact?.rank ?? null, rightMilbImpact?.rank ?? null, 'ascending') ||
+          compareNullableNumber(leftMilbAlpha?.rank ?? null, rightMilbAlpha?.rank ?? null, 'ascending') ||
+          compareNullableNumber(
+            leftMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
+            rightMilbAlpha?.ageContext?.percentileWithinRoleLevel ?? null,
+            'ascending',
+          ) ||
+          idTie
+        )
+      }
       return (
         compareNullableNumber(
-          leftAlpha?.edge?.probabilityDelta ?? null,
-          rightAlpha?.edge?.probabilityDelta ?? null,
+          leftAlpha?.edge?.probabilityDelta ?? leftMilbAlpha?.primaryEdge.probabilityDelta ?? null,
+          rightAlpha?.edge?.probabilityDelta ?? rightMilbAlpha?.primaryEdge.probabilityDelta ?? null,
           'descending',
         ) ||
         compareNullableNumber(
@@ -791,6 +854,8 @@ function mlbCandidates(preview: CareerOraclePreview | null): UnifiedBoardCandida
     mlbamId: previewMlbamId(player),
     opportunityScore: 0,
     careerForecast: player.careerForecast,
+    milbAlphaSignal: null,
+    milbImpactRanking: null,
     arrivalProbability36: player.careerForecast.arrivalProbability36,
     minorProfileId: null,
     previewPlayer: player,
@@ -823,6 +888,8 @@ function minorCandidates(
       mlbamId,
       opportunityScore: minorOpportunityScore(row),
       careerForecast: forecast,
+      milbAlphaSignal: researchMilbAlphaSignal(row.mlbam_id, row.player_type),
+      milbImpactRanking: researchMilbImpactRanking(row.mlbam_id, row.player_type),
       arrivalProbability36: forecast?.arrivalProbability36 ??
         researchArrivalProbability(row.mlbam_id, row.player_type, 36),
       minorProfileId: row.profile_id,
@@ -905,6 +972,14 @@ function degradedStaticResponse(
         (candidate) => candidate.careerForecast?.alphaSignal?.eligible === true,
       ).length,
       alphaSignalVersion: 'alpha-signal-v1',
+      milbAlphaSignalCoverage: 0,
+      milbAlphaSignalEligible: 0,
+      milbAlphaSignalVersion: null,
+      milbImpactRankingCoverage: 0,
+      milbImpactAlphaEligible: 0,
+      milbImpactRankingVersion: null,
+      milbImpactRankingUniverse: researchMilbImpactSummary.universeRows,
+      minorTraitEvidenceVersion: null,
       researchAsOf: preview.asOf,
       releaseEligible: preview.releaseEligible,
       targetVersion: preview.targetVersion,
@@ -1076,6 +1151,8 @@ export default async function handler(
       return playerRecord(
         minorRowsById.get(candidate.minorProfileId!)!,
         candidate.careerForecast,
+        candidate.milbAlphaSignal,
+        candidate.milbImpactRanking,
       )
     })
     const minorDataAsOf = latestIso(minorRoleRows.map((row) => isoDate(row.known_at)))
@@ -1114,6 +1191,24 @@ export default async function handler(
             (candidate) => candidate.careerForecast?.alphaSignal?.eligible === true,
           ).length,
           alphaSignalVersion: careerPreview ? 'alpha-signal-v1' : null,
+          milbAlphaSignalCoverage: currentUniverse.filter(
+            (candidate) => candidate.source === 'minor' && candidate.milbAlphaSignal !== null,
+          ).length,
+          milbAlphaSignalEligible: currentUniverse.filter(
+            (candidate) => candidate.source === 'minor' && candidate.milbAlphaSignal?.eligible === true,
+          ).length,
+          milbAlphaSignalVersion: 'milb-alpha-signal-v1',
+          milbImpactRankingCoverage: currentUniverse.filter(
+            (candidate) => candidate.source === 'minor' && candidate.milbImpactRanking !== null,
+          ).length,
+          milbImpactAlphaEligible: currentUniverse.filter(
+            (candidate) => candidate.source === 'minor' &&
+              candidate.milbAlphaSignal?.eligible === true &&
+              (candidate.milbImpactRanking?.rankPercentile ?? -1) >= 90,
+          ).length,
+          milbImpactRankingVersion: researchMilbImpactSummary.modelVersion,
+          milbImpactRankingUniverse: researchMilbImpactSummary.universeRows,
+          minorTraitEvidenceVersion: 'minor-trait-evidence-v1',
           researchAsOf: careerPreview?.asOf ?? researchPreviewSummary.asOf,
           releaseEligible: careerPreview?.releaseEligible ?? false,
           targetVersion: careerPreview?.targetVersion ?? null,

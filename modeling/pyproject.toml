@@ -28,10 +28,13 @@ py-modules = [
   "arrival_sufficiency",
   "arrival_validation",
   "contracts",
+  "milb_alpha_targets",
+  "milb_impact_tournament",
   "prepare_dataset",
   "train_arrival_baseline",
   "train_arrival_calibration",
   "train_arrival_population",
+  "train_milb_impact",
 ]
 
 [tool.pytest.ini_options]

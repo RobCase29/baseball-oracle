@@ -8,7 +8,7 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 The repository ships a working React research cockpit backed by authorized
 Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
 corpus. The live minor-league directory contains 6,868 real 2026 player-role
-profiles (6,800 canonical MLBAM identities). The career artifact adds 1,291
+profiles and 6,179 canonical pre-debut players after role and MLB-stage deduplication. The career artifact adds 1,291
 current 40-man-roster MLB players and 6,455 frozen prospect research forecasts.
 All career outputs are visibly research-only and use separate MLB and MiLB rank
 universes because their targets are not directly comparable.
@@ -98,6 +98,25 @@ ceiling above the applicable Hall-caliber standard. Eligible players are ranked
 by the percentage-point gap between the modeled Hall-caliber probability and
 that broad historical base rate. Market price and external consensus are not yet
 modeled, so this is model alpha rather than evidence of market mispricing.
+
+The separate `milb-alpha-signal-v1` gate identifies frozen 2025 arrival anomalies.
+It requires a young age percentile within role and level, minimum raw workload,
+supported 2010-2019 historical context, a 36-month arrival estimate of at least
+20%, at least a +10 percentage-point edge over the hierarchical baseline, and a
+positive 60-month edge. It emits 210 research signals, of which 105 are Priority.
+Prospect Savant composite scores, external ranks, and scouting grades are excluded.
+Current raw tracking traits are shown only as named descriptive corroboration.
+The post-hoc 36-month diagnostic selected 223 players with 110 arrivals, but the
+external calibration and population-shift gates failed, so no probability is
+presented as validated confidence.
+
+The Minors `Alpha opportunity` view then orders arrival-eligible players with the
+separate probability-free `milb-impact-five-calendar-year-war-v1` rank. Its target
+is at least 5 total MLB WAR in 2026-2030. The champion produced 8.10x top-decile
+lift across player-purged forward folds, but extreme-tail calibration failed, so
+the public artifact exposes rank and cohort evidence while omitting player impact
+probabilities. Current raw traits remain descriptive corroboration only. See
+[MiLB Alpha model card](docs/MILB_ALPHA.md).
 See [Model readiness](docs/MODEL_READINESS.md) for measured coverage, validation
 results, and the gates that remain before forecasts can be published.
 
@@ -161,6 +180,7 @@ filters, research outcome sorting, and pagination:
 
 ```text
 GET /api/players?q=jenkins&stage=Minors&playerType=Hitter&level=AAA&sort=arrival36&page=1&limit=50
+GET /api/players?stage=Minors&sort=alphaOpportunity&page=1&limit=50
 GET /api/players?stage=MLB&sort=alphaOpportunity&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
@@ -170,8 +190,8 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Alpha Radar / Oracle board:** gated early-career model anomalies, real minor and major leaguers, stage/role/level filters, stage-specific outcome ranks, pagination, and a browser-local watchlist.
-- **Player dossier:** Alpha thesis and gates, observed evidence, learned career chapter, absolute three-season impact probability, historical completed-season WAR pace, terminal career distributions, Hall standard, warnings, and model lineage.
+- **Alpha Radar / Oracle board:** dual-gated MiLB early-ceiling ranks and separate MLB ceiling anomalies, real players, stage/role/level filters, stage-specific ranks, pagination, and a browser-local watchlist.
+- **Player dossier:** probability-free five-year MiLB impact rank, arrival confirmation, age/workload/support gates, named raw-trait corroboration, MLB Alpha thesis, learned career chapter, career distributions, Hall standard, warnings, and lineage.
 - **Validation:** the eight external role-horizon comparisons, paired skill interval, failed calibration gate, and failed population-shift admission.
 - **Model lab:** explicit targets, measured release gates, point-in-time rules, and model sequence.
 - **Data health:** live Neon/player counts, corpus coverage, rights posture, and production-readiness state.
@@ -192,6 +212,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Data sources and licensing](docs/DATA_SOURCES.md)
 - [Historical backfill strategy](docs/HISTORICAL_BACKFILL.md)
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
+- [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 
 ## Core principle

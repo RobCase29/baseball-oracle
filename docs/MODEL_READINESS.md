@@ -287,11 +287,13 @@ length, and some early landmarks predate the calibration cutoff. A rolling debut
 or prediction-origin design with censoring-aware outcomes is required for the
 prospective track.
 
-The MiLB result remains a distinct bridge: the externally failed 60-month arrival
-candidate is combined with a debut-age career baseline. It is a lower-bound proxy,
-not eventual arrival probability and not direct MiLB-to-Hall training. Accordingly,
-the product assigns stage-specific MLB and MiLB ranks and excludes Prospect
-Savant's composite from the default model and sort.
+The MiLB career result remains a distinct bridge: the externally failed 60-month
+arrival candidate is combined with a debut-age career baseline. It is a lower-bound
+proxy, not eventual arrival probability and not direct MiLB-to-Hall training. The
+separate `milb-alpha-signal-v1` layer ranks only the model's 36-month arrival edge
+over a historical age-level-role path; it does not convert that bridge into a
+career-ceiling claim. Prospect Savant's composite remains excluded from every
+default model and sort.
 
 ## Career Chapter Research Layer
 
@@ -344,10 +346,63 @@ cohort was human-reviewed, chapter boundaries used the full post-1961 panel, and
 the exact current scoring refit is not cross-fitted. These results justify
 continued research and prospective tracking, not release or an edge claim.
 
-The current layer measures model abnormality against baseball history. It does
+The current MLB layer measures model abnormality against baseball history. It does
 not include memorabilia prices, external rankings, liquidity, fees, or market
-implied probabilities. Minor leaguers are labeled `Discovery only` and excluded
-from Alpha rank until a validated direct career-ceiling bridge is available.
+implied probabilities.
+
+## MiLB Alpha Research Layer
+
+`milb-alpha-signal-v1` is a separate arrival radar, not the MLB Hall-ceiling
+signal. Its primary edge is the frozen 36-month arrival estimate minus the
+censoring-aware hierarchical role-level-age baseline. Eligibility requires age
+at or below the 33rd historical percentile within role and level, at least 75 PA
+or 20 IP, 36-month probability of at least 20%, at least +10 percentage points of
+36-month model edge, positive 60-month edge, at least 400 historical age-context
+players, and baseline support of at least 100 rows and five events at both required
+horizons. Priority requires at least +25 points of 36-month edge and age at or
+below the 25th percentile. Eligible players are ranked by 36-month edge, then age
+percentile, then 60-month edge. There is no aggregate score.
+
+The frozen 2025 cohort contains 210 eligible signals and 105 Priority signals.
+The post-hoc earliest-snapshot diagnostic selected 223 of 8,826 players: 110
+arrived within 36 months, or 49.33%, versus 9.46% in the diagnostic cohort. The
+cold-start slice selected 69 players with 30 arrivals, or 43.48%, versus 5.71%.
+These are human-reviewed development diagnostics, not a passed external test.
+The model failed the population-shift admission and pooled calibration cell-fraction
+gates; no horizon is labeled externally validated, and the 60-month external
+horizon is immature.
+
+Current Prospect Savant metrics are attached only as transparent descriptive
+evidence. The helper requires sufficient 2026 opportunity, coverage in three of
+four role-specific raw-trait pillars, and at least two strong pillars. It publishes
+named measurements and percentiles but no score and no predictive-validation
+claim. PS Score is excluded. The provider's current K-BB percentile is also
+withheld because the audited AAA pitcher slice reported zero for every non-null
+row despite materially different raw K-BB rates.
+
+The leakage-safe direct impact target is now defined as total MLB WAR in the five
+complete calendar seasons after a Dec. 31 MiLB snapshot. All 69,326 snapshots from
+2010-2019 are mature through the 2025 cutoff; 707 rows from 385 players reached at
+least 5 WAR, while 222 rows from 142 players reached at least 10 WAR. `WAR5 >= 5`
+is the first trainable unconditional ceiling endpoint. `WAR5 >= 10` remains an
+exploratory rare-tail diagnostic, and Hall induction remains unusable because all
+prospect-era non-induction states are censored. See `docs/MILB_ALPHA.md`.
+
+The direct tournament champion is a regularized logistic model evaluated on
+35,747 player-purged expanding-origin OOF rows from 15,326 players and 197 event
+players. It achieved Brier 0.00883, 4.25% skill over the transparent
+age-level-role-performance prior, ROC AUC 0.934, average precision 0.177, and
+8.10x top-decile lift. The five validation-origin top-decile lifts ranged from
+7.24x to 8.28x. Extreme-tail calibration failed: the top 1% averaged 31.2%
+predicted versus 21.9% observed. Current player probabilities are therefore
+withheld.
+
+The deployed Early Ceiling Radar is an ordinal two-model contract. It requires an
+eligible Arrival Alpha signal plus a direct impact rank percentile of at least 90,
+then orders by impact rank. Priority is impact top 1% plus Arrival Priority;
+Strong is impact top 5% plus arrival eligibility; Watch is impact top 10% plus
+arrival eligibility. The locked impact universe has 6,455 rows and 188 current
+dual-gated signals. Prospect Savant traits never determine eligibility or order.
 
 ## Trouble With The Curve Audit
 

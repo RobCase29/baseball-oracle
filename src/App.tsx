@@ -19,7 +19,11 @@ import type {
   PlayersResponse,
   PlayersResponseMeta,
 } from './domain/forecast'
-import { filterAndSortPlayers, stageCoverageForPlayers } from './lib/forecast'
+import {
+  eligibleMilbCeilingAlpha,
+  filterAndSortPlayers,
+  stageCoverageForPlayers,
+} from './lib/forecast'
 
 const PAGE_SIZE = 50
 const WATCHLIST_STORAGE_KEY = 'baseball-oracle.real-watchlist.v3'
@@ -32,7 +36,7 @@ const ValidationDashboard = lazy(() =>
 
 const initialFilters: BoardFilters = {
   query: '',
-  stage: 'All',
+  stage: 'Minors',
   playerType: 'All',
   level: 'All',
   sort: 'alphaOpportunity',
@@ -253,6 +257,12 @@ function App() {
   const hofForecastCount = isWatchlistView
     ? careerForecastCoverage
     : meta.researchCoverage ?? careerForecastCoverage
+  const milbAlphaCount = isWatchlistView
+    ? visiblePlayers.filter((player) => eligibleMilbCeilingAlpha(player) !== null).length
+    : meta.milbImpactAlphaEligible ?? 0
+  const mlbAlphaCount = isWatchlistView
+    ? visiblePlayers.filter((player) => player.careerForecast?.alphaSignal?.eligible).length
+    : meta.alphaSignalEligible ?? 0
   const topbarStatus = loading && players.length === 0
     ? 'loading'
     : error
@@ -311,7 +321,7 @@ function App() {
                 <p>
                   {isWatchlistView
                     ? 'Saved player snapshots with research-only career evidence.'
-                    : 'Minor and major leaguers shown with separate MLB and live-minors ranks. Pre-debut Hall values are 60-month lower-bound research proxies and are not directly calibrated against MLB outcomes.'}
+                    : 'Early Ceiling Radar ranks young-for-level arrival anomalies by a separate five-year MLB-impact challenger. Raw impact probabilities, Hall-caliber claims, and market-return claims remain withheld.'}
                 </p>
               </div>
               <div className="snapshot-id">
@@ -337,7 +347,7 @@ function App() {
               <div>
                 <span>HOF FORECASTS</span>
                 <strong>{hofForecastCount.toLocaleString()}</strong>
-                <small>MLB probabilities and pre-debut lower bounds</small>
+                <small>{milbAlphaCount.toLocaleString()} dual-gated MiLB ceiling signals · {mlbAlphaCount.toLocaleString()} MLB ceiling signals</small>
               </div>
               <div>
                 <span>MINORS / MLB</span>

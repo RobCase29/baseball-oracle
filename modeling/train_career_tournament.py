@@ -298,6 +298,19 @@ def main() -> None:
                 "shards": chadwick_lineage,
                 "join": "exact_key_bbref_only_no_name_matching",
             },
+            "arrivalPreview": (
+                None
+                if arrival_preview is None
+                else {
+                    "path": _portable(args.arrival_preview.resolve()),
+                    "sha256": file_sha256(args.arrival_preview.resolve()),
+                    "rows": int(arrival_preview.get("rows", 0)),
+                    "milbAlphaSignalVersion": arrival_preview.get(
+                        "milbAlphaSignalVersion"
+                    ),
+                    "usage": "frozen_research_arrival_and_milb_alpha_scoring",
+                }
+            ),
         },
     }
     preview = build_preview_payload(
@@ -368,6 +381,7 @@ def main() -> None:
                 ROOT / "modeling/career_preview.py",
                 ROOT / "modeling/career_chapters.py",
                 ROOT / "modeling/alpha_signal.py",
+                ROOT / "modeling/milb_alpha_signal.py",
                 ROOT / "modeling/relative_standing.py",
             ],
             {

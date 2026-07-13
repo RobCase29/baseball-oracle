@@ -1,6 +1,8 @@
 import type {
   AlphaSignal,
   BoardFilters,
+  MilbAlphaSignal,
+  MilbImpactRanking,
   PlayerRecord,
   PlayerStage,
   StageFilter,
@@ -72,8 +74,36 @@ export function eligibleAlphaSignal(player: PlayerRecord): AlphaSignal | null {
   return signal
 }
 
+export function eligibleMilbAlphaSignal(player: PlayerRecord): MilbAlphaSignal | null {
+  if (player.stage !== 'pre_debut') return null
+  const signal = player.milbAlphaSignal
+  if (!signal || signal.status !== 'research' || !signal.eligible) return null
+  return signal
+}
+
+export interface MilbCeilingAlpha {
+  arrivalSignal: MilbAlphaSignal
+  impactRanking: MilbImpactRanking
+  tier: 'priority' | 'strong' | 'watch'
+}
+
+export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha | null {
+  const arrivalSignal = eligibleMilbAlphaSignal(player)
+  const impactRanking = player.stage === 'pre_debut' ? player.milbImpactRanking : null
+  if (!arrivalSignal || !impactRanking || impactRanking.rankPercentile < 90) return null
+  const tier = impactRanking.rankPercentile >= 99 && arrivalSignal.tier === 'priority'
+    ? 'priority'
+    : impactRanking.rankPercentile >= 95
+      ? 'strong'
+      : 'watch'
+  return { arrivalSignal, impactRanking, tier }
+}
+
 export function alphaOpportunityEdge(player: PlayerRecord): number | null {
-  return eligibleAlphaSignal(player)?.edge?.probabilityDelta ?? null
+  const mlbEdge = eligibleAlphaSignal(player)?.edge?.probabilityDelta
+  if (mlbEdge !== undefined) return mlbEdge
+  const milbAlpha = eligibleMilbCeilingAlpha(player)
+  return milbAlpha ? milbAlpha.impactRanking.rankPercentile / 100 : null
 }
 
 export function filterAndSortPlayers(
@@ -104,6 +134,15 @@ export function filterAndSortPlayers(
         return compareNullableNumber(left.age, right.age, 'ascending') || left.id.localeCompare(right.id)
       }
       if (filters.sort === 'arrival36') {
+        if (left.stage === 'pre_debut' && right.stage === 'pre_debut') {
+          return (
+            compareNullableNumber(
+              left.milbAlphaSignal?.rank ?? null,
+              right.milbAlphaSignal?.rank ?? null,
+              'ascending',
+            ) || left.id.localeCompare(right.id)
+          )
+        }
         return (
           compareNullableNumber(arrivalProbability36(left), arrivalProbability36(right), 'descending') ||
           left.id.localeCompare(right.id)
@@ -125,6 +164,28 @@ export function filterAndSortPlayers(
         )
       }
       if (filters.sort === 'alphaOpportunity') {
+        const leftMilb = eligibleMilbCeilingAlpha(left)
+        const rightMilb = eligibleMilbCeilingAlpha(right)
+        if (left.stage === 'pre_debut' && right.stage === 'pre_debut') {
+          return (
+            compareNullableNumber(
+              leftMilb?.impactRanking.rank ?? null,
+              rightMilb?.impactRanking.rank ?? null,
+              'ascending',
+            ) ||
+            compareNullableNumber(
+              leftMilb?.arrivalSignal.rank ?? null,
+              rightMilb?.arrivalSignal.rank ?? null,
+              'ascending',
+            ) ||
+            compareNullableNumber(
+              leftMilb?.arrivalSignal.ageContext?.percentileWithinRoleLevel ?? null,
+              rightMilb?.arrivalSignal.ageContext?.percentileWithinRoleLevel ?? null,
+              'ascending',
+            ) ||
+            left.id.localeCompare(right.id)
+          )
+        }
         return (
           compareNullableNumber(
             alphaOpportunityEdge(left),
@@ -216,6 +277,17 @@ export function formatOrdinal(value: number): string {
 export function formatPercentileRank(value: number | null): string {
   if (value === null || !Number.isFinite(value) || value < 0 || value > 100) return '—'
   return `P${value.toFixed(1)}`
+}
+
+export function formatTopRankPercent(rank: number | null, universe: number | null): string {
+  if (
+    rank === null || universe === null || !Number.isInteger(rank) ||
+    !Number.isInteger(universe) || rank < 1 || universe < rank
+  ) return '—'
+  const topPercent = rank / universe * 100
+  if (topPercent < 0.1) return 'Top <0.1%'
+  if (topPercent < 10) return `Top ${topPercent.toFixed(1)}%`
+  return `Top ${Math.round(topPercent)}%`
 }
 
 export function formatScore(value: number | null): string {

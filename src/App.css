@@ -801,6 +801,12 @@
   border-color: #c9ded7;
 }
 
+.alpha-tier--strong {
+  color: #125b58;
+  background: #e2f2ef;
+  border-color: #add5ce;
+}
+
 .alpha-tier--none,
 .alpha-tier--withheld {
   color: var(--muted);
@@ -1529,6 +1535,34 @@
   color: #835e24;
   background: #fbf5e8;
   border-color: #ead9b2;
+}
+
+.milb-trait-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.milb-trait-chips > span {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 7px;
+  line-height: 1.35;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.milb-trait-chips strong {
+  overflow-wrap: anywhere;
+  color: var(--green-dark);
+  font-size: 8px;
 }
 
 .alpha-market-disclosure,

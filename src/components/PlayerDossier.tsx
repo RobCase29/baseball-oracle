@@ -10,7 +10,6 @@ import {
   Info,
   Layers3,
   List,
-  Radar,
   ShieldCheck,
   Star,
   Target,
@@ -19,11 +18,13 @@ import {
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import {
   developmentChapterLabel,
+  eligibleMilbCeilingAlpha,
   formatOrdinal,
   formatPercentagePointDelta,
   formatPercentileRank,
   formatProbability,
   formatSigned,
+  formatTopRankPercent,
   formatWar,
   isMlbStage,
   stageLabel,
@@ -206,6 +207,152 @@ function alphaWarningLabel(warning: string): string {
   return /[.!?]$/u.test(normalized) ? normalized : `${normalized}.`
 }
 
+function milbAlphaWarningLabel(warning: string): string {
+  const labels: Record<string, string> = {
+    research_only: 'MiLB Alpha Radar is a research-only ranking.',
+    external_validation_failed_no_horizon_validated:
+      'No arrival horizon passed every external release gate; probability calibration failed.',
+    frozen_2025_features_not_current_2026:
+      'The arrival signal is frozen at Dec. 31, 2025 and does not use the displayed 2026 statistics.',
+    arrival_target_not_hall_ceiling:
+      'This signal targets MLB arrival within 36 months, not Hall-caliber career value.',
+    market_price_not_modeled:
+      'Market price, liquidity, and external consensus are not modeled.',
+    probability_interval_not_available:
+      'A player-level probability interval is not yet available.',
+    descriptive_drivers_not_model_attribution:
+      'Historical driver percentiles describe context; they are not model attribution.',
+    arrival_cold_start: 'The frozen arrival estimate is a cold-start prediction.',
+  }
+  if (labels[warning]) return labels[warning]
+  const normalized = warning.trim().replaceAll('_', ' ').replace(/^./u, (letter) => letter.toUpperCase())
+  return /[.!?]$/u.test(normalized) ? normalized : `${normalized}.`
+}
+
+function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
+  if (player.stage !== 'pre_debut') return null
+  const signal = player.milbAlphaSignal
+  const impact = player.milbImpactRanking
+  const ceilingAlpha = eligibleMilbCeilingAlpha(player)
+  const traits = player.minorTraitEvidence
+  const strongestTraits = traits?.strongestMetrics.filter(
+    (metric) => metric.percentile >= (traits.corroboration.strongPercentileThreshold ?? 80),
+  ) ?? []
+  const tierLabel = ceilingAlpha
+    ? `${ceilingAlpha.tier === 'priority' ? 'Priority' : ceilingAlpha.tier === 'strong' ? 'Strong' : 'Watch'} research signal`
+    : impact
+      ? 'Two-model gate not cleared'
+      : 'Impact rank unavailable'
+  const statusTier = ceilingAlpha?.tier ?? 'withheld'
+
+  return (
+    <section
+      className={`alpha-radar alpha-radar--${statusTier}`}
+      aria-labelledby="milb-alpha-radar-title"
+    >
+      <div className="section-heading-row alpha-radar-heading">
+        <div>
+          <span className="eyebrow">ARRIVAL CONFIRMATION + FIVE-YEAR IMPACT RANK</span>
+          <h2 id="milb-alpha-radar-title">Early Ceiling Radar</h2>
+        </div>
+        <div className="alpha-radar-status">
+          <span className={`alpha-tier alpha-tier--${statusTier}`}>{tierLabel}</span>
+          {impact ? <strong>#{impact.rank} of {impact.universeRows.toLocaleString()} impact rank</strong> : null}
+        </div>
+      </div>
+
+      {impact ? (
+        <>
+          <div className="alpha-thesis milb-alpha-thesis">
+            <div className="alpha-thesis-edge">
+              <span>FIVE-YEAR IMPACT RANK</span>
+              <strong>#{impact.rank}</strong>
+              <small>{formatTopRankPercent(impact.rank, impact.universeRows)} of {impact.universeRows.toLocaleString()} scoreable completed-2025 MiLB snapshots</small>
+            </div>
+            <div>
+              <span>HISTORICAL RANK EVIDENCE</span>
+              <strong>{impact.oofRankEvidence.topDecileLift.toFixed(2)}x</strong>
+              <small>Top-decile lift · {impact.oofRankEvidence.foldTopDecileLiftRange.minimum.toFixed(2)}–{impact.oofRankEvidence.foldTopDecileLiftRange.maximum.toFixed(2)}x across {impact.oofRankEvidence.foldTopDecileLiftRange.folds} forward folds</small>
+            </div>
+            <div>
+              <span>AGE ADVANTAGE</span>
+              <strong>{signal?.ageContext?.youngerThanPercent.toFixed(0) ?? '—'}%</strong>
+              <small>Younger than historical {signal?.ageContext?.role ?? player.playerType.toLowerCase()}s at {signal?.ageContext?.priorLevel ?? player.level ?? 'this level'}</small>
+            </div>
+            <div>
+              <span>2026 RAW-TRAIT CHECK</span>
+              <strong>{traits ? `${traits.corroboration.strongPillarCount}/${traits.corroboration.requiredStrongPillars}` : '—'}</strong>
+              <small>{traits?.corroboration.passesAllDescriptiveGates ? 'Multi-pillar corroboration' : 'Descriptive gate not cleared'}</small>
+            </div>
+          </div>
+
+          <div className="alpha-explanation">
+            <strong>Why it surfaced</strong>
+            <span>
+              {ceilingAlpha
+                ? `The direct impact challenger ranks this player #${impact.rank} on the path to at least 5 MLB WAR from 2026–2030, and the separate young-for-level arrival signal also cleared. No probabilities were blended.`
+                : `The direct impact challenger ranks this player #${impact.rank}, but Early Ceiling Alpha is withheld until both the impact top-decile and young-for-level arrival gates clear.`}
+            </span>
+          </div>
+
+          <div className="alpha-reference">
+            <span>
+              Target: at least 5 total MLB WAR in 2026–2030 · unconditional on MLB arrival
+            </span>
+            <small>{impact.oofRankEvidence.rows.toLocaleString()} player-purged OOF rows · {impact.oofRankEvidence.players.toLocaleString()} players · raw probability withheld</small>
+          </div>
+
+          <div className="alpha-gates" aria-label="MiLB ceiling research and release gates">
+            {([
+              ['Impact top decile', impact.rankPercentile >= 90],
+              ['Arrival signal cleared', signal?.eligible === true],
+              ['Young for level', signal?.gates.youngForRoleAndLevel === true],
+              ['Historical support', signal?.gates.supportedHistoricalContext === true],
+              ['Tail calibrated', impact.gates.tailCalibrationPassed],
+              ['Prospective validation', impact.gates.prospectiveValidationPassed],
+            ] as const).map(([label, passed]) => (
+              <span key={label} className={passed ? 'is-pass' : 'is-fail'}>
+                {passed ? <Check size={11} aria-hidden="true" /> : <AlertTriangle size={11} aria-hidden="true" />}
+                {label}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="alpha-withheld-state">
+          <strong>Five-year impact rank unavailable</strong>
+          <span>
+            No exact MLBAM-and-role match exists in the locked completed-2025 impact universe. Source evidence remains visible without substituting an external composite score.
+          </span>
+        </div>
+      )}
+
+      {traits && strongestTraits.length > 0 ? (
+        <div className="milb-trait-chips" aria-label="Strongest current raw-trait evidence">
+          {strongestTraits.map((metric) => (
+            <span key={metric.key}>
+              <strong>{metric.label}</strong>
+              {formatOrdinal(metric.percentile)} · {metric.value ?? 'value unavailable'}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <p className="alpha-market-disclosure">
+        <strong>Ordinal research rank only.</strong> The raw impact probability is intentionally withheld because the extreme tail overpredicted. This is not calibrated confidence, Hall probability, or market return; current raw traits remain descriptive corroboration only.
+      </p>
+
+      {(impact?.warnings ?? signal?.warnings)?.length ? (
+        <ul className="alpha-radar-warnings">
+          {(impact?.warnings ?? signal?.warnings ?? []).map((warning) => (
+            <li key={warning}>{milbAlphaWarningLabel(warning)}</li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  )
+}
+
 function AlphaRadarPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
   const mlbStage = isMlbStage(player.stage)
   const signal = forecast.alphaSignal
@@ -226,37 +373,7 @@ function AlphaRadarPanel({ player, forecast }: { player: PlayerRecord; forecast:
     .replace('first', 'first MLB season') ?? 'supported experience'
 
   if (!mlbStage) {
-    return (
-      <section className="alpha-radar alpha-radar--discovery" aria-labelledby="alpha-radar-title">
-        <div className="section-heading-row">
-          <div>
-            <span className="eyebrow">SEPARATE EARLY-DISCOVERY TRACK</span>
-            <h2 id="alpha-radar-title">Alpha Radar</h2>
-          </div>
-          <Radar size={18} aria-hidden="true" />
-        </div>
-        <div className="alpha-discovery-grid">
-          <div>
-            <span>STATUS</span>
-            <strong>Discovery only</strong>
-            <small>Alpha withheld until supported completed-season MLB evidence</small>
-          </div>
-          <div>
-            <span>P(MLB · 36M)</span>
-            <strong>{formatProbability(forecast.arrivalProbability36)}</strong>
-            <small>Frozen minor-league arrival endpoint</small>
-          </div>
-          <div>
-            <span>P(HOF CALIBER | MLB)</span>
-            <strong>{formatProbability(forecast.decomposition.hofCaliberGivenMlbProbability)}</strong>
-            <small>Conditional research bridge, not Alpha Signal</small>
-          </div>
-        </div>
-        <p className="alpha-radar-note">
-          Minor-league discovery remains useful, but it is not ranked against the MLB Alpha universe. A direct, validated MiLB-to-career-ceiling model is required before publishing prospect alpha.
-        </p>
-      </section>
-    )
+    return null
   }
 
   return (
@@ -628,8 +745,8 @@ function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
-          <strong>Supporting arrival estimate · not a career rank</strong>
-          <span>Model state frozen Dec. 31, 2025. The current 2026 source profile is displayed separately.</span>
+          <strong>Frozen arrival estimate · probability calibration gate failed</strong>
+          <span>No horizon is release-validated. Model state is frozen Dec. 31, 2025; the current 2026 profile is separate.</span>
         </div>
       </div>
 
@@ -637,7 +754,7 @@ function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
         <div className="research-arrival-summary">
           <span className="eyebrow">FROZEN ARRIVAL ESTIMATE</span>
           <h2 id="research-arrival-title">MLB arrival by horizon</h2>
-          <ProbabilityRing value={(horizon36?.probability ?? 0) * 100} label="BY 36 MONTHS" />
+          <ProbabilityRing value={(horizon36?.probability ?? 0) * 100} label="RESEARCH · 36M" />
           <dl>
             <div><dt>Candidate</dt><dd>{formatProbability(horizon36?.probability ?? null)}</dd></div>
             <div><dt>Age-level baseline</dt><dd>{formatProbability(horizon36?.baselineProbability ?? null)}</dd></div>
@@ -653,7 +770,7 @@ function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
           <Suspense fallback={<div className="arrival-chart chart-loading">Loading research curve...</div>}>
             <ArrivalHorizonChart horizons={estimate.horizons} />
           </Suspense>
-          <p className="research-chart-note">The 60-month point is descriptive only; that external horizon is not mature.</p>
+          <p className="research-chart-note">These are frozen research outputs, not calibrated confidence. The external release gate failed; the 60-month horizon is additionally immature.</p>
         </div>
       </div>
     </section>
@@ -740,6 +857,8 @@ export function PlayerDossier({
               : `${player.name}'s research distribution combines the frozen 60-month arrival endpoint with an MLB debut-age career bridge. It is a lower-bound proxy and remains outside the release gate.`)
           : `No validated Career Oracle outcome is available for this ${stageLabel(player.stage).toLocaleLowerCase()} record. Source evidence remains visible without substituting a composite provider score.`)}
       </p>
+
+      <MilbAlphaRadarPanel player={player} />
 
       {forecast ? (
         <CareerForecastPanel player={player} forecast={forecast} />

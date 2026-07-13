@@ -274,6 +274,7 @@ export interface ResearchArrivalHorizon {
   probability: number
   baselineProbability: number
   externallyValidated: boolean
+  externalEvaluationStatus?: 'failed_release_gate' | 'immature'
 }
 
 export interface ResearchArrivalEstimate {
@@ -291,6 +292,196 @@ export interface ResearchArrivalEstimate {
     predictionManifestSha256: string
     evaluationReportSha256: string
   }
+}
+
+export interface MilbAlphaEdge {
+  horizonMonths: 36 | 60
+  probability: number
+  baselineProbability: number
+  probabilityDelta: number
+  liftMultiple: number | null
+  externallyValidated?: false
+}
+
+export interface MilbAlphaSignal {
+  version: 'milb-alpha-signal-v1'
+  status: 'research'
+  releaseEligible: false
+  target: 'first_mlb_arrival_within_36_months'
+  eligible: boolean
+  tier: 'priority' | 'watch' | 'none'
+  rank: number | null
+  rankScope: 'frozen_2025_milb_arrival_alpha' | null
+  asOf: string | null
+  primaryEdge: MilbAlphaEdge
+  longHorizonEdge: MilbAlphaEdge & { horizonMonths: 60; externallyValidated: false }
+  ageContext: {
+    age: number
+    percentileWithinRoleLevel: number
+    youngerThanPercent: number
+    referencePlayers: number
+    referenceRows: number
+    role: 'hitter' | 'pitcher'
+    priorLevel: string
+    playerEqualWeighted: true
+  } | null
+  workload: {
+    kind: 'PA' | 'IP'
+    value: number
+    minimum: number
+  }
+  baselineSupport: {
+    minimumRows: number
+    minimumEvents: number
+    horizons: Array<{
+      horizonMonths: 36 | 60
+      scope: 'role_level_age_band' | 'role_level' | 'role'
+      rows: number
+      events: number
+    }>
+    referenceSeasons: number[]
+  }
+  descriptiveDrivers: Array<{
+    metric: string
+    label: string
+    value: number
+    favorablePercentile: number
+    favorableDirection: 'higher' | 'lower'
+    referenceScope: 'role_level_age_band' | 'role_level'
+    referencePlayers: number
+  }>
+  gates: {
+    supportedHistoricalContext: boolean
+    youngForRoleAndLevel: boolean
+    minimumRawWorkload: boolean
+    minimumPrimaryProbability: boolean
+    positivePrimaryModelEdge: boolean
+    positiveLongHorizonModelEdge: boolean
+  }
+  releaseGates: {
+    externalValidationPassed: false
+    probabilityCalibrationPassed: false
+    currentFeatureAlignmentPassed: false
+  }
+  validation: {
+    status: 'external_validation_failed'
+    releaseEligible: false
+    validatedHorizons: []
+    retrospectiveRankingDiagnosticOnly: [36]
+  }
+  inputPolicy: 'raw_stats_age_level_role_no_composite_score_or_external_rank'
+  warnings: string[]
+}
+
+export interface MilbImpactRanking {
+  rank: number
+  rankPercentile: number
+  role: 'hitter' | 'pitcher'
+  status: 'research_only'
+  releaseEligible: false
+  frozenAsOf: string
+  modelVersion: 'milb-impact-five-calendar-year-war-v1'
+  selectedModel: 'regularized_logistic'
+  universeRows: number
+  target: {
+    id: 'mlb_war_next_5_ge_5'
+    label: 'At least 5 total MLB WAR in the next five calendar seasons'
+    scope: 'unconditional'
+    windowStartSeason: 2026
+    windowEndSeason: 2030
+    hallOfFameProbability: false
+  }
+  oofRankEvidence: {
+    method: 'player-purged expanding prediction-origin out-of-fold evaluation'
+    rows: number
+    players: number
+    eventPlayers: number
+    topDecileLift: number
+    brierSkillVsTransparentBaseline: number
+    foldTopDecileLiftRange: {
+      minimum: number
+      maximum: number
+      folds: number
+      validationSeasons: number[]
+    }
+  }
+  gates: {
+    tailCalibrationPassed: false
+    prospectiveValidationPassed: false
+    knowledgeTimeVerified: false
+  }
+  lineage: {
+    runContentSha256: string
+    currentScoresSha256: string
+  }
+  warnings: string[]
+}
+
+export interface MinorTraitEvidence {
+  version: 'minor-trait-evidence-v1'
+  status: 'descriptive_source_evidence_only'
+  predictiveValidation: false
+  playerType: 'Hitter' | 'Pitcher'
+  opportunity: {
+    state: 'unavailable' | 'insufficient' | 'provisional' | 'sufficient'
+    sufficient: boolean
+    observed: {
+      plateAppearances: number | null
+      inningsPitched: number | null
+      pitches: number | null
+    }
+    thresholds: Array<{
+      unit: 'PA' | 'IP' | 'Pitches'
+      provisional: number
+      sufficient: number
+    }>
+  }
+  coverage: {
+    availableMetricCount: number
+    coveredPillarCount: number
+    totalPillarCount: number
+    requiredCoveredPillars: number
+    sufficient: boolean
+    missingPillars: string[]
+  }
+  corroboration: {
+    strongPercentileThreshold: number
+    strongPillarCount: number
+    requiredStrongPillars: number
+    multiPillar: boolean
+    passesAllDescriptiveGates: boolean
+  }
+  pillars: Array<{
+    key: string
+    label: string
+    covered: boolean
+    strong: boolean
+    availableMetricCount: number
+    strongestMetric: {
+      key: string
+      label: string
+      value: string | null
+      percentile: number
+      pillar: string
+      source: 'Prospect Savant'
+    } | null
+  }>
+  strongestMetrics: Array<{
+    key: string
+    label: string
+    value: string | null
+    percentile: number
+    pillar: string
+    source: 'Prospect Savant'
+  }>
+  exclusions: {
+    providerCompositeMetricCount: number
+    kMinusBbPercentileCount: number
+    unsupportedSourceMetricCount: number
+    invalidPercentileCount: number
+    duplicateMetricKeyCount: number
+  }
+  warnings: string[]
 }
 
 export interface PlayerRecord {
@@ -313,6 +504,9 @@ export interface PlayerRecord {
   coverage: PlayerCoverage
   provenance: PlayerProvenance
   researchEstimate: ResearchArrivalEstimate | null
+  milbAlphaSignal?: MilbAlphaSignal | null
+  milbImpactRanking?: MilbImpactRanking | null
+  minorTraitEvidence?: MinorTraitEvidence | null
   careerForecast: CareerForecast | null
 }
 
@@ -345,6 +539,14 @@ export interface PlayersResponseMeta {
   alphaSignalCoverage?: number | null
   alphaSignalEligible?: number | null
   alphaSignalVersion?: 'alpha-signal-v1' | null
+  milbAlphaSignalCoverage?: number | null
+  milbAlphaSignalEligible?: number | null
+  milbAlphaSignalVersion?: 'milb-alpha-signal-v1' | null
+  milbImpactRankingCoverage?: number | null
+  milbImpactAlphaEligible?: number | null
+  milbImpactRankingVersion?: 'milb-impact-five-calendar-year-war-v1' | null
+  milbImpactRankingUniverse?: number | null
+  minorTraitEvidenceVersion?: 'minor-trait-evidence-v1' | null
   researchAsOf?: string | null
   releaseEligible?: boolean
   targetVersion?: string | null

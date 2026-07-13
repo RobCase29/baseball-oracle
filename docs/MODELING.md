@@ -44,6 +44,19 @@ One-game call-ups and sustained MLB careers are economically different. Preserve
 
 Thresholds must be versioned and position-aware. They must never be silently changed to make historical performance look better.
 
+### Pre-debut impact endpoint
+
+The first direct MiLB career-value endpoint is unconditional total MLB WAR in the
+five complete calendar seasons after a Dec. 31 minor-league snapshot. A mature
+non-arriver is a zero, not a missing row. `WAR5 >= 5` is the primary impact event;
+`WAR5 >= 10` is exploratory because its event-player support is substantially
+smaller. The primary challenger uses only labels mature at each simulated
+prediction origin and purges validation-player history. It is a strong historical
+ranker but overpredicts in the extreme top 1%, so raw current probabilities are
+withheld. The deployed Early Ceiling Radar requires the separate arrival gate and
+then orders by the ordinal `WAR5 >= 5` impact rank. It is not a career-ceiling
+probability or expected investment return.
+
 ### Risk set and event process
 
 The denominator is every player under an affiliated professional contract and observed in the roster census at the landmark, including players with no game statistics. Excluding complex-league players, injured players, released players, or players who never receive a durable public identifier creates survivorship bias.
@@ -186,4 +199,3 @@ Before release, require:
 ## Discovery Discipline
 
 Novel relationships are hypotheses until they survive time. Candidate features should be tested on forward holdouts, with transformations fit inside each fold. Large feature searches require false-discovery control, stability checks across eras and organizations, negative controls, and replication on a locked cohort. Feature importance and SHAP values explain model behavior; they do not establish that changing a feature would change a player's outcome.
-

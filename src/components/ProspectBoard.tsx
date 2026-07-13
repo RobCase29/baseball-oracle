@@ -16,10 +16,11 @@ import type {
 } from '../domain/forecast'
 import {
   eligibleAlphaSignal,
-  arrivalProbability36,
   developmentChapterLabel,
+  eligibleMilbCeilingAlpha,
   formatPercentagePointDelta,
   formatProbability,
+  formatTopRankPercent,
   formatWar,
   isMlbStage,
   probabilityTone,
@@ -48,7 +49,13 @@ function confidenceLabel(player: PlayerRecord): string {
 }
 
 function alphaMissLabel(player: PlayerRecord): string {
-  if (!isMlbStage(player.stage)) return 'Alpha begins after supported MLB evidence'
+  if (!isMlbStage(player.stage)) {
+    if (!player.researchEstimate) return 'No exact frozen arrival-model match'
+    if (!player.milbAlphaSignal?.eligible) return 'Arrival confirmation gate not cleared'
+    if (!player.milbImpactRanking) return 'No exact frozen impact-rank match'
+    if (player.milbImpactRanking.rankPercentile < 90) return 'Outside the five-year impact top decile'
+    return 'Research ceiling rank withheld'
+  }
   const signal = player.careerForecast?.alphaSignal
   if (!signal || signal.status === 'withheld') return 'Completed-season signal withheld'
   if (!signal.gates.earlyCareer) return 'Outside the early-career gate'
@@ -73,15 +80,22 @@ export function ProspectBoard({
   const hasPreviousPage = pagination.page > 1
   const hasNextPage = pagination.page < pagination.totalPages
   const alphaView = filters.sort === 'alphaOpportunity'
+  const minorAlphaView = alphaView && filters.stage === 'Minors'
 
   return (
     <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading}>
       <div className="board-heading">
         <div>
           <span className="eyebrow">
-            {alphaView ? 'EARLY-CAREER CEILING ANOMALIES' : 'STAGE-SPECIFIC RESEARCH RANK'}
+            {minorAlphaView
+              ? 'YOUNG PLAYERS WITH TWO-MODEL CEILING CONFIRMATION'
+              : alphaView
+                ? 'MODEL-GATED CAREER ANOMALIES'
+                : 'STAGE-SPECIFIC RESEARCH RANK'}
           </span>
-          <h2 id="board-title">{alphaView ? 'Alpha Radar' : 'Oracle Board'}</h2>
+          <h2 id="board-title">
+            {minorAlphaView ? 'Early Ceiling Radar' : alphaView ? 'Alpha Radar' : 'Oracle Board'}
+          </h2>
         </div>
         <span className="record-count">
           {loading ? <LoaderCircle className="spin" size={12} aria-hidden="true" /> : null}
@@ -162,7 +176,7 @@ export function ProspectBoard({
             <option value="hofProbability">P(HOF caliber)</option>
             <option value="nearTermImpact">Near-term impact</option>
             <option value="finalWar">Final WAR P50</option>
-            <option value="arrival36">P(MLB) · 36m</option>
+            <option value="arrival36">Arrival anomaly rank</option>
             <option value="age">Age</option>
             <option value="name">Name</option>
           </select>
@@ -209,18 +223,24 @@ export function ProspectBoard({
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const forecast = player.careerForecast
                 const hofProbability = forecast?.hofCaliberProbability ?? null
-                const arrival36 = arrivalProbability36(player)
                 const mlbStage = isMlbStage(player.stage)
                 const chapter = forecast?.careerChapter
                 const alpha = eligibleAlphaSignal(player)
+                const milbCeiling = eligibleMilbCeilingAlpha(player)
                 const rawAlpha = forecast?.alphaSignal
                 const chapterLabel = mlbStage
                   ? chapter?.status === 'research'
                     ? chapter.label
                     : chapter ? 'Chapter withheld' : 'Chapter unavailable'
                   : developmentChapterLabel(player.level)
-                const displayedRank = alphaView ? alpha?.rank ?? null : forecast?.rank ?? null
-                const rankScope = alphaView ? 'alpha' : mlbStage ? 'MLB' : 'minors'
+                const displayedRank = alphaView
+                  ? alpha?.rank ?? milbCeiling?.impactRanking.rank ?? null
+                  : forecast?.rank ?? null
+                const rankScope = alphaView
+                  ? milbCeiling
+                    ? `of ${milbCeiling.impactRanking.universeRows.toLocaleString()}`
+                    : 'alpha'
+                  : mlbStage ? 'MLB' : 'minors'
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -294,10 +314,29 @@ export function ProspectBoard({
                             {formatProbability(alpha.modeledProbability)} modeled vs {formatProbability(alpha.baseline?.probability ?? null)} base
                           </small>
                         </>
+                      ) : milbCeiling ? (
+                        <>
+                          <div className="alpha-cell-lead">
+                            <strong className="alpha-edge-value">
+                              {formatTopRankPercent(
+                                milbCeiling.impactRanking.rank,
+                                milbCeiling.impactRanking.universeRows,
+                              )}
+                            </strong>
+                            <span className={`alpha-tier alpha-tier--${milbCeiling.tier}`}>
+                              {milbCeiling.tier} research
+                            </span>
+                          </div>
+                          <small>
+                            5-year impact rank · arrival signal also cleared
+                          </small>
+                        </>
                       ) : (
                         <>
                           <strong className="alpha-withheld">
-                            {mlbStage && rawAlpha?.status === 'research' ? 'Not triggered' : mlbStage ? 'Withheld' : 'Discovery only'}
+                            {mlbStage && rawAlpha?.status === 'research'
+                              ? 'Not triggered'
+                              : mlbStage ? 'Withheld' : 'Not triggered'}
                           </strong>
                           <small>{alphaMissLabel(player)}</small>
                         </>
@@ -317,8 +356,14 @@ export function ProspectBoard({
                         </>
                       ) : (
                         <>
-                          <strong className="table-primary">{formatProbability(arrival36)}</strong>
-                          <small>P(MLB) within 36m</small>
+                          <strong className="table-primary">
+                            {player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : 'Withheld'}
+                          </strong>
+                          <small>
+                            {player.milbAlphaSignal?.rank
+                              ? 'frozen arrival-anomaly rank'
+                              : 'arrival confidence not calibrated'}
+                          </small>
                         </>
                       )}
                     </td>
