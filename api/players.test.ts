@@ -4,11 +4,18 @@ import { researchMilbImpactRanking } from './_milb-impact.js'
 import { researchMilbAlphaSignal } from './_research-arrival.js'
 import {
   assignStageRanks,
+  buildPlayerFacets,
   dedupeMinorCandidates,
+  matchesQuery,
   mergeCurrentUniverse,
   normalizeQueryText,
+  normalizeSearchText,
+  parseQuery,
+  playerPositionTokens,
   sortBoardCandidates,
   sortUnifiedCandidates,
+  shouldSuppressSlashLine,
+  type PlayerQuery,
   type UnifiedBoardCandidate,
 } from './players.js'
 
@@ -177,10 +184,31 @@ function candidate(
   }
 }
 
+function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
+  return {
+    q: '',
+    stage: 'All',
+    playerType: 'All',
+    level: 'All',
+    team: null,
+    position: null,
+    sort: 'alphaOpportunity',
+    page: 1,
+    limit: 50,
+    ...patch,
+  }
+}
+
 describe('unified player ordering', () => {
   it('normalizes browser form-encoded spaces in player search text', () => {
     expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
     expect(normalizeQueryText('Peña')).toBe('Peña')
+    expect(normalizeSearchText('Jesús Made')).toBe('jesus made')
+  })
+
+  it('matches player search without requiring diacritics', () => {
+    expect(matchesQuery(candidate('made', { name: 'Jesús Made' }), query({ q: 'Jesus Made' })))
+      .toBe(true)
   })
 
   it('orders HOF probability, then final WAR P50, then ID without confidence', () => {
@@ -349,6 +377,82 @@ describe('unified player ordering', () => {
     )
       .map((item) => item.id))
       .toEqual(['minor-first-alpha', 'minor-second-alpha', 'minor-discovery'])
+  })
+})
+
+describe('player board facets', () => {
+  it('validates and normalizes team and position query parameters', () => {
+    const request = (url: string) => ({ url }) as Parameters<typeof parseQuery>[0]
+
+    expect(parseQuery(request('/api/players?team=ath&position=c'))).toMatchObject({
+      team: 'ath',
+      position: 'C',
+    })
+    expect(parseQuery(request('/api/players?team=ATH&team=BOS'))).toBeNull()
+    expect(parseQuery(request('/api/players?team=ATH%2FBOS'))).toBeNull()
+    expect(parseQuery(request('/api/players?position=C%2F1B'))).toBeNull()
+    expect(parseQuery(request('/api/players?position=All'))).toBeNull()
+    expect(parseQuery(request('/api/players?unexpected=value'))).toBeNull()
+  })
+
+  it('matches exact teams and individual tokens from composite positions', () => {
+    const catcher = candidate('catcher', {
+      organization: 'Athletics',
+      organizationCode: 'ATH',
+      position: 'C/1B',
+    })
+
+    expect(playerPositionTokens(' C / 1b / C ')).toEqual(['C', '1B'])
+    expect(matchesQuery(catcher, query({ team: 'ath', position: 'C' }))).toBe(true)
+    expect(matchesQuery(catcher, query({ team: 'Athletics', position: '1B' }))).toBe(true)
+    expect(matchesQuery(catcher, query({ team: 'AT' }))).toBe(false)
+    expect(matchesQuery(catcher, query({ position: 'B' }))).toBe(false)
+  })
+
+  it('returns full-universe facet options and excludes each facet from its own counts', () => {
+    const candidates = [
+      candidate('ath-catcher', {
+        organization: 'Athletics',
+        organizationCode: 'ATH',
+        position: 'C/1B',
+      }),
+      candidate('ath-first', {
+        organization: 'Athletics',
+        organizationCode: 'ATH',
+        position: '1B',
+      }),
+      candidate('bos-catcher', {
+        organization: 'Boston Red Sox',
+        organizationCode: 'BOS',
+        position: 'C',
+      }),
+      candidate('bos-pitcher', {
+        organization: 'Boston Red Sox',
+        organizationCode: 'BOS',
+        position: 'RP',
+        playerType: 'Pitcher',
+      }),
+    ]
+
+    const facets = buildPlayerFacets(candidates, query({ team: 'ATH', position: 'C' }))
+
+    expect(facets.teams).toEqual([
+      { value: 'ATH', label: 'Athletics (ATH)', count: 1 },
+      { value: 'BOS', label: 'Boston Red Sox (BOS)', count: 1 },
+    ])
+    expect(facets.positions).toEqual([
+      { value: '1B', label: '1B', count: 2 },
+      { value: 'C', label: 'C', count: 1 },
+    ])
+  })
+})
+
+describe('source display quality', () => {
+  it('suppresses impossible all-zero hitter slash lines when other offense is present', () => {
+    expect(shouldSuppressSlashLine('Hitter', 346, 0, 0, 0, 0.35)).toBe(true)
+    expect(shouldSuppressSlashLine('Hitter', 346, 0.25, 0.33, 0.41, 0.35)).toBe(false)
+    expect(shouldSuppressSlashLine('Hitter', 8, 0, 0, 0, 0.2)).toBe(false)
+    expect(shouldSuppressSlashLine('Pitcher', 346, 0, 0, 0, 0.35)).toBe(false)
   })
 })
 

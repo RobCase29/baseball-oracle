@@ -35,8 +35,8 @@ const CareerArcChart = lazy(() =>
   import('./CareerArcChart').then((module) => ({ default: module.CareerArcChart })),
 )
 
-const ArrivalHorizonChart = lazy(() =>
-  import('./ArrivalHorizonChart').then((module) => ({ default: module.ArrivalHorizonChart })),
+const MilbEvidenceProfile = lazy(() =>
+  import('./MilbEvidenceProfile').then((module) => ({ default: module.MilbEvidenceProfile })),
 )
 
 interface PlayerDossierProps {
@@ -133,10 +133,6 @@ function warningLabel(warning: string, forecast: CareerForecast): string {
 function ForecastDecomposition({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
   const isMlb = isMlbStage(player.stage)
   const decomposition = forecast.decomposition
-  const arrivalValue = decomposition.arrivalProbability ?? forecast.arrivalProbability36
-  const arrivalLabel = decomposition.arrivalProbability !== null
-    ? 'MLB within 60 months'
-    : 'MLB within 36 months'
 
   return (
     <section className="forecast-decomposition" aria-labelledby="decomposition-title">
@@ -156,16 +152,16 @@ function ForecastDecomposition({ player, forecast }: { player: PlayerRecord; for
           </>
         ) : (
           <>
-            <div><span>{arrivalLabel}</span><strong>{formatProbability(arrivalValue)}</strong></div>
+            <div><span>Arrival model input</span><strong>Withheld</strong></div>
             <div><span>P(HOF caliber | MLB)</span><strong>{formatProbability(decomposition.hofCaliberGivenMlbProbability)}</strong></div>
-            <div><span>No MLB within 60m</span><strong>{formatProbability(decomposition.noMlbProbability)}</strong></div>
+            <div><span>Composition state</span><strong>Research</strong></div>
           </>
         )}
       </div>
       <p className="decomposition-note">
         {isMlb
           ? 'Recorded MLB value is fixed. The terminal distribution starts from the last completed-season model state.'
-          : 'The board uses a 60-month lower-bound proxy. Its complement is not an estimate of never reaching MLB.'}
+          : 'The career bridge uses a frozen arrival component internally. Exact arrival probabilities are withheld because the external calibration gate failed.'}
       </p>
     </section>
   )
@@ -270,9 +266,9 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
               <small>{formatTopRankPercent(impact.rank, impact.universeRows)} of {impact.universeRows.toLocaleString()} scoreable completed-2025 MiLB snapshots</small>
             </div>
             <div>
-              <span>HISTORICAL RANK EVIDENCE</span>
-              <strong>{impact.oofRankEvidence.topDecileLift.toFixed(2)}x</strong>
-              <small>Top-decile lift · {impact.oofRankEvidence.foldTopDecileLiftRange.minimum.toFixed(2)}–{impact.oofRankEvidence.foldTopDecileLiftRange.maximum.toFixed(2)}x across {impact.oofRankEvidence.foldTopDecileLiftRange.folds} forward folds</small>
+              <span>ARRIVAL CONFIRMATION</span>
+              <strong>{signal?.rank ? `#${signal.rank}` : '—'}</strong>
+              <small>{signal?.eligible ? 'Separate young-for-level model gate cleared' : 'Separate arrival gate not cleared'}</small>
             </div>
             <div>
               <span>AGE ADVANTAGE</span>
@@ -299,7 +295,7 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
             <span>
               Target: at least 5 total MLB WAR in 2026–2030 · unconditional on MLB arrival
             </span>
-            <small>{impact.oofRankEvidence.rows.toLocaleString()} player-purged OOF rows · {impact.oofRankEvidence.players.toLocaleString()} players · raw probability withheld</small>
+            <small>{impact.oofRankEvidence.topDecileLift.toFixed(2)}x model-wide top-decile lift · {impact.oofRankEvidence.rows.toLocaleString()} player-purged OOF rows · raw probability withheld</small>
           </div>
 
           <div className="alpha-gates" aria-label="MiLB ceiling research and release gates">
@@ -317,6 +313,10 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
               </span>
             ))}
           </div>
+
+          <Suspense fallback={<div className="evidence-profile evidence-profile-loading">Loading evidence profile</div>}>
+            <MilbEvidenceProfile player={player} />
+          </Suspense>
         </>
       ) : (
         <div className="alpha-withheld-state">
@@ -477,7 +477,8 @@ function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; foreca
     : developmentChapterLabel(player.level)
   const nearTermProbability = mlbStage
     ? exceptional?.probability ?? null
-    : forecast.arrivalProbability36
+    : null
+  const minorArrivalRank = player.milbAlphaSignal?.rank ?? null
 
   return (
     <section className="career-chapter" aria-labelledby="career-chapter-title">
@@ -500,12 +501,12 @@ function CareerChapterPanel({ player, forecast }: { player: PlayerRecord; foreca
           </small>
         </div>
         <div>
-          <span>{mlbStage ? 'P(3Y IMPACT)' : 'P(MLB · 36M)'}</span>
-          <strong>{formatProbability(nearTermProbability)}</strong>
+          <span>{mlbStage ? 'P(3Y IMPACT)' : 'ARRIVAL RANK'}</span>
+          <strong>{mlbStage ? formatProbability(nearTermProbability) : minorArrivalRank ? `#${minorArrivalRank}` : '—'}</strong>
           <small>
             {mlbStage && exceptional
               ? `At least ${formatWar(exceptional.thresholdWar)} WAR · ${formatProbability(exceptional.referenceBaseRate)} reference rate`
-              : mlbStage ? 'Near-term event estimate withheld' : 'Frozen arrival endpoint'}
+              : mlbStage ? 'Near-term event estimate withheld' : 'Frozen ordinal anomaly · probability withheld'}
           </small>
         </div>
         <div>
@@ -556,12 +557,12 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
   const hofProbability = forecast.hofCaliberProbability
   const stageValue = isMlbStage(player.stage)
     ? formatWar(forecast.finalJaws?.p50 ?? null)
-    : formatProbability(forecast.arrivalProbability36)
-  const stageMetric = isMlbStage(player.stage) ? 'FINAL JAWS' : 'P(MLB WITHIN 36M)'
+    : player.milbAlphaSignal?.rank ? `#${player.milbAlphaSignal.rank}` : '—'
+  const stageMetric = isMlbStage(player.stage) ? 'FINAL JAWS' : 'ARRIVAL ANOMALY RANK'
   const rankLabel = forecast.rank
     ? isMlbStage(player.stage)
       ? `#${forecast.rank} among current MLB`
-      : `#${forecast.rank} among live minors`
+      : `#${forecast.rank} career bridge rank`
     : forecast.hofCaliberProbability === null
       ? 'Rank withheld'
       : 'Rank unavailable'
@@ -609,7 +610,7 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
           <small>
             {isMlbStage(player.stage)
               ? `P90 ${formatWar(forecast.finalJaws?.p90 ?? null)} · standard ${formatWar(forecast.hofStandard?.jaws ?? null)}`
-              : 'arrival component, not rank'}
+              : 'frozen ordinal evidence · raw probability withheld'}
           </small>
         </div>
       </section>
@@ -639,8 +640,9 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
             <h2 id="career-title">Career value trajectory</h2>
           </div>
           <div className="chart-key" aria-hidden="true">
-            <span><i className="key-range" />P10–P90</span>
-            <span><i className="key-median" />P50</span>
+            <span><i className="key-terminal-range" />Terminal P10–P90</span>
+            <span><i className="key-terminal-mid" />P25–P75</span>
+            <span><i className="key-terminal-median" />P50</span>
             <span><i className="key-actual" />Recorded</span>
           </div>
         </div>
@@ -738,39 +740,50 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
 function ResearchArrivalPanel({ player }: { player: PlayerRecord }) {
   const estimate = player.researchEstimate
   if (!estimate) return null
-  const horizon36 = estimate.horizons.find((horizon) => horizon.months === 36)
+  const signal = player.milbAlphaSignal
+  const releaseGates = signal?.releaseGates
 
   return (
     <section className="research-forecast" aria-labelledby="research-arrival-title">
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
-          <strong>Frozen arrival estimate · probability calibration gate failed</strong>
-          <span>No horizon is release-validated. Model state is frozen Dec. 31, 2025; the current 2026 profile is separate.</span>
+          <strong>Frozen arrival model · exact probability withheld</strong>
+          <span>No horizon is release-validated. The ordinal anomaly rank remains visible; current 2026 evidence is kept separate.</span>
         </div>
       </div>
 
       <div className="research-arrival-grid">
         <div className="research-arrival-summary">
-          <span className="eyebrow">FROZEN ARRIVAL ESTIMATE</span>
-          <h2 id="research-arrival-title">MLB arrival by horizon</h2>
-          <ProbabilityRing value={(horizon36?.probability ?? 0) * 100} label="RESEARCH · 36M" />
+          <span className="eyebrow">ORDINAL ARRIVAL EVIDENCE</span>
+          <h2 id="research-arrival-title">Arrival model audit</h2>
+          <div className="arrival-rank-hero">
+            <strong>{signal?.rank ? `#${signal.rank}` : '—'}</strong>
+            <span>frozen anomaly rank</span>
+          </div>
           <dl>
-            <div><dt>Candidate</dt><dd>{formatProbability(horizon36?.probability ?? null)}</dd></div>
-            <div><dt>Age-level baseline</dt><dd>{formatProbability(horizon36?.baselineProbability ?? null)}</dd></div>
+            <div><dt>Signal</dt><dd>{signal?.eligible ? 'Gate cleared' : 'Not cleared'}</dd></div>
             <div><dt>Model cohort</dt><dd>{estimate.priorLevel}</dd></div>
+            <div><dt>Feature age</dt><dd>{estimate.modelAge.toFixed(1)}</dd></div>
             <div><dt>Support</dt><dd>{estimate.coldStart ? 'Cold start' : 'Prior history'}</dd></div>
           </dl>
         </div>
-        <div>
-          <div className="chart-key" aria-hidden="true">
-            <span><i className="key-candidate" />Candidate</span>
-            <span><i className="key-baseline" />Age-level baseline</span>
+        <div className="arrival-audit-detail">
+          <span className="eyebrow">RELEASE GATES</span>
+          <div className="arrival-release-gates">
+            {([
+              ['External validation', releaseGates?.externalValidationPassed ?? false],
+              ['Probability calibration', releaseGates?.probabilityCalibrationPassed ?? false],
+              ['Current feature alignment', releaseGates?.currentFeatureAlignmentPassed ?? false],
+            ] as const).map(([label, passed]) => (
+              <div key={label} className={passed ? 'is-pass' : 'is-fail'}>
+                {passed ? <Check size={14} aria-hidden="true" /> : <AlertTriangle size={14} aria-hidden="true" />}
+                <span>{label}</span>
+                <strong>{passed ? 'Passed' : 'Not passed'}</strong>
+              </div>
+            ))}
           </div>
-          <Suspense fallback={<div className="arrival-chart chart-loading">Loading research curve...</div>}>
-            <ArrivalHorizonChart horizons={estimate.horizons} />
-          </Suspense>
-          <p className="research-chart-note">These are frozen research outputs, not calibrated confidence. The external release gate failed; the 60-month horizon is additionally immature.</p>
+          <p className="research-chart-note">Raw 12–60 month scores remain in the locked research artifact, but the product does not render them as confidence until calibration and external validation both pass.</p>
         </div>
       </div>
     </section>
@@ -796,6 +809,7 @@ export function PlayerDossier({
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
+  const impactRank = player.stage === 'pre_debut' ? player.milbImpactRanking?.rank ?? null : null
   const organization = player.organization ?? player.organizationCode ?? 'Organization unavailable'
   const externalIds = Object.entries(player.provenance.externalIds).filter(([, value]) => value !== null)
   const cohort = player.provenance.cohort
@@ -810,10 +824,12 @@ export function PlayerDossier({
           <div>
             <div className="identity-line">
               <span className="eyebrow">
-                {forecast?.rank
-                  ? isMlbStage(player.stage)
-                    ? `#${forecast.rank} MLB ORACLE BOARD`
-                    : `#${forecast.rank} MINORS RESEARCH RANK`
+                {impactRank
+                  ? `#${impactRank} MILB FIVE-YEAR IMPACT RANK`
+                  : forecast?.rank
+                    ? isMlbStage(player.stage)
+                      ? `#${forecast.rank} MLB HALL-CALIBER RANK`
+                      : `#${forecast.rank} MINORS CAREER BRIDGE RANK`
                   : forecast?.hofCaliberProbability != null
                     ? 'CURRENT RANK UNAVAILABLE'
                     : 'CAREER FORECAST WITHHELD'}
@@ -963,7 +979,11 @@ export function PlayerDossier({
         <span><Layers3 size={14} aria-hidden="true" /> {stageLabel(player.stage)}</span>
         <span><Info size={14} aria-hidden="true" /> Research use only</span>
         <span className="footer-score">
-          Rank basis: {isMlbStage(player.stage) ? 'current MLB P(HOF caliber)' : 'live-minors 60m lower-bound proxy'}
+          Rank basis: {impactRank
+            ? 'completed-2025 five-year MLB impact rank'
+            : isMlbStage(player.stage)
+              ? 'current MLB P(HOF caliber)'
+              : 'live-minors career bridge proxy'}
         </span>
       </footer>
     </article>

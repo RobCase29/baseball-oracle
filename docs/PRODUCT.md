@@ -102,13 +102,21 @@ rate. It is model alpha, not market alpha; price is explicitly shown as missing.
 The first release supports one complete loop:
 
 1. **Scan:** Open Alpha Radar to see gated MLB ceiling anomalies, or switch to the Oracle Board's Hall-caliber, near-term-impact, terminal-WAR, and MiLB-arrival views.
-2. **Narrow:** Search and filter by player type, organization, position, level, age, and forecast confidence.
-3. **Compare:** Select two to four players and compare outcome distributions, timelines, drivers, and data coverage on the same scale.
+2. **Narrow:** Search and filter by player type, organization, position, and minor-league level; every filter is reflected in the shareable URL.
+3. **Compare:** Move among players on the same filtered board while keeping rank definitions, evidence scales, and uncertainty marks consistent.
 4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
 5. **Commit:** Add a player to a watchlist with a thesis, target milestone, and review date.
 6. **Revisit:** See what changed between prediction snapshots and whether the original thesis strengthened or weakened.
 
 The current build uses real players and real source evidence; missing or unsupported model outputs remain visibly withheld.
+
+The decision surface separates the two stages visually. The MiLB board pairs
+team, position, role, level, and search filters with a ceiling landscape that
+plots direct five-year impact rank against role/level age advantage. The player
+dossier keeps model rank, age context, and current raw-trait evidence on separate
+scales. For MLB players, recorded cumulative WAR is connected through the latest
+completed season, while future uncertainty is rendered only as a discrete
+terminal distribution. The product does not imply an unsupported annual path.
 
 ## Product Views
 
@@ -151,7 +159,7 @@ The overview should include:
 - Identity, organization, role, age, level, handedness, and roster status
 - As-of date, model version, prediction age, and data coverage
 - MLB arrival probabilities across multiple horizons
-- Career-arc fan chart with median and uncertainty bands
+- Recorded cumulative WAR with a discrete terminal career distribution and named uncertainty intervals
 - Milestone probabilities and development archetype
 - Positive and negative drivers with direction and magnitude
 - Historical comparable cohort with stage-matched context

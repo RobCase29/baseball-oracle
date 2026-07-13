@@ -403,6 +403,59 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('No matching MLB players')).toBeInTheDocument()
   })
 
+  it('filters by complete team and tokenized position facets and clears the cohort', () => {
+    const onChangeFilters = vi.fn()
+    render(
+      <ProspectBoard
+        players={[]}
+        selectedId={null}
+        filters={{
+          query: '',
+          stage: 'Minors',
+          playerType: 'All',
+          level: 'All',
+          team: 'ATH',
+          position: 'C',
+          sort: 'alphaOpportunity',
+        }}
+        pagination={{ page: 1, limit: 50, total: 0, totalPages: 0 }}
+        loading={false}
+        error={null}
+        watchlist={new Set()}
+        facets={{
+          teams: [
+            { value: 'ATH', label: 'Athletics (ATH)', count: 12 },
+            { value: 'BOS', label: 'Boston Red Sox (BOS)', count: 8 },
+          ],
+          positions: [
+            { value: 'C', label: 'C', count: 7 },
+            { value: 'SS', label: 'SS', count: 14 },
+          ],
+        }}
+        onSelect={vi.fn()}
+        onToggleWatchlist={vi.fn()}
+        onChangeFilters={onChangeFilters}
+        onChangePage={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('combobox', { name: 'Team' })).toHaveValue('ATH')
+    expect(screen.getByRole('option', { name: 'Boston Red Sox (BOS) · 8' })).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Position' }), {
+      target: { value: 'SS' },
+    })
+    expect(onChangeFilters).toHaveBeenCalledWith({ position: 'SS' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear 2' }))
+    expect(onChangeFilters).toHaveBeenCalledWith({
+      query: '',
+      playerType: 'All',
+      level: 'All',
+      team: 'All',
+      position: 'All',
+    })
+  })
+
   it('shows model alpha and uses the eligible alpha rank without a narrow current-peer rank', () => {
     render(
       <ProspectBoard
@@ -433,7 +486,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
-  it('shows probability-free, dual-gated MiLB ceiling rank on the board', () => {
+  it('shows probability-free, dual-gated MiLB ceiling rank on the board', async () => {
     render(
       <ProspectBoard
         players={[{ ...player, milbAlphaSignal, milbImpactRanking }]}
@@ -455,7 +508,8 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('priority research')).toBeInTheDocument()
     expect(screen.getByText('#3')).toBeInTheDocument()
     expect(screen.getByText('of 6,455')).toBeInTheDocument()
-    expect(screen.getByText(/5-year impact rank/u)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Ceiling landscape' })).toBeInTheDocument()
+    expect(screen.getByText(/Impact #3 · arrival #5/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
   })
 
@@ -471,12 +525,56 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
     expect(screen.getByText('#3 of 6,455 impact rank')).toBeInTheDocument()
-    expect(screen.getByText('8.10x')).toBeInTheDocument()
+    expect(screen.getByText(/8\.10x model-wide top-decile lift/u)).toBeInTheDocument()
     expect(screen.getByText('88%')).toBeInTheDocument()
     expect(screen.getByText('Impact top decile')).toBeInTheDocument()
     expect(screen.getByText('Tail calibrated')).toBeInTheDocument()
     expect(screen.getByText(/raw impact probability is intentionally withheld/u)).toBeInTheDocument()
     expect(screen.queryByText('+73.0 pp')).not.toBeInTheDocument()
+  })
+
+  it('keeps failed-calibration arrival scores out of the primary dossier', () => {
+    render(
+      <PlayerDossier
+        player={{
+          ...player,
+          milbAlphaSignal,
+          milbImpactRanking,
+          researchEstimate: {
+            status: 'research_only',
+            releaseEligible: false,
+            asOf: '2025-12-31T00:00:00.000Z',
+            modelVersion: 'arrival-test',
+            snapshotId: 'snapshot-test',
+            coldStart: false,
+            priorLevel: 'AA',
+            modelAge: 20.4,
+            currentStatusVerified: false,
+            horizons: [
+              {
+                months: 36,
+                probability: 0.9999,
+                baselineProbability: 0.18,
+                externallyValidated: false,
+                externalEvaluationStatus: 'failed_release_gate',
+              },
+            ],
+            lineage: {
+              predictionManifestSha256: 'a'.repeat(64),
+              evaluationReportSha256: 'b'.repeat(64),
+            },
+          },
+        }}
+        saved={false}
+        onToggleWatchlist={vi.fn()}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Arrival model audit' })).toBeInTheDocument()
+    expect(screen.getByText('Frozen arrival model · exact probability withheld')).toBeInTheDocument()
+    expect(screen.queryByText('100.0%')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Not passed')).toHaveLength(3)
   })
 
   it('leads the dossier with unconditional career output and rank-independent confidence', () => {
@@ -490,8 +588,8 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByText('60M LOWER-BOUND OUTCOME')).toBeInTheDocument()
-    expect(screen.getByText('#7 among live minors')).toBeInTheDocument()
-    expect(screen.getByText('#7 MINORS RESEARCH RANK')).toBeInTheDocument()
+    expect(screen.getByText('#7 career bridge rank')).toBeInTheDocument()
+    expect(screen.getByText('#7 MINORS CAREER BRIDGE RANK')).toBeInTheDocument()
     expect(screen.getByText('Moderate confidence')).toBeInTheDocument()
     expect(screen.getByText(/never multiplied into the ranking probability/u)).toBeInTheDocument()
     expect(screen.getByText('P(HOF caliber | MLB)')).toBeInTheDocument()
@@ -518,7 +616,8 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('heading', { name: 'Early Ceiling Radar' })).toBeInTheDocument()
     expect(screen.getByText('Impact rank unavailable')).toBeInTheDocument()
     expect(screen.getByText('Upper-minors development')).toBeInTheDocument()
-    expect(screen.getAllByText('P(MLB · 36M)')).toHaveLength(1)
+    expect(screen.getByText('ARRIVAL RANK')).toBeInTheDocument()
+    expect(screen.queryByText('P(MLB · 36M)')).not.toBeInTheDocument()
     expect(screen.getByText(/MLB career chapter begins only after supported completed-season/u)).toBeInTheDocument()
     expect(screen.queryByText('Ahead of the curve')).not.toBeInTheDocument()
     expect(screen.queryByText('#4 of 512 · moderate reliability')).not.toBeInTheDocument()

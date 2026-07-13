@@ -517,6 +517,8 @@ export interface BoardFilters {
   stage: StageFilter
   playerType: 'All' | PlayerType
   level: string
+  team?: string
+  position?: string
   sort: SortKey
 }
 
@@ -561,6 +563,16 @@ export interface PlayersResponseMeta {
     mlb: boolean
     minors: boolean
   }
+  facets?: {
+    teams: PlayerFacetOption[]
+    positions: PlayerFacetOption[]
+  }
+}
+
+export interface PlayerFacetOption {
+  value: string
+  label: string
+  count: number
 }
 
 export interface PlayersResponse {

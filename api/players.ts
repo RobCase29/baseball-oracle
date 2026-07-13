@@ -40,6 +40,8 @@ const queryParameterNames = new Set([
   'stage',
   'playerType',
   'level',
+  'team',
+  'position',
   'sort',
   'page',
   'limit',
@@ -62,6 +64,24 @@ const querySchema = z.object({
   stage: z.enum(playerStages).default('All'),
   playerType: z.enum(playerTypes).default('All'),
   level: z.enum(playerLevels).default('All'),
+  team: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[\p{L}\p{N} .'&()-]+$/u)
+    .refine(hasNoControlCharacters)
+    .refine((value) => value.toLocaleLowerCase('en-US') !== 'all')
+    .nullable()
+    .default(null),
+  position: z
+    .string()
+    .trim()
+    .transform((value) => value.toLocaleUpperCase('en-US'))
+    .pipe(z.string().regex(/^[A-Z0-9_-]{1,24}$/u))
+    .refine((value) => value !== 'ALL')
+    .nullable()
+    .default(null),
   sort: z.enum(playerSorts).default('alphaOpportunity'),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -72,11 +92,13 @@ type PlayerStage = (typeof playerStages)[number]
 type PlayerLevel = (typeof playerLevels)[number]
 type PlayerSort = (typeof playerSorts)[number]
 
-interface PlayerQuery {
+export interface PlayerQuery {
   q: string
   stage: PlayerStage
   playerType: PlayerType
   level: PlayerLevel
+  team: string | null
+  position: string | null
   sort: PlayerSort
   page: number
   limit: number
@@ -218,7 +240,14 @@ export function normalizeQueryText(value: string): string {
   return value.replaceAll('+', ' ')
 }
 
-function parseQuery(request: IncomingMessage): PlayerQuery | null {
+export function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase('en-US')
+}
+
+export function parseQuery(request: IncomingMessage): PlayerQuery | null {
   let url: URL
   try {
     url = new URL(request.url ?? '/', 'https://baseball-oracle.local')
@@ -236,6 +265,8 @@ function parseQuery(request: IncomingMessage): PlayerQuery | null {
       stage: readSingleParameter(url.searchParams, 'stage'),
       playerType: readSingleParameter(url.searchParams, 'playerType'),
       level: readSingleParameter(url.searchParams, 'level'),
+      team: readSingleParameter(url.searchParams, 'team'),
+      position: readSingleParameter(url.searchParams, 'position'),
       sort: readSingleParameter(url.searchParams, 'sort'),
       page: readSingleParameter(url.searchParams, 'page'),
       limit: readSingleParameter(url.searchParams, 'limit'),
@@ -338,7 +369,31 @@ function metric(
   }
 }
 
+export function shouldSuppressSlashLine(
+  playerType: string,
+  pa: DatabaseNumber,
+  ba: DatabaseNumber,
+  obp: DatabaseNumber,
+  slg: DatabaseNumber,
+  woba: DatabaseNumber,
+): boolean {
+  return playerType === 'Hitter' &&
+    (numberOrNull(pa) ?? 0) >= 20 &&
+    numberOrNull(ba) === 0 &&
+    numberOrNull(obp) === 0 &&
+    numberOrNull(slg) === 0 &&
+    (numberOrNull(woba) ?? 0) > 0
+}
+
 function observedMetrics(row: PlayerRow): ObservedMetric[] {
+  const slashLineLooksMissing = shouldSuppressSlashLine(
+    row.player_type,
+    row.pa,
+    row.ba,
+    row.obp,
+    row.slg,
+    row.woba,
+  )
   const common = [
     metric('woba', row.player_type === 'Pitcher' ? 'wOBA allowed' : 'wOBA', formatDecimal(row.woba), row.woba_percentile),
     metric('xwoba', row.player_type === 'Pitcher' ? 'xwOBA allowed' : 'xwOBA', formatDecimal(row.xwoba), row.xwoba_percentile),
@@ -351,10 +406,10 @@ function observedMetrics(row: PlayerRow): ObservedMetric[] {
 
   const roleSpecific = row.player_type === 'Hitter'
     ? [
-        metric('batting-average', 'Batting average', formatDecimal(row.ba)),
-        metric('on-base-percentage', 'On-base percentage', formatDecimal(row.obp)),
-        metric('slugging', 'Slugging', formatDecimal(row.slg)),
-        metric('isolated-power', 'Isolated power', formatDecimal(row.iso)),
+        metric('batting-average', 'Batting average', slashLineLooksMissing ? null : formatDecimal(row.ba)),
+        metric('on-base-percentage', 'On-base percentage', slashLineLooksMissing ? null : formatDecimal(row.obp)),
+        metric('slugging', 'Slugging', slashLineLooksMissing ? null : formatDecimal(row.slg)),
+        metric('isolated-power', 'Isolated power', slashLineLooksMissing ? null : formatDecimal(row.iso)),
         metric('exit-velocity', 'Average exit velocity', formatMeasurement(row.ev, 'mph'), row.ev_percentile),
         metric('exit-velocity-90', '90th percentile exit velocity', formatMeasurement(row.ev90, 'mph'), row.ev90_percentile),
         metric('max-exit-velocity', 'Maximum exit velocity', formatMeasurement(row.max_ev, 'mph'), row.max_ev_percentile),
@@ -898,19 +953,99 @@ function minorCandidates(
   })
 }
 
-function matchesQuery(candidate: UnifiedBoardCandidate, query: PlayerQuery): boolean {
-  const needle = query.q.toLocaleLowerCase('en-US')
+export function playerPositionTokens(value: string | null): string[] {
+  if (!value) return []
+  return [...new Set(
+    value
+      .split(/[/,;|]+/u)
+      .map((token) => token.trim().toLocaleUpperCase('en-US'))
+      .filter(Boolean),
+  )]
+}
+
+type FacetFilter = 'team' | 'position'
+
+export function matchesQuery(
+  candidate: UnifiedBoardCandidate,
+  query: PlayerQuery,
+  omittedFacet?: FacetFilter,
+): boolean {
+  const needle = normalizeSearchText(query.q)
   const textMatches = needle.length === 0 || [
     candidate.name,
     candidate.organization,
     candidate.organizationCode,
     candidate.position,
-  ].some((value) => value?.toLocaleLowerCase('en-US').includes(needle))
+  ].some((value) => value ? normalizeSearchText(value).includes(needle) : false)
   const stageMatches = query.stage === 'All' ||
     (query.stage === 'Minors' ? candidate.source === 'minor' : candidate.source === 'mlb')
   const typeMatches = query.playerType === 'All' || candidate.playerType === query.playerType
   const levelMatches = query.level === 'All' || candidate.level === query.level
-  return textMatches && stageMatches && typeMatches && levelMatches
+  const teamNeedle = query.team?.toLocaleLowerCase('en-US') ?? null
+  const teamMatches = omittedFacet === 'team' || teamNeedle === null || [
+    candidate.organizationCode,
+    candidate.organization,
+  ].some((value) => value?.trim().toLocaleLowerCase('en-US') === teamNeedle)
+  const positionMatches = omittedFacet === 'position' || query.position === null ||
+    playerPositionTokens(candidate.position).includes(query.position)
+  return textMatches && stageMatches && typeMatches && levelMatches && teamMatches && positionMatches
+}
+
+interface PlayerFacetOption {
+  value: string
+  label: string
+  count: number
+}
+
+export interface PlayerFacets {
+  teams: PlayerFacetOption[]
+  positions: PlayerFacetOption[]
+}
+
+function teamFacet(candidate: UnifiedBoardCandidate): Omit<PlayerFacetOption, 'count'> | null {
+  const code = candidate.organizationCode?.trim() || null
+  const organization = candidate.organization?.trim() || null
+  const value = code ?? organization
+  if (!value) return null
+  const label = code && organization && organization.toLocaleUpperCase('en-US') !== code.toLocaleUpperCase('en-US')
+    ? `${organization} (${code})`
+    : value
+  return { value, label }
+}
+
+function sortedFacetOptions(options: Map<string, PlayerFacetOption>): PlayerFacetOption[] {
+  return Array.from(options.values()).toSorted(
+    (left, right) => left.label.localeCompare(right.label, 'en-US') || left.value.localeCompare(right.value, 'en-US'),
+  )
+}
+
+export function buildPlayerFacets(
+  candidates: UnifiedBoardCandidate[],
+  query: PlayerQuery,
+): PlayerFacets {
+  const teamOptions = new Map<string, PlayerFacetOption>()
+  for (const candidate of candidates.filter((item) => matchesQuery(item, query, 'team'))) {
+    const facet = teamFacet(candidate)
+    if (!facet) continue
+    const key = facet.value.toLocaleLowerCase('en-US')
+    const existing = teamOptions.get(key)
+    teamOptions.set(key, existing ? { ...existing, count: existing.count + 1 } : { ...facet, count: 1 })
+  }
+
+  const positionOptions = new Map<string, PlayerFacetOption>()
+  for (const candidate of candidates.filter((item) => matchesQuery(item, query, 'position'))) {
+    for (const token of playerPositionTokens(candidate.position)) {
+      const existing = positionOptions.get(token)
+      positionOptions.set(token, existing
+        ? { ...existing, count: existing.count + 1 }
+        : { value: token, label: token === 'TWO_WAY' ? 'Two-way' : token, count: 1 })
+    }
+  }
+
+  return {
+    teams: sortedFacetOptions(teamOptions),
+    positions: sortedFacetOptions(positionOptions),
+  }
 }
 
 function latestIso(values: Array<string | null>): string | null {
@@ -936,9 +1071,9 @@ function degradedStaticResponse(
   preview: CareerOraclePreview,
   reason: string,
 ): void {
+  const universe = assignStageRanks(mlbCandidates(preview))
   const candidates = sortBoardCandidates(
-    assignStageRanks(mlbCandidates(preview))
-      .filter((candidate) => matchesQuery(candidate, query)),
+    universe.filter((candidate) => matchesQuery(candidate, query)),
     query,
   )
   const offset = (query.page - 1) * query.limit
@@ -988,6 +1123,7 @@ function degradedStaticResponse(
       degradedReason: reason,
       rankScope: 'stage_specific',
       stageRankAvailability: { mlb: true, minors: false },
+      facets: buildPlayerFacets(universe, query),
     },
   }, publicCache)
 }
@@ -1054,6 +1190,7 @@ export default async function handler(
     const merged = mergeCurrentUniverse(mlb, minorDedupe.items)
     const { canonicalMinors, crossStageDuplicatesRemoved } = merged
     const currentUniverse = merged.items
+    const facets = buildPlayerFacets(currentUniverse, query)
     const filtered = sortBoardCandidates(
       currentUniverse.filter((candidate) => matchesQuery(candidate, query)),
       query,
@@ -1218,6 +1355,7 @@ export default async function handler(
             mlb: careerPreview !== null,
             minors: careerPreview !== null,
           },
+          facets,
           identity: {
             minorRoleRows: minorDedupe.inputRoleRows,
             canonicalMinorPlayers: canonicalMinors.length,

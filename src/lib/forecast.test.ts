@@ -11,6 +11,7 @@ import {
   formatSigned,
   formatTopRankPercent,
   formatWar,
+  normalizeSearchText,
   stageCoverageForPlayers,
   stageLabel,
 } from './forecast'
@@ -20,6 +21,8 @@ const baseFilters: BoardFilters = {
   stage: 'All',
   playerType: 'All',
   level: 'All',
+  team: 'All',
+  position: 'All',
   sort: 'hofProbability',
 }
 
@@ -100,6 +103,13 @@ function makePlayer(overrides: Partial<PlayerRecord>): PlayerRecord {
 }
 
 describe('Oracle Board utilities', () => {
+  it('normalizes diacritics for player discovery', () => {
+    expect(normalizeSearchText('Jesús Made')).toBe('jesus made')
+    expect(filterAndSortPlayers([
+      makePlayer({ id: 'made', name: 'Jesús Made' }),
+    ], { ...baseFilters, query: 'Jesus Made' }).map((player) => player.id)).toEqual(['made'])
+  })
+
   it('filters canonical records by stage, role, and source identity', () => {
     const players = [
       makePlayer({ id: 'one', name: 'Jackson Miller' }),
@@ -119,6 +129,39 @@ describe('Oracle Board utilities', () => {
       stage: 'MLB',
       playerType: 'Pitcher',
     }).map((player) => player.id)).toEqual(['two'])
+  })
+
+  it('filters exact teams and token-aware composite positions for saved players', () => {
+    const players = [
+      makePlayer({
+        id: 'ath-catcher',
+        organization: 'Athletics',
+        organizationCode: 'ATH',
+        position: 'C/1B',
+      }),
+      makePlayer({
+        id: 'ath-shortstop',
+        organization: 'Athletics',
+        organizationCode: 'ATH',
+        position: 'SS',
+      }),
+      makePlayer({
+        id: 'bos-catcher',
+        organization: 'Boston Red Sox',
+        organizationCode: 'BOS',
+        position: 'C',
+      }),
+    ]
+
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      team: 'ath',
+      position: 'C',
+    }).map((player) => player.id)).toEqual(['ath-catcher'])
+    expect(filterAndSortPlayers(players, {
+      ...baseFilters,
+      position: '1B',
+    }).map((player) => player.id)).toEqual(['ath-catcher'])
   })
 
   it('ranks only by unconditional HOF probability and never by confidence', () => {

@@ -1,8 +1,10 @@
+import { lazy, Suspense } from 'react'
 import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Database,
+  FilterX,
   LoaderCircle,
   Search,
   Star,
@@ -10,6 +12,7 @@ import {
 import type {
   BoardFilters,
   PlayerRecord,
+  PlayerFacetOption,
   PlayersPage,
   PlayerType,
   StageFilter,
@@ -27,6 +30,10 @@ import {
   stageLabel,
 } from '../lib/forecast'
 
+const MilbOpportunityMap = lazy(() =>
+  import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
+)
+
 interface ProspectBoardProps {
   players: PlayerRecord[]
   selectedId: string | null
@@ -35,6 +42,10 @@ interface ProspectBoardProps {
   loading: boolean
   error: string | null
   watchlist: Set<string>
+  facets?: {
+    teams: PlayerFacetOption[]
+    positions: PlayerFacetOption[]
+  }
   onSelect: (playerId: string) => void
   onToggleWatchlist: (playerId: string) => void
   onChangeFilters: (patch: Partial<BoardFilters>) => void
@@ -43,6 +54,16 @@ interface ProspectBoardProps {
 
 const stages: StageFilter[] = ['All', 'Minors', 'MLB']
 const playerTypes: Array<'All' | PlayerType> = ['All', 'Hitter', 'Pitcher', 'Two-way']
+
+function withCurrentFacet(
+  options: PlayerFacetOption[],
+  current: string | undefined,
+): PlayerFacetOption[] {
+  if (!current || current === 'All' || options.some((option) => option.value === current)) {
+    return options
+  }
+  return [{ value: current, label: current, count: 0 }, ...options]
+}
 
 function confidenceLabel(player: PlayerRecord): string {
   return player.careerForecast?.confidenceState ?? 'Withheld'
@@ -72,6 +93,7 @@ export function ProspectBoard({
   loading,
   error,
   watchlist,
+  facets,
   onSelect,
   onToggleWatchlist,
   onChangeFilters,
@@ -81,6 +103,15 @@ export function ProspectBoard({
   const hasNextPage = pagination.page < pagination.totalPages
   const alphaView = filters.sort === 'alphaOpportunity'
   const minorAlphaView = alphaView && filters.stage === 'Minors'
+  const activeFilterCount = [
+    filters.query.trim() ? filters.query : null,
+    filters.playerType !== 'All' ? filters.playerType : null,
+    filters.level !== 'All' ? filters.level : null,
+    filters.team && filters.team !== 'All' ? filters.team : null,
+    filters.position && filters.position !== 'All' ? filters.position : null,
+  ].filter(Boolean).length
+  const teamOptions = withCurrentFacet(facets?.teams ?? [], filters.team)
+  const positionOptions = withCurrentFacet(facets?.positions ?? [], filters.position)
 
   return (
     <section id="prospect-board" className="board-panel" aria-labelledby="board-title" aria-busy={loading}>
@@ -103,7 +134,7 @@ export function ProspectBoard({
         </span>
       </div>
 
-      <div className="board-filters">
+      <div className="board-filters" aria-label="Player cohort filters">
         <label className="search-field">
           <span className="sr-only">Search players</span>
           <Search size={16} aria-hidden="true" />
@@ -111,7 +142,7 @@ export function ProspectBoard({
             type="search"
             value={filters.query}
             onChange={(event) => onChangeFilters({ query: event.target.value })}
-            placeholder="Search player, org, position"
+            placeholder="Search player, team, position"
           />
         </label>
 
@@ -141,6 +172,38 @@ export function ProspectBoard({
             {playerTypes.map((type) => (
               <option key={type} value={type}>
                 {type === 'All' ? 'All roles' : type === 'Two-way' ? 'Two-way' : `${type}s`}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-field">
+          <span>Team</span>
+          <select
+            aria-label="Team"
+            value={filters.team ?? 'All'}
+            onChange={(event) => onChangeFilters({ team: event.target.value })}
+          >
+            <option value="All">All teams</option>
+            {teamOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} · {option.count.toLocaleString()}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-field">
+          <span>Position</span>
+          <select
+            aria-label="Position"
+            value={filters.position ?? 'All'}
+            onChange={(event) => onChangeFilters({ position: event.target.value })}
+          >
+            <option value="All">All positions</option>
+            {positionOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} · {option.count.toLocaleString()}
               </option>
             ))}
           </select>
@@ -181,7 +244,34 @@ export function ProspectBoard({
             <option value="name">Name</option>
           </select>
         </label>
+
+        <button
+          className="filter-reset"
+          type="button"
+          disabled={activeFilterCount === 0}
+          onClick={() => onChangeFilters({
+            query: '',
+            playerType: 'All',
+            level: 'All',
+            team: 'All',
+            position: 'All',
+          })}
+          title="Clear cohort filters"
+        >
+          <FilterX size={14} aria-hidden="true" />
+          Clear{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
+        </button>
       </div>
+
+      {filters.stage === 'Minors' && players.length > 0 ? (
+        <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
+          <MilbOpportunityMap
+            players={players}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        </Suspense>
+      ) : null}
 
       {error && players.length === 0 ? (
         <div className="empty-state empty-state--error" role="alert">
@@ -272,7 +362,7 @@ export function ProspectBoard({
                           </span>
                           <strong>{player.name}</strong>
                           <small>
-                            {organization} · {player.position ?? player.playerType}
+                            {organization} · {player.position ?? player.playerType} · Age {player.age ?? '—'} · {player.level ?? stageLabel(player.stage)}
                           </small>
                           <span className={`stage-badge stage-badge--${player.stage}`}>
                             {stageLabel(player.stage)}
@@ -328,7 +418,7 @@ export function ProspectBoard({
                             </span>
                           </div>
                           <small>
-                            5-year impact rank · arrival signal also cleared
+                            Impact #{milbCeiling.impactRanking.rank.toLocaleString()} · arrival #{milbCeiling.arrivalSignal.rank?.toLocaleString() ?? '—'}
                           </small>
                         </>
                       ) : (

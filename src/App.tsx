@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleDot,
   DatabaseZap,
+  History,
   LoaderCircle,
 } from 'lucide-react'
 import './App.css'
@@ -34,12 +35,56 @@ const ValidationDashboard = lazy(() =>
   })),
 )
 
-const initialFilters: BoardFilters = {
+const defaultFilters: BoardFilters = {
   query: '',
   stage: 'Minors',
   playerType: 'All',
   level: 'All',
+  team: 'All',
+  position: 'All',
   sort: 'alphaOpportunity',
+}
+
+function filtersFromUrl(): BoardFilters {
+  const parameters = new URLSearchParams(window.location.search)
+  const stage = parameters.get('stage')
+  const playerType = parameters.get('playerType')
+  const level = parameters.get('level')
+  const sort = parameters.get('sort')
+  const resolvedStage: BoardFilters['stage'] = stage === 'All' || stage === 'Minors' || stage === 'MLB'
+    ? stage
+    : defaultFilters.stage
+  const resolvedLevel: BoardFilters['level'] = level === 'AAA' || level === 'AA' || level === 'A+' || level === 'A' || level === 'Rk'
+    ? level
+    : defaultFilters.level
+  const validSorts = new Set<BoardFilters['sort']>([
+    'alphaOpportunity',
+    'hofProbability',
+    'nearTermImpact',
+    'finalWar',
+    'arrival36',
+    'age',
+    'name',
+  ])
+
+  return {
+    query: parameters.get('q') ?? defaultFilters.query,
+    stage: resolvedStage,
+    playerType: playerType === 'Hitter' || playerType === 'Pitcher' || playerType === 'Two-way'
+      ? playerType
+      : defaultFilters.playerType,
+    level: resolvedStage === 'MLB' ? 'All' : resolvedLevel,
+    team: parameters.get('team') ?? defaultFilters.team,
+    position: parameters.get('position') ?? defaultFilters.position,
+    sort: sort && validSorts.has(sort as BoardFilters['sort'])
+      ? sort as BoardFilters['sort']
+      : defaultFilters.sort,
+  }
+}
+
+function pageFromUrl(): number {
+  const value = Number.parseInt(new URLSearchParams(window.location.search).get('page') ?? '', 10)
+  return Number.isInteger(value) && value > 0 ? value : 1
 }
 
 const emptyPage: PlayersPage = {
@@ -129,8 +174,8 @@ function normalizePlayerRecord(player: PlayerRecord): PlayerRecord {
 function App() {
   const [activeView, setActiveView] = useState<WorkspaceView>('Board')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [filters, setFilters] = useState<BoardFilters>(initialFilters)
-  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState<BoardFilters>(filtersFromUrl)
+  const [page, setPage] = useState(pageFromUrl)
   const [players, setPlayers] = useState<PlayerRecord[]>([])
   const [pagination, setPagination] = useState<PlayersPage>(emptyPage)
   const [meta, setMeta] = useState<PlayersResponseMeta>(emptyMeta)
@@ -159,6 +204,8 @@ function App() {
     if (filters.stage !== 'All') parameters.set('stage', filters.stage)
     if (filters.playerType !== 'All') parameters.set('playerType', filters.playerType)
     if (filters.level !== 'All') parameters.set('level', filters.level)
+    if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
+    if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
 
     setLoading(true)
     setError(null)
@@ -183,7 +230,30 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [deferredQuery, filters.level, filters.playerType, filters.sort, filters.stage, page])
+  }, [
+    deferredQuery,
+    filters.level,
+    filters.playerType,
+    filters.position,
+    filters.sort,
+    filters.stage,
+    filters.team,
+    page,
+  ])
+
+  useEffect(() => {
+    const parameters = new URLSearchParams()
+    if (filters.query.trim()) parameters.set('q', filters.query.trim())
+    if (filters.stage !== defaultFilters.stage) parameters.set('stage', filters.stage)
+    if (filters.playerType !== 'All') parameters.set('playerType', filters.playerType)
+    if (filters.level !== 'All') parameters.set('level', filters.level)
+    if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
+    if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
+    if (filters.sort !== defaultFilters.sort) parameters.set('sort', filters.sort)
+    if (page > 1) parameters.set('page', page.toString())
+    const query = parameters.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
+  }, [filters, page])
 
   const savedPlayers = useMemo(
     () => filterAndSortPlayers(Array.from(watchlist.values()), filters),
@@ -248,15 +318,9 @@ function App() {
   }
 
   const statcastCoverage = visiblePlayers.filter((player) => player.coverage.hasStatcast).length
-  const careerForecastCoverage = visiblePlayers.filter(
-    (player) => player.careerForecast?.hofCaliberProbability != null,
-  ).length
   const stageCoverage = isWatchlistView
     ? stageCoverageForPlayers(visiblePlayers)
     : meta.stageCoverage ?? stageCoverageForPlayers(visiblePlayers)
-  const hofForecastCount = isWatchlistView
-    ? careerForecastCoverage
-    : meta.researchCoverage ?? careerForecastCoverage
   const milbAlphaCount = isWatchlistView
     ? visiblePlayers.filter((player) => eligibleMilbCeilingAlpha(player) !== null).length
     : meta.milbImpactAlphaEligible ?? 0
@@ -270,6 +334,16 @@ function App() {
       : meta.degraded
         ? 'degraded'
         : 'live'
+  const modelVintage = selectedPlayer?.stage === 'pre_debut'
+    ? selectedPlayer.milbImpactRanking?.frozenAsOf ?? selectedPlayer.milbAlphaSignal?.asOf ?? null
+    : selectedPlayer?.careerForecast?.careerChapter?.featureSeason
+      ? `${selectedPlayer.careerForecast.careerChapter.featureSeason}-12-31T00:00:00.000Z`
+      : null
+  const signalUniverseCount = filters.stage === 'Minors'
+    ? milbAlphaCount
+    : filters.stage === 'MLB'
+      ? mlbAlphaCount
+      : milbAlphaCount + mlbAlphaCount
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -288,7 +362,8 @@ function App() {
             <span>Professional baseball · stage-specific career outcomes</span>
           </div>
           <div className="topbar-meta">
-            <span><CalendarDays size={14} aria-hidden="true" /> Data as of {formatDataDate(meta.dataAsOf)}</span>
+            <span><CalendarDays size={14} aria-hidden="true" /> Current stats {formatDataDate(meta.dataAsOf)}</span>
+            <span><History size={14} aria-hidden="true" /> Model snapshot {formatDataDate(modelVintage)}</span>
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
@@ -316,12 +391,12 @@ function App() {
           <main className="research-workspace">
             <header className="workspace-header board-workspace-header">
               <div>
-                <span className="eyebrow">CAREER OUTCOME RESEARCH</span>
-                <h1>{isWatchlistView ? 'Watchlist' : 'Oracle Board'}</h1>
+                <span className="eyebrow">BASEBALL DECISION INTELLIGENCE</span>
+                <h1>{isWatchlistView ? 'Watchlist' : 'Player Radar'}</h1>
                 <p>
                   {isWatchlistView
-                    ? 'Saved player snapshots with research-only career evidence.'
-                    : 'Early Ceiling Radar ranks young-for-level arrival anomalies by a separate five-year MLB-impact challenger. Raw impact probabilities, Hall-caliber claims, and market-return claims remain withheld.'}
+                    ? 'Saved player snapshots, evidence states, and research-only career outcomes.'
+                    : 'Scan stage-specific career upside, isolate unusual development paths, and inspect the evidence before committing a player to the watchlist.'}
                 </p>
               </div>
               <div className="snapshot-id">
@@ -340,14 +415,14 @@ function App() {
 
             <section className="overview-strip" aria-label="Board summary">
               <div>
-                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'PLAYER UNIVERSE'}</span>
+                <span>{isWatchlistView ? 'MATCHING WATCHLIST' : 'MATCHING COHORT'}</span>
                 <strong>{visiblePagination.total.toLocaleString()}</strong>
                 <small>{isWatchlistView ? `${watchlist.size} saved total` : 'one row per available player record'}</small>
               </div>
               <div>
-                <span>HOF FORECASTS</span>
-                <strong>{hofForecastCount.toLocaleString()}</strong>
-                <small>{milbAlphaCount.toLocaleString()} dual-gated MiLB ceiling signals · {mlbAlphaCount.toLocaleString()} MLB ceiling signals</small>
+                <span>ACTIONABLE SIGNALS</span>
+                <strong>{signalUniverseCount.toLocaleString()}</strong>
+                <small>{filters.stage === 'Minors' ? 'dual-gated MiLB ceiling universe' : filters.stage === 'MLB' ? 'eligible MLB ceiling universe' : 'stage-specific ceiling universe'}</small>
               </div>
               <div>
                 <span>MINORS / MLB</span>
@@ -356,7 +431,7 @@ function App() {
                   {isWatchlistView
                     ? 'stage mix in matching watchlist'
                     : statcastCoverage > 0
-                      ? `${statcastCoverage} visible with tracking data`
+                      ? `${statcastCoverage} loaded with tracking data`
                       : 'stage coverage in current artifact'}
                 </small>
               </div>
@@ -376,6 +451,7 @@ function App() {
                 loading={!isWatchlistView && loading}
                 error={isWatchlistView ? null : error}
                 watchlist={watchedIds}
+                facets={meta.facets}
                 onSelect={selectPlayer}
                 onToggleWatchlist={toggleWatchlist}
                 onChangeFilters={changeFilters}

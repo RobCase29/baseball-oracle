@@ -110,7 +110,9 @@ export function filterAndSortPlayers(
   players: PlayerRecord[],
   filters: BoardFilters,
 ): PlayerRecord[] {
-  const query = filters.query.trim().toLocaleLowerCase()
+  const query = normalizeSearchText(filters.query.trim())
+  const team = filters.team?.trim().toLocaleLowerCase('en-US') ?? 'all'
+  const position = filters.position?.trim().toLocaleUpperCase('en-US') ?? 'ALL'
 
   const filtered = players.filter((player) => {
       const matchesQuery =
@@ -120,13 +122,18 @@ export function filterAndSortPlayers(
           player.organization,
           player.organizationCode,
           player.position,
-        ].some((value) => value?.toLocaleLowerCase().includes(query))
+        ].some((value) => value ? normalizeSearchText(value).includes(query) : false)
       const matchesStage = matchesStageFilter(player.stage, filters.stage)
       const matchesType =
         filters.playerType === 'All' || player.playerType === filters.playerType
       const matchesLevel = filters.level === 'All' || player.level === filters.level
+      const matchesTeam = team === 'all' || [
+        player.organizationCode,
+        player.organization,
+      ].some((value) => value?.trim().toLocaleLowerCase('en-US') === team)
+      const matchesPosition = position === 'ALL' || positionTokens(player.position).includes(position)
 
-      return matchesQuery && matchesStage && matchesType && matchesLevel
+      return matchesQuery && matchesStage && matchesType && matchesLevel && matchesTeam && matchesPosition
     })
   const sortPlayers = (items: PlayerRecord[]) => items.toSorted((left, right) => {
       if (filters.sort === 'name') return left.name.localeCompare(right.name)
@@ -235,6 +242,23 @@ export function filterAndSortPlayers(
   return sourceOrder.flatMap((source) => sortPlayers(filtered.filter((player) =>
     source === 'mlb' ? isMlbStage(player.stage) : player.stage === 'pre_debut',
   )))
+}
+
+export function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .toLocaleLowerCase('en-US')
+}
+
+export function positionTokens(value: string | null): string[] {
+  if (!value) return []
+  return [...new Set(
+    value
+      .split(/[/,;|]+/u)
+      .map((token) => token.trim().toLocaleUpperCase('en-US'))
+      .filter(Boolean),
+  )]
 }
 
 export function formatProbability(value: number | null, digits = 1): string {
