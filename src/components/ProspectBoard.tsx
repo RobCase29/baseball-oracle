@@ -23,20 +23,15 @@ import type {
   StageFilter,
 } from '../domain/forecast'
 import {
-  careerWarForPlayer,
-  developmentChapterLabel,
-  formatWar,
-  isMlbStage,
+  formatPosition,
   stageLabel,
 } from '../lib/forecast'
-import { careerIndexFor, playerMapFor, prospectScoreFor } from './playerMapView'
-import { currentMinorEvidence, currentMinorSignal } from './currentMinorView'
 import {
-  formatRookieWar,
-  formatRookieWarPercentile,
-  rookieMlbReadLabel,
-  rookieEvidenceLabel,
-} from './rookieTrackView'
+  backstopRankFor,
+  careerOutlookFor,
+  currentResultsFor,
+  playerMapFor,
+} from './playerMapView'
 
 const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
@@ -214,6 +209,11 @@ export function ProspectBoard({
               className={filters.stage === stage.value ? 'is-active' : ''}
               aria-pressed={filters.stage === stage.value}
               onClick={() => {
+                const defaultSort = stage.value === 'All'
+                  ? 'name' as const
+                  : stage.value === 'Minors'
+                    ? 'prospectScore' as const
+                    : 'stageStanding' as const
                 const sortIsUnavailable = (
                   stage.value === 'Minors' && (
                     filters.sort === 'nearTermImpact' || filters.sort === 'finalWar'
@@ -232,15 +232,7 @@ export function ProspectBoard({
                 onChangeFilters({
                   stage: stage.value,
                   ...(stage.value === 'All' || stage.value === 'MLB' || stage.value === 'RC' ? { level: 'All' } : {}),
-                  ...(stage.value === 'All'
-                    ? { sort: 'name' as const }
-                    : stage.value === 'Minors' && filters.stage !== 'Minors'
-                      ? { sort: 'prospectScore' as const }
-                      : filters.stage === 'All'
-                      ? { sort: stage.value === 'Minors' ? 'prospectScore' as const : 'careerIndex' as const }
-                      : sortIsUnavailable
-                        ? { sort: stage.value === 'Minors' ? 'prospectScore' as const : 'careerIndex' as const }
-                        : {}),
+                  ...(filters.stage !== stage.value || sortIsUnavailable ? { sort: defaultSort } : {}),
                 })
               }}
             >
@@ -331,9 +323,9 @@ export function ProspectBoard({
         </label>
 
         <label className="select-field rank-select">
-          <span>Rank by</span>
+          <span>Sort by</span>
           <select
-            aria-label="Rank by"
+            aria-label="Sort by"
             value={filters.sort}
             onChange={(event) =>
               onChangeFilters({ sort: event.target.value as BoardFilters['sort'] })
@@ -347,10 +339,10 @@ export function ProspectBoard({
             ) : (
               <>
                 {filters.stage === 'Minors' ? (
-                  <option value="prospectScore">Prospect Score</option>
+                  <option value="prospectScore">Backstop Rank</option>
                 ) : null}
-                <option value="careerIndex">{filters.stage === 'MLB' ? 'Career Index' : 'Ceiling if MLB'}</option>
-                <option value="stageStanding">{filters.stage === 'MLB' ? 'MLB outlook rank' : 'Long-term potential rank'}</option>
+                {filters.stage !== 'Minors' ? <option value="stageStanding">Backstop Rank</option> : null}
+                <option value="careerIndex">Career Outlook</option>
                 {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
                   <option value="nearTermImpact">Next 3-year upside</option>
                 ) : null}
@@ -358,10 +350,10 @@ export function ProspectBoard({
                   <option value="finalWar">Projected career WAR</option>
                 ) : null}
                 {filters.stage !== 'MLB' && filters.stage !== 'RC' ? (
-                  <option value="arrival36">MLB arrival research rank</option>
+                  <option value="arrival36">Projected MLB arrival</option>
                 ) : null}
                 <option value="age">Youngest first</option>
-                <option value="name">Name</option>
+                <option value="name">Player name</option>
               </>
             )}
           </select>
@@ -389,7 +381,7 @@ export function ProspectBoard({
       {filters.stage === 'All' ? (
         <div className="directory-notice" role="note">
           <Info size={15} aria-hidden="true" />
-          <span><strong>Directory, not a combined leaderboard.</strong> Career Index uses one fixed career-value scale, while each rank compares players only within Prospects, Rookie Track, or MLB.</span>
+          <span><strong>Ranks are stage-specific.</strong> Compare a player with other prospects, pre-debut outlooks, or active MLB careers rather than treating this directory as one combined leaderboard.</span>
         </div>
       ) : null}
 
@@ -461,11 +453,10 @@ export function ProspectBoard({
           <table className="board-table oracle-board-table">
             <thead>
               <tr>
-                <th scope="col">{filters.stage === 'Minors' ? 'Player / Prospect Score' : 'Player / Career Index'}</th>
-                <th scope="col">{filters.stage === 'Minors' ? 'Impact rank' : 'Stage standing'}</th>
-                <th scope="col">{filters.stage === 'Minors' ? 'Ceiling if MLB' : 'Career projection'}</th>
-                <th scope="col">Current signal</th>
-                <th scope="col">Evidence</th>
+                <th scope="col">Player</th>
+                <th scope="col">Backstop Rank</th>
+                <th scope="col">Career Outlook</th>
+                <th scope="col">Current Results</th>
               </tr>
             </thead>
             <tbody>
@@ -473,46 +464,10 @@ export function ProspectBoard({
                 const selected = player.id === selectedId
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
-                const forecast = player.careerForecast
                 const playerMap = playerMapFor(player)
-                const handling = playerMap.handling?.primary ?? null
-                const careerIndex = careerIndexFor(player, playerMap)
-                const prospectScore = filters.stage === 'Minors' && playerMap.route === 'milb'
-                  ? prospectScoreFor(player, playerMap)
-                  : null
-                const primaryScore = prospectScore ?? careerIndex
-                const primaryScoreLabel = prospectScore?.label ?? (
-                  filters.stage === 'All' ? 'Career Index' : careerIndex.label
-                )
-                const isRookieTrack = player.stage === 'recent_callup' && player.recentCallup !== null
-                const rawProspectPrior = player.recentCallup?.prospectPrior ?? null
-                const prospectPrior = rawProspectPrior?.forecast.publicationState === 'withheld'
-                  ? null
-                  : rawProspectPrior
-                const hasProspectPrior = prospectPrior !== null
-                const mlbStage = isMlbStage(player.stage) && !isRookieTrack
-                const chapter = forecast?.careerChapter
-                const chapterLabel = handling?.label ?? (mlbStage
-                  ? (chapter?.status === 'research'
-                    ? chapter.label
-                    : 'MLB career in progress')
-                  : isRookieTrack
-                    ? 'Rookie Track'
-                    : developmentChapterLabel(player.level))
-                const careerWar = careerWarForPlayer(player)
-                const careerMiddleCase = careerWar?.p50 ?? null
-                const careerHighCase = careerWar?.p90 ?? null
-                const liveMinorSignal = playerMap.route === 'milb'
-                  ? currentMinorSignal(player)
-                  : null
-                const liveMinorEvidence = playerMap.route === 'milb'
-                  ? currentMinorEvidence(player)
-                  : null
-                const evidenceDisplay = isRookieTrack
-                  ? rookieEvidenceLabel(player)
-                  : playerMap.route === 'milb'
-                    ? liveMinorEvidence?.label ?? playerMap.scores.evidence.display.replace('pillars', 'data areas')
-                    : forecast?.confidenceState ?? 'Not available'
+                const backstopRank = backstopRankFor(player, playerMap)
+                const careerOutlook = careerOutlookFor(player, playerMap)
+                const currentResults = currentResultsFor(player, playerMap)
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -523,100 +478,48 @@ export function ProspectBoard({
                         onClick={() => onSelect(player.id)}
                         aria-current={selected ? 'true' : undefined}
                       >
-                        <span
-                          className={`career-index-badge career-index-badge--${primaryScore.tone}`}
-                          aria-label={`${primaryScoreLabel} ${primaryScore.display}`}
-                          title={primaryScore.explanation}
-                        >
-                          <strong>{primaryScore.display}</strong>
-                          <small>{prospectScore ? 'SCORE' : 'INDEX'}</small>
-                        </span>
                         <span>
                           <strong className="player-name">{player.name}</strong>
                           <small>
-                            {organization} · {player.position ?? player.playerType} · Age {player.age ?? '—'} · {player.level ?? stageLabel(player.stage)}
+                            {organization} · {formatPosition(player.position, player.playerType)} · Age {player.age ?? '—'} · {player.level ?? stageLabel(player.stage)}
                           </small>
                           <span className={`stage-badge stage-badge--${player.stage}`}>
                             {stageLabel(player.stage)}
                           </span>
-                          {handling ? <span className="handling-badge">{handling.label}</span> : null}
                         </span>
                         <ChevronRight className="row-chevron" size={16} aria-hidden="true" />
                       </button>
                     </td>
-                    <td className="rank-cell">
-                      <strong className="table-primary">
-                        {(prospectScore ? prospectScore.rank : careerIndex.rank)
-                          ? `#${(prospectScore ? prospectScore.rank : careerIndex.rank)?.toLocaleString()}`
-                          : '—'}
+                    <td className="rank-summary-cell">
+                      <span className="mobile-column-label">Backstop Rank</span>
+                      <strong
+                        className={`table-primary rank-summary rank-summary--${backstopRank.tone}`}
+                        title={backstopRank.explanation}
+                      >
+                        {backstopRank.display}
                       </strong>
                       <small>
-                        {prospectScore?.rank && prospectScore.universe
-                          ? `of ${prospectScore.universe.toLocaleString()} prospects · five-year impact`
-                          : prospectScore
-                            ? 'Prospect rank unavailable or withheld'
-                          : careerIndex.topLabel && careerIndex.universe
-                          ? `${careerIndex.topLabel} of ${careerIndex.universe.toLocaleString()} ${careerIndex.cohortLabel}`
-                          : isRookieTrack && !hasProspectPrior
-                            ? 'Prospect prior not matched'
-                            : chapterLabel}
+                        {backstopRank.universe === null
+                          ? backstopRank.evidenceLabel
+                          : `of ${backstopRank.universe.toLocaleString()} · ${backstopRank.evidenceLabel}`}
                       </small>
-                      <small className="mobile-standing-evidence">Evidence · {evidenceDisplay}</small>
                     </td>
-                    <td>
-                      <strong className="table-primary">
-                        {prospectScore
-                          ? careerIndex.display
-                          : careerMiddleCase === null && handling ? 'Not scored' : formatWar(careerMiddleCase)}
+                    <td className="outlook-cell">
+                      <span className="mobile-column-label">Career Outlook</span>
+                      <strong
+                        className={`table-primary outlook-value outlook-value--${careerOutlook.tone}`}
+                        title={careerOutlook.explanation}
+                      >
+                        {careerOutlook.band}
                       </strong>
-                      <small>
-                        {prospectScore
-                          ? careerIndex.value === null
-                            ? 'Career ceiling not yet mapped'
-                            : `Conditional career index · middle ${formatWar(careerMiddleCase)} · high ${formatWar(careerHighCase)} · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}`
-                          : handling && careerMiddleCase === null
-                          ? handling.summary
-                          : isRookieTrack && !hasProspectPrior
-                          ? 'Career projection available after the prospect prior is matched'
-                          : `${mlbStage ? 'Middle career WAR' : 'If MLB: middle career WAR'} · high case ${formatWar(careerHighCase)}${!mlbStage && !isRookieTrack ? ` · arrival age ${forecast?.decomposition.estimatedDebutAge ?? '—'}` : ''}`}
-                      </small>
+                      <small>{careerOutlook.display} · {careerOutlook.basis}</small>
                     </td>
-                    <td className="signal-cell">
-                      {isRookieTrack ? (
-                        <>
-                          <strong className="table-primary signal-positive">{rookieMlbReadLabel(player)}</strong>
-                          <small>
-                            {formatRookieWar(player)} · {formatRookieWarPercentile(player)}
-                            {player.recentCallup?.currentMlbEvidence.opportunity
-                              ? ` · ${player.recentCallup.currentMlbEvidence.opportunity.value} ${player.recentCallup.currentMlbEvidence.opportunity.label}`
-                              : ''}
-                          </small>
-                        </>
-                      ) : mlbStage ? (
-                        <>
-                          <strong className="table-primary">{chapterLabel}</strong>
-                          <small>{formatWar(forecast?.cumulativeWar ?? null)} career WAR to date</small>
-                        </>
-                      ) : (
-                        <>
-                          <strong className={`table-primary${liveMinorSignal ? ' signal-positive' : ''}`}>
-                            {liveMinorSignal?.label ?? (player.milbAlphaSignal?.rank ? `Arrival rank #${player.milbAlphaSignal.rank}` : 'Not confirmed')}
-                          </strong>
-                          <small>{liveMinorSignal?.detail ?? playerMap.stateLabel}</small>
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      <strong className="table-primary confidence-value">{evidenceDisplay}</strong>
-                      <small>
-                        {isRookieTrack
-                          ? player.recentCallup?.currentMlbEvidence.opportunity
-                            ? `${player.recentCallup.currentMlbEvidence.opportunity.value} ${player.recentCallup.currentMlbEvidence.opportunity.label} of MLB evidence`
-                            : 'Awaiting MLB opportunity data'
-                          : playerMap.route === 'milb'
-                            ? liveMinorEvidence?.detail ?? 'current stat coverage'
-                            : 'support behind the career outlook'}
-                      </small>
+                    <td className="current-results-cell">
+                      <span className="mobile-column-label">Current Results</span>
+                      <strong className={`table-primary current-results current-results--${currentResults.tone}`}>
+                        {currentResults.headline}
+                      </strong>
+                      <small>{currentResults.detail}</small>
                     </td>
                   </tr>
                 )

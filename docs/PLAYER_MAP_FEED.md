@@ -49,6 +49,17 @@ tie-breakers. The response declares the applied metric, direction, scope, null
 policy, field exposure, and ordered tie-breakers in
 `meta.ordering`; consumers should validate that object before trusting row order.
 
+The product-facing decision order is:
+
+1. **Backstop Rank:** the exact route-specific ordinal, lower is better.
+2. **Career Outlook:** the existing `careerIndex` on its fixed 0-100 scale.
+3. **Current Results:** observed current-season evidence, kept separate from rank.
+
+`meta.decisionHierarchy` (`backstop-decision-hierarchy/v1`) publishes the exact
+full and compact field paths for that order. The name **Career Outlook** is
+intentional: Career Index is an absolute modeled career-value scale, not a peer
+percentile, so labeling it “Relative Outlook” would be misleading.
+
 The compact feed contains:
 
 - `playerId`: the current Oracle record identifier.
@@ -65,7 +76,7 @@ The compact feed contains:
   exact impact rank, universe, target, status, and model as-of date. It ranks the
   target of at least 5 MLB WAR during 2026-2030 and is not a
   probability.
-- `assessment.careerIndex`: the primary fixed-scale career-value magnitude
+- `assessment.careerIndex`: the secondary fixed-scale Career Outlook
   signal for MLB and the prospect **Ceiling if MLB**, including version, route,
   basis, research status, definition, forecast
   model/target/data/provider lineage, and as-of date. Prospect and Rookie Track
@@ -82,10 +93,10 @@ The compact feed contains:
   during the Player Map v2 migration. Its `deprecated` flag is always `true` and
   its replacement is `careerIndex`.
 - `meta`: feed and scorecard versions, a stable snapshot fingerprint, the
-  machine-readable ranking contract, applied ordering, and explicit
-  market-independence flags.
+  machine-readable product hierarchy and ranking contract, applied ordering,
+  and explicit market-independence flags.
 
-`meta.matchingMappedCount` is the number of matching records whose primary
+`meta.matchingMappedCount` is the number of matching records whose
 `assessment.careerIndex.value` is non-null. It is not generic profile coverage or
 five-year-impact-rank coverage.
 
@@ -94,14 +105,31 @@ normalized player name. Use MLBAM first, another exact provider ID second, and t
 durable BRef/Chadwick/MLBAM evidence overlay only when all three identifiers agree.
 Unresolved or conflicting evidence stays separate for review.
 
-## Score Semantics
+## Decision Semantics
+
+Backstop Rank is a product label over three honest route-specific ordinals:
+
+- **Minors:** `assessment.scores.outcome.rank`, the five-year MLB-impact rank.
+- **Rookie Track:** `assessment.stageStanding.rank`, carrying the exact frozen
+  pre-debut impact rank while current MLB evidence accumulates.
+- **MLB:** `assessment.stageStanding.rank`, the active MLB Career Outlook standing.
+
+For v4 compatibility, Rookie Track's `assessment.stageStanding.metric` retains
+the legacy `prospect_career_outcome_rank` identifier. Its `target` plus
+`meta.decisionHierarchy.backstopRank.routes.rookie.sourceMetric` are authoritative:
+the carried rank is the frozen five-year impact rank, not the Career Outlook rank.
+
+These ranks answer different questions against different universes. Do not compare
+a prospect #20 with an MLB #20 as though they share one leaderboard. A null rank
+means unavailable, never zero.
 
 `assessment.scores.outcome.value` is the primary prospect score on the MiLB
 route. Its exact contract and audit are defined in
 [`PROSPECT_SCORE_V1.md`](./PROSPECT_SCORE_V1.md). `sort=prospectScore` orders by
 the exact rank, not the rounded display value.
 
-`assessment.careerIndex.value` is the fixed career-magnitude score. It is
+`assessment.careerIndex.value`, presented as **Career Outlook**, is the fixed
+career-magnitude score. It is
 the weighted P50/P75/P90 summary of the player's final-career WAR distribution
 mapped onto frozen career-value anchors. It is not a probability, percentile,
 confidence score, expected WAR, or investment-return estimate. The exact formula,
@@ -122,6 +150,12 @@ filters do not renumber it. Gaps such as prospect ranks #1, #4, and #5 are valid
 when intervening frozen-cohort players have graduated to Rookie Track or are no
 longer in the current result.
 
+Current Results come from `currentEvidence.minorStats` in compact MiLB records.
+Full records also expose current MLB observations through `metrics`; compact v4
+does not yet publish a normalized MLB Current Results field. The hierarchy
+contract declares that limitation as `compactMlbAvailability=not_normalized_in_v4`
+instead of inviting consumers to infer missing results from forecast values.
+
 The Directory union defaults to `stage=All&sort=name`; `sort=age` is also
 available. Neither directory order is baseball standing. Career Index is the
 only supported cross-stage score ordering, requested explicitly with
@@ -135,23 +169,35 @@ means the player ranked above approximately 96% of its declared route universe;
 it does not mean 96% confidence. Do not relabel it as Career Index. A `null` value
 in any score object means unavailable; it never means zero.
 
-Every compact response includes `meta.rankingContract` with version
-`player-ranking-contract/v1`. It declares `careerIndex` as the primary metric and
-sort, confirms that Career Index is comparable across routes, restricts stage
-standing to within-stage comparison, and marks `oracleScore` deprecated.
-The unparameterized `stage=Minors` API remains Career Index ordered for backward
-compatibility. MiLB consumers opt into the route-primary score with
-`sort=prospectScore`; those responses also include
-`meta.prospectScoreContract` (`prospect-score/v2`). It declares the full and compact value, rank,
+Every compact response includes `meta.decisionHierarchy` with version
+`backstop-decision-hierarchy/v1`. It declares Backstop Rank as the product-facing
+primary read, Career Outlook as the secondary long-term read, and Current Results
+as separate observed evidence. It also publishes every route-specific rank path,
+direction, and comparability rule.
+
+The older additive `meta.rankingContract` remains unchanged at
+`player-ranking-contract/v1` for v4 compatibility. Its `careerIndex` primary
+metric means the canonical **cross-route numeric sort**, not the first score a
+person should read. It confirms that Career Index is comparable across routes,
+restricts stage standing to within-stage comparison, and marks `oracleScore`
+deprecated. The additive markers `scope=cross_route_numeric_sort` and
+`productPrimary=false` make that boundary machine-readable;
+`meta.decisionHierarchy` is authoritative for product display order.
+
+The unparameterized `stage=Minors` API now defaults to `prospectScore`. Minors
+responses include `meta.prospectScoreContract` (`prospect-score/v2`), which
+declares the full and compact value, rank,
 universe, target, status, and as-of field paths; the fixed 2026-2030 target
 window; the 2025-12-31 feature cutoff; the exact percentile formula; comparison
 scope; and research status. It also confirms that the score is neither a
 calibrated probability nor blended with current-season evidence. V2 also declares
 the transparent hierarchical prior used below the frozen workload threshold,
 the `insufficient_sample` marker for those prior-led rows, and Career Index as the
-separate age/runway guardrail. This remains an additive opt-in extension to the
-v4 feed shape; consumers must validate the score-contract version before using
-its ordering semantics.
+separate age/runway guardrail. The historical `activation` and
+`legacyDefaultSort` fields remain in v4 for compatibility and are explicitly
+deprecated; use `defaultStage=Minors` and `defaultSort=prospectScore` for current
+behavior. Consumers must validate the score-contract version and `meta.ordering`
+before using its ordering semantics.
 
 `meta.ordering.requestedSort` records the accepted query, while
 `meta.ordering.appliedSort` resolves legacy `alphaOpportunity` requests to the
@@ -186,7 +232,9 @@ Backstop should persist this lineage with every derived card recommendation:
 - Oracle record ID;
 - Player Map version;
 - signal target and model as-of timestamp;
-- Career Index value, version, route, status, and as-of date;
+- Backstop Rank, its route, exact rank, universe, target, and as-of date;
+- Career Outlook (`careerIndex`) value, version, route, status, and as-of date;
+- Current Results source, season, observation time, and workload where present;
 - Prospect Score value, exact rank, universe, target, status, and as-of date for
   MiLB records;
 - stage rank, universe, top-share percentage, tail band, cohort, and as-of date;
@@ -194,9 +242,9 @@ Backstop should persist this lineage with every derived card recommendation:
 - mapping and evidence state.
 
 Backstop should calculate card opportunity independently. A useful first design is
-to retain Career Index, stage standing, readiness, trajectory, and evidence as
-separate features, then combine them with market price percentile, recent
-comparable sales, bid/ask depth, sell-through, population, card scarcity,
+to retain Backstop Rank, Career Outlook, Current Results, readiness, trajectory,
+and evidence as separate features, then combine them with market price percentile,
+recent comparable sales, bid/ask depth, sell-through, population, card scarcity,
 condition, and total transaction cost. Do not collapse the Oracle vector into an
 unexplained talent number before testing which dimensions add out-of-sample
 market value.
@@ -217,8 +265,9 @@ contract should add:
 The current endpoint emits a deterministic per-page `ETag`, honors weak or
 strong `If-None-Match` validators, and includes a content-derived
 `meta.snapshotId` with `snapshotScope=ranking_and_census`. The hosting layer may
-surface the entity tag in weak form after transfer encoding. The fingerprint hashes canonical player
-identity, every ranking input, forecast lineage, and score-contract versions, so
+surface the entity tag in weak form after transfer encoding. The fingerprint
+hashes canonical player identity, every ranking input, forecast lineage, and
+score-contract versions, so
 it detects ranking or census drift during a paginated pull. It does not freeze
 explanatory detail rows; immutable snapshot-bound cursors remain future work.
 
@@ -227,7 +276,8 @@ comparable only when its index version, forecast route, target, and model versio
 are unchanged. A stage-standing delta also requires an unchanged cohort and
 universe definition. `oracle-player-map/v1` consumers may read the legacy
 `oracleScore` during migration, but new Backstop ingestion should bind to
-`oracle-player-map/v2` and persist `careerIndex` plus `stageStanding`.
+`oracle-player-map/v4` and persist Backstop Rank lineage, `careerIndex`,
+`stageStanding`, and Current Results separately.
 Provider-derived fields should be included externally only when redistribution
 rights cover the intended integration.
 

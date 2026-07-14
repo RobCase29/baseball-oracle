@@ -297,14 +297,22 @@ export interface PlayerMapInput {
     warnings?: string[]
   } | null
   recentCallup?: {
-    version: 'rookie-track-v1'
+    version: 'rookie-track-v1' | 'rookie-track-v2'
     status: 'monitoring'
     reason: 'first_mlb_season_partial_only' | 'current_mlb_record_not_in_model_census'
     prospectPrior: {
-      rank: number
-      universe: number
+      rank: number | null
+      universe: number | null
       target: string
       asOf: string
+      impactRank?: {
+        rank: number
+        universe: number
+        target: string
+        asOf: string
+        modelVersion: string
+        evidenceTier: 'full_model' | 'early_estimate'
+      } | null
       forecast: {
         publicationState?: 'observed' | 'research' | 'released' | 'withheld'
         confidenceState: string
@@ -855,9 +863,10 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
   const rookie = player.recentCallup
   const prior = rookie?.prospectPrior ?? null
   const evidence = rookie?.currentMlbEvidence ?? null
-  const supportedPrior = prior?.forecast.publicationState === 'withheld' ? null : prior
-  const priorValue = supportedPrior
-    ? ordinalPercentile(supportedPrior.rank, supportedPrior.universe)
+  const supportedCareerPrior = prior?.forecast.publicationState === 'withheld' ? null : prior
+  const impactRank = prior?.impactRank ?? null
+  const priorValue = impactRank
+    ? ordinalPercentile(impactRank.rank, impactRank.universe)
     : null
   const careerIndex = buildCareerIndex(
     'rookie',
@@ -884,7 +893,7 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     ? 'discovery'
     : (priorValue ?? -1) >= 75
       ? 'monitor'
-      : priorValue !== null
+      : priorValue !== null || careerIndex.value !== null
         ? 'mapped'
         : 'profile_only'
   const opportunityDisplay = evidence?.opportunity
@@ -898,11 +907,13 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     : `Current MLB evidence is ${warDisplay}${currentWarPercentile === null ? '' : ` (${percentileDisplay(currentWarPercentile)})`} across ${opportunityDisplay}.`
 
   const signals: PlayerMapSignal[] = []
-  if (supportedPrior) {
+  if (impactRank || supportedCareerPrior) {
     signals.push({
       code: 'prospect_prior_preserved',
       label: 'Prospect prior preserved',
-      detail: 'The frozen pre-debut career rank remains the outcome score while MLB evidence accumulates.',
+      detail: impactRank
+        ? 'The frozen pre-debut five-year impact rank remains in place while MLB evidence accumulates.'
+        : 'The pre-debut career outlook remains available while the five-year impact rank is unmatched.',
     })
   }
   if (currentWarPercentile !== null) {
@@ -917,44 +928,52 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     version: PLAYER_MAP_VERSION,
     asOf: evidence?.asOf ?? prior?.asOf ?? player.provenance.retrievedAt,
     route: 'rookie',
-    mappingStatus: careerIndex.value === null ? 'coverage_gap' : 'scored',
-    claimStatus: careerIndex.value === null ? 'withheld' : 'research_only',
+    mappingStatus: impactRank?.evidenceTier === 'early_estimate'
+      ? 'insufficient_sample'
+      : impactRank
+        ? 'scored'
+        : 'coverage_gap',
+    claimStatus: impactRank || careerIndex.value !== null ? 'research_only' : 'withheld',
     state,
     stateLabel: stateLabels[state],
     archetype: 'Rookie Track / prospect prior',
-    summary: supportedPrior
-      ? `${player.name} carries a frozen ${rankDisplay(supportedPrior.rank, supportedPrior.universe)} prospect career-ceiling rank into Rookie Track. ${liveEvidenceText} Live evidence does not change the prospect-prior score.`
+    summary: impactRank
+      ? `${player.name} carries a frozen ${rankDisplay(impactRank.rank, impactRank.universe)} five-year prospect impact rank into Rookie Track. ${liveEvidenceText} Live evidence does not change the pre-debut rank.`
+      : supportedCareerPrior
+        ? `${player.name} has a matched pre-debut career outlook, but the five-year prospect impact rank is unavailable. ${liveEvidenceText}`
       : `${player.name} is in Rookie Track, but an exact frozen prospect prior is unavailable. ${liveEvidenceText}`,
     oracleScore: oracleScore(
       'rookie',
       priorValue,
-      supportedPrior?.rank ?? null,
-      supportedPrior?.universe ?? null,
-      supportedPrior?.target ?? null,
-      supportedPrior?.asOf ?? null,
+      impactRank?.rank ?? null,
+      impactRank?.universe ?? null,
+      impactRank?.target ?? null,
+      impactRank?.asOf ?? null,
     ),
     careerIndex,
     stageStanding: buildStageStanding(
       'rookie',
-      supportedPrior?.rank ?? null,
-      supportedPrior?.universe ?? null,
-      supportedPrior?.asOf ?? null,
-      supportedPrior?.target ?? null,
+      impactRank?.rank ?? null,
+      impactRank?.universe ?? null,
+      impactRank?.asOf ?? null,
+      impactRank?.target ?? null,
     ),
     handling,
     scores: {
       outcome: score({
         key: 'outcome',
-        label: 'Prospect career ceiling',
+        label: 'Pre-debut prospect impact rank',
         value: priorValue,
         display: percentileDisplay(priorValue),
         scale: 'ordinal_percentile',
         status: priorValue === null ? 'withheld' : 'research',
-        basis: 'Frozen pre-debut career-ceiling rank; current MLB evidence is not blended into it',
-        target: supportedPrior?.target ?? null,
-        rank: supportedPrior?.rank ?? null,
-        universe: supportedPrior?.universe ?? null,
-        asOf: supportedPrior?.asOf ?? null,
+        basis: impactRank?.evidenceTier === 'early_estimate'
+          ? 'Frozen pre-debut five-year impact rank from the thin-sample estimate; current MLB evidence is not blended into it'
+          : 'Frozen pre-debut five-year impact rank; current MLB evidence is not blended into it',
+        target: impactRank?.target ?? null,
+        rank: impactRank?.rank ?? null,
+        universe: impactRank?.universe ?? null,
+        asOf: impactRank?.asOf ?? null,
       }),
       readiness: score({
         key: 'readiness',
@@ -1017,7 +1036,8 @@ function buildRookieMap(player: PlayerMapInput): PlayerMapProfile {
     risks: currentRisks,
     signals,
     missingEvidence: [
-      ...(!supportedPrior ? ['Exact frozen prospect prior'] : []),
+      ...(!supportedCareerPrior ? ['Supported pre-debut career outlook'] : []),
+      ...(!impactRank ? ['Frozen five-year prospect impact rank'] : []),
       ...(currentWarPercentile === null ? ['Current MLB value standing'] : []),
       ...(player.careerForecast?.rank === null || player.careerForecast === null
         ? ['Supported completed-season MLB career forecast']

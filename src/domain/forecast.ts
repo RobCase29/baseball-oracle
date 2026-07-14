@@ -303,16 +303,26 @@ export interface PlayerOpportunity {
   value: string
 }
 
+export interface RecentCallupImpactRank {
+  rank: number
+  universe: number
+  target: string
+  asOf: string
+  modelVersion: string
+  evidenceTier: 'full_model' | 'early_estimate'
+}
+
 export interface RecentCallupContext {
-  version: 'rookie-track-v1'
+  version: 'rookie-track-v1' | 'rookie-track-v2'
   status: 'monitoring'
   reason: 'first_mlb_season_partial_only' | 'current_mlb_record_not_in_model_census'
   prospectPrior: {
-    rank: number
-    universe: number
+    rank: number | null
+    universe: number | null
     target: string
     asOf: string
     forecast: CareerForecast
+    impactRank?: RecentCallupImpactRank | null
   } | null
   currentMlbEvidence: {
     asOf: string | null
@@ -609,6 +619,12 @@ export interface PlayerRecord {
 
 export type SortKey = 'prospectScore' | 'careerIndex' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'age' | 'name'
 
+export function defaultSortForStage(stage: StageFilter): SortKey {
+  if (stage === 'All') return 'name'
+  if (stage === 'Minors') return 'prospectScore'
+  return 'stageStanding'
+}
+
 export interface BoardFilters {
   query: string
   stage: StageFilter
@@ -624,6 +640,62 @@ export interface PlayersPage {
   limit: number
   total: number
   totalPages: number
+}
+
+export interface DecisionHierarchyContract {
+  version: 'backstop-decision-hierarchy/v1'
+  displayOrder: readonly ['backstopRank', 'careerOutlook', 'currentResults']
+  nullMeans: 'unavailable_not_zero'
+  backstopRank: {
+    label: 'Backstop Rank'
+    semantics: 'exact_route_specific_ordinal'
+    lowerIsBetter: true
+    comparableAcrossRoutes: false
+    routes: {
+      milb: {
+        sourceMetric: 'prospectScore'
+        fullRankField: 'playerMap.scores.outcome.rank'
+        compactRankField: 'assessment.scores.outcome.rank'
+        fullUniverseField: 'playerMap.scores.outcome.universe'
+        compactUniverseField: 'assessment.scores.outcome.universe'
+      }
+      rookie: {
+        sourceMetric: 'frozen_pre_debut_impact_rank'
+        fullRankField: 'playerMap.stageStanding.rank'
+        compactRankField: 'assessment.stageStanding.rank'
+        fullUniverseField: 'playerMap.stageStanding.universe'
+        compactUniverseField: 'assessment.stageStanding.universe'
+      }
+      mlb: {
+        sourceMetric: 'career_outlook_stage_standing'
+        fullRankField: 'playerMap.stageStanding.rank'
+        compactRankField: 'assessment.stageStanding.rank'
+        fullUniverseField: 'playerMap.stageStanding.universe'
+        compactUniverseField: 'assessment.stageStanding.universe'
+      }
+    }
+  }
+  careerOutlook: {
+    label: 'Career Outlook'
+    sourceMetric: 'careerIndex'
+    fullValueField: 'playerMap.careerIndex.value'
+    compactValueField: 'assessment.careerIndex.value'
+    scale: 'fixed_career_value_0_100'
+    higherIsBetter: true
+    relative: false
+    calibratedProbability: false
+    comparableAcrossRoutes: true
+  }
+  currentResults: {
+    label: 'Current Results'
+    semantics: 'observed_current_season_evidence'
+    blendedIntoBackstopRank: false
+    fullMinorField: 'currentMinorStats'
+    compactMinorField: 'currentEvidence.minorStats'
+    fullMlbMetricsField: 'metrics'
+    compactMlbMetricsField: null
+    compactMlbAvailability: 'not_normalized_in_v4'
+  }
 }
 
 export interface PlayersResponseMeta {
@@ -694,7 +766,10 @@ export interface PlayersResponseMeta {
     stageStandingIsFilteredResultOrdinal: false
     legacyMetric: 'oracleScore'
     legacyDeprecated: true
+    scope?: 'cross_route_numeric_sort'
+    productPrimary?: false
   }
+  decisionHierarchy?: DecisionHierarchyContract
   prospectScoreContract?: {
     version: 'prospect-score/v2'
     metric: 'prospectScore'
@@ -721,6 +796,9 @@ export interface PlayersResponseMeta {
     rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)'
     activation: 'explicit_sort_opt_in'
     legacyDefaultSort: 'careerIndex'
+    activationDeprecated: true
+    defaultStage: 'Minors'
+    defaultSort: 'prospectScore'
     higherIsBetter: true
     comparableWithinFrozenProspectUniverseOnly: true
     comparableAcrossRoutes: false
@@ -821,6 +899,7 @@ export interface PlayerMapFeedResponseMeta extends PlayersResponseMeta {
   legacyScoreSemantics: 'stage_specific_ordinal_not_market_value'
   scoreSemanticsDeprecated: true
   rankingContract: NonNullable<PlayersResponseMeta['rankingContract']>
+  decisionHierarchy: DecisionHierarchyContract
   prospectScoreContract?: NonNullable<PlayersResponseMeta['prospectScoreContract']>
   ordering: NonNullable<PlayersResponseMeta['ordering']>
 }

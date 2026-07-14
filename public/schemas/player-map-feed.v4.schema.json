@@ -865,6 +865,9 @@
         "rankingContract": {
           "$ref": "#/$defs/rankingContract"
         },
+        "decisionHierarchy": {
+          "$ref": "#/$defs/decisionHierarchy"
+        },
         "prospectScoreContract": {
           "$ref": "#/$defs/prospectScoreContract"
         },
@@ -894,6 +897,14 @@
         "version": {
           "const": "player-ranking-contract/v1"
         },
+        "scope": {
+          "description": "This legacy-compatible contract governs the canonical numeric sort across routes; it is not the product display hierarchy.",
+          "const": "cross_route_numeric_sort"
+        },
+        "productPrimary": {
+          "description": "False because meta.decisionHierarchy is authoritative for product presentation order.",
+          "const": false
+        },
         "primaryMetric": {
           "const": "careerIndex"
         },
@@ -917,6 +928,171 @@
         },
         "legacyDeprecated": {
           "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "decisionHierarchy": {
+      "description": "Product-facing order and exact field mapping for Backstop Rank, Career Outlook, and Current Results. This is additive to the cross-route rankingContract.",
+      "type": "object",
+      "required": [
+        "version",
+        "displayOrder",
+        "nullMeans",
+        "backstopRank",
+        "careerOutlook",
+        "currentResults"
+      ],
+      "properties": {
+        "version": { "const": "backstop-decision-hierarchy/v1" },
+        "displayOrder": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "backstopRank" },
+            { "const": "careerOutlook" },
+            { "const": "currentResults" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "nullMeans": { "const": "unavailable_not_zero" },
+        "backstopRank": {
+          "type": "object",
+          "required": ["label", "semantics", "lowerIsBetter", "comparableAcrossRoutes", "routes"],
+          "properties": {
+            "label": { "const": "Backstop Rank" },
+            "semantics": { "const": "exact_route_specific_ordinal" },
+            "lowerIsBetter": { "const": true },
+            "comparableAcrossRoutes": { "const": false },
+            "routes": {
+              "type": "object",
+              "required": ["milb", "rookie", "mlb"],
+              "properties": {
+                "milb": {
+                  "allOf": [
+                    { "$ref": "#/$defs/decisionRankRoute" },
+                    {
+                      "properties": {
+                        "sourceMetric": { "const": "prospectScore" },
+                        "fullRankField": { "const": "playerMap.scores.outcome.rank" },
+                        "compactRankField": { "const": "assessment.scores.outcome.rank" },
+                        "fullUniverseField": { "const": "playerMap.scores.outcome.universe" },
+                        "compactUniverseField": { "const": "assessment.scores.outcome.universe" }
+                      }
+                    }
+                  ]
+                },
+                "rookie": {
+                  "allOf": [
+                    { "$ref": "#/$defs/decisionRankRoute" },
+                    {
+                      "properties": {
+                        "sourceMetric": { "const": "frozen_pre_debut_impact_rank" },
+                        "fullRankField": { "const": "playerMap.stageStanding.rank" },
+                        "compactRankField": { "const": "assessment.stageStanding.rank" },
+                        "fullUniverseField": { "const": "playerMap.stageStanding.universe" },
+                        "compactUniverseField": { "const": "assessment.stageStanding.universe" }
+                      }
+                    }
+                  ]
+                },
+                "mlb": {
+                  "allOf": [
+                    { "$ref": "#/$defs/decisionRankRoute" },
+                    {
+                      "properties": {
+                        "sourceMetric": { "const": "career_outlook_stage_standing" },
+                        "fullRankField": { "const": "playerMap.stageStanding.rank" },
+                        "compactRankField": { "const": "assessment.stageStanding.rank" },
+                        "fullUniverseField": { "const": "playerMap.stageStanding.universe" },
+                        "compactUniverseField": { "const": "assessment.stageStanding.universe" }
+                      }
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "careerOutlook": {
+          "type": "object",
+          "required": [
+            "label",
+            "sourceMetric",
+            "fullValueField",
+            "compactValueField",
+            "scale",
+            "higherIsBetter",
+            "relative",
+            "calibratedProbability",
+            "comparableAcrossRoutes"
+          ],
+          "properties": {
+            "label": { "const": "Career Outlook" },
+            "sourceMetric": { "const": "careerIndex" },
+            "fullValueField": { "const": "playerMap.careerIndex.value" },
+            "compactValueField": { "const": "assessment.careerIndex.value" },
+            "scale": { "const": "fixed_career_value_0_100" },
+            "higherIsBetter": { "const": true },
+            "relative": { "const": false },
+            "calibratedProbability": { "const": false },
+            "comparableAcrossRoutes": { "const": true }
+          },
+          "additionalProperties": false
+        },
+        "currentResults": {
+          "type": "object",
+          "required": [
+            "label",
+            "semantics",
+            "blendedIntoBackstopRank",
+            "fullMinorField",
+            "compactMinorField",
+            "fullMlbMetricsField",
+            "compactMlbMetricsField",
+            "compactMlbAvailability"
+          ],
+          "properties": {
+            "label": { "const": "Current Results" },
+            "semantics": { "const": "observed_current_season_evidence" },
+            "blendedIntoBackstopRank": { "const": false },
+            "fullMinorField": { "const": "currentMinorStats" },
+            "compactMinorField": { "const": "currentEvidence.minorStats" },
+            "fullMlbMetricsField": { "const": "metrics" },
+            "compactMlbMetricsField": { "type": "null" },
+            "compactMlbAvailability": { "const": "not_normalized_in_v4" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "decisionRankRoute": {
+      "type": "object",
+      "required": [
+        "sourceMetric",
+        "fullRankField",
+        "compactRankField",
+        "fullUniverseField",
+        "compactUniverseField"
+      ],
+      "properties": {
+        "sourceMetric": {
+          "enum": ["prospectScore", "frozen_pre_debut_impact_rank", "career_outlook_stage_standing"]
+        },
+        "fullRankField": {
+          "enum": ["playerMap.scores.outcome.rank", "playerMap.stageStanding.rank"]
+        },
+        "compactRankField": {
+          "enum": ["assessment.scores.outcome.rank", "assessment.stageStanding.rank"]
+        },
+        "fullUniverseField": {
+          "enum": ["playerMap.scores.outcome.universe", "playerMap.stageStanding.universe"]
+        },
+        "compactUniverseField": {
+          "enum": ["assessment.scores.outcome.universe", "assessment.stageStanding.universe"]
         }
       },
       "additionalProperties": false
@@ -987,6 +1163,9 @@
         "rankPercentileFormula": { "const": "100 * (universeRows - rank) / (universeRows - 1)" },
         "activation": { "const": "explicit_sort_opt_in" },
         "legacyDefaultSort": { "const": "careerIndex" },
+        "activationDeprecated": { "const": true },
+        "defaultStage": { "const": "Minors" },
+        "defaultSort": { "const": "prospectScore" },
         "higherIsBetter": { "const": true },
         "comparableWithinFrozenProspectUniverseOnly": { "const": true },
         "comparableAcrossRoutes": { "const": false },

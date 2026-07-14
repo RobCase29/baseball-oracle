@@ -169,6 +169,21 @@ describe('player-map-feed.v4 JSON Schema', () => {
       }>
       meta: {
         snapshotId: string
+        rankingContract: {
+          productPrimary: boolean
+        }
+        decisionHierarchy: {
+          backstopRank: {
+            routes: {
+              milb: {
+                compactRankField: string
+              }
+            }
+          }
+          careerOutlook: {
+            relative: boolean
+          }
+        }
         prospectScoreContract: {
           calibratedProbability: boolean
         }
@@ -185,6 +200,10 @@ describe('player-map-feed.v4 JSON Schema', () => {
     drifted.items[0].assessment.stageStanding.cohort = 'current_mlb'
     delete drifted.items[0].assessment.oracleScore.deprecated
     drifted.meta.snapshotId = 'moving-target'
+    drifted.meta.rankingContract.productPrimary = true
+    drifted.meta.decisionHierarchy.backstopRank.routes.milb.compactRankField =
+      'assessment.stageStanding.rank'
+    drifted.meta.decisionHierarchy.careerOutlook.relative = true
     drifted.meta.prospectScoreContract.calibratedProbability = true
     drifted.meta.ordering.fieldExposed = false
     drifted.meta.ordering.requestedSort = 'alphaOpportunity'
@@ -196,6 +215,11 @@ describe('player-map-feed.v4 JSON Schema', () => {
     expect(errors).toContain('/assessment/stageStanding/cohort')
     expect(errors).toContain('/assessment/oracleScore must have required property')
     expect(errors).toContain('/meta/snapshotId must match pattern')
+    expect(errors).toContain('/meta/rankingContract/productPrimary must be equal to constant')
+    expect(errors).toContain(
+      '/meta/decisionHierarchy/backstopRank/routes/milb/compactRankField must be equal to constant',
+    )
+    expect(errors).toContain('/meta/decisionHierarchy/careerOutlook/relative must be equal to constant')
     expect(errors).toContain('/meta/prospectScoreContract/calibratedProbability must be equal to constant')
     expect(errors).toContain('/meta/ordering/field must be null')
     expect(errors).toContain('/meta/ordering/appliedSort must be equal to constant')

@@ -416,7 +416,7 @@ function App() {
           </div>
           <div className="topbar-meta">
             <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataTimestamp(statsCheckedAt)}</span>
-            <span><History size={14} aria-hidden="true" /> Career Index data through {formatDataDate(modelVintage)}</span>
+            <span><History size={14} aria-hidden="true" /> Career model through {formatDataDate(modelVintage)}</span>
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
@@ -436,8 +436,8 @@ function App() {
                   <span className="eyebrow">PLAYER FORECASTS</span>
                   <h1>{filters.stage === 'All' ? 'Player Directory' : 'Player Rankings'}</h1>
                   <p>{filters.stage === 'All'
-                    ? 'Search every active player, then use stage standing and evidence to make a fair comparison.'
-                    : 'Compare projected career magnitude, exact stage standing, and evidence, then open any row for the full outlook.'}</p>
+                    ? 'Search every active player, then compare each player within the right career stage.'
+                    : 'Backstop Rank sets the priority. Career Outlook adds long-term context. Current Results show what is happening now.'}</p>
                 </div>
                 <div className="snapshot-id">
                   <span>MODEL STATUS</span>

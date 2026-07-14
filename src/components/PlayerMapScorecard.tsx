@@ -1,12 +1,12 @@
 import { AlertCircle, Layers3, Radar, Route } from 'lucide-react'
 import type { PlayerRecord } from '../domain/forecast'
-import type { PlayerMapRoute, PlayerMapScore, PlayerMapSignal } from '../domain/playerMap'
-import { careerIndexFor, playerMapFor, prospectScoreFor } from './playerMapView'
-
-function scoreWidth(score: PlayerMapScore): number | null {
-  if (score.value === null || score.scale === 'ordinal_rank') return null
-  return Math.max(0, Math.min(100, score.value))
-}
+import type { PlayerMapProfile, PlayerMapSignal } from '../domain/playerMap'
+import {
+  backstopRankFor,
+  careerOutlookFor,
+  currentResultsFor,
+  playerMapFor,
+} from './playerMapView'
 
 function ordinalLabel(value: number): string {
   const rounded = Math.round(value)
@@ -23,85 +23,42 @@ function ordinalLabel(value: number): string {
   return `${rounded}${suffix} percentile`
 }
 
-function supportingLabel(score: PlayerMapScore, route: PlayerMapRoute): string {
-  if (route === 'rookie') {
-    if (score.key === 'readiness') return 'MLB arrival'
-    if (score.key === 'trajectory') return 'Current MLB WAR standing'
-    if (score.key === 'best_trait') return 'Current MLB performance'
-    if (score.key === 'evidence') return 'MLB sample'
-  }
-  if (score.key === 'outcome') return route === 'milb' ? 'Prospect Score' : score.label
-  if (score.key === 'readiness') return route === 'milb' ? 'MLB readiness' : 'Next 3-year upside'
-  if (score.key === 'trajectory') return route === 'milb' ? 'Projected MLB arrival' : 'Career pace'
-  if (score.key === 'best_trait') return route === 'milb' ? 'Best current skill' : 'Current season performance'
-  return route === 'milb' ? 'Current data coverage' : 'Model evidence'
+interface OutlookFact {
+  label: string
+  value: string
+  detail: string
 }
 
-function supportingDisplay(
-  score: PlayerMapScore,
-  route: PlayerMapRoute,
-  player: PlayerRecord,
-): string {
-  if (score.key === 'readiness' && route === 'milb') {
-    return score.rank === null ? 'Not yet confirmed' : `Arrival rank #${score.rank.toLocaleString()}`
-  }
-  if (score.key === 'trajectory' && route === 'milb') return score.display
-  if ((score.key === 'trajectory' || score.key === 'best_trait') && score.value !== null) {
-    return ordinalLabel(score.value)
-  }
-  if (score.key === 'evidence' && route === 'milb') {
-    return score.display.replace('pillars', 'data areas')
-  }
-  if (score.key === 'evidence' && route === 'mlb') {
-    return player.careerForecast?.confidenceState ?? 'Not available'
-  }
-  if (score.key === 'best_trait' && score.value === null) {
-    return score.status === 'observed' ? score.display : 'Stats not loaded'
-  }
-  return score.display
-}
-
-function supportingBasis(score: PlayerMapScore, route: PlayerMapRoute): string {
-  if (route === 'rookie') {
-    if (score.key === 'readiness') return 'The MLB appearance is observed and confirms arrival.'
-    if (score.key === 'trajectory') return 'Current-role WAR standing, shown separately from the frozen Career Index.'
-    if (score.key === 'best_trait') return score.basis
-    if (score.key === 'evidence') return 'Observed MLB opportunity changes evidence depth, not the frozen Career Index.'
-  }
-  if (score.key === 'readiness') {
-    return route === 'milb'
-      ? 'A separate model checks whether an MLB arrival is close enough to confirm.'
-      : 'Chance of reaching the model’s elite production line over the next three seasons.'
-  }
-  if (score.key === 'outcome') return score.basis
-  if (score.key === 'trajectory') {
-    return route === 'milb'
-      ? 'Projected MLB arrival age is carried into the career outlook; later arrivals have less runway.'
-      : 'Career value to date compared with similar players at the same age and experience.'
-  }
-  if (score.key === 'best_trait') {
-    return score.value === null && score.status !== 'observed'
-      ? 'Current tracking stats are not available in this profile.'
-      : score.basis
-  }
-  return route === 'milb'
-    ? 'How many key areas of the current player profile are represented.'
-    : 'How much completed-career evidence supports the projection.'
+function outlookFacts(player: PlayerRecord, map: PlayerMapProfile): OutlookFact[] {
+  const careerOutlook = careerOutlookFor(player, map)
+  const currentResults = currentResultsFor(player, map)
+  return [
+    {
+      label: 'Career Outlook',
+      value: careerOutlook.band,
+      detail: `${careerOutlook.display} · ${careerOutlook.basis}`,
+    },
+    {
+      label: 'Current Results',
+      value: currentResults.headline,
+      detail: currentResults.detail,
+    },
+  ]
 }
 
 function plainSignal(signal: PlayerMapSignal): { label: string; detail: string } {
   const copy: Record<PlayerMapSignal['code'], { label: string; detail: string }> = {
     dual_confirmed: {
-      label: 'Prospect Score and MLB readiness agree',
-      detail: 'Both the five-year impact rank and the separate MLB arrival check rate this player highly.',
+      label: 'Rank and MLB readiness agree',
+      detail: 'The five-year impact rank and the separate MLB arrival check both rate this player highly.',
     },
     ceiling_readiness_split: {
-      label: 'Strong score, longer path',
-      detail: 'The Prospect Score ranks highly, but a near-term MLB arrival is not confirmed yet.',
+      label: 'Strong outlook, longer path',
+      detail: 'The Backstop Rank is strong, but a near-term MLB arrival is not confirmed yet.',
     },
     thin_data_upside: {
       label: 'Early signal',
-      detail: 'The Prospect Score is already strong even though the current-season sample is still developing.',
+      detail: 'The Backstop Rank is already strong even though the current-season sample is still developing.',
     },
     trait_corroborated: {
       label: 'Current stats support the projection',
@@ -120,8 +77,8 @@ function plainSignal(signal: PlayerMapSignal): { label: string; detail: string }
       detail: 'The latest completed season improved the player’s long-term career path.',
     },
     prospect_prior_preserved: {
-      label: 'Prospect trajectory preserved',
-      detail: 'The pre-debut Career Index stays visible while the first MLB sample develops.',
+      label: 'Pre-debut outlook preserved',
+      detail: 'The pre-debut rank stays visible while the first MLB sample develops.',
     },
     mlb_confirmation: {
       label: 'MLB evidence is arriving',
@@ -154,81 +111,46 @@ function plainNextStep(step: string): string {
 
 export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   const map = playerMapFor(player)
-  const careerIndex = careerIndexFor(player, map)
-  const prospectScore = map.route === 'milb' ? prospectScoreFor(player, map) : null
-  const supportingScores = map.route === 'milb'
-    ? [map.scores.readiness, map.scores.trajectory, map.scores.evidence]
-    : map.route === 'rookie'
-      ? [map.scores.readiness, map.scores.trajectory, map.scores.evidence]
-      : [map.scores.readiness, map.scores.trajectory, map.scores.bestTrait, map.scores.evidence]
+  const backstopRank = backstopRankFor(player, map)
+  const facts = outlookFacts(player, map)
   const hasTraitProfile = map.strengths.length > 0 || map.risks.length > 0
+  const outcomeTitle = map.route === 'milb'
+    ? 'Prospect ranking'
+    : map.route === 'rookie'
+      ? 'Pre-debut rank, current MLB check'
+      : 'MLB career ranking'
 
   return (
     <section className={`player-map player-map--${map.state}`} aria-labelledby="player-map-title">
       <div className="player-map-heading">
         <div
-          className={`career-index-hero career-index-hero--${prospectScore?.tone ?? careerIndex.tone}`}
+          className={`career-index-hero career-index-hero--${backstopRank.tone}`}
           role="group"
-          aria-label={`${prospectScore?.label ?? careerIndex.label} ${prospectScore?.display ?? careerIndex.display}`}
+          aria-label={backstopRank.rank === null ? 'Backstop Rank unavailable' : `Backstop Rank ${backstopRank.rankLabel}`}
         >
-          <span>{prospectScore ? 'PROSPECT SCORE' : map.route === 'rookie' ? 'FROZEN CAREER INDEX' : 'CAREER INDEX'}</span>
-          <strong>{prospectScore?.display ?? careerIndex.display}</strong>
-          <small>{(prospectScore ? prospectScore.value : careerIndex.value) === null ? 'NOT SCORED' : prospectScore ? 'FIVE-YEAR IMPACT RANK' : 'CAREER MAGNITUDE'}</small>
+          <span>BACKSTOP RANK</span>
+          <strong>{backstopRank.display}</strong>
+          <small>{backstopRank.routeLabel.toLocaleUpperCase()}</small>
         </div>
         <div className="player-map-heading-copy">
-          <span className="eyebrow">{prospectScore ? 'PRIMARY PROSPECT OUTLOOK' : 'PRIMARY CAREER OUTLOOK'}</span>
-          <h2 id="player-map-title">{prospectScore ? 'Five-year MLB impact' : careerIndex.outcomeLabel}</h2>
-          <p>{prospectScore?.explanation ?? careerIndex.explanation}</p>
+          <span className="eyebrow">RANKING SUMMARY</span>
+          <h2 id="player-map-title">{outcomeTitle}</h2>
+          <p>{backstopRank.explanation}</p>
           <div className="player-map-context">
-            <strong>{prospectScore?.rankLabel ?? `${careerIndex.rankLabel}${careerIndex.topLabel ? ` · ${careerIndex.topLabel}` : ''}`}</strong>
-            <span><Radar size={14} aria-hidden="true" /> {prospectScore ? 'frozen prospect impact universe' : careerIndex.cohortLabel}</span>
+            <strong>{backstopRank.topLabel ?? 'Rank pending'}</strong>
+            <span><Radar size={14} aria-hidden="true" /> {backstopRank.cohortLabel} · {backstopRank.evidenceLabel}</span>
           </div>
         </div>
       </div>
 
-      <div className="career-index-definition">
-        <strong>{map.route === 'rookie' ? 'Evidence update, not a re-score.' : 'How to read it.'}</strong>
-        <span>
-          {map.route === 'rookie'
-            ? 'The Career Index remains the pre-debut career ceiling conditional on reaching MLB. Arrival is now confirmed; current MLB performance changes the evidence read, not the frozen index.'
-            : map.route === 'milb'
-              ? 'Prospect Score is the player’s exact percentile rank for reaching at least 5 MLB WAR during 2026-2030. It is not a probability. Ceiling if MLB, arrival, and current evidence stay separate.'
-              : 'Career Index maps the middle, strong, and high projected career-WAR cases to one fixed historical value scale. It is not a probability, percentile, confidence score, or expected WAR.'}
-        </span>
-      </div>
-
-      <div className="player-map-scores" aria-label={prospectScore ? 'Ceiling, runway, and evidence behind the Prospect Score' : 'Evidence and context behind the Career Index'}>
-        {prospectScore ? (
-          <div className={`player-map-score player-map-score--${careerIndex.value === null ? 'withheld' : 'research'}`}>
-            <span>Ceiling if MLB</span>
-            <strong>{careerIndex.display}</strong>
-            <div
-              className="player-map-score-track"
-              role="img"
-              aria-label={`Ceiling if MLB: ${careerIndex.display}`}
-            >
-              {careerIndex.value === null ? null : <i style={{ width: `${careerIndex.value}%` }} />}
-            </div>
-            <small>Conditional career magnitude if the player reaches MLB; this is where remaining age and career runway shape the long-range arc.</small>
+      <div className="player-map-scores player-map-facts" aria-label="Career Outlook and Current Results">
+        {facts.map((fact) => (
+          <div className="player-map-score" key={fact.label}>
+            <span>{fact.label}</span>
+            <strong>{fact.value}</strong>
+            <small>{fact.detail}</small>
           </div>
-        ) : null}
-        {supportingScores.map((score) => {
-          const width = scoreWidth(score)
-          return (
-            <div className={`player-map-score player-map-score--${score.status}`} key={score.key}>
-              <span>{supportingLabel(score, map.route)}</span>
-              <strong>{supportingDisplay(score, map.route, player)}</strong>
-              <div
-                className="player-map-score-track"
-                role="img"
-                aria-label={`${supportingLabel(score, map.route)}: ${supportingDisplay(score, map.route, player)}`}
-              >
-                {width === null ? null : <i style={{ width: `${width}%` }} />}
-              </div>
-              <small>{supportingBasis(score, map.route)}</small>
-            </div>
-          )
-        })}
+        ))}
       </div>
 
       {map.signals.length > 0 ? (
@@ -294,14 +216,6 @@ export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
         </div>
       ) : null}
 
-      <div className="player-map-disclosure">
-        <strong>Three separate readings.</strong>
-        <span>{map.route === 'milb'
-          ? 'Prospect Score ranks individualized five-year MLB impact. Ceiling if MLB describes conditional career magnitude. Current evidence describes how much to trust the read. None is a probability, card-value estimate, or guarantee.'
-          : map.route === 'rookie'
-            ? 'Career Index and stage standing are the frozen prospect prior. MLB evidence refreshes daily and remains separate until a supported completed-season model takes over.'
-            : 'Career Index describes projected career magnitude. Stage standing compares active MLB projections. Evidence describes model support. None is a Hall of Fame election probability, card-value estimate, or guarantee.'}</span>
-      </div>
     </section>
   )
 }

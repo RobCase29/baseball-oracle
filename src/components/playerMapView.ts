@@ -10,6 +10,12 @@ import {
   type PlayerMapStageStanding,
   type PlayerMapState,
 } from '../domain/playerMap'
+import { currentMinorEvidence, currentMinorSignal } from './currentMinorView'
+import {
+  formatRookieWar,
+  rookieEvidenceLabel,
+  rookieMlbReadLabel,
+} from './rookieTrackView'
 
 export interface CareerIndexView {
   value: number | null
@@ -37,6 +43,35 @@ export interface ProspectScoreView {
   explanation: string
   tone: CareerIndexView['tone']
   status: 'research' | 'withheld'
+}
+
+export interface BackstopRankView {
+  rank: number | null
+  universe: number | null
+  display: string
+  label: 'Backstop Rank'
+  routeLabel: 'Prospect' | 'Pre-debut' | 'MLB'
+  rankLabel: string
+  topLabel: string | null
+  cohortLabel: string
+  evidenceLabel: 'Full model' | 'Early estimate' | 'Career model' | 'Data gap'
+  explanation: string
+  tone: CareerIndexView['tone']
+}
+
+export interface CareerOutlookView {
+  value: number | null
+  display: string
+  band: string
+  basis: string
+  explanation: string
+  tone: CareerIndexView['tone']
+}
+
+export interface CurrentResultsView {
+  headline: string
+  detail: string
+  tone: 'positive' | 'standard' | 'unavailable'
 }
 
 const plainStateLabels: Record<PlayerMapState, string> = {
@@ -78,6 +113,25 @@ function prospectScoreTone(value: number | null): CareerIndexView['tone'] {
   if (value >= 99) return 'elite'
   if (value >= 90) return 'high'
   return 'standard'
+}
+
+function rankTone(rank: number | null, universe: number | null): CareerIndexView['tone'] {
+  if (rank === null || universe === null || universe < 1) return 'unavailable'
+  const topPercent = 100 * rank / universe
+  if (topPercent <= 1) return 'elite'
+  if (topPercent <= 10) return 'high'
+  return 'standard'
+}
+
+function careerOutlookBand(value: number | null): string {
+  if (value === null) return 'Not available'
+  if (value >= 92) return 'Historic ceiling'
+  if (value >= 80) return 'Hall-level upside'
+  if (value >= 65) return 'Star upside'
+  if (value >= 45) return 'MLB regular'
+  if (value >= 20) return 'MLB contributor'
+  if (value > 0) return 'Limited MLB value'
+  return 'No positive projection'
 }
 
 function topPercentLabel(value: number | null): string | null {
@@ -170,6 +224,127 @@ export function playerMapFor(player: PlayerRecord): PlayerMapProfile {
 
 export function plainPlayerState(state: PlayerMapState): string {
   return plainStateLabels[state]
+}
+
+export function backstopRankFor(
+  player: PlayerRecord,
+  map: PlayerMapProfile = playerMapFor(player),
+): BackstopRankView {
+  const prospectScore = map.route === 'milb' ? prospectScoreFor(player, map) : null
+  const rank = map.route === 'milb' ? prospectScore?.rank ?? null : map.stageStanding.rank
+  const universe = map.route === 'milb' ? prospectScore?.universe ?? null : map.stageStanding.universe
+  const topPercent = rank !== null && universe !== null && universe > 0
+    ? 100 * rank / universe
+    : null
+  const routeLabel = map.route === 'milb'
+    ? 'Prospect'
+    : map.route === 'rookie'
+      ? 'Pre-debut'
+      : 'MLB'
+  const cohortLabel = map.route === 'milb'
+    ? 'prospects by projected five-year MLB impact'
+    : map.route === 'rookie'
+      ? 'frozen pre-debut prospect outlooks'
+      : 'active MLB career outlooks'
+  const rankLabel = rank === null
+    ? 'Unavailable'
+    : universe === null
+      ? `#${rank.toLocaleString()}`
+      : `#${rank.toLocaleString()} of ${universe.toLocaleString()}`
+  const evidenceLabel = map.route === 'milb'
+    ? map.mappingStatus === 'insufficient_sample' ? 'Early estimate' : rank === null ? 'Data gap' : 'Full model'
+    : map.route === 'rookie'
+      ? player.recentCallup?.prospectPrior?.impactRank?.evidenceTier === 'early_estimate'
+        ? 'Early estimate'
+        : rank === null ? 'Data gap' : 'Full model'
+      : rank === null ? 'Data gap' : 'Career model'
+  const explanation = rank === null
+    ? `There is not enough matched model data to calculate ${player.name}'s Backstop Rank yet.`
+    : map.route === 'milb'
+      ? `${player.name} ranks ${rankLabel} for projected MLB impact over the next five seasons.`
+      : map.route === 'rookie'
+        ? `${player.name}'s ${rankLabel} pre-debut outlook stays fixed while early MLB results build.`
+        : `${player.name} ranks ${rankLabel} among active MLB career outlooks.`
+
+  return {
+    rank,
+    universe,
+    display: rank === null ? '--' : `#${rank.toLocaleString()}`,
+    label: 'Backstop Rank',
+    routeLabel,
+    rankLabel,
+    topLabel: topPercentLabel(topPercent),
+    cohortLabel,
+    evidenceLabel,
+    explanation,
+    tone: rankTone(rank, universe),
+  }
+}
+
+export const oracleRankFor = backstopRankFor
+
+export function careerOutlookFor(
+  player: PlayerRecord,
+  map: PlayerMapProfile = playerMapFor(player),
+): CareerOutlookView {
+  const value = map.careerIndex.value
+  const basis = map.route === 'milb'
+    ? 'If MLB is reached'
+    : map.route === 'rookie'
+      ? 'Frozen pre-debut outlook'
+      : 'Projected full career'
+  const display = value === null ? '--' : `${Math.round(value)}/100`
+  const band = careerOutlookBand(value)
+  return {
+    value,
+    display,
+    band,
+    basis,
+    explanation: value === null
+      ? `There is not enough matched model data to calculate ${player.name}'s Career Outlook yet.`
+      : `${player.name}'s ${display} Career Outlook maps the modeled career-WAR range to fixed baseball milestones. It is not a probability or percentile.`,
+    tone: indexTone(value),
+  }
+}
+
+export function currentResultsFor(
+  player: PlayerRecord,
+  map: PlayerMapProfile = playerMapFor(player),
+): CurrentResultsView {
+  if (map.route === 'rookie') {
+    const opportunity = player.recentCallup?.currentMlbEvidence.opportunity
+    const evidence = rookieEvidenceLabel(player)
+    const war = formatRookieWar(player)
+    return {
+      headline: rookieMlbReadLabel(player),
+      detail: `${war}${opportunity ? ` · ${opportunity.value} ${opportunity.label}` : ''} · ${evidence}`,
+      tone: player.recentCallup?.currentMlbEvidence.war === null ? 'unavailable' : 'standard',
+    }
+  }
+
+  if (map.route === 'milb') {
+    const results = currentMinorSignal(player)
+    const evidence = currentMinorEvidence(player)
+    return {
+      headline: results?.label ?? 'Results pending',
+      detail: results
+        ? player.currentMinorStats
+          ? results.detail
+          : `${results.detail}${evidence ? ` · ${evidence.label}` : ''}`
+        : 'Current minor-league statistics are not available yet.',
+      tone: results ? 'standard' : 'unavailable',
+    }
+  }
+
+  const currentWar = player.metrics.find((metric) => metric.key === 'current-season-war')
+  const opportunity = player.opportunity
+  return {
+    headline: currentWar?.value ?? 'Results pending',
+    detail: currentWar
+      ? `${player.provenance.season ?? 'Current season'}${opportunity ? ` · ${opportunity.value} ${opportunity.label}` : ''}`
+      : 'Current MLB results are not available yet.',
+    tone: currentWar ? 'standard' : 'unavailable',
+  }
 }
 
 export function prospectScoreFor(

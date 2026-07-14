@@ -975,7 +975,9 @@ describe('unified player ordering', () => {
 
     expect(parseQuery(request('/api/players'))?.view).toBe('full')
     expect(parseQuery(request('/api/players'))?.sort).toBe('name')
-    expect(parseQuery(request('/api/players?stage=Minors'))?.sort).toBe('careerIndex')
+    expect(parseQuery(request('/api/players?stage=Minors'))?.sort).toBe('prospectScore')
+    expect(parseQuery(request('/api/players?stage=RC'))?.sort).toBe('stageStanding')
+    expect(parseQuery(request('/api/players?stage=MLB'))?.sort).toBe('stageStanding')
     expect(parseQuery(request('/api/players?stage=MLB&sort=prospectScore'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=All&sort=prospectScore'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=All&sort=careerIndex'))?.sort).toBe('careerIndex')
@@ -983,6 +985,18 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=RC'))?.stage).toBe('RC')
+
+    const rookieDefault = parseQuery(request('/api/players?view=map&stage=RC'))
+    expect(rookieDefault && responseOrdering(rookieDefault)).toMatchObject({
+      requestedSort: 'stageStanding',
+      appliedSort: 'stageStanding',
+      legacyAliasUsed: false,
+      metric: 'stage_standing',
+      field: 'assessment.stageStanding.rank',
+      fieldExposed: true,
+      direction: 'ascending',
+      scope: 'stage',
+    })
 
     const crossStage = parseQuery(request('/api/players?view=map&stage=All&sort=careerIndex'))
     expect(crossStage && responseOrdering(crossStage)).toEqual({
@@ -1409,7 +1423,7 @@ describe('unified player ordering', () => {
       .toEqual(['rank-first', 'rank-middle', 'rank-last'])
   })
 
-  it('surfaces Rookie Track as its own cohort using the frozen prospect-prior rank', () => {
+  it('surfaces Rookie Track as its own cohort using the frozen impact rank', () => {
     const priorForecast = forecast(0.02, 15, 8)
     const items = [
       candidate('minor', { careerForecast: forecast(0.3, 30, 1) }),
@@ -1430,6 +1444,14 @@ describe('unified player ordering', () => {
           target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
           asOf: '2025-12-31T00:00:00.000Z',
           forecast: priorForecast,
+          impactRank: {
+            rank: 12,
+            universe: 6_455,
+            target: 'mlb_war_next_5_ge_5',
+            asOf: '2025-12-31T00:00:00.000Z',
+            modelVersion: 'milb-impact-five-calendar-year-war-v1',
+            evidenceTier: 'full_model',
+          },
         },
       }),
       candidate('rookie-coverage-gap', {
@@ -1447,6 +1469,54 @@ describe('unified player ordering', () => {
       items.filter((item) => matchesQuery(item, query({ stage: 'RC' }))),
       { stage: 'RC', sort: 'alphaOpportunity' },
     ).map((item) => item.id)).toEqual(['rookie', 'rookie-coverage-gap'])
+  })
+
+  it('orders Rookie Track by frozen impact rank instead of the separate career-outlook rank', () => {
+    const impactLeader = candidate('impact-leader', {
+      source: 'mlb',
+      stage: 'recent_callup',
+      minorProfileId: null,
+      recentCallupPrior: {
+        rank: 200,
+        universe: 1_000,
+        target: 'career-outlook-target',
+        asOf: '2025-12-31T00:00:00.000Z',
+        forecast: forecast(0.02, 15, 200),
+        impactRank: {
+          rank: 5,
+          universe: 1_000,
+          target: 'mlb_war_next_5_ge_5',
+          asOf: '2025-12-31T00:00:00.000Z',
+          modelVersion: 'milb-impact-five-calendar-year-war-v1',
+          evidenceTier: 'full_model',
+        },
+      },
+    })
+    const careerOutlookLeader = candidate('career-outlook-leader', {
+      source: 'mlb',
+      stage: 'recent_callup',
+      minorProfileId: null,
+      recentCallupPrior: {
+        rank: 5,
+        universe: 1_000,
+        target: 'career-outlook-target',
+        asOf: '2025-12-31T00:00:00.000Z',
+        forecast: forecast(0.2, 40, 5),
+        impactRank: {
+          rank: 200,
+          universe: 1_000,
+          target: 'mlb_war_next_5_ge_5',
+          asOf: '2025-12-31T00:00:00.000Z',
+          modelVersion: 'milb-impact-five-calendar-year-war-v1',
+          evidenceTier: 'full_model',
+        },
+      },
+    })
+
+    expect(sortBoardCandidates(
+      [careerOutlookLeader, impactLeader],
+      { stage: 'RC', sort: 'stageStanding' },
+    ).map((item) => item.id)).toEqual(['impact-leader', 'career-outlook-leader'])
   })
 
   it('orders near-term MLB impact by an absolute three-year event and minors by arrival', () => {
@@ -1715,6 +1785,8 @@ describe('player-map feed contract', () => {
       scoreSemantics: 'stage_specific_ordinal_not_market_value',
       rankingContract: {
         version: 'player-ranking-contract/v1',
+        scope: 'cross_route_numeric_sort',
+        productPrimary: false,
         primaryMetric: 'careerIndex',
         primarySort: 'careerIndex',
         primaryComparableAcrossRoutes: true,
@@ -1723,6 +1795,47 @@ describe('player-map feed contract', () => {
         stageStandingIsFilteredResultOrdinal: false,
         legacyMetric: 'oracleScore',
         legacyDeprecated: true,
+      },
+      decisionHierarchy: {
+        version: 'backstop-decision-hierarchy/v1',
+        displayOrder: ['backstopRank', 'careerOutlook', 'currentResults'],
+        nullMeans: 'unavailable_not_zero',
+        backstopRank: {
+          label: 'Backstop Rank',
+          semantics: 'exact_route_specific_ordinal',
+          lowerIsBetter: true,
+          comparableAcrossRoutes: false,
+          routes: {
+            milb: {
+              sourceMetric: 'prospectScore',
+              compactRankField: 'assessment.scores.outcome.rank',
+            },
+            rookie: {
+              sourceMetric: 'frozen_pre_debut_impact_rank',
+              compactRankField: 'assessment.stageStanding.rank',
+            },
+            mlb: {
+              sourceMetric: 'career_outlook_stage_standing',
+              compactRankField: 'assessment.stageStanding.rank',
+            },
+          },
+        },
+        careerOutlook: {
+          label: 'Career Outlook',
+          sourceMetric: 'careerIndex',
+          compactValueField: 'assessment.careerIndex.value',
+          scale: 'fixed_career_value_0_100',
+          relative: false,
+          calibratedProbability: false,
+        },
+        currentResults: {
+          label: 'Current Results',
+          semantics: 'observed_current_season_evidence',
+          blendedIntoBackstopRank: false,
+          compactMinorField: 'currentEvidence.minorStats',
+          compactMlbMetricsField: null,
+          compactMlbAvailability: 'not_normalized_in_v4',
+        },
       },
     })
     expect(playerMapResponseMeta([]).prospectScoreContract).toBeUndefined()
@@ -1747,6 +1860,9 @@ describe('player-map feed contract', () => {
         rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)',
         activation: 'explicit_sort_opt_in',
         legacyDefaultSort: 'careerIndex',
+        activationDeprecated: true,
+        defaultStage: 'Minors',
+        defaultSort: 'prospectScore',
         scale: 'ordinal_percentile',
         calibratedProbability: false,
         currentSeasonEvidenceBlended: false,
@@ -2037,6 +2153,14 @@ describe('minor identity dedupe', () => {
         universe: 6_455,
         target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
         asOf: '2025-12-31T00:00:00.000Z',
+        impactRank: {
+          rank: 189,
+          universe: 6_455,
+          target: 'mlb_war_next_5_ge_5',
+          asOf: '2025-12-31T00:00:00.000Z',
+          modelVersion: 'milb-impact-five-calendar-year-war-v1',
+          evidenceTier: 'full_model',
+        },
       },
     })
     expect(joe?.careerForecast?.rank).toBeNull()
@@ -2101,9 +2225,18 @@ describe('minor identity dedupe', () => {
 
     const withheldPrior = joeMackPreview()
     withheldPrior.prospectForecasts['691788:hitter']!.careerForecast.publicationState = 'withheld'
+    withheldPrior.prospectForecasts['691788:hitter']!.careerForecast.rank = null
     expect(mlbCandidates(withheldPrior)[0]).toMatchObject({
       stage: 'recent_callup',
-      recentCallupPrior: null,
+      recentCallupPrior: {
+        rank: null,
+        universe: null,
+        impactRank: {
+          rank: 189,
+          universe: 6_455,
+          evidenceTier: 'full_model',
+        },
+      },
     })
 
     const missingPrior = joeMackPreview()

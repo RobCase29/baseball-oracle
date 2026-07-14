@@ -4,6 +4,7 @@ import {
   filterAndSortPlayers,
   developmentChapterLabel,
   formatOrdinal,
+  formatPosition,
   formatPercentileRank,
   formatPercentagePointDelta,
   formatProbability,
@@ -615,6 +616,9 @@ describe('Oracle Board utilities', () => {
     expect(formatProbability(0.123)).toBe('12.3%')
     expect(formatProbability(84)).toBe('—')
     expect(formatWar(24.23)).toBe('24.2')
+    expect(formatPosition('2/H')).toBe('C/DH')
+    expect(formatPosition('SS/2B')).toBe('SS/2B')
+    expect(formatPosition(null, 'Hitter')).toBe('Hitter')
     expect(developmentChapterLabel('AA')).toBe('Upper-minors development')
     expect(developmentChapterLabel('Rk')).toBe('Rookie-ball development')
     expect(stageLabel('recent_callup')).toBe('Rookie Track')

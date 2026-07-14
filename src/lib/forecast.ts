@@ -113,9 +113,7 @@ export function eligibleMilbCeilingAlpha(player: PlayerRecord): MilbCeilingAlpha
 
 export function oracleOutcomeRank(player: PlayerRecord): number | null {
   if (player.stage === 'recent_callup') {
-    return player.recentCallup?.prospectPrior?.forecast.publicationState === 'withheld'
-      ? null
-      : player.recentCallup?.prospectPrior?.rank ?? null
+    return player.recentCallup?.prospectPrior?.impactRank?.rank ?? null
   }
   return player.careerForecast?.publicationState === 'withheld'
     ? null
@@ -273,6 +271,24 @@ export function positionTokens(value: string | null): string[] {
       .map((token) => token.trim().toLocaleUpperCase('en-US'))
       .filter(Boolean),
   )]
+}
+
+export function formatPosition(value: string | null, fallback = 'Role unavailable'): string {
+  const mlbPositionCodes: Record<string, string> = {
+    '1': 'P',
+    '2': 'C',
+    '3': '1B',
+    '4': '2B',
+    '5': '3B',
+    '6': 'SS',
+    '7': 'LF',
+    '8': 'CF',
+    '9': 'RF',
+    D: 'DH',
+    H: 'DH',
+  }
+  const positions = positionTokens(value).map((position) => mlbPositionCodes[position] ?? position)
+  return positions.length > 0 ? positions.join('/') : fallback
 }
 
 export function formatProbability(value: number | null, digits = 1): string {

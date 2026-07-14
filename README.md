@@ -218,25 +218,33 @@ GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=5
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
 ```
 
-Prospect Score is the primary Minors product ranking; Career Index remains the
-primary MLB and cross-route career-magnitude score. Existing API calls that omit
-`sort` keep the legacy Minors default of `careerIndex`; consumers opt into the
-new score and its machine contract with `sort=prospectScore`. Stage standing is a separate
-declared-model-cohort rank and is never a filtered-result row number. In stage-
-specific requests, the legacy `alphaOpportunity` sort remains an alias for
-`stageStanding`; unsupported competitive sorts with `stage=All` return HTTP 400.
-Compact `player-map-feed.v4` responses declare exact requested and applied
-ordering in `meta.ordering`.
+The product decision order is **Backstop Rank**, **Career Outlook**, then
+**Current Results**. Backstop Rank is the exact route-specific ordinal: Prospect
+Score rank for Minors, the frozen pre-debut impact rank for Rookie Track, and
+career-outlook standing for MLB. It is lower-is-better and must not be compared
+across those routes. Career Outlook is the existing `careerIndex` field presented
+as a fixed 0-100 long-term value scale; it is not a percentile or probability.
+Current Results are observed season evidence and remain separate from the rank.
+
+API calls that omit `sort` now default to `prospectScore` for Minors and
+`stageStanding` for Rookie Track and MLB; `stage=All` remains a name-ordered
+directory. In stage-specific requests, the legacy `alphaOpportunity` sort remains
+an alias for `stageStanding`; unsupported competitive sorts with `stage=All`
+return HTTP 400. Compact `player-map-feed.v4` responses declare exact requested
+and applied ordering in `meta.ordering`, and publish the product mapping in
+`meta.decisionHierarchy`. The legacy-compatible `meta.rankingContract` is marked
+`scope=cross_route_numeric_sort` and `productPrimary=false`; its Career Index
+setting does not override the product display order.
 
 Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Rankings:** Prospect Score for MiLB, Career Index for MLB, exact ranks, real players,
-  team/position/stage filters, and current evidence in a table-first workflow.
+- **Rankings:** Backstop Rank first, Career Outlook second, and Current Results
+  third, with real players and team/position/stage filters in a table-first workflow.
 - **Directory:** an identity and coverage view across stages. It defaults to
   player name, also supports age, and neither order is a baseball ranking.
-- **Rookie Track:** a frozen prospect Career Index and standing paired with
+- **Rookie Track:** a frozen pre-debut impact rank and Career Outlook paired with
   separate, accumulating MLB confirmation evidence.
 - **Player dossier:** index explanation, current strengths and risks, current
   stats, an MLB career arc where supported, and honest missing-evidence states.

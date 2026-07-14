@@ -68,15 +68,17 @@ status, snapshot ID, and model contract with every downstream ranking.
 
 ## Checklist Ranking
 
-For a MiLB-only checklist, sort by:
+For a MiLB-only checklist, use the product hierarchy:
 
-1. Career Index descending.
-2. Prospect Score exact rank ascending.
-3. Stable player identity.
+1. Backstop Rank ascending, sourced from the exact Prospect Score rank.
+2. Career Outlook descending, sourced from `careerIndex`.
+3. Current Results as separate observed context.
+4. Stable player identity as the final deterministic tie-breaker.
 
-Show both values. Career Index answers the conditional long-career question;
-Prospect Score distinguishes near-term impact paths. Do not average the two or
-compare Prospect Score numerically with Rookie Track or MLB scores. A card
-application should add price, liquidity, scarcity, grading population, and fees
+Show Backstop Rank and Career Outlook with their labels. Career Outlook answers
+the conditional long-career question; Backstop Rank distinguishes near-term
+impact paths. Do not average the two or compare a Minors Backstop Rank numerically
+with Rookie Track or MLB ranks. A card application should add price, liquidity,
+scarcity, grading population, and fees
 in its own market-alpha layer rather than feeding those variables into Oracle's
 baseball forecast.

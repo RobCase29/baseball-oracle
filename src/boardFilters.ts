@@ -1,4 +1,4 @@
-import type { BoardFilters } from './domain/forecast'
+import { defaultSortForStage, type BoardFilters } from './domain/forecast'
 
 export const defaultBoardFilters: BoardFilters = {
   query: '',
@@ -33,18 +33,20 @@ export function filtersFromUrl(): BoardFilters {
     'age',
     'name',
   ])
-  const defaultSortForStage: BoardFilters['sort'] = resolvedStage === 'All'
-    ? 'name'
-    : resolvedStage === 'Minors'
-      ? 'prospectScore'
-      : 'careerIndex'
+  const defaultSort = defaultSortForStage(resolvedStage)
   const resolvedSort = sort && validSorts.has(sort as BoardFilters['sort'])
     ? sort as BoardFilters['sort']
-    : defaultSortForStage
+    : defaultSort
   const stageSort = resolvedStage === 'All'
     ? 'name'
+    : resolvedStage === 'Minors' && (
+        resolvedSort === 'stageStanding' || resolvedSort === 'alphaOpportunity'
+      )
+      ? 'prospectScore'
+    : (resolvedStage === 'RC' || resolvedStage === 'MLB') && resolvedSort === 'alphaOpportunity'
+      ? 'stageStanding'
     : resolvedStage !== 'Minors' && resolvedSort === 'prospectScore'
-      ? 'careerIndex'
+      ? defaultSort
       : (resolvedStage === 'Minors' && (
           resolvedSort === 'nearTermImpact' || resolvedSort === 'finalWar'
         )) || (resolvedStage === 'MLB' && resolvedSort === 'arrival36') || (
@@ -54,7 +56,7 @@ export function filtersFromUrl(): BoardFilters {
             resolvedSort === 'arrival36'
           )
         )
-        ? defaultSortForStage
+        ? defaultSort
         : resolvedSort
 
   return {

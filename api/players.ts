@@ -62,6 +62,7 @@ import type {
   PlayerRecord,
   RecentCallupContext,
 } from '../src/domain/forecast.js'
+import { defaultSortForStage } from '../src/domain/forecast.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
@@ -82,6 +83,7 @@ const playerViews = ['full', 'map'] as const
 const maximumPlayerIds = 50
 const playerMapFeedSchemaVersion = 'player-map-feed.v4' as const
 const rankingContractVersion = 'player-ranking-contract/v1' as const
+const decisionHierarchyVersion = 'backstop-decision-hierarchy/v1' as const
 const rankingSnapshotVersion = 'oracle-ranking-snapshot/v1' as const
 const canonicalPlayerIdPattern = /^[A-Za-z0-9][A-Za-z0-9:._~'@/+-]{0,199}$/u
 const queryParameterNames = new Set([
@@ -526,11 +528,7 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
     )
     if (!parsed.success) return null
 
-    const sort = parsed.data.sort ?? (
-      parsed.data.stage === 'All'
-        ? 'name'
-        : 'careerIndex'
-    )
+    const sort = parsed.data.sort ?? defaultSortForStage(parsed.data.stage)
     if (
       parsed.data.stage === 'All' &&
       sort !== 'name' &&
@@ -1277,7 +1275,7 @@ function previewPlayerRecord(
   }
   const recentCallup: RecentCallupContext | null = isRecentCallupPreviewPlayer(player)
     ? {
-        version: 'rookie-track-v1',
+        version: 'rookie-track-v2',
         status: 'monitoring',
         reason: 'first_mlb_season_partial_only',
         prospectPrior: candidate.recentCallupPrior,
@@ -1364,7 +1362,7 @@ function currentOnlyMlbPlayerRecord(
   }
   const recentCallup = candidate.stage === 'recent_callup'
     ? {
-        version: 'rookie-track-v1' as const,
+        version: 'rookie-track-v2' as const,
         status: 'monitoring' as const,
         reason: 'current_mlb_record_not_in_model_census' as const,
         prospectPrior: candidate.recentCallupPrior,
@@ -1544,22 +1542,41 @@ export function prospectPriorByIdentity(
   if (role === null || mlbamId === null) return null
 
   const prior = preview.prospectForecasts[`${mlbamId}:${role}`]
-  const rank = prior?.careerForecast.rank ?? null
-  if (
-    !prior ||
-    prior.playerType !== playerType ||
-    prior.careerForecast.publicationState === 'withheld' ||
-    rank === null
-  ) return null
-  const universe = frozenProspectRankUniverse(preview)
-  if (universe === null || universe < rank) return null
+  if (!prior || prior.playerType !== playerType) return null
+  const impactPlayerType = playerType === 'Pitcher' ? 'Pitcher' : 'Hitter'
+  const impact = researchMilbImpactRanking(mlbamId, impactPlayerType)
+  const arrivalSignal = researchMilbAlphaSignal(mlbamId, impactPlayerType)
+  const impactUsesPrior = Boolean(
+    impact &&
+    arrivalSignal?.gates.minimumRawWorkload === false &&
+    Number.isInteger(impact.priorRank),
+  )
+  const impactRank = impact
+    ? {
+        rank: impactUsesPrior ? impact.priorRank : impact.rank,
+        universe: impact.universeRows,
+        target: impact.target.id,
+        asOf: impact.frozenAsOf,
+        modelVersion: impact.modelVersion,
+        evidenceTier: impactUsesPrior ? 'early_estimate' as const : 'full_model' as const,
+      }
+    : null
+
+  const rawCareerRank = prior.careerForecast.rank
+  const careerUniverse = frozenProspectRankUniverse(preview)
+  const careerRankSupported = prior.careerForecast.publicationState !== 'withheld' &&
+    rawCareerRank !== null &&
+    careerUniverse !== null &&
+    rawCareerRank <= careerUniverse
+  if (!impactRank && !careerRankSupported) return null
 
   return {
-    rank,
-    universe,
+    rank: careerRankSupported ? rawCareerRank : null,
+    universe: careerRankSupported ? careerUniverse : null,
     target: prior.careerForecast.lineage.targetVersion,
     asOf: prior.careerForecast.asOf,
     forecast: prior.careerForecast,
+    impactRank,
   }
 }
 
@@ -1621,9 +1638,7 @@ function candidateOutcomeForecast(candidate: UnifiedBoardCandidate) {
 
 function candidateOutcomeRank(candidate: UnifiedBoardCandidate): number | null {
   if (candidate.stage === 'recent_callup') {
-    return candidate.recentCallupPrior?.forecast.publicationState === 'withheld'
-      ? null
-      : candidate.recentCallupPrior?.rank ?? null
+    return candidate.recentCallupPrior?.impactRank?.rank ?? null
   }
   return candidate.careerForecast?.publicationState === 'withheld'
     ? null
@@ -3149,6 +3164,8 @@ export function playerMapResponseMeta(
     scoreSemanticsDeprecated: true as const,
     rankingContract: {
       version: rankingContractVersion,
+      scope: 'cross_route_numeric_sort' as const,
+      productPrimary: false as const,
       primaryMetric: 'careerIndex' as const,
       primarySort: 'careerIndex' as const,
       primaryComparableAcrossRoutes: true as const,
@@ -3157,6 +3174,61 @@ export function playerMapResponseMeta(
       stageStandingIsFilteredResultOrdinal: false as const,
       legacyMetric: 'oracleScore' as const,
       legacyDeprecated: true as const,
+    },
+    decisionHierarchy: {
+      version: decisionHierarchyVersion,
+      displayOrder: ['backstopRank', 'careerOutlook', 'currentResults'] as const,
+      nullMeans: 'unavailable_not_zero' as const,
+      backstopRank: {
+        label: 'Backstop Rank' as const,
+        semantics: 'exact_route_specific_ordinal' as const,
+        lowerIsBetter: true as const,
+        comparableAcrossRoutes: false as const,
+        routes: {
+          milb: {
+            sourceMetric: 'prospectScore' as const,
+            fullRankField: 'playerMap.scores.outcome.rank' as const,
+            compactRankField: 'assessment.scores.outcome.rank' as const,
+            fullUniverseField: 'playerMap.scores.outcome.universe' as const,
+            compactUniverseField: 'assessment.scores.outcome.universe' as const,
+          },
+          rookie: {
+            sourceMetric: 'frozen_pre_debut_impact_rank' as const,
+            fullRankField: 'playerMap.stageStanding.rank' as const,
+            compactRankField: 'assessment.stageStanding.rank' as const,
+            fullUniverseField: 'playerMap.stageStanding.universe' as const,
+            compactUniverseField: 'assessment.stageStanding.universe' as const,
+          },
+          mlb: {
+            sourceMetric: 'career_outlook_stage_standing' as const,
+            fullRankField: 'playerMap.stageStanding.rank' as const,
+            compactRankField: 'assessment.stageStanding.rank' as const,
+            fullUniverseField: 'playerMap.stageStanding.universe' as const,
+            compactUniverseField: 'assessment.stageStanding.universe' as const,
+          },
+        },
+      },
+      careerOutlook: {
+        label: 'Career Outlook' as const,
+        sourceMetric: 'careerIndex' as const,
+        fullValueField: 'playerMap.careerIndex.value' as const,
+        compactValueField: 'assessment.careerIndex.value' as const,
+        scale: 'fixed_career_value_0_100' as const,
+        higherIsBetter: true as const,
+        relative: false as const,
+        calibratedProbability: false as const,
+        comparableAcrossRoutes: true as const,
+      },
+      currentResults: {
+        label: 'Current Results' as const,
+        semantics: 'observed_current_season_evidence' as const,
+        blendedIntoBackstopRank: false as const,
+        fullMinorField: 'currentMinorStats' as const,
+        compactMinorField: 'currentEvidence.minorStats' as const,
+        fullMlbMetricsField: 'metrics' as const,
+        compactMlbMetricsField: null,
+        compactMlbAvailability: 'not_normalized_in_v4' as const,
+      },
     },
     ...(includeProspectScoreContract ? {
       prospectScoreContract: {
@@ -3185,6 +3257,9 @@ export function playerMapResponseMeta(
         rankPercentileFormula: '100 * (universeRows - rank) / (universeRows - 1)' as const,
         activation: 'explicit_sort_opt_in' as const,
         legacyDefaultSort: 'careerIndex' as const,
+        activationDeprecated: true as const,
+        defaultStage: 'Minors' as const,
+        defaultSort: 'prospectScore' as const,
         higherIsBetter: true as const,
         comparableWithinFrozenProspectUniverseOnly: true as const,
         comparableAcrossRoutes: false as const,
@@ -3246,6 +3321,7 @@ export function snapshotId(parts: {
     version: rankingSnapshotVersion,
     feedSchemaVersion: playerMapFeedSchemaVersion,
     rankingContractVersion,
+    decisionHierarchyVersion,
     playerMapVersion: PLAYER_MAP_VERSION,
     careerIndexVersion: CAREER_INDEX_VERSION,
     minorDataAsOf: parts.minorDataAsOf,

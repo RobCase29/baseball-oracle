@@ -599,7 +599,7 @@ describe('Player Map', () => {
         confidenceState: 'Withheld',
       },
       recentCallup: {
-        version: 'rookie-track-v1',
+        version: 'rookie-track-v2',
         status: 'monitoring',
         reason: 'first_mlb_season_partial_only',
         prospectPrior: {
@@ -607,6 +607,14 @@ describe('Player Map', () => {
           universe: 6_455,
           target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
           asOf: '2025-12-31T00:00:00.000Z',
+          impactRank: {
+            rank: 189,
+            universe: 6_455,
+            target: 'mlb_war_next_5_ge_5',
+            asOf: '2025-12-31T00:00:00.000Z',
+            modelVersion: 'milb-impact-five-calendar-year-war-v1',
+            evidenceTier: 'full_model',
+          },
           forecast: {
             confidenceState: 'Low',
             finalCareerWar: {
@@ -640,9 +648,9 @@ describe('Player Map', () => {
     expect(profile.oracleScore).toMatchObject({
       value: 97,
       route: 'rookie',
-      rank: 167,
+      rank: 189,
       universe: 6_455,
-      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
+      target: 'mlb_war_next_5_ge_5',
       asOf: '2025-12-31T00:00:00.000Z',
     })
     expect(profile.careerIndex).toMatchObject({
@@ -656,17 +664,17 @@ describe('Player Map', () => {
       version: 'stage-standing-v1',
       metric: 'prospect_career_outcome_rank',
       method: 'frozen_model_artifact_rank',
-      target: 'mlb-debut-age-mixed-final-standard-bridge-v1',
-      rank: 167,
+      target: 'mlb_war_next_5_ge_5',
+      rank: 189,
       universe: 6_455,
       tailBand: 'Top 5%',
       cohort: 'frozen_prospect_prior',
       asOf: '2025-12-31T00:00:00.000Z',
     })
-    expect(profile.stageStanding.topPercent).toBeCloseTo(2.5871, 4)
+    expect(profile.stageStanding.topPercent).toBeCloseTo(100 * 189 / 6_455, 4)
     expect(profile.scores.outcome).toMatchObject({
       display: 'P97',
-      rank: 167,
+      rank: 189,
       universe: 6_455,
       status: 'research',
     })
@@ -688,7 +696,80 @@ describe('Player Map', () => {
       'prospect_prior_preserved',
       'mlb_confirmation',
     ])
-    expect(profile.summary).toContain('Live evidence does not change the prospect-prior score')
+    expect(profile.summary).toContain('Live evidence does not change the pre-debut rank')
+  })
+
+  it('publishes a frozen impact rank even when the separate career outlook is withheld', () => {
+    const profileFor = (evidenceTier: 'full_model' | 'early_estimate') => buildPlayerMap(makePlayer({
+      name: 'Thin Sample Rookie',
+      stage: 'recent_callup',
+      age: 21,
+      level: 'MLB',
+      careerForecast: {
+        publicationState: 'withheld',
+        asOf: '2026-07-12T18:08:42.478Z',
+        rank: null,
+        hofCaliberProbability: null,
+        confidenceScore: null,
+        confidenceState: 'Withheld',
+      },
+      recentCallup: {
+        version: 'rookie-track-v2',
+        status: 'monitoring',
+        reason: 'first_mlb_season_partial_only',
+        prospectPrior: {
+          rank: null,
+          universe: null,
+          target: 'career-outlook-target',
+          asOf: '2025-12-31T00:00:00.000Z',
+          impactRank: {
+            rank: 75,
+            universe: 6_455,
+            target: 'mlb_war_next_5_ge_5',
+            asOf: '2025-12-31T00:00:00.000Z',
+            modelVersion: 'milb-impact-five-calendar-year-war-v1',
+            evidenceTier,
+          },
+          forecast: {
+            publicationState: 'withheld',
+            confidenceState: 'Withheld',
+            finalCareerWarConditionalOnArrival: {
+              p10: -1,
+              p25: 0,
+              p50: 5,
+              p75: 20,
+              p90: 40,
+            },
+          },
+        },
+        currentMlbEvidence: {
+          asOf: '2026-07-13T13:19:52.068Z',
+          opportunity: { label: 'PA', value: '18' },
+          war: 0.1,
+          warPercentile: 55,
+        },
+      },
+    }), { mlbUniverse: 948, minorUniverse: 4_319 })
+
+    const fullModel = profileFor('full_model')
+    const earlyEstimate = profileFor('early_estimate')
+
+    expect(fullModel.mappingStatus).toBe('scored')
+    expect(earlyEstimate.mappingStatus).toBe('insufficient_sample')
+    for (const profile of [fullModel, earlyEstimate]) {
+      expect(profile.claimStatus).toBe('research_only')
+      expect(profile.state).toBe('discovery')
+      expect(profile.stageStanding).toMatchObject({
+        rank: 75,
+        universe: 6_455,
+        target: 'mlb_war_next_5_ge_5',
+      })
+      expect(profile.careerIndex).toMatchObject({ value: null, status: 'withheld' })
+      expect(profile.scores.outcome).toMatchObject({ rank: 75, status: 'research' })
+      expect(profile.missingEvidence).toContain('Supported pre-debut career outlook')
+      expect(profile.missingEvidence).not.toContain('Frozen five-year prospect impact rank')
+    }
+    expect(earlyEstimate.scores.outcome.basis).toContain('thin-sample estimate')
   })
 
   it('keeps an unmatched first-season player in Rookie Track without inventing an Oracle Score', () => {
@@ -763,7 +844,8 @@ describe('Player Map', () => {
       status: 'observed',
     })
     expect(profile.signals.map((signal) => signal.code)).toEqual(['mlb_confirmation'])
-    expect(profile.missingEvidence).toContain('Exact frozen prospect prior')
+    expect(profile.missingEvidence).toContain('Supported pre-debut career outlook')
+    expect(profile.missingEvidence).toContain('Frozen five-year prospect impact rank')
     expect(profile.summary).toContain('exact frozen prospect prior is unavailable')
   })
 })

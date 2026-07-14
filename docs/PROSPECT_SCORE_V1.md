@@ -92,9 +92,8 @@ weights, bootstrap seeds, and challenger definitions are fixed in the script.
 
 ## API Contract
 
-The legacy `stage=Minors` request still defaults to `sort=careerIndex` for API
-compatibility. Opt in with `stage=Minors&sort=prospectScore`. In the full
-response, read:
+`stage=Minors` now defaults to `sort=prospectScore`; an explicit sort remains
+recommended for durable integrations. In the full response, read:
 
 ```text
 playerMap.scores.outcome.value
@@ -105,7 +104,9 @@ playerMap.scores.outcome.asOf
 playerMap.scores.outcome.status
 ```
 
-For `view=map`, replace `playerMap` with `assessment`. The opt-in response adds
+For `view=map`, replace `playerMap` with `assessment`. The compact response adds
 `meta.prospectScoreContract`, including every canonical field path, the fixed
-2026-2030 window, feature cutoff, and percentile formula. Validate that contract
-and `meta.ordering` before trusting row order.
+2026-2030 window, feature cutoff, percentile formula, and current Minors default.
+The older `activation` and `legacyDefaultSort` properties are deprecated v4
+compatibility markers; use `defaultStage` and `defaultSort`. Validate that
+contract and `meta.ordering` before trusting row order.

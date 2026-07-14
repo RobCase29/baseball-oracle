@@ -12,7 +12,9 @@ function decimal(value: number | null, digits = 3): string {
 
 export function currentMinorSlashLine(player: PlayerRecord): string | null {
   const hitting = player.currentMinorStats?.hitting
-  if (!hitting) return null
+  if (!hitting || [hitting.ba, hitting.obp, hitting.slg].every((value) => value === null)) {
+    return null
+  }
   return `${decimal(hitting.ba)}/${decimal(hitting.obp)}/${decimal(hitting.slg)}`
 }
 
@@ -28,27 +30,18 @@ export function bestCurrentScoutingGrade(player: PlayerRecord): {
 }
 
 export function currentMinorSignal(player: PlayerRecord): CurrentMinorDisplay | null {
-  const scouting = player.currentProspectScouting
-  if (scouting) {
-    const label = scouting.organizationRank !== null
-      ? `Org #${scouting.organizationRank}${scouting.futureValue ? ` · ${scouting.futureValue} grade` : ''}`
-      : scouting.overallRank !== null
-        ? `Overall #${scouting.overallRank}${scouting.futureValue ? ` · ${scouting.futureValue} grade` : ''}`
-        : scouting.futureValue
-          ? `${scouting.futureValue} scouting grade`
-          : 'Current scouting available'
-    return { label, detail: `FanGraphs ${scouting.reportSeason} scouting` }
-  }
-
   const stats = player.currentMinorStats
   const slash = currentMinorSlashLine(player)
   if (stats?.hitting && slash) {
-    return { label: slash, detail: `Official ${stats.season} performance` }
+    return {
+      label: slash,
+      detail: `${stats.season} · ${stats.opportunity.value} ${stats.opportunity.label}${stats.currentLevel ? ` at ${stats.currentLevel}` : ''}`,
+    }
   }
-  if (stats?.pitching) {
+  if (stats?.pitching && (stats.pitching.era !== null || stats.pitching.whip !== null)) {
     return {
       label: `${decimal(stats.pitching.era, 2)} ERA · ${decimal(stats.pitching.whip, 2)} WHIP`,
-      detail: `Official ${stats.season} performance`,
+      detail: `${stats.season} · ${stats.opportunity.value} ${stats.opportunity.label}${stats.currentLevel ? ` at ${stats.currentLevel}` : ''}`,
     }
   }
   return null
