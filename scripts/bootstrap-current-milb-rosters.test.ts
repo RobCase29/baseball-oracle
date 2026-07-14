@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  currentMilbRosterBootstrapDatabaseOptions,
   currentMilbRosterSeasonForDate,
   decideCurrentMilbRosterBootstrap,
   type CurrentMilbRosterBootstrapCoverage,
@@ -26,6 +27,15 @@ function adequateCoverage(): CurrentMilbRosterBootstrapCoverage {
 }
 
 describe('current MiLB roster production bootstrap decision', () => {
+  it('keeps the advisory-lock connection open throughout the source fetch', () => {
+    expect(currentMilbRosterBootstrapDatabaseOptions()).toMatchObject({
+      max: 1,
+      idle_timeout: 0,
+      connect_timeout: 15,
+      connection: { statement_timeout: 300_000 },
+    })
+  })
+
   it('does not connect or ingest outside production unless explicitly forced', () => {
     expect(decideCurrentMilbRosterBootstrap({
       coverage: null,

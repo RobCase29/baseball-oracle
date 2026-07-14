@@ -22,6 +22,14 @@ const inProgressMaximumAttempts = 24
 
 type SqlClient = ReturnType<typeof postgres>
 
+export function currentMilbRosterBootstrapDatabaseOptions() {
+  return {
+    ...currentRefreshDatabaseOptions(300_000),
+    // The session-level advisory lock must survive the long source fetch.
+    idle_timeout: 0,
+  } as const
+}
+
 export interface CurrentMilbRosterBootstrapCoverage {
   profiles: number
   distinctMlbamIds: number
@@ -269,7 +277,7 @@ export async function bootstrapCurrentMilbRosterSnapshot(options: {
     return { decision: initialDecision, coverage: null, ingestion: null }
   }
 
-  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(300_000))
+  const sql = postgres(directDatabaseUrl(), currentMilbRosterBootstrapDatabaseOptions())
   let locked = false
   try {
     options.signal?.throwIfAborted()
