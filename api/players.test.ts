@@ -741,8 +741,10 @@ describe('official MiLB current universe', () => {
         pa: 0,
         ba: null,
         slg: null,
+        home_runs: null,
         walks: null,
         strikeouts: null,
+        stolen_bases: null,
       }),
       currentMinorProfile({
         profile_id: 'mlb-statsapi:834598:pitcher',
@@ -762,7 +764,44 @@ describe('official MiLB current universe', () => {
     expect(attached.map((item) => item.liveMilbImpactPriorRanking)).toEqual([null, null])
   })
 
-  it('fails closed when exact official workload cannot produce a served prospect rank', () => {
+  it('scores a zero-out pitching appearance when official counting stats are present', () => {
+    const [ranked] = scoreCurrentProspectUniverse([
+      candidate('zero-out-pitcher', {
+        mlbamId: '837219',
+        playerType: 'Pitcher',
+        age: 18,
+        level: 'Rk',
+        milbImpactRanking: null,
+      }),
+    ], [currentMinorProfile({
+      profile_id: 'mlb-statsapi:837219:pitcher',
+      mlbam_id: 837219,
+      player_type: 'Pitcher',
+      age: 18,
+      current_level: 'Rk',
+      highest_observed_level: 'Rk',
+      current_team_name: 'DSL Orioles',
+      pa: null,
+      ba: null,
+      slg: null,
+      walks: null,
+      strikeouts: null,
+      ip: 0,
+      outs: 0,
+      pitches: 4,
+      k_minus_bb_rate: -1,
+      pitching_strikeouts: 0,
+      walks_allowed: 1,
+    })])
+
+    expect(ranked?.servedProspectRank).toMatchObject({
+      rank: 1,
+      evidenceTier: 'live_in_season_prior',
+      volatility: 'very_high',
+    })
+  })
+
+  it('fails closed when exact official stats cannot produce a served prospect rank', () => {
     expect(() => scoreCurrentProspectUniverse([
       candidate('unsupported-live-level', {
         mlbamId: '834597',
@@ -778,7 +817,7 @@ describe('official MiLB current universe', () => {
       current_team_name: null,
       pa: 12,
     })])).toThrow(
-      'Prospect scoring postcondition failed for official current MiLB workload identities: ' +
+      'Prospect scoring postcondition failed for official current MiLB stat identities: ' +
         '834597:Hitter',
     )
   })
