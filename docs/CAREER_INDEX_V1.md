@@ -45,14 +45,16 @@ without a new index version.
 
 ## Three Separate Signals
 
-Player Map v4 keeps three concepts separate. The product presents them as
-Backstop Rank, Career Outlook, and Current Results:
+The product keeps three concepts separate:
 
-1. **Backstop Rank:** an exact route-specific ordinal. Its source is Prospect
-   Score rank for Minors and stage standing for Rookie Track and MLB.
+1. **Stage Rank:** an exact route-specific ordinal, labeled Prospect Rank,
+   Pre-Debut Rank, or MLB Career Rank. It is not comparable across stages.
 2. **Career Outlook:** `careerIndex`, the absolute modeled career-value magnitude
    on the fixed 0-100 scale.
 3. **Current Results:** observed season evidence kept separate from both forecasts.
+
+Backstop Rank is reserved for a future validated, unconditional cross-stage
+career model and is currently withheld in `player-signals.v1`.
 
 Current Results never raise or lower the Career Index. Stage standing never enters
 the Career Index formula. A player can therefore have a modest absolute outlook

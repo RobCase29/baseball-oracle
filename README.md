@@ -5,17 +5,23 @@ Baseball Oracle is a point-in-time research platform for two prediction problems
 1. Which professional minor-league players have the strongest path to meaningful MLB impact.
 2. Which active major leaguers have the strongest remaining career path toward Hall of Fame-caliber statistics.
 
-The prospect board leads with an individualized **Prospect Score** for meaningful
-five-year MLB impact; the MLB board leads with the **Oracle Career Index**, a
-fixed 0-100 summary of modeled final-career WAR magnitude. They are shown beside
-the player's exact stage standing and evidence depth so absolute career value,
-relative rarity, and forecast support never collapse into one claim. Career Index
-is not a probability, percentile, confidence score, expected WAR, or
-investment-return score. The legacy stage-percentile `oracleScore` remains in the
-partner feed only for migration compatibility. See the
-[Career Index contract](docs/CAREER_INDEX_V1.md).
-The prospect ranking contract and July 2026 age audit are in
-[Prospect Score v1](docs/PROSPECT_SCORE_V1.md).
+The product keeps three readings deliberately separate:
+
+1. **Stage Rank:** Prospect Rank for Minors, Pre-Debut Rank for Rookie Track,
+   and MLB Career Rank for MLB. These ranks answer different questions and are
+   never compared across stages.
+2. **Career Outlook:** a fixed 0-100 summary of modeled final-career WAR
+   magnitude. Prospect and Rookie Track values are conditional on reaching MLB.
+3. **Current Results:** normalized live MiLB or MLB evidence, never blended into
+   either forecast.
+
+There is no released universal Backstop Rank. The canonical partner endpoint
+explicitly withholds that field until one validated, unconditional cross-stage
+career model exists. Career Outlook is not a probability, percentile,
+confidence score, expected WAR, or investment-return score. See the
+[Player Signals v1 contract](docs/PLAYER_SIGNALS_API_V1.md),
+[Career Outlook formula](docs/CAREER_INDEX_V1.md), and current
+[prospect-ranking model card](docs/PROSPECT_SCORE_V2.md).
 
 The repository ships a working React research cockpit backed by authorized
 Prospect Savant observations in Neon and a locked Baseball-Reference MLB WAR
@@ -216,15 +222,23 @@ GET /api/players?stage=Minors&sort=stageStanding&page=1&limit=50
 GET /api/players?stage=MLB&sort=stageStanding&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Pitcher&sort=hofProbability&page=1&limit=50
 GET /api/players?stage=MLB&playerType=Hitter&sort=nearTermImpact&page=1&limit=50
+GET /api/v1/player-signals?stage=Minors&sort=prospectScore&page=1&limit=100
 ```
 
-The product decision order is **Backstop Rank**, **Career Outlook**, then
-**Current Results**. Backstop Rank is the exact route-specific ordinal: Prospect
-Score rank for Minors, the frozen pre-debut impact rank for Rookie Track, and
-career-outlook standing for MLB. It is lower-is-better and must not be compared
-across those routes. Career Outlook is the existing `careerIndex` field presented
-as a fixed 0-100 long-term value scale; it is not a percentile or probability.
-Current Results are observed season evidence and remain separate from the rank.
+The product decision order is **Stage Rank**, **Career Outlook**, then **Current
+Results**. The public rank label names its actual scope: Prospect Rank for Minors,
+Pre-Debut Rank for Rookie Track, and MLB Career Rank for MLB. Those ordinals use
+different targets and must not be compared across routes. Career Outlook is the
+existing `careerIndex` field presented as a fixed 0-100 long-term value scale; it
+is not a percentile or probability. Current Results are observed season evidence
+and remain separate from the rank.
+
+`GET /api/v1/player-signals` is the canonical downstream contract. It publishes
+the same normalized Stage Rank, Career Outlook, and numeric Current Results
+objects for every route. The future universal `backstopRank` field is explicitly
+withheld until one validated unconditional career model can rank every active
+player against the same target. The API never manufactures that value from the
+three incompatible stage ordinals.
 
 API calls that omit `sort` now default to `prospectScore` for Minors and
 `stageStanding` for Rookie Track and MLB; `stage=All` remains a name-ordered
@@ -240,8 +254,9 @@ Raw provider JSON and scouting prose are never returned by the public API.
 
 ## Current surfaces
 
-- **Rankings:** Backstop Rank first, Career Outlook second, and Current Results
-  third, with real players and team/position/stage filters in a table-first workflow.
+- **Rankings:** the route-specific Stage Rank first, Career Outlook second, and
+  Current Results third, with real players and team/position/stage filters in a
+  table-first workflow.
 - **Directory:** an identity and coverage view across stages. It defaults to
   player name, also supports age, and neither order is a baseball ranking.
 - **Rookie Track:** a frozen pre-debut impact rank and Career Outlook paired with
@@ -268,6 +283,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Historical backfill strategy](docs/HISTORICAL_BACKFILL.md)
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
+- [Player Signals API v1](docs/PLAYER_SIGNALS_API_V1.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

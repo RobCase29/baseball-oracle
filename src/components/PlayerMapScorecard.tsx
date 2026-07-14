@@ -2,10 +2,10 @@ import { AlertCircle, Layers3, Radar, Route } from 'lucide-react'
 import type { PlayerRecord } from '../domain/forecast'
 import type { PlayerMapProfile, PlayerMapSignal } from '../domain/playerMap'
 import {
-  backstopRankFor,
   careerOutlookFor,
   currentResultsFor,
   playerMapFor,
+  routeRankFor,
 } from './playerMapView'
 
 function ordinalLabel(value: number): string {
@@ -54,11 +54,11 @@ function plainSignal(signal: PlayerMapSignal): { label: string; detail: string }
     },
     ceiling_readiness_split: {
       label: 'Strong outlook, longer path',
-      detail: 'The Backstop Rank is strong, but a near-term MLB arrival is not confirmed yet.',
+      detail: 'The Prospect Rank is strong, but a near-term MLB arrival is not confirmed yet.',
     },
     thin_data_upside: {
       label: 'Early signal',
-      detail: 'The Backstop Rank is already strong even though the current-season sample is still developing.',
+      detail: 'The Prospect Rank is already strong even though the current-season sample is still developing.',
     },
     trait_corroborated: {
       label: 'Current stats support the projection',
@@ -111,34 +111,34 @@ function plainNextStep(step: string): string {
 
 export function PlayerMapScorecard({ player }: { player: PlayerRecord }) {
   const map = playerMapFor(player)
-  const backstopRank = backstopRankFor(player, map)
+  const routeRank = routeRankFor(player, map)
   const facts = outlookFacts(player, map)
   const hasTraitProfile = map.strengths.length > 0 || map.risks.length > 0
   const outcomeTitle = map.route === 'milb'
-    ? 'Prospect ranking'
+    ? 'Prospect impact ranking'
     : map.route === 'rookie'
-      ? 'Pre-debut rank, current MLB check'
+      ? 'Pre-debut rank + current MLB results'
       : 'MLB career ranking'
 
   return (
     <section className={`player-map player-map--${map.state}`} aria-labelledby="player-map-title">
       <div className="player-map-heading">
         <div
-          className={`career-index-hero career-index-hero--${backstopRank.tone}`}
+          className={`career-index-hero career-index-hero--${routeRank.tone}`}
           role="group"
-          aria-label={backstopRank.rank === null ? 'Backstop Rank unavailable' : `Backstop Rank ${backstopRank.rankLabel}`}
+          aria-label={routeRank.rank === null ? `${routeRank.label} unavailable` : `${routeRank.label} ${routeRank.rankLabel}`}
         >
-          <span>BACKSTOP RANK</span>
-          <strong>{backstopRank.display}</strong>
-          <small>{backstopRank.routeLabel.toLocaleUpperCase()}</small>
+          <span>{routeRank.label.toLocaleUpperCase()}</span>
+          <strong>{routeRank.display}</strong>
+          <small>{routeRank.routeLabel.toLocaleUpperCase()}</small>
         </div>
         <div className="player-map-heading-copy">
           <span className="eyebrow">RANKING SUMMARY</span>
           <h2 id="player-map-title">{outcomeTitle}</h2>
-          <p>{backstopRank.explanation}</p>
+          <p>{routeRank.explanation}</p>
           <div className="player-map-context">
-            <strong>{backstopRank.topLabel ?? 'Rank pending'}</strong>
-            <span><Radar size={14} aria-hidden="true" /> {backstopRank.cohortLabel} · {backstopRank.evidenceLabel}</span>
+            <strong>{routeRank.topLabel ?? 'Rank pending'}</strong>
+            <span><Radar size={14} aria-hidden="true" /> {routeRank.cohortLabel} · {routeRank.evidenceLabel}</span>
           </div>
         </div>
       </div>

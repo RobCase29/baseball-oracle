@@ -490,7 +490,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('button', { name: 'Rookie Track' })).toBeInTheDocument()
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
       'Player',
-      'Backstop Rank',
+      'Stage Rank',
       'Career Outlook',
       'Current Results',
     ])
@@ -507,7 +507,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByRole('option', { name: 'Player name' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Youngest first' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Career Index' })).not.toBeInTheDocument()
-    expect(screen.getByText(/Ranks are stage-specific/u)).toBeInTheDocument()
+    expect(screen.getByText(/Stage Ranks are not one combined leaderboard/u)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'MLB' }))
     expect(onChangeFilters).toHaveBeenCalledWith({ stage: 'MLB', level: 'All', sort: 'stageStanding' })
@@ -601,8 +601,11 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Rookie Track' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Pre-Debut Rank' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Pre-Debut Rank' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Level' })).toBeDisabled()
     expect(screen.getByText('#189')).toBeInTheDocument()
+    expect(screen.getByText('of 6,455 prospects · Frozen before MLB debut')).toBeInTheDocument()
     expect(screen.getByText('MLB contributor')).toBeInTheDocument()
     expect(screen.getByText('24/100 · Frozen pre-debut outlook')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
@@ -619,8 +622,8 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Pre-debut rank, current MLB check' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Backstop Rank #189 of 6,455' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Pre-debut rank + current MLB results' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Pre-Debut Rank #189 of 6,455' })).toBeInTheDocument()
     expect(screen.getByText(/pre-debut outlook stays fixed while early MLB results build/u)).toBeInTheDocument()
     expect(screen.getByText('Career Outlook')).toBeInTheDocument()
     expect(screen.getByText('Current Results')).toBeInTheDocument()
@@ -674,10 +677,10 @@ describe('unified Oracle Board shell', () => {
     unmount()
     render(<PlayerDossier player={unmatchedRookie} onReturnToBoard={vi.fn()} />)
 
-    expect(screen.getByRole('group', { name: 'Backstop Rank unavailable' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Pre-Debut Rank unavailable' })).toBeInTheDocument()
     expect(screen.getByText(/remains visible in Rookie Track/u)).toBeInTheDocument()
-    expect(screen.getByText('Backstop Rank not matched')).toBeInTheDocument()
-    expect(screen.getByText(/Backstop Rank stays unavailable until the exact pre-debut impact record/u)).toBeInTheDocument()
+    expect(screen.getByText('Pre-Debut Rank not matched')).toBeInTheDocument()
+    expect(screen.getByText(/Pre-Debut Rank stays unavailable until the exact pre-debut impact record/u)).toBeInTheDocument()
   })
 
   it('filters by complete team and tokenized position facets and clears the cohort', () => {
@@ -756,6 +759,9 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
+    expect(screen.getByRole('heading', { name: 'MLB Career Rankings' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'MLB Career Rank' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'MLB Career Rank' })).toBeInTheDocument()
     expect(screen.queryByText('Launch / breakout')).not.toBeInTheDocument()
     expect(screen.queryByText('#7')).not.toBeInTheDocument()
     expect(screen.getByText('MLB regular')).toBeInTheDocument()
@@ -765,7 +771,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.queryByText(/#4 of 512/u)).not.toBeInTheDocument()
   })
 
-  it('leads the MiLB board with one exact Backstop Rank', async () => {
+  it('leads the MiLB board with one exact Prospect Rank', async () => {
     render(
       <ProspectBoard
         players={[{ ...player, milbAlphaSignal, milbImpactRanking }]}
@@ -781,7 +787,10 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Prospect Rankings' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Prospect Rank' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Prospect Rank' })).toBeInTheDocument()
     expect(screen.getByText('#3')).toBeInTheDocument()
+    expect(screen.getByText('of 6,455 prospects')).toBeInTheDocument()
     expect(screen.queryByText('99.97')).not.toBeInTheDocument()
     expect(screen.getByText('MLB regular')).toBeInTheDocument()
     expect(screen.getByText('61/100 · If MLB is reached')).toBeInTheDocument()
@@ -820,7 +829,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('#7')).toBeInTheDocument()
   })
 
-  it('restores Backstop Rank ordering whenever the user enters the prospect route', () => {
+  it('restores Prospect Rank ordering whenever the user enters the prospect route', () => {
     const onChangeFilters = vi.fn()
     render(
       <ProspectBoard
@@ -920,7 +929,7 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Prospect ranking' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Prospect impact ranking' })).toBeInTheDocument()
     expect(screen.getByText(/Aiva Arquette ranks #258 of 6,455/u)).toBeInTheDocument()
     expect(screen.getAllByText('Age 23').length).toBeGreaterThan(0)
     expect(screen.getByText('Strong outlook, longer path')).toBeInTheDocument()
@@ -1115,12 +1124,12 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByText('PROSPECT OUTLOOK')).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Backstop Rank unavailable' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Prospect Rank unavailable' })).toBeInTheDocument()
     expect(screen.getByText(/not enough matched model data/u)).toBeInTheDocument()
     expect(screen.queryByText('CAREER FORECAST WITHHELD')).not.toBeInTheDocument()
   })
 
-  it('keeps a valid Backstop Rank when the conditional career projection is withheld', () => {
+  it('keeps a valid Prospect Rank when the conditional career projection is withheld', () => {
     render(
       <PlayerDossier
         player={{
@@ -1138,8 +1147,8 @@ describe('unified Oracle Board shell', () => {
     )
 
     expect(screen.getByText('CAREER OUTLOOK')).toBeInTheDocument()
-    expect(screen.getByText('Career projection withheld; Backstop Rank remains separate')).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Backstop Rank #3 of 6,455' })).toBeInTheDocument()
+    expect(screen.getByText('Career projection withheld; Prospect Rank remains separate')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Prospect Rank #3 of 6,455' })).toBeInTheDocument()
     expect(screen.queryByText('Excluded from score-based ranking')).not.toBeInTheDocument()
   })
 })

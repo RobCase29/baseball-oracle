@@ -321,7 +321,7 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
               {ceilingAlpha
                 ? `The direct impact challenger ranks this player #${impact.rank} on the path to at least 5 MLB WAR from 2026–2030, and the separate young-for-level arrival signal also cleared. No probabilities were blended.`
                 : !impactWorkloadSupported
-                  ? `The full model did not meet its completed-season workload gate, so Prospect Score uses the transparent hierarchical prior at #${impact.priorRank}. Career Index remains the separate age- and runway-adjusted ceiling.`
+                  ? `The full model did not meet its completed-season workload gate, so Prospect Rank uses the transparent hierarchical prior at #${impact.priorRank}. Career Outlook remains the separate age- and runway-adjusted ceiling.`
                   : `The direct impact challenger ranks this player #${impact.rank}, but the research signal is withheld until both the impact top-decile and young-for-level arrival gates clear.`}
             </span>
           </div>
@@ -731,14 +731,14 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
       </div>
       <p className="career-chapter-note">
         {impactRank
-          ? `${player.name}'s pre-debut Backstop Rank stays in place while major-league evidence accumulates. A small debut sample cannot erase or silently rewrite that prior.`
+          ? `${player.name}'s Pre-Debut Rank stays in place while major-league evidence accumulates. A small debut sample cannot erase or silently rewrite that prior.`
           : careerPrior
-            ? `${player.name}'s Career Outlook is matched, but the exact pre-debut Backstop Rank is not yet available. Current MLB results remain separate.`
+            ? `${player.name}'s Career Outlook is matched, but the exact Pre-Debut Rank is not yet available. Current MLB results remain separate.`
             : `${player.name} remains visible in Rookie Track while the exact pre-debut forecast match is completed. Current MLB results are still tracked without manufacturing a replacement rank.`}
       </p>
       <div className="forecast-metrics rookie-track-metrics" aria-label="Rookie Track summary">
         <div className="metric-tile metric-tile--reach">
-          <span className="metric-label">BACKSTOP RANK</span>
+          <span className="metric-label">PRE-DEBUT RANK</span>
           <strong className="metric-number">{impactRank ? `#${impactRank.rank.toLocaleString()}` : '—'}</strong>
           <small>{impactRank ? `of ${impactRank.universe.toLocaleString()} prospects · pre-debut` : 'Exact five-year impact rank not matched'}</small>
         </div>
@@ -770,10 +770,10 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
       <div className="research-warning" role="note">
         <AlertTriangle size={18} aria-hidden="true" />
         <div>
-          <strong>{impactRank ? 'The pre-debut Backstop Rank stays fixed' : 'Backstop Rank not matched'}</strong>
+          <strong>{impactRank ? 'The Pre-Debut Rank stays fixed' : 'Pre-Debut Rank not matched'}</strong>
           <span>{impactRank
             ? 'Current MLB production updates the evidence read. A new career rank takes over only after a completed-season transition model proves it can improve on the prior.'
-            : 'Rookie Track keeps the player discoverable, but Backstop Rank stays unavailable until the exact pre-debut impact record is matched.'}</span>
+            : 'Rookie Track keeps the player discoverable, but Pre-Debut Rank stays unavailable until the exact pre-debut impact record is matched.'}</span>
         </div>
       </div>
     </section>
@@ -781,7 +781,8 @@ function RookieTrackPanel({ player }: { player: PlayerRecord }) {
 }
 
 function SpecialHandlingPanel({ player, forecast }: { player: PlayerRecord; forecast: CareerForecast }) {
-  const handling = playerMapFor(player).handling
+  const playerMap = playerMapFor(player)
+  const handling = playerMap.handling
   const primary = handling?.primary
   if (!primary) return null
   const mlbStage = isMlbStage(player.stage)
@@ -816,8 +817,10 @@ function SpecialHandlingPanel({ player, forecast }: { player: PlayerRecord; fore
           <span>CAREER OUTLOOK</span>
           <strong>Withheld</strong>
           <small>{mlbStage
-            ? 'Excluded from Backstop Rank until the career outlook is supported'
-            : 'Career projection withheld; Backstop Rank remains separate'}</small>
+            ? playerMap.route === 'rookie'
+              ? 'Career projection withheld; Pre-Debut Rank remains separate'
+              : 'Excluded from MLB Career Rank until the career outlook is supported'
+            : 'Career projection withheld; Prospect Rank remains separate'}</small>
         </div>
       </div>
       {handling.notes.length > 1 ? (
@@ -848,8 +851,8 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
           </strong>
           <span>
             {isMlbStage(player.stage)
-              ? 'Backstop Rank is the primary reading. The career projection and evidence below explain that rank; it is not a Hall of Fame election prediction.'
-              : 'Backstop Rank is the primary five-year impact reading. The career outlook and current evidence below explain it; the rank is not a probability.'}
+              ? 'MLB Career Rank is the primary reading. The career projection and evidence below explain that rank; it is not a Hall of Fame election prediction.'
+              : 'Prospect Rank is the primary five-year impact reading. The career outlook and current evidence below explain it; the rank is not a probability.'}
           </span>
         </div>
       </div>

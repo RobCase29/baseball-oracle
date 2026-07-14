@@ -1,0 +1,609 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/player-signals.v1.schema.json",
+  "title": "Baseball Oracle Player Signals v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "snapshot", "items", "page", "meta"],
+  "properties": {
+    "schemaVersion": { "const": "player-signals.v1" },
+    "contractVersion": { "const": "player-signals-contract/v1" },
+    "snapshot": { "$ref": "#/$defs/snapshot" },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "page": { "$ref": "#/$defs/page" },
+    "meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "nullableNumber": { "type": ["number", "null"] },
+    "availability": {
+      "enum": [
+        "available",
+        "unavailable",
+        "withheld",
+        "insufficient_sample",
+        "unmatched",
+        "stale"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dataAsOf", "freshness"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^player-signals-snapshot/v1:[a-f0-9]{64}$"
+        },
+        "dataAsOf": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reasonCodes",
+            "statsChangedAt",
+            "lastCheckedAt",
+            "nextDueAt",
+            "cronObserved"
+          ],
+          "properties": {
+            "status": { "enum": ["ok", "degraded", "stale"] },
+            "reasonCodes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "statsChangedAt": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ]
+            },
+            "lastCheckedAt": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ]
+            },
+            "nextDueAt": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ]
+            },
+            "cronObserved": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page", "limit", "total", "totalPages"],
+      "properties": {
+        "page": { "type": "integer", "minimum": 1 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "total": { "type": "integer", "minimum": 0 },
+        "totalPages": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "marketIndependent",
+        "marketInputsIncluded",
+        "investmentRankIncluded",
+        "nullMeans",
+        "backstopRankStatus",
+        "stageRanksComparableAcrossStages",
+        "careerOutlookScaleComparableAcrossStages",
+        "careerOutlookEstimandComparableAcrossStages",
+        "currentResultsNormalizedAcrossStages",
+        "paginationConsistency",
+        "identityPolicy"
+      ],
+      "properties": {
+        "marketIndependent": { "const": true },
+        "marketInputsIncluded": { "const": false },
+        "investmentRankIncluded": { "const": false },
+        "nullMeans": { "const": "unavailable_not_zero" },
+        "backstopRankStatus": { "const": "withheld_pending_unified_unconditional_model" },
+        "stageRanksComparableAcrossStages": { "const": false },
+        "careerOutlookScaleComparableAcrossStages": { "const": true },
+        "careerOutlookEstimandComparableAcrossStages": { "const": false },
+        "currentResultsNormalizedAcrossStages": { "const": true },
+        "paginationConsistency": { "const": "page_number_not_snapshot_bound" },
+        "identityPolicy": { "const": "exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching" }
+      }
+    },
+    "externalIds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mlbam", "baseballReference", "prospectSavant", "minorMaster"],
+      "properties": {
+        "mlbam": { "$ref": "#/$defs/nullableString" },
+        "baseballReference": { "$ref": "#/$defs/nullableString" },
+        "prospectSavant": { "$ref": "#/$defs/nullableString" },
+        "minorMaster": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "careerStage",
+        "currentLevel",
+        "competition",
+        "rankingRole",
+        "observedRoles",
+        "age",
+        "organization",
+        "organizationCode",
+        "position",
+        "effectiveAt"
+      ],
+      "properties": {
+        "route": { "enum": ["milb", "rookie", "mlb"] },
+        "careerStage": {
+          "enum": [
+            "pre_debut",
+            "post_debut_minors",
+            "recent_callup",
+            "early_mlb",
+            "established_mlb",
+            "inactive"
+          ]
+        },
+        "currentLevel": { "$ref": "#/$defs/nullableString" },
+        "competition": { "enum": ["MiLB", "MLB"] },
+        "rankingRole": { "enum": ["hitter", "pitcher"] },
+        "observedRoles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["hitter", "pitcher"] }
+        },
+        "age": { "$ref": "#/$defs/nullableNumber" },
+        "organization": { "$ref": "#/$defs/nullableString" },
+        "organizationCode": { "$ref": "#/$defs/nullableString" },
+        "position": { "$ref": "#/$defs/nullableString" },
+        "effectiveAt": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "priorRoute", "priorRankPreserved", "updatePolicy"],
+      "properties": {
+        "status": { "enum": ["not_transitioning", "rookie_monitoring"] },
+        "priorRoute": { "enum": ["milb", null] },
+        "priorRankPreserved": { "type": "boolean" },
+        "updatePolicy": {
+          "enum": ["current_route", "frozen_pre_debut_prior_with_live_confirmation"]
+        }
+      }
+    },
+    "backstopRank": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "availability",
+        "reasonCodes",
+        "rank",
+        "universe",
+        "metricId",
+        "targetId",
+        "comparableAcrossStages",
+        "intendedComparableAcrossStages",
+        "asOf",
+        "modelVersion"
+      ],
+      "properties": {
+        "label": { "const": "Backstop Rank" },
+        "availability": { "const": "withheld" },
+        "reasonCodes": {
+          "type": "array",
+          "prefixItems": [{ "const": "unified_unconditional_model_not_released" }],
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "rank": { "type": "null" },
+        "universe": { "type": "null" },
+        "metricId": { "const": "unified_unconditional_terminal_career_value" },
+        "targetId": { "const": "terminal_career_value_unconditional" },
+        "comparableAcrossStages": { "const": false },
+        "intendedComparableAcrossStages": { "const": true },
+        "asOf": { "type": "null" },
+        "modelVersion": { "type": "null" }
+      }
+    },
+    "stageRank": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "availability",
+        "reasonCodes",
+        "rank",
+        "universe",
+        "metricId",
+        "targetId",
+        "originRoute",
+        "carriedForward",
+        "comparableAcrossStages",
+        "cohortId",
+        "asOf",
+        "modelVersion"
+      ],
+      "properties": {
+        "label": { "enum": ["Prospect Rank", "Pre-Debut Rank", "MLB Career Rank"] },
+        "availability": { "$ref": "#/$defs/availability" },
+        "reasonCodes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "rank": { "type": ["integer", "null"], "minimum": 1 },
+        "universe": { "type": ["integer", "null"], "minimum": 1 },
+        "metricId": {
+          "enum": [
+            "milb_five_year_impact",
+            "frozen_pre_debut_five_year_impact",
+            "mlb_career_outlook_standing"
+          ]
+        },
+        "targetId": { "$ref": "#/$defs/nullableString" },
+        "originRoute": { "enum": ["milb", "rookie", "mlb"] },
+        "carriedForward": { "type": "boolean" },
+        "comparableAcrossStages": { "const": false },
+        "cohortId": { "enum": ["prospect_forecast", "frozen_prospect_prior", "current_mlb"] },
+        "asOf": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "modelVersion": { "$ref": "#/$defs/nullableString" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "availability": { "enum": ["available", "insufficient_sample"] } } },
+          "then": {
+            "properties": {
+              "rank": { "type": "integer", "minimum": 1 },
+              "universe": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "availability": { "enum": ["unavailable", "withheld", "unmatched"] } } },
+          "then": { "properties": { "rank": { "type": "null" } } }
+        }
+      ]
+    },
+    "careerOutlook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "availability",
+        "reasonCodes",
+        "value",
+        "band",
+        "scaleVersion",
+        "basis",
+        "arrivalDependent",
+        "finalCareerWar",
+        "scaleComparableAcrossStages",
+        "estimandComparableAcrossStages",
+        "publicationStatus",
+        "asOf",
+        "modelVersion"
+      ],
+      "properties": {
+        "label": { "const": "Career Outlook" },
+        "availability": { "$ref": "#/$defs/availability" },
+        "reasonCodes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "value": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "band": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "label"],
+              "properties": {
+                "id": {
+                  "enum": [
+                    "historic_ceiling",
+                    "hall_level_upside",
+                    "star_upside",
+                    "mlb_regular",
+                    "mlb_contributor",
+                    "limited_mlb_value",
+                    "no_positive_value"
+                  ]
+                },
+                "label": { "type": "string", "minLength": 1 }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "scaleVersion": { "const": "career-index-war-v2" },
+        "basis": { "enum": ["conditional_on_mlb_arrival", "current_mlb_terminal"] },
+        "arrivalDependent": { "type": "boolean" },
+        "finalCareerWar": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["p50", "p75", "p90"],
+              "properties": {
+                "p50": { "type": "number" },
+                "p75": { "type": "number" },
+                "p90": { "type": "number" }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "scaleComparableAcrossStages": { "const": true },
+        "estimandComparableAcrossStages": { "const": false },
+        "publicationStatus": { "enum": ["research_only", "withheld"] },
+        "asOf": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "modelVersion": { "$ref": "#/$defs/nullableString" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "availability": { "const": "available" } } },
+          "then": {
+            "properties": {
+              "value": { "type": "number", "minimum": 0, "maximum": 100 },
+              "band": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "availability": { "enum": ["unavailable", "withheld", "unmatched"] } } },
+          "then": { "properties": { "value": { "type": "null" }, "band": { "type": "null" } } }
+        }
+      ]
+    },
+    "hitting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pa",
+        "war",
+        "ba",
+        "obp",
+        "slg",
+        "ops",
+        "homeRuns",
+        "walks",
+        "strikeouts",
+        "stolenBases"
+      ],
+      "properties": {
+        "pa": { "type": "integer", "minimum": 0 },
+        "war": { "$ref": "#/$defs/nullableNumber" },
+        "ba": { "$ref": "#/$defs/nullableNumber" },
+        "obp": { "$ref": "#/$defs/nullableNumber" },
+        "slg": { "$ref": "#/$defs/nullableNumber" },
+        "ops": { "$ref": "#/$defs/nullableNumber" },
+        "homeRuns": { "type": ["integer", "null"], "minimum": 0 },
+        "walks": { "type": ["integer", "null"], "minimum": 0 },
+        "strikeouts": { "type": ["integer", "null"], "minimum": 0 },
+        "stolenBases": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "pitching": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ip",
+        "outs",
+        "games",
+        "gamesStarted",
+        "war",
+        "era",
+        "whip",
+        "strikeoutRate",
+        "walkRate",
+        "kMinusBbRate",
+        "strikeouts",
+        "walksAllowed"
+      ],
+      "properties": {
+        "ip": { "type": "number", "minimum": 0 },
+        "outs": { "type": ["integer", "null"], "minimum": 0 },
+        "games": { "type": ["integer", "null"], "minimum": 0 },
+        "gamesStarted": { "type": ["integer", "null"], "minimum": 0 },
+        "war": { "$ref": "#/$defs/nullableNumber" },
+        "era": { "$ref": "#/$defs/nullableNumber" },
+        "whip": { "$ref": "#/$defs/nullableNumber" },
+        "strikeoutRate": { "$ref": "#/$defs/nullableNumber" },
+        "walkRate": { "$ref": "#/$defs/nullableNumber" },
+        "kMinusBbRate": { "$ref": "#/$defs/nullableNumber" },
+        "strikeouts": { "type": ["integer", "null"], "minimum": 0 },
+        "walksAllowed": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "currentResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "availability",
+        "reasonCodes",
+        "competition",
+        "season",
+        "source",
+        "asOf",
+        "workload",
+        "totalWar",
+        "warPercentile",
+        "hitting",
+        "pitching"
+      ],
+      "properties": {
+        "label": { "const": "Current Results" },
+        "availability": { "$ref": "#/$defs/availability" },
+        "reasonCodes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "competition": { "enum": ["MiLB", "MLB"] },
+        "season": { "type": ["integer", "null"], "minimum": 1871 },
+        "source": { "enum": ["MLB StatsAPI", "Baseball-Reference", null] },
+        "asOf": {
+          "anyOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "workload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["plateAppearances", "inningsPitched"],
+          "properties": {
+            "plateAppearances": { "type": ["integer", "null"], "minimum": 0 },
+            "inningsPitched": { "type": ["number", "null"], "minimum": 0 }
+          }
+        },
+        "totalWar": { "$ref": "#/$defs/nullableNumber" },
+        "warPercentile": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "hitting": { "anyOf": [{ "$ref": "#/$defs/hitting" }, { "type": "null" }] },
+        "pitching": { "anyOf": [{ "$ref": "#/$defs/pitching" }, { "type": "null" }] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "availability": { "const": "available" } } },
+          "then": {
+            "properties": {
+              "season": { "type": "integer" },
+              "source": { "enum": ["MLB StatsAPI", "Baseball-Reference"] },
+              "asOf": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "availability": { "const": "unavailable" } } },
+          "then": {
+            "properties": {
+              "source": { "type": "null" },
+              "hitting": { "type": "null" },
+              "pitching": { "type": "null" },
+              "totalWar": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordVersion", "player", "classification", "transition", "signals"],
+      "properties": {
+        "recordVersion": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "player": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "externalIds", "identityStatus"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "name": { "type": "string", "minLength": 1 },
+            "externalIds": { "$ref": "#/$defs/externalIds" },
+            "identityStatus": { "enum": ["mlbam_linked", "profile_only"] }
+          }
+        },
+        "classification": { "$ref": "#/$defs/classification" },
+        "transition": { "$ref": "#/$defs/transition" },
+        "signals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["backstopRank", "stageRank", "careerOutlook", "currentResults"],
+          "properties": {
+            "backstopRank": { "$ref": "#/$defs/backstopRank" },
+            "stageRank": { "$ref": "#/$defs/stageRank" },
+            "careerOutlook": { "$ref": "#/$defs/careerOutlook" },
+            "currentResults": { "$ref": "#/$defs/currentResults" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "properties": { "route": { "const": "milb" } } } } },
+          "then": {
+            "properties": {
+              "signals": {
+                "properties": {
+                  "stageRank": {
+                    "properties": {
+                      "label": { "const": "Prospect Rank" },
+                      "metricId": { "const": "milb_five_year_impact" },
+                      "originRoute": { "const": "milb" },
+                      "carriedForward": { "const": false },
+                      "cohortId": { "const": "prospect_forecast" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "classification": { "properties": { "route": { "const": "rookie" } } } } },
+          "then": {
+            "properties": {
+              "signals": {
+                "properties": {
+                  "stageRank": {
+                    "properties": {
+                      "label": { "const": "Pre-Debut Rank" },
+                      "metricId": { "const": "frozen_pre_debut_five_year_impact" },
+                      "originRoute": { "const": "milb" },
+                      "carriedForward": { "const": true },
+                      "cohortId": { "const": "frozen_prospect_prior" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "classification": { "properties": { "route": { "const": "mlb" } } } } },
+          "then": {
+            "properties": {
+              "signals": {
+                "properties": {
+                  "stageRank": {
+                    "properties": {
+                      "label": { "const": "MLB Career Rank" },
+                      "metricId": { "const": "mlb_career_outlook_standing" },
+                      "originRoute": { "const": "mlb" },
+                      "carriedForward": { "const": false },
+                      "cohortId": { "const": "current_mlb" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

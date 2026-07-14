@@ -21,6 +21,7 @@
     "scripts/**/*.ts",
     "src/domain/forecast.ts",
     "src/domain/playerMap.ts",
+    "src/domain/playerSignals.ts",
     "src/domain/playerHandling.ts"
   ]
 }

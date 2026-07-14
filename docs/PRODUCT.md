@@ -29,15 +29,15 @@ role/position standard)`. For minor leaguers, it composes a separately evaluated
 different endpoints, so MLB and MiLB ranks are stage-specific. Directory defaults
 to player-name order, also supports an age sort, and never implies a combined rank.
 
-Player Map v4 presents separate decision signals. Prospect Score is the primary
-individualized MiLB impact rank. Career Index measures the
-absolute magnitude of the final-career WAR distribution on frozen career-value
-anchors. Stage standing reports rank and tail band inside the declared prospect
-or MLB universe. Evidence reports sample and coverage strength. The first two are
-not blended, and evidence changes trust rather than score. The exact contract is
-defined in [`CAREER_INDEX_V1.md`](./CAREER_INDEX_V1.md).
+The current product presents three separate readings. Stage Rank is labeled
+Prospect Rank, Pre-Debut Rank, or MLB Career Rank and is valid only inside its
+declared route. Career Outlook measures the absolute magnitude of the
+final-career WAR distribution on frozen 0-100 anchors. Current Results report
+live observed performance. They are never blended into one unexplained score;
+evidence changes trust rather than rank or outlook. The canonical contract is
+defined in [`PLAYER_SIGNALS_API_V1.md`](./PLAYER_SIGNALS_API_V1.md).
 
-Rookie Track preserves the frozen prospect Career Index and stage standing during
+Rookie Track preserves the frozen prospect Career Outlook and Pre-Debut Rank during
 the first partial MLB season while current MLB opportunity and WAR arrive as
 separate confirmation evidence. A supported completed-season MLB forecast, not a
 daily partial-season statistic, triggers the later route transition.
@@ -68,19 +68,22 @@ plausible-looking heuristic.
 ## Universal Player Map
 
 Every active player receives a Player Map profile even when no release-grade
-probability exists. Player Map v4 leads with intentionally separate fields:
+probability exists. The product leads with intentionally separate fields:
 
-- **Prospect Score:** the primary MiLB ordinal rank for at least 5 MLB WAR during
-  2026-2030 from features cut off at 2025-12-31. It is not a probability and is
-  not compared across routes.
+- **Stage Rank:** Prospect Rank for Minors, the frozen Pre-Debut Rank for Rookie
+  Track, or MLB Career Rank for MLB. Each is an ordinal inside its own route and
+  is never compared across routes.
 
-- **Career Index:** fixed-scale career-value magnitude from final WAR P50, P75,
+- **Career Outlook:** fixed-scale career-value magnitude from final WAR P50, P75,
   and P90. It is not a probability, percentile, or expected WAR.
-- **Stage standing:** exact rank, universe, top-share percentage, and tail band
-  for the declared stage cohort. Prospect ranks retain the frozen 6,455-player
-  universe rather than changing with the active directory.
+- **Current Results:** normalized observed MiLB or MLB season evidence. It does
+  not change a frozen model result.
 - **Evidence:** sample and source coverage that governs how much trust to place
-  in the output without changing either value.
+  in the output without changing either forecast.
+
+Backstop Rank is reserved for a future validated, unconditional cross-stage
+career model. It is currently withheld rather than synthesized from incompatible
+route ranks.
 
 The explanatory map remains a fixed vector, not a blended score:
 
@@ -93,7 +96,7 @@ The explanatory map remains a fixed vector, not a blended score:
 
 Each dimension carries its scale, comparison universe, target, model vintage, and
 claim state. MiLB and MLB stage standings are not directly interchangeable.
-Career Index uses one fixed numerical scale, but that does not make the forecast
+Career Outlook uses one fixed numerical scale, but that does not make the forecast
 routes equally mature or reliable. Missing dimensions are `withheld` or
 `evidence building`, never zero.
 
@@ -161,11 +164,11 @@ rate. It is model alpha, not market alpha; price is explicitly shown as missing.
 
 The first release supports one complete loop:
 
-1. **Scan:** Open a stage ranking and compare Prospect Score for MiLB or Career
-   Index for MLB with ceiling and evidence without conflating them.
+1. **Scan:** Open a stage ranking and compare its route-specific Stage Rank with
+   Career Outlook and Current Results without conflating them.
 2. **Narrow:** Search and filter by player type, organization, position, and minor-league level; every filter is reflected in the shareable URL.
 3. **Compare:** Move among players on the same filtered stage while keeping rank definitions, evidence scales, and uncertainty marks consistent.
-4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind the score.
+4. **Investigate:** Open a Player Dossier to inspect development, career arc, comparable players, and the evidence behind each reading.
 5. **Cross-check:** Use Directory to locate any covered player without treating its cross-stage row order as a ranking.
 6. **Revisit:** See what changed between prediction snapshots and whether the original thesis strengthened or weakened.
 
@@ -173,7 +176,7 @@ The current build uses real players and real source evidence; missing or unsuppo
 
 The decision surface separates prospects, Rookie Track, and MLB visually. The
 MiLB board pairs team, position, role, level, and search filters with a prospect
-landscape that plots Prospect Score against Ceiling if MLB. The player dossier
+landscape that plots Prospect Rank against Career Outlook. The player dossier
 keeps long-term rank, age context, and current raw-trait evidence on separate
 scales. For MLB players, recorded cumulative WAR is connected through the latest
 completed season, while future uncertainty is rendered only as a discrete
@@ -190,13 +193,13 @@ Required controls:
 - Player search
 - Hitter/pitcher segmented control
 - Organization, position, level, age, and data-quality filters
-- Sort prospects by Prospect Score, Ceiling if MLB, long-term potential, arrival horizon, age, or name
+- Sort prospects by Prospect Rank, Career Outlook, arrival horizon, age, or name
 - Compare selection
 
 Required row fields:
 
 - Player, organization, position, age, and current level
-- Prospect Score and exact impact rank for MiLB; Career Index, long-term rank, and evidence state
+- Route-specific Stage Rank, Career Outlook, Current Results, and evidence state
 - Three-year MLB probability and expected debut window
 - Median and upper-quantile career outcome, explicitly marked conditional where needed
 - Forecast confidence/data quality

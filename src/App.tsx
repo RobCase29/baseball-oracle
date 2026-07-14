@@ -398,6 +398,11 @@ function App() {
               : meta.currentDataFreshness?.status === 'degraded'
                 ? 'Refresh verification pending'
                 : 'Updated twice daily'
+  const rankingIntro = filters.stage === 'Minors'
+    ? 'Prospect Rank sets five-year impact priority. Career Outlook adds long-term context. Current Results show what is happening now.'
+    : filters.stage === 'RC'
+      ? 'Pre-Debut Rank preserves the original prospect signal. Career Outlook and Current Results show how the transition is developing.'
+      : 'MLB Career Rank sets the priority. Career Outlook adds long-term context. Current Results show what is happening now.'
 
   return (
     <div className={`app-shell${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -437,7 +442,7 @@ function App() {
                   <h1>{filters.stage === 'All' ? 'Player Directory' : 'Player Rankings'}</h1>
                   <p>{filters.stage === 'All'
                     ? 'Search every active player, then compare each player within the right career stage.'
-                    : 'Backstop Rank sets the priority. Career Outlook adds long-term context. Current Results show what is happening now.'}</p>
+                    : rankingIntro}</p>
                 </div>
                 <div className="snapshot-id">
                   <span>MODEL STATUS</span>

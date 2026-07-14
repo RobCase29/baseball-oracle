@@ -7,16 +7,17 @@ Model family: `milb-impact-five-calendar-year-war-v1`
 
 ## Decision Contract
 
-Prospect Score ranks pre-debut players on at least 5 total MLB WAR during the
+The internal Prospect Score model ranks pre-debut players on at least 5 total MLB WAR during the
 2026-2030 calendar seasons. It is an ordinal score in one frozen 6,455-player
 universe, not a probability, confidence estimate, card-price forecast, or Hall
 of Fame probability. Exact rank is canonical; the 0-100 value is its display
-percentile.
+percentile. The product publishes that exact ordinal as **Prospect Rank**; it
+does not expose the percentile as a competing headline score.
 
-Career Index remains separate. It describes the conditional career ceiling if
+Career Outlook remains separate. It describes the conditional career ceiling if
 the player reaches MLB and includes projected debut age and remaining runway.
-For checklist ranking, use Career Index as the long-horizon ceiling guardrail
-and exact Prospect Score rank to resolve players inside the same ceiling band.
+For checklist ranking, use Career Outlook as the long-horizon ceiling guardrail
+and exact Prospect Rank to resolve players inside the same ceiling band.
 This prevents both alphabetical ties and a late-age tiny sample from displacing
 a materially younger player with a stronger career runway.
 
@@ -70,15 +71,15 @@ status, snapshot ID, and model contract with every downstream ranking.
 
 For a MiLB-only checklist, use the product hierarchy:
 
-1. Backstop Rank ascending, sourced from the exact Prospect Score rank.
+1. Prospect Rank ascending, sourced from the exact five-year impact rank.
 2. Career Outlook descending, sourced from `careerIndex`.
 3. Current Results as separate observed context.
 4. Stable player identity as the final deterministic tie-breaker.
 
-Show Backstop Rank and Career Outlook with their labels. Career Outlook answers
-the conditional long-career question; Backstop Rank distinguishes near-term
-impact paths. Do not average the two or compare a Minors Backstop Rank numerically
-with Rookie Track or MLB ranks. A card application should add price, liquidity,
+Show Prospect Rank and Career Outlook with their labels. Career Outlook answers
+the conditional long-career question; Prospect Rank distinguishes near-term
+impact paths. Do not average the two or compare Prospect Rank numerically with
+Pre-Debut Rank or MLB Career Rank. A card application should add price, liquidity,
 scarcity, grading population, and fees
 in its own market-alpha layer rather than feeding those variables into Oracle's
 baseball forecast.

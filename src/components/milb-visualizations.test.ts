@@ -210,7 +210,8 @@ describe('MiLB decision visualizations', () => {
       ['age-context', 'age_context', 92],
       ['trait-contact', 'descriptive_trait', 95],
     ])
-    expect(rows.map((row) => row.label)).toContain('Stage standing')
+    expect(rows.map((row) => row.label)).toContain('Prospect Rank')
+    expect(rows.map((row) => row.label)).toContain('Career forecast standing')
     expect(rows.map((row) => row.id)).not.toContain('career-index')
   })
 

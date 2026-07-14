@@ -14,9 +14,22 @@ Oracle baseball evidence
   = Backstop card opportunity
 ```
 
-## MVP Endpoint
+## Canonical Endpoint
 
-Request the compact representation from the player census endpoint:
+New integrations should use:
+
+```http
+GET /api/v1/player-signals?stage=All&sort=name&limit=100&page=1
+```
+
+The normative contract and migration guide are in
+[`PLAYER_SIGNALS_API_V1.md`](./PLAYER_SIGNALS_API_V1.md). It publishes honest
+route-specific ranks, normalized Career Outlook and Current Results, fixed
+external-ID keys, per-record versions, and an explicit snapshot.
+
+## Legacy v4 Endpoint
+
+Existing consumers may continue to request the compact v4 representation:
 
 ```http
 GET /api/players?view=map&stage=All&sort=name&limit=100&page=1
@@ -49,9 +62,10 @@ tie-breakers. The response declares the applied metric, direction, scope, null
 policy, field exposure, and ordered tie-breakers in
 `meta.ordering`; consumers should validate that object before trusting row order.
 
-The product-facing decision order is:
+The legacy v4 fields map to this product-facing decision order:
 
-1. **Backstop Rank:** the exact route-specific ordinal, lower is better.
+1. **Stage Rank:** Prospect Rank, Pre-Debut Rank, or MLB Career Rank; lower is
+   better within the declared route only.
 2. **Career Outlook:** the existing `careerIndex` on its fixed 0-100 scale.
 3. **Current Results:** observed current-season evidence, kept separate from rank.
 
@@ -105,9 +119,10 @@ normalized player name. Use MLBAM first, another exact provider ID second, and t
 durable BRef/Chadwick/MLBAM evidence overlay only when all three identifiers agree.
 Unresolved or conflicting evidence stays separate for review.
 
-## Decision Semantics
+## Legacy v4 Decision Semantics
 
-Backstop Rank is a product label over three honest route-specific ordinals:
+V4 historically exposed “Backstop Rank” as a label over three route-specific
+ordinals. New consumers must use the v1 labels below instead:
 
 - **Minors:** `assessment.scores.outcome.rank`, the five-year MLB-impact rank.
 - **Rookie Track:** `assessment.stageStanding.rank`, carrying the exact frozen
@@ -169,11 +184,11 @@ means the player ranked above approximately 96% of its declared route universe;
 it does not mean 96% confidence. Do not relabel it as Career Index. A `null` value
 in any score object means unavailable; it never means zero.
 
-Every compact response includes `meta.decisionHierarchy` with version
-`backstop-decision-hierarchy/v1`. It declares Backstop Rank as the product-facing
-primary read, Career Outlook as the secondary long-term read, and Current Results
-as separate observed evidence. It also publishes every route-specific rank path,
-direction, and comparability rule.
+Every compact response includes the legacy `meta.decisionHierarchy` with version
+`backstop-decision-hierarchy/v1`. Existing clients may use it during migration,
+but new clients should read `signals.stageRank` from `player-signals.v1`, where
+the label is Prospect Rank, Pre-Debut Rank, or MLB Career Rank. Career Outlook
+and Current Results remain separate.
 
 The older additive `meta.rankingContract` remains unchanged at
 `player-ranking-contract/v1` for v4 compatibility. Its `careerIndex` primary
@@ -232,7 +247,7 @@ Backstop should persist this lineage with every derived card recommendation:
 - Oracle record ID;
 - Player Map version;
 - signal target and model as-of timestamp;
-- Backstop Rank, its route, exact rank, universe, target, and as-of date;
+- Stage Rank, its published route label, exact rank, universe, target, and as-of date;
 - Career Outlook (`careerIndex`) value, version, route, status, and as-of date;
 - Current Results source, season, observation time, and workload where present;
 - Prospect Score value, exact rank, universe, target, status, and as-of date for
@@ -242,7 +257,7 @@ Backstop should persist this lineage with every derived card recommendation:
 - mapping and evidence state.
 
 Backstop should calculate card opportunity independently. A useful first design is
-to retain Backstop Rank, Career Outlook, Current Results, readiness, trajectory,
+to retain Stage Rank, Career Outlook, Current Results, readiness, trajectory,
 and evidence as separate features, then combine them with market price percentile,
 recent comparable sales, bid/ask depth, sell-through, population, card scarcity,
 condition, and total transaction cost. Do not collapse the Oracle vector into an
@@ -251,15 +266,21 @@ market value.
 
 ## Durable Feed Contract
 
-The production integration should graduate to `/api/v1/player-signals` after the
-canonical `core.player` UUID is populated for the complete active census. That
-contract should add:
+`/api/v1/player-signals` is now the canonical normalized integration surface.
+It publishes fixed external-ID keys, per-record SHA-256 versions, a signals
+snapshot, route and lifecycle classification, numeric Current Results for MiLB
+and MLB, and explicit signal availability. It honestly describes the current
+Oracle profile ID as provider/model scoped until `core.player` UUID coverage is
+complete.
 
-- immutable `snapshot_id` and canonical ordering;
-- cursor pagination bound to one snapshot;
-- a versioned JSON Schema and gzipped NDJSON snapshot;
-- monotonic change sequence with `upsert`, `inactive`, and `identity_redirect`;
-- idempotent record versions and effective-dated identity redirects;
+The normative contract and migration guide live in
+[`PLAYER_SIGNALS_API_V1.md`](./PLAYER_SIGNALS_API_V1.md). Remaining infrastructure
+work for a later compatible version includes:
+
+- cursor pagination bound to one immutable snapshot;
+- a gzipped NDJSON census snapshot;
+- monotonic changes with `upsert`, `inactive`, and `identity_redirect`;
+- effective-dated core identity redirects;
 - scoped server-to-server API keys.
 
 The current endpoint emits a deterministic per-page `ETag`, honors weak or
@@ -276,8 +297,9 @@ comparable only when its index version, forecast route, target, and model versio
 are unchanged. A stage-standing delta also requires an unchanged cohort and
 universe definition. `oracle-player-map/v1` consumers may read the legacy
 `oracleScore` during migration, but new Backstop ingestion should bind to
-`oracle-player-map/v4` and persist Backstop Rank lineage, `careerIndex`,
-`stageStanding`, and Current Results separately.
+`player-signals.v1`. The v4 route-specific “Backstop Rank” mapping is retained
+only for compatibility; v1 names those ordinals Prospect Rank, Pre-Debut Rank,
+and MLB Career Rank and reserves Backstop Rank for a future unified model.
 Provider-derived fields should be included externally only when redistribution
 rights cover the intended integration.
 

@@ -27,10 +27,10 @@ import {
   stageLabel,
 } from '../lib/forecast'
 import {
-  backstopRankFor,
   careerOutlookFor,
   currentResultsFor,
   playerMapFor,
+  routeRankFor,
 } from './playerMapView'
 
 const MilbOpportunityMap = lazy(() =>
@@ -90,9 +90,16 @@ function boardHeading(filters: BoardFilters): { eyebrow: string; title: string }
     return { eyebrow: 'PROSPECT OUTLOOK + MLB EVIDENCE', title: 'Rookie Track' }
   }
   if (filters.stage === 'MLB') {
-    return { eyebrow: 'PROJECTED CAREER VALUE', title: 'MLB Rankings' }
+    return { eyebrow: 'PROJECTED CAREER VALUE', title: 'MLB Career Rankings' }
   }
   return { eyebrow: 'SEARCH ACROSS CAREER STAGES', title: 'All Players' }
+}
+
+function rankColumnLabel(stage: StageFilter): string {
+  if (stage === 'Minors') return 'Prospect Rank'
+  if (stage === 'RC') return 'Pre-Debut Rank'
+  if (stage === 'MLB') return 'MLB Career Rank'
+  return 'Stage Rank'
 }
 
 function emptyStateCopy(stage: StageFilter): { title: string; detail: string } {
@@ -339,9 +346,9 @@ export function ProspectBoard({
             ) : (
               <>
                 {filters.stage === 'Minors' ? (
-                  <option value="prospectScore">Backstop Rank</option>
+                  <option value="prospectScore">Prospect Rank</option>
                 ) : null}
-                {filters.stage !== 'Minors' ? <option value="stageStanding">Backstop Rank</option> : null}
+                {filters.stage !== 'Minors' ? <option value="stageStanding">{rankColumnLabel(filters.stage)}</option> : null}
                 <option value="careerIndex">Career Outlook</option>
                 {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
                   <option value="nearTermImpact">Next 3-year upside</option>
@@ -381,7 +388,7 @@ export function ProspectBoard({
       {filters.stage === 'All' ? (
         <div className="directory-notice" role="note">
           <Info size={15} aria-hidden="true" />
-          <span><strong>Ranks are stage-specific.</strong> Compare a player with other prospects, pre-debut outlooks, or active MLB careers rather than treating this directory as one combined leaderboard.</span>
+          <span><strong>Stage Ranks are not one combined leaderboard.</strong> Prospect Rank, Pre-Debut Rank, and MLB Career Rank each compare players with a different group.</span>
         </div>
       ) : null}
 
@@ -454,7 +461,7 @@ export function ProspectBoard({
             <thead>
               <tr>
                 <th scope="col">Player</th>
-                <th scope="col">Backstop Rank</th>
+                <th scope="col">{rankColumnLabel(filters.stage)}</th>
                 <th scope="col">Career Outlook</th>
                 <th scope="col">Current Results</th>
               </tr>
@@ -465,7 +472,7 @@ export function ProspectBoard({
                 const organization =
                   player.organizationCode ?? player.organization ?? 'Organization unavailable'
                 const playerMap = playerMapFor(player)
-                const backstopRank = backstopRankFor(player, playerMap)
+                const routeRank = routeRankFor(player, playerMap)
                 const careerOutlook = careerOutlookFor(player, playerMap)
                 const currentResults = currentResultsFor(player, playerMap)
 
@@ -491,17 +498,15 @@ export function ProspectBoard({
                       </button>
                     </td>
                     <td className="rank-summary-cell">
-                      <span className="mobile-column-label">Backstop Rank</span>
+                      <span className="mobile-column-label">{routeRank.label}</span>
                       <strong
-                        className={`table-primary rank-summary rank-summary--${backstopRank.tone}`}
-                        title={backstopRank.explanation}
+                        className={`table-primary rank-summary rank-summary--${routeRank.tone}`}
+                        title={routeRank.explanation}
                       >
-                        {backstopRank.display}
+                        {routeRank.display}
                       </strong>
                       <small>
-                        {backstopRank.universe === null
-                          ? backstopRank.evidenceLabel
-                          : `of ${backstopRank.universe.toLocaleString()} · ${backstopRank.evidenceLabel}`}
+                        {filters.stage === 'All' ? `${routeRank.label} · ` : ''}{routeRank.tableDetail}
                       </small>
                     </td>
                     <td className="outlook-cell">

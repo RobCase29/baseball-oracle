@@ -51,11 +51,6 @@ function formatCareerIndex(value: number): string {
   return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)
 }
 
-function formatProspectScore(value: number): string {
-  if (value === 100) return '100'
-  return value >= 99 ? value.toFixed(2) : value.toFixed(1)
-}
-
 function percentile(values: number[], position: number): number {
   if (values.length === 0) return 0
   const ordered = values.toSorted((left, right) => left - right)
@@ -81,9 +76,9 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
           <strong>{point.name}</strong>
           <span>{point.organization} · {point.position} · Age {point.age ?? '—'} · {point.level}</span>
         </div>
-        <b aria-label={`Prospect Score ${formatProspectScore(point.prospectScore)}`}>
-          {formatProspectScore(point.prospectScore)}
-          <small>SCORE</small>
+        <b aria-label={`Prospect Rank ${point.prospectRank.toLocaleString()}`}>
+          #{point.prospectRank.toLocaleString()}
+          <small>RANK</small>
         </b>
       </div>
       <dl>
@@ -92,8 +87,8 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
           <dd>#{point.prospectRank.toLocaleString()} of {point.prospectUniverse.toLocaleString()}</dd>
         </div>
         <div>
-          <dt>Ceiling if MLB</dt>
-          <dd>{formatCareerIndex(point.careerIndex)} Career Index · long-term rank #{point.stageRank.toLocaleString()}</dd>
+          <dt>Career Outlook</dt>
+          <dd>{formatCareerIndex(point.careerIndex)}/100 · if MLB is reached</dd>
         </div>
         <div>
           <dt>Age advantage</dt>
@@ -104,7 +99,7 @@ function OpportunityTooltip({ active, payload }: OpportunityTooltipProps) {
           <dd>{point.coveredPillars}/{point.totalPillars} data areas · {point.sampleSummary}</dd>
         </div>
       </dl>
-      <small>The Prospect Score is a research rank, not a probability. Current evidence shows how much to trust the read.</small>
+      <small>Prospect Rank orders projected five-year MLB impact. It is not a probability.</small>
     </div>
   )
 }
@@ -145,7 +140,7 @@ function OpportunityDot({
       className={`opportunity-point${selected ? ' is-selected' : ''}`}
       role="button"
       tabIndex={keyboardReachable ? 0 : -1}
-      aria-label={`${payload.name}, ${payload.playerType}, Prospect Score ${formatProspectScore(payload.prospectScore)}, rank ${payload.prospectRank}, Ceiling if MLB ${formatCareerIndex(payload.careerIndex)}, ${ageContext}, ${payload.evidenceCoverage.toFixed(0)} percent current evidence coverage`}
+      aria-label={`${payload.name}, ${payload.playerType}, Prospect Rank ${payload.prospectRank} of ${payload.prospectUniverse}, Career Outlook ${formatCareerIndex(payload.careerIndex)} out of 100 if MLB is reached, ${ageContext}, ${payload.evidenceCoverage.toFixed(0)} percent current evidence coverage`}
       onClick={selectPoint}
       onKeyDown={handleKeyDown}
       style={{ cursor: 'pointer' }}
@@ -248,7 +243,7 @@ export function MilbOpportunityMap({
     : points.find((point) => point.playerId === selectedId) ?? null
   const plottedBeyondCount = Math.max(0, matchingCount - points.length)
   const scopeLabel = usingCohortFeed
-    ? `Top ${points.length.toLocaleString()} by Prospect Score`
+    ? `Top ${points.length.toLocaleString()} by Prospect Rank`
     : `${points.length.toLocaleString()} on this table page`
 
   return (
@@ -274,7 +269,7 @@ export function MilbOpportunityMap({
                 .toSorted((left, right) => left.prospectRank - right.prospectRank)
                 .map((point) => (
                   <option key={point.playerId} value={point.playerId}>
-                    #{point.prospectRank} {point.name} ({formatProspectScore(point.prospectScore)})
+                    #{point.prospectRank} {point.name}
                   </option>
                 ))}
             </select>
@@ -318,8 +313,8 @@ export function MilbOpportunityMap({
           <small>Upper-right standouts in this view</small>
         </div>
         <div>
-          <span>Median Prospect Score</span>
-          <strong>{points.length > 0 ? percentile(points.map((point) => point.prospectScore), 0.5).toFixed(1) : '—'}</strong>
+          <span>Median Prospect Rank</span>
+          <strong>{points.length > 0 ? `#${Math.round(percentile(points.map((point) => point.prospectRank), 0.5)).toLocaleString()}` : '—'}</strong>
           <small>Middle of the plotted group</small>
         </div>
         <div>
@@ -337,7 +332,7 @@ export function MilbOpportunityMap({
 
       {points.length === 0 ? (
         <div className="opportunity-map-empty" role="status">
-          <strong>No prospects with both scores in these results</strong>
+          <strong>No prospects with both projections in these results</strong>
           <span>Adjust the filters or choose a player with a matched model record.</span>
         </div>
       ) : (
@@ -346,7 +341,7 @@ export function MilbOpportunityMap({
             <div
               className="opportunity-map-chart"
               role="group"
-              aria-label={`${points.length} prospects plotted by Prospect Score and Ceiling if MLB. Higher and farther right indicates stronger modeled five-year impact and career ceiling.`}
+              aria-label={`${points.length} prospects plotted by five-year impact standing and Career Outlook. Higher and farther right indicates stronger modeled five-year impact and career outlook.`}
             >
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
                 <ScatterChart margin={{ top: 28, right: 28, bottom: 42, left: 4 }}>
@@ -384,7 +379,7 @@ export function MilbOpportunityMap({
                     tick={{ fill: 'var(--muted)', fontSize: 11 }}
                     tickFormatter={(value: number) => Number.isInteger(value) ? `${value}` : value.toFixed(1)}
                     label={{
-                      value: 'PROSPECT SCORE (FIVE-YEAR IMPACT RANK)',
+                      value: 'FIVE-YEAR IMPACT STANDING (PERCENTILE)',
                       position: 'insideBottom',
                       offset: -28,
                       fill: 'var(--muted)',
@@ -429,7 +424,7 @@ export function MilbOpportunityMap({
               </ResponsiveContainer>
             </div>
             <div className="opportunity-map-axis-note">
-              <span>{scale === 'focus' ? `Focused view: score ${prospectScoreDomain.minimum}–${prospectScoreDomain.maximum} · ceiling ${careerIndexDomain.minimum}–${careerIndexDomain.maximum}` : 'Full Prospect Score and Ceiling if MLB scales: 0–100'}</span>
+              <span>{scale === 'focus' ? `Focused view: impact standing ${prospectScoreDomain.minimum}–${prospectScoreDomain.maximum} · Career Outlook ${careerIndexDomain.minimum}–${careerIndexDomain.maximum}` : 'Full impact standing and Career Outlook scales: 0–100'}</span>
               <strong>Dot fill reflects current evidence depth</strong>
             </div>
           </div>
@@ -454,8 +449,8 @@ export function MilbOpportunityMap({
                     <small>{point.organization} · {point.position} · Age {point.age ?? '—'}</small>
                   </span>
                   <span className="opportunity-standout-score">
-                    <strong>{formatProspectScore(point.prospectScore)}</strong>
-                    <small>SCORE</small>
+                    <strong>{formatCareerIndex(point.careerIndex)}/100</strong>
+                    <small>OUTLOOK</small>
                   </span>
                 </button>
               ))}
@@ -469,7 +464,7 @@ export function MilbOpportunityMap({
           {points.length.toLocaleString()} plotted
           {plottedBeyondCount > 0 ? ` · ${plottedBeyondCount.toLocaleString()} filtered prospects beyond this view` : ''}
         </span>
-        <strong>Prospect Score is an ordinal research rank; Ceiling if MLB remains conditional on arrival</strong>
+        <strong>Prospect Rank shows five-year impact; Career Outlook remains conditional on reaching MLB</strong>
       </div>
 
       {openingPlayerId ? (

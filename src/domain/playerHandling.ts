@@ -58,7 +58,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Two-way model pending',
     summary: 'A single-role career model would misstate this player\'s combined hitting and pitching value.',
-    handling: 'Career Index and terminal rank are withheld while recorded hitting, pitching, and career WAR remain visible.',
+    handling: 'Career Outlook and MLB Career Rank are withheld while recorded hitting, pitching, and career WAR remain visible.',
     scoreTreatment: 'withheld',
   },
   partial_only_unvalidated_forecast_withheld: {
@@ -74,7 +74,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Role transition model pending',
     summary: 'This career includes a meaningful change between hitting and pitching roles.',
-    handling: 'A single-role Hall benchmark is not substituted; the career score stays out of rankings while observed performance remains visible.',
+    handling: 'A single-role Hall benchmark is not substituted; Career Outlook and MLB Career Rank stay withheld while observed performance remains visible.',
     scoreTreatment: 'withheld',
   },
   current_role_transition_forecast_withheld: {
@@ -82,7 +82,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Role transition model pending',
     summary: 'Current-season usage no longer matches the role used by the completed-season career model.',
-    handling: 'Live performance remains visible, but the old single-role score and terminal forecast are removed from rankings until the new role has a supported completed-season model state.',
+    handling: 'Live performance remains visible, but the old single-role Career Outlook and MLB Career Rank are removed until the new role has a supported completed-season model state.',
     scoreTreatment: 'withheld',
   },
   synthetic_hall_standard_forecast_withheld: {
@@ -90,7 +90,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Hall benchmark unavailable',
     summary: 'The player does not map to one of the exact position or pitching-role Hall benchmarks supported by this model.',
-    handling: 'No synthetic benchmark is used, so terminal score and rank are withheld until the role is supported.',
+    handling: 'No synthetic benchmark is used, so Career Outlook and MLB Career Rank are withheld until the role is supported.',
     scoreTreatment: 'withheld',
   },
   bridge_debut_age_outside_supported_range_forecast_withheld: {
@@ -98,7 +98,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Career runway outside model range',
     summary: 'The projected MLB arrival age falls outside the debut-age range learned by the career bridge.',
-    handling: 'Arrival evidence remains visible, but no unsupported career ceiling or Career Index is extrapolated.',
+    handling: 'Arrival evidence remains visible, but no unsupported Career Outlook is extrapolated.',
     scoreTreatment: 'withheld',
   },
   bridge_debut_age_cell_missing_forecast_withheld: {
@@ -106,7 +106,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Career runway not modeled',
     summary: 'The career bridge has no supported estimate for this role and projected arrival age.',
-    handling: 'Arrival evidence remains visible, but the career ceiling and Career Index stay out of rankings.',
+    handling: 'Arrival evidence remains visible, but Career Outlook stays withheld.',
     scoreTreatment: 'withheld',
   },
   young_elite_distribution_gate_failed_forecast_withheld: {
@@ -114,7 +114,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'model_scope',
     label: 'Elite case outside release range',
     summary: 'This unusually young, high-performing case sits outside the model slice that cleared its release checks.',
-    handling: 'The unsupported terminal score is withheld; recorded performance and historical pace remain visible.',
+    handling: 'The unsupported Career Outlook is withheld; recorded performance and historical pace remain visible.',
     scoreTreatment: 'withheld',
   },
   stale_return_feature_state_forecast_withheld: {
@@ -122,7 +122,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'data_freshness',
     label: 'Return season needs a new baseline',
     summary: 'The latest completed-season model state predates a gap in MLB activity.',
-    handling: 'Current results remain visible, but the career score waits for a fresh completed-season feature state.',
+    handling: 'Current Results remain visible, but Career Outlook waits for a fresh completed-season feature state.',
     scoreTreatment: 'pending',
   },
   current_opportunity_unobserved_forecast_withheld: {
@@ -130,7 +130,7 @@ const warningNotes: Record<string, PlayerHandlingNote> = {
     category: 'data_freshness',
     label: 'Current opportunity not observed',
     summary: 'The scoring snapshot does not contain a current MLB workload for this player.',
-    handling: 'The terminal score is withheld until a current appearance or a newly completed-season state is observed.',
+    handling: 'Career Outlook is withheld until a current appearance or a newly completed-season state is observed.',
     scoreTreatment: 'pending',
   },
 }
@@ -202,7 +202,7 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
       category: 'career_transition',
       label: 'Prospect prior not linked',
       summary: 'The MLB record could not be joined exactly to a frozen pre-debut forecast.',
-      handling: 'Current MLB evidence is retained, but no prospect score is substituted or joined by name alone.',
+      handling: 'Current MLB evidence is retained, but no Pre-Debut Rank is substituted or joined by name alone.',
       scoreTreatment: 'pending',
     })
   }
@@ -230,7 +230,7 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
       category: 'coverage',
       label: 'Forecast under review',
       summary: 'The career forecast is withheld by a model guard that does not yet have a specific product treatment.',
-      handling: 'Observed evidence remains visible and the missing score is kept out of rankings.',
+      handling: 'Observed evidence remains visible and the missing Career Outlook remains withheld.',
       scoreTreatment: 'withheld',
     })
   } else if (
@@ -244,7 +244,7 @@ export function classifyPlayerHandling(input: PlayerHandlingInput): PlayerHandli
       category: 'coverage',
       label: 'Career forecast not available',
       summary: 'No supported career-model record is linked to this active MLB player.',
-      handling: 'Observed statistics remain visible and the player is excluded from score-based ranking until a forecast is published.',
+      handling: 'Observed statistics remain visible and MLB Career Rank remains unavailable until a forecast is published.',
       scoreTreatment: 'pending',
     })
   }

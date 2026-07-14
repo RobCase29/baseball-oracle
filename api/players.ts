@@ -57,12 +57,19 @@ import {
 } from '../src/domain/playerHandling.js'
 import type {
   CurrentMinorStatsSnapshot,
+  CurrentMlbStatsSnapshot,
   CurrentProspectScouting,
   PlayerMapFeedItem,
   PlayerRecord,
   RecentCallupContext,
 } from '../src/domain/forecast.js'
 import { defaultSortForStage } from '../src/domain/forecast.js'
+import type { PlayerSignalsItem } from '../src/domain/playerSignals.js'
+import {
+  playerSignalsItem,
+  playerSignalsResponse,
+  playerSignalsSnapshotId,
+} from './_player-signals.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
@@ -79,7 +86,7 @@ const playerSorts = [
   'age',
   'name',
 ] as const
-const playerViews = ['full', 'map'] as const
+const playerViews = ['full', 'map', 'signals'] as const
 const maximumPlayerIds = 50
 const playerMapFeedSchemaVersion = 'player-map-feed.v4' as const
 const rankingContractVersion = 'player-ranking-contract/v1' as const
@@ -258,7 +265,7 @@ export interface MinorCandidateRow {
   pitches: DatabaseNumber
 }
 
-interface CurrentMlbValueRow {
+export interface CurrentMlbValueRow {
   bbref_id: string
   mlbam_id?: DatabaseNumber
   player_name: string
@@ -920,6 +927,39 @@ export function currentMlbMetrics(
   ].filter((entry): entry is ObservedMetric => entry !== null)
 }
 
+export function currentMlbStatsSnapshot(
+  row: CurrentMlbValueRow | null,
+): CurrentMlbStatsSnapshot | null {
+  if (!row) return null
+  const season = roundedNumber(row.season, 0)
+  if (season === null) return null
+  const plateAppearances = roundedNumber(row.b_pa, 0)
+  const pitchingOuts = roundedNumber(row.p_ip_outs, 0)
+  const inningsPitched = pitchingOuts === null ? null : pitchingOuts / 3
+  return {
+    source: 'Baseball-Reference',
+    season,
+    asOf: isoDate(row.known_at),
+    totalWar: roundedNumber(row.total_war, 2),
+    warPercentile: percentileOrNull(row.current_war_percentile),
+    hitting: plateAppearances !== null && plateAppearances > 0
+      ? {
+          pa: plateAppearances,
+          war: roundedNumber(row.b_war, 2),
+        }
+      : null,
+    pitching: inningsPitched !== null && inningsPitched > 0
+      ? {
+          ip: inningsPitched,
+          outs: pitchingOuts,
+          games: roundedNumber(row.p_games, 0),
+          gamesStarted: roundedNumber(row.p_games_started, 0),
+          war: roundedNumber(row.p_war, 2),
+        }
+      : null,
+  }
+}
+
 function currentMlbOpportunity(
   playerType: 'Hitter' | 'Pitcher' | 'Two-way',
   row: CurrentMlbValueRow | null,
@@ -1302,6 +1342,7 @@ function previewPlayerRecord(
     psScore: null,
     psPercentile: null,
     agePercentile: null,
+    currentMlbStats: currentMlbStatsSnapshot(currentStats),
     opportunity: currentOpportunity,
     metrics: currentMlbMetrics(currentStats, candidate.playerType),
     coverage: {
@@ -1384,6 +1425,7 @@ function currentOnlyMlbPlayerRecord(
     psScore: null,
     psPercentile: null,
     agePercentile: null,
+    currentMlbStats: currentMlbStatsSnapshot(currentStats),
     opportunity: currentOpportunity,
     metrics: currentMlbMetrics(currentStats, candidate.playerType),
     coverage: {
@@ -3332,11 +3374,69 @@ export function snapshotId(parts: {
   return `${rankingSnapshotVersion}:${digest}`
 }
 
+export function currentResultsSnapshotDigest(
+  minorRows: CurrentMinorStatsRow[],
+  mlbRows: CurrentMlbValueRow[],
+): string {
+  const minor = minorRows
+    .map((row) => [
+      databaseIdentifier(row.mlbam_id),
+      row.player_type,
+      numberOrNull(row.season),
+      row.current_level,
+      row.highest_observed_level,
+      stringArray(row.levels_observed),
+      isoDate(row.known_at),
+      numberOrNull(row.pa),
+      numberOrNull(row.ba),
+      numberOrNull(row.obp),
+      numberOrNull(row.slg),
+      numberOrNull(row.ops),
+      numberOrNull(row.home_runs),
+      numberOrNull(row.walks),
+      numberOrNull(row.strikeouts),
+      numberOrNull(row.stolen_bases),
+      numberOrNull(row.ip),
+      numberOrNull(row.outs),
+      numberOrNull(row.era),
+      numberOrNull(row.whip),
+      numberOrNull(row.pitching_strikeout_rate),
+      numberOrNull(row.pitching_walk_rate),
+      numberOrNull(row.k_minus_bb_rate),
+      numberOrNull(row.pitching_strikeouts),
+      numberOrNull(row.walks_allowed),
+    ])
+    .toSorted((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
+  const mlb = mlbRows
+    .map((row) => [
+      row.bbref_id,
+      databaseIdentifier(row.mlbam_id ?? null),
+      numberOrNull(row.season),
+      row.observed_role,
+      isoDate(row.known_at),
+      numberOrNull(row.b_pa),
+      numberOrNull(row.b_war),
+      numberOrNull(row.p_ip_outs),
+      numberOrNull(row.p_games),
+      numberOrNull(row.p_games_started),
+      numberOrNull(row.p_war),
+      numberOrNull(row.total_war),
+      numberOrNull(row.current_war_percentile),
+    ])
+    .toSorted((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
+  const digest = createHash('sha256')
+    .update(JSON.stringify({ minor, mlb }))
+    .digest('hex')
+  return `sha256:${digest}`
+}
+
 function responseItems(
   records: MappedPlayerRecord[],
   view: PlayerView,
-): MappedPlayerRecord[] | PlayerMapFeedItem[] {
-  return view === 'map' ? records.map(playerMapFeedItem) : records
+): MappedPlayerRecord[] | PlayerMapFeedItem[] | PlayerSignalsItem[] {
+  if (view === 'map') return records.map(playerMapFeedItem)
+  if (view === 'signals') return records.map((record) => playerSignalsItem(record))
+  return records
 }
 
 function degradedStaticResponse(
@@ -3359,6 +3459,38 @@ function degradedStaticResponse(
     minorUniverse: 0,
   }
   const records = page.map((candidate) => previewPlayerRecord(candidate, preview, context))
+  const degradedRankingSnapshot = snapshotId({
+    minorDataAsOf: null,
+    currentMlbDataAsOf: preview.asOf,
+    forecastDataVersion: preview.dataVersion,
+    candidates: universe,
+  })
+  if (query.view === 'signals') {
+    const signalsSnapshot = playerSignalsSnapshotId({
+      rankingSnapshotId: degradedRankingSnapshot,
+      minorDataAsOf: null,
+      currentMlbDataAsOf: null,
+      forecastDataVersion: preview.dataVersion,
+      currentResultsDigest: null,
+      freshnessStatus: 'degraded',
+    })
+    response.setHeader('X-Snapshot-Id', signalsSnapshot)
+    sendJson(request, response, 200, playerSignalsResponse({
+      records,
+      snapshotId: signalsSnapshot,
+      dataAsOf: preview.asOf,
+      freshness: {
+        status: 'degraded',
+        reasonCodes: ['live_player_database_unavailable'],
+        statsChangedAt: null,
+        lastCheckedAt: null,
+        nextDueAt: null,
+        cronObserved: false,
+      },
+      page: pageDetails(candidates.length, query),
+    }), publicCache)
+    return
+  }
   sendJson(request, response, 200, {
     schemaVersion: query.view === 'map' ? playerMapFeedSchemaVersion : 'players.v1',
     items: responseItems(records, query.view),
@@ -3401,12 +3533,7 @@ function degradedStaticResponse(
       rankScope: 'stage_specific',
       stageRankScope: 'declared_model_cohort_not_filtered_result',
       stageRankAvailability: { mlb: true, minors: false, recentCallups: recentCallups > 0 },
-      snapshotId: snapshotId({
-        minorDataAsOf: null,
-        currentMlbDataAsOf: preview.asOf,
-        forecastDataVersion: preview.dataVersion,
-        candidates: universe,
-      }),
+      snapshotId: degradedRankingSnapshot,
       snapshotScope: 'ranking_and_census' as const,
       ...playerMapResponseMeta(candidates, query),
       ordering: responseOrdering(query),
@@ -3963,6 +4090,56 @@ export default async function handler(
       ...freshness.reasonCodes,
       ...identityReasonCodes,
     ])]
+    const responsePage = pageDetails(filtered.length, query)
+    const responseDataAsOf = stageRelevantDataAsOf(
+      query.stage,
+      minorDataAsOf,
+      currentMlbDataAsOf,
+    )
+    const responseFreshness = {
+      status: currentDataStatus,
+      reasonCodes: currentDataReasonCodes,
+      statsChangedAt: freshness.statsChangedAt,
+      lastCheckedAt: freshness.lastCheckedAt,
+      nextDueAt: freshness.nextDueAt,
+      cronObserved: freshness.cronProof.observed,
+    }
+    const rankingSnapshot = snapshotId({
+      minorDataAsOf,
+      currentMlbDataAsOf,
+      forecastDataVersion: careerPreview?.dataVersion ?? null,
+      candidates: currentUniverse,
+    })
+    const currentResultsDigest = currentResultsSnapshotDigest(
+      currentMinorProfileRows,
+      currentMlbRows,
+    )
+
+    if (query.view === 'signals') {
+      const signalsSnapshot = playerSignalsSnapshotId({
+        rankingSnapshotId: rankingSnapshot,
+        minorDataAsOf,
+        currentMlbDataAsOf,
+        forecastDataVersion: careerPreview?.dataVersion ?? null,
+        currentResultsDigest,
+        freshnessStatus: responseFreshness.status,
+      })
+      response.setHeader('X-Snapshot-Id', signalsSnapshot)
+      sendJson(
+        request,
+        response,
+        200,
+        playerSignalsResponse({
+          records: items,
+          snapshotId: signalsSnapshot,
+          dataAsOf: responseDataAsOf,
+          freshness: responseFreshness,
+          page: responsePage,
+        }),
+        publicCache,
+      )
+      return
+    }
 
     sendJson(
       request,
@@ -3971,7 +4148,7 @@ export default async function handler(
       {
         schemaVersion: query.view === 'map' ? playerMapFeedSchemaVersion : 'players.v1',
         items: responseItems(items, query.view),
-        page: pageDetails(filtered.length, query),
+        page: responsePage,
         meta: {
           source: careerPreview
             ? 'Baseball Oracle + MLB StatsAPI + FanGraphs + Baseball-Reference + Prospect Savant'
@@ -3980,15 +4157,8 @@ export default async function handler(
             ? 'Current Career Oracle universe'
             : 'Current MLB value and Minor League Leaders',
           season: Number.isFinite(minorSeason) ? minorSeason : null,
-          dataAsOf: stageRelevantDataAsOf(query.stage, minorDataAsOf, currentMlbDataAsOf),
-          currentDataFreshness: {
-            status: currentDataStatus,
-            reasonCodes: currentDataReasonCodes,
-            statsChangedAt: freshness.statsChangedAt,
-            lastCheckedAt: freshness.lastCheckedAt,
-            nextDueAt: freshness.nextDueAt,
-            cronObserved: freshness.cronProof.observed,
-          },
+          dataAsOf: responseDataAsOf,
+          currentDataFreshness: responseFreshness,
           coverage: 'Current MLB evidence, official all-level MiLB season totals, current FanGraphs scouting, advanced minor-league tracking, and the completed-season career model census',
           forecastStatus: careerPreview?.releaseEligible ? 'published' : 'research_only',
           researchCoverage: currentUniverse.filter(
@@ -4041,12 +4211,7 @@ export default async function handler(
             minors: careerPreview !== null,
             recentCallups: recentCallupCount > 0,
           },
-          snapshotId: snapshotId({
-            minorDataAsOf,
-            currentMlbDataAsOf,
-            forecastDataVersion: careerPreview?.dataVersion ?? null,
-            candidates: currentUniverse,
-          }),
+          snapshotId: rankingSnapshot,
           snapshotScope: 'ranking_and_census' as const,
           ...playerMapResponseMeta(filtered, query),
           ordering: responseOrdering(query),

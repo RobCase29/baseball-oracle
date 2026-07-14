@@ -302,7 +302,7 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
   ) {
     rows.push({
       id: 'impact-rank',
-      label: 'Prospect Score',
+      label: 'Prospect Rank',
       value: impactScore.value,
       kind: 'model_rank',
       detail: `#${impactScore.rank.toLocaleString()} of ${impactScore.universe.toLocaleString()} for reaching at least 5 MLB WAR during 2026-2030`,
@@ -319,7 +319,7 @@ export function buildMilbEvidenceRows(player: PlayerRecord): MilbEvidenceRow[] {
   ) {
     rows.push({
       id: 'stage-standing',
-      label: 'Stage standing',
+      label: 'Career forecast standing',
       value: standingPercentile,
       kind: 'model_rank',
       detail: `#${standing.rank.toLocaleString()} of ${standing.universe.toLocaleString()} · ${standing.tailBand ?? 'stage band unavailable'} in frozen prospect forecasts`,

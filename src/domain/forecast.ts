@@ -281,6 +281,25 @@ export interface CurrentMinorStatsSnapshot {
   } | null
 }
 
+export interface CurrentMlbStatsSnapshot {
+  source: 'Baseball-Reference'
+  season: number
+  asOf: string | null
+  totalWar: number | null
+  warPercentile: number | null
+  hitting: {
+    pa: number
+    war: number | null
+  } | null
+  pitching: {
+    ip: number
+    outs: number | null
+    games: number | null
+    gamesStarted: number | null
+    war: number | null
+  } | null
+}
+
 export interface CurrentProspectScouting {
   source: 'FanGraphs'
   reportSeason: number
@@ -603,6 +622,7 @@ export interface PlayerRecord {
   psPercentile: number | null
   agePercentile?: number | null
   currentMinorStats?: CurrentMinorStatsSnapshot | null
+  currentMlbStats?: CurrentMlbStatsSnapshot | null
   currentProspectScouting?: CurrentProspectScouting | null
   opportunity: PlayerOpportunity | null
   metrics: ObservedMetric[]

@@ -45,13 +45,16 @@ export interface ProspectScoreView {
   status: 'research' | 'withheld'
 }
 
-export interface BackstopRankView {
+export type RouteRankLabel = 'Prospect Rank' | 'Pre-Debut Rank' | 'MLB Career Rank'
+
+export interface RouteRankView {
   rank: number | null
   universe: number | null
   display: string
-  label: 'Backstop Rank'
-  routeLabel: 'Prospect' | 'Pre-debut' | 'MLB'
+  label: RouteRankLabel
+  routeLabel: 'Prospect' | 'Pre-debut' | 'MLB career'
   rankLabel: string
+  tableDetail: string
   topLabel: string | null
   cohortLabel: string
   evidenceLabel: 'Full model' | 'Early estimate' | 'Career model' | 'Data gap'
@@ -226,10 +229,10 @@ export function plainPlayerState(state: PlayerMapState): string {
   return plainStateLabels[state]
 }
 
-export function backstopRankFor(
+export function routeRankFor(
   player: PlayerRecord,
   map: PlayerMapProfile = playerMapFor(player),
-): BackstopRankView {
+): RouteRankView {
   const prospectScore = map.route === 'milb' ? prospectScoreFor(player, map) : null
   const rank = map.route === 'milb' ? prospectScore?.rank ?? null : map.stageStanding.rank
   const universe = map.route === 'milb' ? prospectScore?.universe ?? null : map.stageStanding.universe
@@ -240,7 +243,12 @@ export function backstopRankFor(
     ? 'Prospect'
     : map.route === 'rookie'
       ? 'Pre-debut'
-      : 'MLB'
+      : 'MLB career'
+  const label: RouteRankLabel = map.route === 'milb'
+    ? 'Prospect Rank'
+    : map.route === 'rookie'
+      ? 'Pre-Debut Rank'
+      : 'MLB Career Rank'
   const cohortLabel = map.route === 'milb'
     ? 'prospects by projected five-year MLB impact'
     : map.route === 'rookie'
@@ -258,8 +266,17 @@ export function backstopRankFor(
         ? 'Early estimate'
         : rank === null ? 'Data gap' : 'Full model'
       : rank === null ? 'Data gap' : 'Career model'
+  const tableDetail = rank === null
+    ? 'Not enough matched data'
+    : map.route === 'milb'
+      ? `${universe === null ? 'Prospect comparison' : `of ${universe.toLocaleString()} prospects`}${evidenceLabel === 'Early estimate' ? ' · Early estimate' : ''}`
+      : map.route === 'rookie'
+        ? `${universe === null ? 'Prospect comparison' : `of ${universe.toLocaleString()} prospects`} · Frozen before MLB debut${evidenceLabel === 'Early estimate' ? ' · Early estimate' : ''}`
+        : universe === null
+          ? 'Active MLB career comparison'
+          : `of ${universe.toLocaleString()} active MLB players`
   const explanation = rank === null
-    ? `There is not enough matched model data to calculate ${player.name}'s Backstop Rank yet.`
+    ? `There is not enough matched model data to calculate ${player.name}'s ${label} yet.`
     : map.route === 'milb'
       ? `${player.name} ranks ${rankLabel} for projected MLB impact over the next five seasons.`
       : map.route === 'rookie'
@@ -270,9 +287,10 @@ export function backstopRankFor(
     rank,
     universe,
     display: rank === null ? '--' : `#${rank.toLocaleString()}`,
-    label: 'Backstop Rank',
+    label,
     routeLabel,
     rankLabel,
+    tableDetail,
     topLabel: topPercentLabel(topPercent),
     cohortLabel,
     evidenceLabel,
@@ -280,8 +298,6 @@ export function backstopRankFor(
     tone: rankTone(rank, universe),
   }
 }
-
-export const oracleRankFor = backstopRankFor
 
 export function careerOutlookFor(
   player: PlayerRecord,
