@@ -21,6 +21,8 @@
     "db:deploy": "npm run db:migrate:remote && npm run db:seed:sources:remote",
     "ingest:fangraphs": "node --env-file=.env.local --import tsx scripts/ingest/fangraphs-prospects.ts",
     "ingest:prospect-savant": "node --env-file=.env.local --import tsx scripts/ingest/prospect-savant-leaders.ts",
+    "ingest:mlb-rosters": "node --env-file=.env.local --import tsx scripts/ingest/mlb-statsapi-milb-roster.ts",
+    "bootstrap:mlb-rosters:remote": "tsx scripts/bootstrap-current-milb-rosters.ts",
     "data:acquire": "tsx scripts/data/acquire-model-data.ts",
     "data:fangraphs-identity:build": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts",
     "data:fangraphs-identity:check": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts --check",

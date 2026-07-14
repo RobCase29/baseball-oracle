@@ -1,6 +1,7 @@
 import type {
   PlayerStage,
   PlayerType,
+  ProspectCoverageSummary,
   WarQuantiles,
 } from './forecast.js'
 import type { PlayerMapRoute } from './playerMap.js'
@@ -51,6 +52,11 @@ export interface PlayerSignalsItem {
     organization: string | null
     organizationCode: string | null
     position: string | null
+    rosterStatus: {
+      code: string | null
+      description: string | null
+      asOf: string | null
+    } | null
     effectiveAt: string | null
   }
   transition: {
@@ -90,6 +96,13 @@ export interface PlayerSignalsItem {
       cohortId: 'prospect_forecast' | 'frozen_prospect_prior' | 'current_mlb'
       asOf: string | null
       modelVersion: string | null
+      evidenceTier:
+        | 'completed_season_full_model'
+        | 'completed_season_prior'
+        | 'live_in_season_prior'
+        | 'current_mlb_model'
+        | null
+      volatility: 'standard' | 'high' | 'very_high' | null
     }
     careerOutlook: {
       label: 'Career Outlook'
@@ -188,6 +201,7 @@ export interface PlayerSignalsResponse {
     currentResultsNormalizedAcrossStages: true
     paginationConsistency: 'page_number_not_snapshot_bound'
     identityPolicy: 'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching'
+    prospectCoverage: ProspectCoverageSummary | null
   }
 }
 

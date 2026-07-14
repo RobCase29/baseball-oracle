@@ -67,6 +67,29 @@ signals.currentResults
 returns an ETag and `X-Snapshot-Id`. A null value always means unavailable; it
 never means zero.
 
+`meta.prospectCoverage` separates four questions that should not be collapsed:
+
+- whether every player in the current official affiliated-roster census is served;
+- whether that player has an exact MLBAM identity link;
+- whether Prospect Rank comes from the completed-season model, its thin-sample
+  prior, or the live in-season prior; and
+- whether the completed-season career model produced Career Outlook for that
+  player.
+
+`census.status=complete` requires zero official pre-debut roster IDs missing from
+the served prospect union. A player can therefore be census-covered while
+`signals.stageRank.availability=unavailable` with
+`reasonCodes=["frozen_model_coverage_gap"]` only while no eligible official
+current-season statistics exist. Once an exact-ID MiLB stat row exists, the player
+receives a numeric live in-season prior rank even if the player entered the live
+universe after the completed-season feature cutoff. A zero-appearance roster
+player remains unranked, and Current Results remain unavailable rather than zero.
+
+`meta.prospectCoverage.prospectRank.liveInSeasonPriorPlayers` reports how many
+served prospects receive this live fallback. `availablePlayers` includes full
+completed-season ranks, completed-season thin-sample priors, and live in-season
+priors; those three evidence categories are mutually exclusive.
+
 ## Rank Policy
 
 There is not yet a scientifically valid universal Backstop Rank. The currently
@@ -86,6 +109,33 @@ Therefore:
 - Stage ranks are never comparable across stages.
 - A ranked thin-sample prior uses `availability=insufficient_sample` and retains
   its numeric rank; it is not presented as fully supported evidence.
+- A player absent from the completed-season artifact but present in official
+  current MiLB statistics receives a numeric live prior rank with
+  `reasonCodes=["live_in_season_prior"]`,
+  `evidenceTier=live_in_season_prior`, and `volatility=high|very_high`.
+
+The live rank uses the fitted hierarchical prior from the validated MiLB impact
+model with exact MLBAM identity, ranking role, current level, age, and the
+role-appropriate current performance signal. It targets the same unconditional
+five-year impact event as Prospect Rank. It is a partial-season research estimate,
+not a calibrated confidence or probability, and never replaces a player's
+completed-season full-model rank. Its rank may move materially whenever official
+statistics refresh; that volatility is intentional.
+
+Live hitters remain `very_high` volatility below 75 PA and live pitchers remain
+`very_high` below 20 IP. Reaching the role-appropriate workload threshold changes
+the label to `high`; a live in-season prior is never labeled `standard`.
+
+`signals.stageRank.asOf` is the timestamp of the evidence actually used for that
+rank. For a live in-season prior it is the official MiLB stat snapshot timestamp
+and should equal `signals.currentResults.asOf`. `modelVersion` is
+`milb-impact-live-prior-v1`. Consumers should persist the snapshot ID, item
+`recordVersion`, rank `asOf`, `evidenceTier`, and `volatility` together rather than
+treating the ordinal as timeless.
+
+When Stage Rank is unavailable, `rank`, `evidenceTier`, and `volatility` are all
+null. The API never labels a missing ordinal as if it came from a completed model
+or a live prior.
 
 Backstop Rank is reserved for a future single, validated, unconditional
 terminal-career model over all active players. The API will not manufacture that

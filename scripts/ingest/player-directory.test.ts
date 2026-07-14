@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assertCurrentMlbRoleSnapshot,
+  assertCurrentMilbRosterSnapshot,
   assertCurrentMilbTraditionalSnapshot,
 } from './player-directory.js'
 
@@ -20,6 +21,10 @@ const currentMlbSnapshotMigration = readFileSync(
 )
 const currentMilbTraditionalMigration = readFileSync(
   resolve(process.cwd(), 'db/migrations/0014_mlb_statsapi_current_milb.sql'),
+  'utf8',
+)
+const currentMilbRosterMigration = readFileSync(
+  resolve(process.cwd(), 'db/migrations/0019_mlb_statsapi_current_milb_roster.sql'),
   'utf8',
 )
 
@@ -150,6 +155,62 @@ describe('official current MiLB traditional-stat migration', () => {
     )
     expect(currentMilbTraditionalMigration).not.toContain(
       'DROP MATERIALIZED VIEW',
+    )
+  })
+})
+
+describe('official current MiLB roster census', () => {
+  const validAudit = {
+    profiles: 8_200,
+    distinct_mlbam_ids: 8_200,
+    roles: 2,
+    organizations: 30,
+    invalid_identity_rows: 0,
+    invalid_level_rows: 0,
+    missing_core_rows: 0,
+    identity_conflict_rows: 0,
+  }
+
+  it('accepts one exact-identity row per player across both roles and every organization', () => {
+    expect(() => assertCurrentMilbRosterSnapshot(validAudit)).not.toThrow()
+  })
+
+  it('rejects incomplete, duplicated, malformed, or conflicting snapshots', () => {
+    expect(() => assertCurrentMilbRosterSnapshot({
+      ...validAudit,
+      profiles: 6_999,
+      distinct_mlbam_ids: 6_999,
+    })).toThrow(/expected at least 7000/u)
+    expect(() => assertCurrentMilbRosterSnapshot({
+      ...validAudit,
+      distinct_mlbam_ids: 8_199,
+    })).toThrow(/distinct MLBAM identities/u)
+    expect(() => assertCurrentMilbRosterSnapshot({
+      ...validAudit,
+      missing_core_rows: 1,
+    })).toThrow(/without required roster context/u)
+    expect(() => assertCurrentMilbRosterSnapshot({
+      ...validAudit,
+      identity_conflict_rows: 1,
+    })).toThrow(/role or organization conflict/u)
+    expect(() => assertCurrentMilbRosterSnapshot(undefined)).toThrow(/no result/u)
+  })
+
+  it('retains parent-only players without inventing a level and prefers affiliate memberships', () => {
+    expect(currentMilbRosterMigration).toContain(
+      "record.record_json ->> 'membershipKind' IN ('affiliate', 'parent_census')",
+    )
+    expect(currentMilbRosterMigration).toContain(
+      "CASE membership_kind WHEN 'affiliate' THEN 1 ELSE 2 END",
+    )
+    expect(currentMilbRosterMigration).toContain(
+      "record.record_json -> 'assignmentTeam' = 'null'::jsonb",
+    )
+    expect(currentMilbRosterMigration).toContain('representative.mlb_debut_date')
+    expect(currentMilbRosterMigration).toContain('representative.roster_status_description')
+    expect(currentMilbRosterMigration).toContain('representative.rookie_affiliate_family')
+    expect(currentMilbRosterMigration).toContain(
+      'CREATE UNIQUE INDEX current_milb_roster_mlbam_uidx',
     )
   })
 })

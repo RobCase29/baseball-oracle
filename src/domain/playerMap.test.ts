@@ -576,6 +576,93 @@ describe('Player Map', () => {
     expect(profile.stageStandingComparableWithinStageOnly).toBe(true)
   })
 
+  it('separates a frozen-model coverage gap from a thin current sample', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'New Census Prospect',
+      stage: 'pre_debut',
+      age: 18,
+      level: 'Rk',
+      careerForecast: null,
+      milbImpactRanking: null,
+      minorTraitEvidence: {
+        opportunity: {
+          state: 'provisional',
+          observed: { plateAppearances: 24, inningsPitched: null, pitches: null },
+          thresholds: [{ unit: 'PA', provisional: 20, sufficient: 150 }],
+        },
+        coverage: {
+          coveredPillarCount: 1,
+          totalPillarCount: 4,
+          missingPillars: ['contact', 'impact', 'swing-decisions'],
+        },
+        corroboration: { passesAllDescriptiveGates: false },
+        strongestMetrics: [],
+      },
+    }), { minorUniverse: 6_455 })
+
+    expect(profile.mappingStatus).toBe('coverage_gap')
+    expect(profile.scores.outcome).toMatchObject({
+      rank: null,
+      value: null,
+      display: 'Awaiting stats',
+      status: 'withheld',
+    })
+    expect(profile.summary).toContain('covered by the live player census')
+    expect(profile.nextEvidence).toContain('Add official current-season workload for a live early estimate')
+  })
+
+  it('publishes a volatile live rank when an official in-season stat line exists', () => {
+    const profile = buildPlayerMap(makePlayer({
+      name: 'Justin Lamkin',
+      playerType: 'Pitcher',
+      age: 22,
+      level: 'AA',
+      servedProspectRank: {
+        rank: 72,
+        rankPercentile: 98.9,
+        universeRows: 6_464,
+        asOf: '2026-07-14T10:00:00.000Z',
+        modelVersion: 'milb-impact-live-prior-v1',
+        evidenceTier: 'live_in_season_prior',
+        reasonCode: 'live_in_season_prior',
+        volatility: 'very_high',
+        target: {
+          id: 'mlb_war_next_5_ge_5',
+          label: 'At least 5 MLB WAR over the next five seasons',
+          scope: 'unconditional',
+          windowStartSeason: 2027,
+          windowEndSeason: 2031,
+        },
+      },
+      minorTraitEvidence: {
+        opportunity: {
+          state: 'provisional',
+          observed: { plateAppearances: null, inningsPitched: 39.2, pitches: null },
+          thresholds: [{ unit: 'IP', provisional: 10, sufficient: 50 }],
+        },
+        coverage: {
+          coveredPillarCount: 2,
+          totalPillarCount: 4,
+          missingPillars: ['arsenal', 'command'],
+        },
+        corroboration: { passesAllDescriptiveGates: false },
+        strongestMetrics: [],
+      },
+    }), { minorUniverse: 6_464 })
+
+    expect(profile.mappingStatus).toBe('insufficient_sample')
+    expect(profile.scores.outcome).toMatchObject({
+      rank: 72,
+      universe: 6_464,
+      value: 98.9,
+      asOf: '2026-07-14T10:00:00.000Z',
+      status: 'research',
+    })
+    expect(profile.scores.outcome.basis).toContain('Volatile in-season estimate')
+    expect(profile.summary).toContain('volatile in-season Prospect Score')
+    expect(profile.nextEvidence).toContain('Refresh the early estimate as official current-season workload grows')
+  })
+
   it('keeps a Joe-like prospect prior while showing MLB confirmation separately', () => {
     const profile = buildPlayerMap(makePlayer({
       name: 'Joe Mack',

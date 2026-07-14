@@ -57,7 +57,13 @@ export interface RouteRankView {
   tableDetail: string
   topLabel: string | null
   cohortLabel: string
-  evidenceLabel: 'Full model' | 'Early estimate' | 'Career model' | 'Data gap'
+  evidenceLabel:
+    | 'Full model'
+    | 'Early estimate'
+    | 'Career model'
+    | 'Data gap'
+    | 'Awaiting stats'
+    | 'Unavailable'
   explanation: string
   tone: CareerIndexView['tone']
 }
@@ -234,6 +240,7 @@ export function routeRankFor(
   map: PlayerMapProfile = playerMapFor(player),
 ): RouteRankView {
   const prospectScore = map.route === 'milb' ? prospectScoreFor(player, map) : null
+  const liveProspectEstimate = player.servedProspectRank?.evidenceTier === 'live_in_season_prior'
   const rank = map.route === 'milb' ? prospectScore?.rank ?? null : map.stageStanding.rank
   const universe = map.route === 'milb' ? prospectScore?.universe ?? null : map.stageStanding.universe
   const topPercent = rank !== null && universe !== null && universe > 0
@@ -260,25 +267,35 @@ export function routeRankFor(
       ? `#${rank.toLocaleString()}`
       : `#${rank.toLocaleString()} of ${universe.toLocaleString()}`
   const evidenceLabel = map.route === 'milb'
-    ? map.mappingStatus === 'insufficient_sample' ? 'Early estimate' : rank === null ? 'Data gap' : 'Full model'
+    ? map.mappingStatus === 'insufficient_sample'
+      ? 'Early estimate'
+      : rank === null
+        ? map.mappingStatus === 'coverage_gap' ? 'Awaiting stats' : 'Unavailable'
+        : 'Full model'
     : map.route === 'rookie'
       ? player.recentCallup?.prospectPrior?.impactRank?.evidenceTier === 'early_estimate'
         ? 'Early estimate'
         : rank === null ? 'Data gap' : 'Full model'
       : rank === null ? 'Data gap' : 'Career model'
   const tableDetail = rank === null
-    ? 'Not enough matched data'
+    ? map.route === 'milb' && map.mappingStatus === 'coverage_gap'
+      ? 'No eligible official stats yet'
+      : 'Rank unavailable'
     : map.route === 'milb'
-      ? `${universe === null ? 'Prospect comparison' : `of ${universe.toLocaleString()} prospects`}${evidenceLabel === 'Early estimate' ? ' · Early estimate' : ''}`
+      ? `${universe === null ? 'Prospect comparison' : `of ${universe.toLocaleString()} prospects`}${evidenceLabel === 'Early estimate' ? liveProspectEstimate ? ' · Live early estimate' : ' · Early estimate' : ''}`
       : map.route === 'rookie'
         ? `${universe === null ? 'Prospect comparison' : `of ${universe.toLocaleString()} prospects`} · Frozen before MLB debut${evidenceLabel === 'Early estimate' ? ' · Early estimate' : ''}`
         : universe === null
           ? 'Active MLB career comparison'
           : `of ${universe.toLocaleString()} active MLB players`
   const explanation = rank === null
-    ? `There is not enough matched model data to calculate ${player.name}'s ${label} yet.`
+    ? map.route === 'milb' && map.mappingStatus === 'coverage_gap'
+      ? `${player.name} is included in the live prospect census and will receive a Prospect Rank once eligible official statistics are recorded.`
+      : `${player.name}'s ${label} is not available yet.`
     : map.route === 'milb'
-      ? `${player.name} ranks ${rankLabel} for projected MLB impact over the next five seasons.`
+      ? liveProspectEstimate
+        ? `${player.name} ranks ${rankLabel} using a volatile early estimate from the latest official minor-league statistics.`
+        : `${player.name} ranks ${rankLabel} for projected MLB impact over the next five seasons.`
       : map.route === 'rookie'
         ? `${player.name}'s ${rankLabel} pre-debut outlook stays fixed while early MLB results build.`
         : `${player.name} ranks ${rankLabel} among active MLB career outlooks.`
@@ -286,7 +303,9 @@ export function routeRankFor(
   return {
     rank,
     universe,
-    display: rank === null ? '--' : `#${rank.toLocaleString()}`,
+    display: rank === null
+      ? map.route === 'milb' && map.mappingStatus === 'coverage_gap' ? 'Pending' : '--'
+      : `#${rank.toLocaleString()}`,
     label,
     routeLabel,
     rankLabel,
@@ -347,7 +366,9 @@ export function currentResultsFor(
         ? player.currentMinorStats
           ? results.detail
           : `${results.detail}${evidence ? ` · ${evidence.label}` : ''}`
-        : 'Current minor-league statistics are not available yet.',
+        : player.provenance.datasetKey === 'current-milb-rosters'
+          ? 'Rostered · no current-season appearances recorded.'
+          : 'Current minor-league statistics are not available yet.',
       tone: results ? 'standard' : 'unavailable',
     }
   }
@@ -372,6 +393,8 @@ export function prospectScoreFor(
   const rank = score?.rank ?? null
   const universe = score?.universe ?? null
   const priorLed = map.route === 'milb' && map.mappingStatus === 'insufficient_sample' && value !== null
+  const livePrior = player.servedProspectRank?.evidenceTier === 'live_in_season_prior'
+  const targetLabel = player.servedProspectRank?.target.label ?? 'At least 5 MLB WAR over the next five seasons'
   const rankLabel = rank === null
     ? 'Prospect rank unavailable'
     : universe === null
@@ -385,12 +408,16 @@ export function prospectScoreFor(
     rank,
     universe,
     rankLabel,
-    targetLabel: 'At least 5 MLB WAR during 2026-2030',
+    targetLabel,
     explanation: value === null
-      ? 'There is not enough supported model data to calculate a Prospect Score yet.'
+      ? map.mappingStatus === 'coverage_gap'
+        ? `${player.name} is included in the live prospect census and is awaiting eligible official statistics for a live early estimate.`
+        : 'A supported Prospect Score is not available yet.'
+      : livePrior
+        ? `${player.name}'s Prospect Score is a volatile in-season estimate using current official statistics with age, level, role, and performance. It refreshes as new results arrive and is a ranking, not a probability.`
       : priorLed
         ? `${player.name}'s Prospect Score is prior-led because the frozen full-model sample was thin. It uses the transparent age, level, role, and performance prior; Career Index separately reflects age-adjusted career runway.`
-        : `${player.name}'s Prospect Score is an individualized rank built from age, level, role, and performance for reaching at least 5 MLB WAR during 2026-2030. It is a research ranking, not a probability.${player.level === 'Rk' ? ' Rookie-level calibration is thin, so treat this score as an early signal.' : ''}`,
+        : `${player.name}'s Prospect Score is an individualized rank built from age, level, role, and performance for ${targetLabel.toLocaleLowerCase('en-US')}. It is a research ranking, not a probability.${player.level === 'Rk' ? ' Rookie-level calibration is thin, so treat this score as an early signal.' : ''}`,
     tone: prospectScoreTone(value),
     status: score?.status === 'research' ? 'research' : 'withheld',
   }

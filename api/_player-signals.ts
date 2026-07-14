@@ -3,6 +3,7 @@ import type {
   CurrentMinorStatsSnapshot,
   CurrentMlbStatsSnapshot,
   PlayerRecord,
+  ProspectCoverageSummary,
   WarQuantiles,
 } from '../src/domain/forecast.js'
 import type { PlayerMapProfile, PlayerMapRoute } from '../src/domain/playerMap.js'
@@ -236,10 +237,32 @@ export function playerSignalsItem(
   }
   const mlbamId = externalIds.mlbam
   const stageModelVersion = route === 'milb'
-    ? record.milbImpactRanking?.modelVersion ?? null
+    ? record.servedProspectRank?.modelVersion ?? record.milbImpactRanking?.modelVersion ?? null
     : route === 'rookie'
       ? record.recentCallup?.prospectPrior?.impactRank?.modelVersion ?? null
       : record.careerForecast?.lineage?.modelVersion ?? null
+  const stageEvidenceTier: PlayerSignalsItem['signals']['stageRank']['evidenceTier'] = !stageRankAvailable
+    ? null
+    : route === 'milb'
+    ? record.servedProspectRank?.evidenceTier ?? (
+        record.playerMap.mappingStatus === 'insufficient_sample'
+          ? 'completed_season_prior'
+          : 'completed_season_full_model'
+      )
+    : route === 'rookie'
+      ? record.recentCallup?.prospectPrior?.impactRank?.evidenceTier === 'early_estimate'
+        ? 'completed_season_prior'
+        : 'completed_season_full_model'
+      : 'current_mlb_model'
+  const stageVolatility: PlayerSignalsItem['signals']['stageRank']['volatility'] = !stageRankAvailable
+    ? null
+    : route === 'milb'
+    ? record.servedProspectRank?.volatility ?? (
+        record.playerMap.mappingStatus === 'insufficient_sample' ? 'high' : 'standard'
+      )
+    : route === 'rookie' && record.recentCallup?.prospectPrior?.impactRank?.evidenceTier === 'early_estimate'
+      ? 'high'
+      : 'standard'
   const itemWithoutVersion = {
     player: {
       id: record.id,
@@ -264,6 +287,7 @@ export function playerSignalsItem(
       organization: record.organization,
       organizationCode: record.organizationCode,
       position: record.position,
+      rosterStatus: record.rosterStatus ?? null,
       effectiveAt: record.provenance.retrievedAt,
     },
     transition: route === 'rookie'
@@ -302,9 +326,14 @@ export function playerSignalsItem(
           : availabilityForMissing(record),
         reasonCodes: stageRankAvailable
           ? record.playerMap.mappingStatus === 'insufficient_sample'
-            ? ['thin_sample_prior']
+            ? [record.servedProspectRank?.reasonCode ?? 'thin_sample_prior']
             : []
-          : reasonCodesForMissing(record, 'stage_rank_unavailable'),
+          : reasonCodesForMissing(
+              record,
+              route === 'milb' && record.playerMap.mappingStatus === 'coverage_gap'
+                ? 'frozen_model_coverage_gap'
+                : 'stage_rank_unavailable',
+            ),
         rank: stageStanding.rank,
         universe: stageStanding.universe,
         metricId: descriptor.metricId,
@@ -315,11 +344,20 @@ export function playerSignalsItem(
         cohortId: route === 'milb' ? 'prospect_forecast' : record.playerMap.stageStanding.cohort,
         asOf: stageStanding.asOf,
         modelVersion: stageModelVersion,
+        evidenceTier: stageEvidenceTier,
+        volatility: stageVolatility,
       },
       careerOutlook: {
         label: 'Career Outlook' as const,
         availability: outlookAvailability,
-        reasonCodes: outlookAvailable ? [] : reasonCodesForMissing(record, 'career_outlook_unavailable'),
+        reasonCodes: outlookAvailable
+          ? []
+          : reasonCodesForMissing(
+              record,
+              route === 'milb' && record.playerMap.mappingStatus === 'coverage_gap'
+                ? 'frozen_model_coverage_gap'
+                : 'career_outlook_unavailable',
+            ),
         value: outlookValue,
         band: outlookValue === null ? null : careerOutlookBand(outlookValue),
         scaleVersion: record.playerMap.careerIndex.version,
@@ -365,6 +403,7 @@ export function playerSignalsResponse(input: {
   dataAsOf: string | null
   freshness: PlayerSignalsResponse['snapshot']['freshness']
   page: PlayerSignalsResponse['page']
+  prospectCoverage: ProspectCoverageSummary | null
 }): PlayerSignalsResponse {
   return {
     schemaVersion: PLAYER_SIGNALS_SCHEMA_VERSION,
@@ -388,6 +427,7 @@ export function playerSignalsResponse(input: {
       currentResultsNormalizedAcrossStages: true,
       paginationConsistency: 'page_number_not_snapshot_bound',
       identityPolicy: 'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching',
+      prospectCoverage: input.prospectCoverage,
     },
   }
 }

@@ -6,8 +6,12 @@ import { researchMilbAlphaSignal, type ResearchMilbAlphaSignal } from './_resear
 import {
   augmentMinorCandidatesWithCurrentFangraphs,
   augmentMinorCandidatesWithCurrentProfiles,
+  augmentMinorCandidatesWithCurrentRoster,
   assignStageRanks,
+  attachLiveProspectPriorRankings,
+  authoritativeCurrentMinorIdentityRoles,
   buildPlayerFacets,
+  buildProspectCoverageSummary,
   canonicalExternalId,
   currentMlbComparisonRole,
   currentMlbTeamContext,
@@ -41,6 +45,7 @@ import {
   responseOrdering,
   searchRecovery,
   scoredMlbUniverse,
+  scoreCurrentProspectUniverse,
   sendJson,
   sortBoardCandidates,
   sortUnifiedCandidates,
@@ -52,6 +57,7 @@ import {
   type CurrentFangraphsCandidateRow,
   type CurrentFangraphsScoutingRow,
   type CurrentMinorProfileRow,
+  type CurrentMinorRosterRow,
   type CurrentMinorStatsRow,
   type UnifiedBoardCandidate,
 } from './players.js'
@@ -119,6 +125,34 @@ function currentMinorProfile(
     k_minus_bb_rate: null,
     pitching_strikeouts: null,
     walks_allowed: null,
+    ...patch,
+  }
+}
+
+function currentMinorRoster(
+  patch: Partial<CurrentMinorRosterRow> = {},
+): CurrentMinorRosterRow {
+  return {
+    profile_id: 'mlb-statsapi-roster:900000:hitter',
+    mlbam_id: 900000,
+    player_type: 'Hitter',
+    display_name: 'Official Only Prospect',
+    age: 19,
+    active: true,
+    mlb_debut_date: null,
+    roster_status_code: 'D60',
+    roster_status_description: 'Injured - 60 Day',
+    position: 'SS',
+    bats: 'R',
+    throws: 'R',
+    organization_mlbam_id: 111,
+    organization_name: 'Boston Red Sox',
+    current_team_mlbam_id: 432,
+    current_team_name: 'FCL Red Sox',
+    current_level: 'Rk',
+    sport_id: 16,
+    season: 2026,
+    known_at: '2026-07-14T12:00:00.000Z',
     ...patch,
   }
 }
@@ -533,6 +567,297 @@ function joeMackPreview(): CareerOraclePreview {
 }
 
 describe('official MiLB current universe', () => {
+  it('fills frozen model gaps from official current stats and assigns one served ordinal', () => {
+    const prospect = candidate('live-834597', {
+      mlbamId: '834597',
+      name: 'Anthony Frobose',
+      age: 18,
+      level: 'Rk',
+      milbImpactRanking: null,
+      milbAlphaSignal: null,
+    })
+    const ranked = scoreCurrentProspectUniverse(
+      [prospect],
+      [currentMinorProfile({
+        profile_id: 'mlb-statsapi:834597:hitter',
+        mlbam_id: 834597,
+        display_name: 'Anthony Frobose',
+        age: 18,
+        current_level: 'Rk',
+        highest_observed_level: 'Rk',
+        current_team_name: 'FCL Mets',
+        pa: 143,
+        ba: 0.220,
+        slg: 0.415,
+        walks: 18,
+        strikeouts: 52,
+      })],
+    )
+
+    expect(ranked[0]).toMatchObject({
+      liveMilbImpactPriorRanking: {
+        mappingStatus: 'insufficient_sample',
+        reason: 'live_in_season_prior',
+        featureSeason: 2026,
+      },
+      servedProspectRank: {
+        rank: 1,
+        rankPercentile: 100,
+        universeRows: 1,
+        evidenceTier: 'live_in_season_prior',
+        reasonCode: 'live_in_season_prior',
+        modelVersion: 'milb-impact-live-prior-v1',
+      },
+    })
+  })
+
+  it('globally reranks full, frozen-prior, and live-prior evidence without collisions', () => {
+    const fullImpact = researchMilbImpactRanking('804606', 'Hitter')
+    const priorImpact = researchMilbImpactRanking('804109', 'Hitter')
+    expect(fullImpact).not.toBeNull()
+    expect(priorImpact).not.toBeNull()
+    const thinArrival = {
+      gates: { minimumRawWorkload: false },
+    } as ResearchMilbAlphaSignal
+    const currentStats = currentMinorProfile({
+      mlbam_id: 834597,
+      age: 18,
+      current_level: 'Rk',
+      highest_observed_level: 'Rk',
+      current_team_name: 'FCL Mets',
+      pa: 143,
+      ba: 0.220,
+      slg: 0.415,
+      walks: 18,
+      strikeouts: 52,
+    })
+    const ranked = scoreCurrentProspectUniverse([
+      candidate('full', {
+        mlbamId: '804606',
+        milbImpactRanking: fullImpact,
+      }),
+      candidate('frozen-prior', {
+        mlbamId: '804109',
+        milbImpactRanking: priorImpact,
+        milbAlphaSignal: thinArrival,
+      }),
+      candidate('live', {
+        mlbamId: '834597',
+        age: 18,
+        level: 'Rk',
+      }),
+      candidate('no-stats', {
+        mlbamId: '999998',
+      }),
+    ], [currentStats])
+    const served = ranked.flatMap((item) => item.servedProspectRank ?? [])
+
+    expect(served).toHaveLength(3)
+    expect(served.map((rank) => rank.rank).toSorted((a, b) => a - b)).toEqual([1, 2, 3])
+    expect(new Set(served.map((rank) => rank.rankPercentile)).size).toBe(3)
+    expect(new Set(served.map((rank) => rank.universeRows))).toEqual(new Set([3]))
+    expect(ranked.find((item) => item.id === 'full')?.servedProspectRank)
+      .toMatchObject({ evidenceTier: 'completed_season_full_model', reasonCode: null })
+    expect(ranked.find((item) => item.id === 'frozen-prior')?.servedProspectRank)
+      .toMatchObject({ evidenceTier: 'completed_season_prior', reasonCode: 'thin_sample_prior' })
+    expect(ranked.find((item) => item.id === 'live')?.servedProspectRank)
+      .toMatchObject({ evidenceTier: 'live_in_season_prior', reasonCode: 'live_in_season_prior' })
+    expect(ranked.find((item) => item.id === 'no-stats')?.servedProspectRank).toBeNull()
+    expect(sortUnifiedCandidates(ranked, 'prospectScore').slice(0, 3).map((item) => (
+      item.servedProspectRank?.rank
+    ))).toEqual([1, 2, 3])
+    expect(buildProspectCoverageSummary({
+      canonicalMinors: ranked,
+      rosterRows: [],
+      currentStatsRows: [currentStats],
+      identityCrosswalk: requireMlbIdentityCrosswalk(),
+      censusAsOf: currentStats.known_at,
+    }).prospectRank).toMatchObject({
+      availablePlayers: 3,
+      fullModelPlayers: 1,
+      thinSamplePriorPlayers: 1,
+      liveInSeasonPriorPlayers: 1,
+      frozenModelGapPlayers: 1,
+    })
+  })
+
+  it('uses the official hitter row when scoring a two-way prospect', () => {
+    const twoWay = candidate('two-way-live', {
+      mlbamId: '834597',
+      playerType: 'Two-way',
+      milbImpactRanking: null,
+    })
+    const attached = attachLiveProspectPriorRankings(
+      [twoWay],
+      [
+        currentMinorProfile({
+          mlbam_id: 834597,
+          player_type: 'Hitter',
+          age: 18,
+          current_level: 'Rk',
+          current_team_name: 'FCL Mets',
+        }),
+        currentMinorProfile({
+          profile_id: 'mlb-statsapi:834597:pitcher',
+          mlbam_id: 834597,
+          player_type: 'Pitcher',
+          age: 18,
+          current_level: 'Rk',
+          current_team_name: 'FCL Mets',
+          pa: null,
+          ba: null,
+          slg: null,
+          walks: null,
+          strikeouts: null,
+          ip: 25,
+          k_minus_bb_rate: 0.2,
+        }),
+      ],
+    )
+
+    expect(attached[0]?.liveMilbImpactPriorRanking).toMatchObject({
+      evidence: { source: 'MLB StatsAPI' },
+      target: { id: 'mlb_war_next_5_ge_5' },
+    })
+    expect(attached[0]?.liveMilbImpactPriorRanking?.evidence.performanceBand).not.toBe('missing')
+  })
+
+  it('does not score roster-only hitter or pitcher rows with zero workload', () => {
+    const attached = attachLiveProspectPriorRankings([
+      candidate('roster-only-hitter', {
+        mlbamId: '834597',
+        playerType: 'Hitter',
+        milbImpactRanking: null,
+      }),
+      candidate('roster-only-pitcher', {
+        mlbamId: '834598',
+        playerType: 'Pitcher',
+        milbImpactRanking: null,
+      }),
+    ], [
+      currentMinorProfile({
+        mlbam_id: 834597,
+        player_type: 'Hitter',
+        pa: 0,
+        ba: null,
+        slg: null,
+        walks: null,
+        strikeouts: null,
+      }),
+      currentMinorProfile({
+        profile_id: 'mlb-statsapi:834598:pitcher',
+        mlbam_id: 834598,
+        player_type: 'Pitcher',
+        pa: null,
+        ba: null,
+        slg: null,
+        walks: null,
+        strikeouts: null,
+        ip: 0,
+        outs: 0,
+        k_minus_bb_rate: null,
+      }),
+    ])
+
+    expect(attached.map((item) => item.liveMilbImpactPriorRanking)).toEqual([null, null])
+  })
+
+  it('uses an exact official roster identity before dedupe and never crosses roles', () => {
+    const sourceRow = {
+      profile_id: 'prospect-savant:900000',
+      source_player_id: '900000',
+      player_type: 'Hitter' as const,
+      display_name: 'Official Only Prospect',
+      organization_code: 'BOS',
+      organization_name: 'Boston Red Sox',
+      position: 'SS',
+      age: 19,
+      level: 'Rk',
+      season: 2026,
+      mlbam_id: null,
+      known_at: '2026-07-14T12:00:00.000Z',
+      pa: 0,
+      ip: null,
+      pitches: null,
+    }
+    const roster = currentMinorRoster()
+    const exactRoles = authoritativeCurrentMinorIdentityRoles([], [roster])
+    const exact = minorCandidates(
+      [sourceRow],
+      null,
+      requireMlbIdentityCrosswalk(),
+      exactRoles,
+    )
+    const wrongRole = minorCandidates(
+      [sourceRow],
+      null,
+      requireMlbIdentityCrosswalk(),
+      new Set(['900000:Pitcher']),
+    )
+
+    expect(exact).toMatchObject({
+      idsRecoveredFromAuthoritativeCurrentSources: 1,
+      idsRecoveredFromExactCrosswalk: 1,
+      items: [expect.objectContaining({ mlbamId: '900000' })],
+    })
+    expect(wrongRole.items[0]).toMatchObject({ mlbamId: null })
+
+    const overlaid = augmentMinorCandidatesWithCurrentRoster(
+      exact.items,
+      [roster],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+    expect(overlaid).toMatchObject({ liveProfileOverlays: 1, rosterOnlyPlayers: 0 })
+    expect(dedupeMinorCandidates(overlaid.items)).toMatchObject({
+      canonicalPlayers: 1,
+      duplicateRoleRowsRemoved: 0,
+    })
+  })
+
+  it('adds zero-stat and injured roster players without manufacturing Current Results', () => {
+    const preview = joeMackPreview()
+    const roster = currentMinorRoster()
+    const result = augmentMinorCandidatesWithCurrentRoster(
+      [],
+      [roster],
+      preview,
+      requireMlbIdentityCrosswalk(),
+    )
+
+    expect(result).toMatchObject({ liveProfileOverlays: 0, rosterOnlyPlayers: 1 })
+    expect(result.items[0]).toMatchObject({
+      id: 'mlb-statsapi-roster:900000:hitter',
+      mlbamId: '900000',
+      minorProfileSource: 'mlbStatsApiRoster',
+      opportunityScore: 0,
+      minorRoleWorkload: { plateAppearances: 0, pitchingOuts: 0 },
+      stage: 'pre_debut',
+      careerForecast: expect.objectContaining({ rank: 1 }),
+    })
+
+    const coverage = buildProspectCoverageSummary({
+      canonicalMinors: result.items,
+      rosterRows: [roster],
+      currentStatsRows: [],
+      identityCrosswalk: requireMlbIdentityCrosswalk(),
+      censusAsOf: roster.known_at,
+    })
+    expect(coverage).toMatchObject({
+      census: {
+        rosteredPreDebutPlayers: 1,
+        servedRosteredPreDebutPlayers: 1,
+        missingRosteredPreDebutPlayers: 0,
+        status: 'complete',
+      },
+      identity: { mlbamLinkedPlayers: 1, profileOnlyPlayers: 0 },
+      prospectRank: { availablePlayers: 0, frozenModelGapPlayers: 1 },
+      careerOutlook: { availablePlayers: 1 },
+      currentResults: { availablePlayers: 0 },
+      nullPolicy: 'unavailable_not_zero',
+    })
+  })
+
   it('adds a StatsAPI-only exact-ID player and preserves the frozen model link', () => {
     const preview = joeMackPreview()
     const result = augmentMinorCandidatesWithCurrentProfiles(
@@ -1235,6 +1560,34 @@ describe('unified player ordering', () => {
 
     expect(matchesQuery(player, query({ ids: ['bbref:judgeaa01'] }))).toBe(true)
     expect(matchesQuery(player, query({ ids: ['bbref:troutmi01'] }))).toBe(false)
+  })
+
+  it('matches the documented exact MLBAM alias without crossing player roles', () => {
+    const hitter = candidate('prospect-savant:minor:sa3069292:hitters', {
+      mlbamId: '834597',
+      name: 'Anthony Frobose',
+      playerType: 'Hitter',
+    })
+    const pitcher = candidate('prospect-savant:minor:sa3069292:pitchers', {
+      mlbamId: '834597',
+      name: 'Anthony Frobose',
+      playerType: 'Pitcher',
+    })
+
+    expect(matchesQuery(hitter, query({ ids: ['mlbam:834597:hitter'] }))).toBe(true)
+    expect(matchesQuery(pitcher, query({ ids: ['mlbam:834597:hitter'] }))).toBe(false)
+    expect(matchesQuery(hitter, query({ ids: ['mlbam:834597:pitcher'] }))).toBe(false)
+  })
+
+  it('uses the hitter identity alias for a two-way player', () => {
+    const twoWay = candidate('prospect-savant:minor:sa660271:hitters', {
+      mlbamId: '660271',
+      name: 'Shohei Ohtani',
+      playerType: 'Two-way',
+    })
+
+    expect(matchesQuery(twoWay, query({ ids: ['mlbam:660271:hitter'] }))).toBe(true)
+    expect(matchesQuery(twoWay, query({ ids: ['mlbam:660271:pitcher'] }))).toBe(false)
   })
 
   it('keeps a post-debut minor assignment on the MLB career-stage board', () => {

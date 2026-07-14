@@ -5,6 +5,7 @@ import type {
   IngestFangraphsProspectsResult,
 } from '../../scripts/ingest/fangraphs-prospects.js'
 import type { MlbStatsApiMilbBackfillResult } from '../../scripts/ingest/mlb-statsapi-milb.js'
+import type { IngestMlbStatsApiMilbRosterResult } from '../../scripts/ingest/mlb-statsapi-milb-roster.js'
 import type { ProspectSavantBackfillResult } from '../../scripts/ingest/prospect-savant-leaders.js'
 import { CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS } from '../../scripts/ingest/shared.js'
 import {
@@ -34,6 +35,15 @@ const completeMlbStatsApi: MlbStatsApiMilbBackfillResult = {
   inProgress: 0,
   rows: 7_500,
   failures: [],
+}
+
+const completeMlbRoster: IngestMlbStatsApiMilbRosterResult = {
+  status: 'stored',
+  responseHash: 'c'.repeat(64),
+  teams: 231,
+  rosterRows: 15_400,
+  uniquePlayers: 8_200,
+  season: 2026,
 }
 
 const completeBaseballReference: BaseballReferenceCurrentResult = {
@@ -68,6 +78,12 @@ function dependencies(): CurrentRefreshDependencies {
       async () => completeMlbStatsApi,
     ),
     refreshCurrentMilbTraditionalSnapshot: vi.fn<CurrentRefreshDependencies['refreshCurrentMilbTraditionalSnapshot']>(
+      async () => undefined,
+    ),
+    ingestMlbStatsApiMilbRosterCensus: vi.fn<CurrentRefreshDependencies['ingestMlbStatsApiMilbRosterCensus']>(
+      async (season) => ({ ...completeMlbRoster, season }),
+    ),
+    refreshCurrentMilbRosterSnapshot: vi.fn<CurrentRefreshDependencies['refreshCurrentMilbRosterSnapshot']>(
       async () => undefined,
     ),
     ingestBaseballReferenceCurrentSeason: vi.fn<CurrentRefreshDependencies['ingestBaseballReferenceCurrentSeason']>(
@@ -105,6 +121,7 @@ describe('current baseball season selection', () => {
       Math.max(
         CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
         CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
+        CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbRoster,
       ) +
       CURRENT_REFRESH_SOURCE_BUDGETS_MS.baseballReference +
       CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs
@@ -130,11 +147,13 @@ describe('current source refresh isolation', () => {
 
     expect(result.prospectSavant.status).toBe('succeeded')
     expect(result.mlbStatsApi.status).toBe('succeeded')
+    expect(result.mlbRoster.status).toBe('succeeded')
     expect(result.baseballReference.status).toBe('succeeded')
     expect(result.fangraphs.status).toBe('succeeded')
     expect(result.sourceSeasons).toEqual({
       prospectSavant: { standardLevels: 2026, rookieLevel: 2026 },
       mlbStatsApi: { standardLevels: 2026, rookieLevel: 2026 },
+      mlbRoster: 2026,
       baseballReference: 2026,
       fangraphs: 2026,
     })
@@ -143,6 +162,11 @@ describe('current source refresh isolation', () => {
       signal: expect.any(AbortSignal),
     })
     expect(stubs.refreshCurrentMilbTraditionalSnapshot).toHaveBeenCalledOnce()
+    expect(stubs.ingestMlbStatsApiMilbRosterCensus).toHaveBeenCalledWith(
+      2026,
+      { signal: expect.any(AbortSignal) },
+    )
+    expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledOnce()
     expect(deriveRefreshRunStatus(result)).toBe('succeeded')
   })
 
@@ -175,6 +199,7 @@ describe('current source refresh isolation', () => {
     expect(result.sourceSeasons).toEqual({
       prospectSavant: { standardLevels: 2027, rookieLevel: 2026 },
       mlbStatsApi: { standardLevels: 2027, rookieLevel: 2026 },
+      mlbRoster: 2027,
       baseballReference: 2027,
       fangraphs: 2027,
     })
@@ -264,6 +289,57 @@ describe('current source refresh isolation', () => {
     expect(deriveRefreshRunStatus(result)).toBe('partial')
   })
 
+  it('isolates a roster-census collection failure from every other source', async () => {
+    const stubs = dependencies()
+    vi.mocked(stubs.ingestMlbStatsApiMilbRosterCensus).mockRejectedValueOnce(
+      new Error('Roster census unavailable'),
+    )
+
+    const result = await refreshCurrentSources(2026, stubs)
+
+    expect(result.mlbRoster.status).toBe('failed')
+    expect(stubs.refreshCurrentMilbRosterSnapshot).not.toHaveBeenCalled()
+    expect(result.prospectSavant.status).toBe('succeeded')
+    expect(result.mlbStatsApi.status).toBe('succeeded')
+    expect(result.baseballReference.status).toBe('succeeded')
+    expect(result.fangraphs.status).toBe('succeeded')
+    expect(deriveRefreshRunStatus(result)).toBe('partial')
+  })
+
+  it('does not publish an in-progress roster census', async () => {
+    const stubs = dependencies()
+    vi.mocked(stubs.ingestMlbStatsApiMilbRosterCensus).mockResolvedValueOnce({
+      ...completeMlbRoster,
+      status: 'in_progress',
+    })
+
+    const result = await refreshCurrentSources(2026, stubs)
+
+    expect(result.mlbRoster).toMatchObject({
+      status: 'failed',
+      error: { message: expect.stringContaining('remains in progress') },
+      result: { status: 'in_progress' },
+    })
+    expect(stubs.refreshCurrentMilbRosterSnapshot).not.toHaveBeenCalled()
+    expect(deriveRefreshRunStatus(result)).toBe('partial')
+  })
+
+  it('marks roster refresh failed when the served census audit rejects it', async () => {
+    const stubs = dependencies()
+    vi.mocked(stubs.refreshCurrentMilbRosterSnapshot).mockRejectedValueOnce(
+      new Error('Roster snapshot cardinality gate failed'),
+    )
+
+    const result = await refreshCurrentSources(2026, stubs)
+
+    expect(result.mlbRoster).toMatchObject({
+      status: 'failed',
+      error: { message: 'Roster snapshot cardinality gate failed' },
+      result: completeMlbRoster,
+    })
+    expect(deriveRefreshRunStatus(result)).toBe('partial')
+  })
+
   it('keeps the MLB view unchanged after a Baseball-Reference failure', async () => {
     const stubs = dependencies()
     vi.mocked(stubs.ingestBaseballReferenceCurrentSeason).mockRejectedValueOnce(
@@ -298,6 +374,9 @@ describe('current source refresh isolation', () => {
     vi.mocked(stubs.backfillProspectSavant).mockRejectedValueOnce(new Error('PS failed'))
     vi.mocked(stubs.backfillMlbStatsApiMilb).mockRejectedValueOnce(
       new Error('StatsAPI failed'),
+    )
+    vi.mocked(stubs.ingestMlbStatsApiMilbRosterCensus).mockRejectedValueOnce(
+      new Error('Roster census failed'),
     )
     vi.mocked(stubs.ingestBaseballReferenceCurrentSeason).mockRejectedValueOnce(
       new Error('BRef failed'),

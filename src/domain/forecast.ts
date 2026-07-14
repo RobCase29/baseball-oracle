@@ -539,6 +539,29 @@ export interface MilbImpactRanking {
   warnings: string[]
 }
 
+export interface ServedProspectRank {
+  rank: number
+  rankPercentile: number
+  universeRows: number
+  asOf: string
+  modelVersion:
+    | 'milb-impact-five-calendar-year-war-v1'
+    | 'milb-impact-live-prior-v1'
+  evidenceTier:
+    | 'completed_season_full_model'
+    | 'completed_season_prior'
+    | 'live_in_season_prior'
+  reasonCode: 'thin_sample_prior' | 'live_in_season_prior' | null
+  volatility: 'standard' | 'high' | 'very_high'
+  target: {
+    id: 'mlb_war_next_5_ge_5'
+    label: string
+    scope: 'unconditional'
+    windowStartSeason: number
+    windowEndSeason: number
+  }
+}
+
 export interface MinorTraitEvidence {
   version: 'minor-trait-evidence-v1'
   status: 'descriptive_source_evidence_only'
@@ -618,6 +641,11 @@ export interface PlayerRecord {
   age: number | null
   level: string | null
   batsThrows: string | null
+  rosterStatus?: {
+    code: string | null
+    description: string | null
+    asOf: string | null
+  } | null
   psScore: number | null
   psPercentile: number | null
   agePercentile?: number | null
@@ -631,6 +659,7 @@ export interface PlayerRecord {
   researchEstimate: ResearchArrivalEstimate | null
   milbAlphaSignal?: MilbAlphaSignal | null
   milbImpactRanking?: MilbImpactRanking | null
+  servedProspectRank?: ServedProspectRank | null
   minorTraitEvidence?: MinorTraitEvidence | null
   careerForecast: CareerForecast | null
   recentCallup?: RecentCallupContext | null
@@ -718,6 +747,42 @@ export interface DecisionHierarchyContract {
   }
 }
 
+export interface ProspectCoverageSummary {
+  version: 'prospect-coverage/v1'
+  census: {
+    source: 'MLB StatsAPI affiliated full rosters'
+    asOf: string | null
+    rosterPlayers: number
+    rosteredPreDebutPlayers: number
+    servedRosteredPreDebutPlayers: number
+    missingRosteredPreDebutPlayers: number
+    status: 'complete' | 'incomplete' | 'unavailable'
+  }
+  sourceUnionPreDebutPlayers: number
+  identity: {
+    mlbamLinkedPlayers: number
+    profileOnlyPlayers: number
+  }
+  prospectRank: {
+    availablePlayers: number
+    fullModelPlayers: number
+    thinSamplePriorPlayers: number
+    liveInSeasonPriorPlayers: number
+    frozenModelGapPlayers: number
+    coverageRate: number
+    frozenAsOf: string
+  }
+  careerOutlook: {
+    availablePlayers: number
+    coverageRate: number
+  }
+  currentResults: {
+    availablePlayers: number
+    coverageRate: number
+  }
+  nullPolicy: 'unavailable_not_zero'
+}
+
 export interface PlayersResponseMeta {
   dataAsOf: string | null
   season: number | null
@@ -755,6 +820,7 @@ export interface PlayersResponseMeta {
     recentCallups?: number
     mlb: number
   } | null
+  prospectCoverage?: ProspectCoverageSummary | null
   degraded?: boolean
   degradedReason?: string
   rankScope?: 'stage_specific'
@@ -864,6 +930,9 @@ export interface PlayersResponseMeta {
     experiencedMinorRowsExcludedFromRankings?: number
     currentSeasonDebutMinorRowsIdentified?: number
     minorIdsRecoveredFromExactCrosswalk?: number
+    minorIdsRecoveredFromAuthoritativeCurrentSources?: number
+    currentRosterPlayers?: number
+    rosterOnlyPlayersAdded?: number
     identityPolicy?: 'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching'
     identityCrosswalkAsOf?: string
     identityCrosswalkRecords?: number

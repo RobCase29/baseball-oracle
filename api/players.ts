@@ -16,6 +16,10 @@ import {
   type ResearchMilbImpactRanking,
 } from './_milb-impact.js'
 import {
+  researchLiveMilbImpactPriorRankings,
+  type ResearchLiveMilbImpactPriorRanking,
+} from './_milb-impact-live-prior.js'
+import {
   loadCareerOraclePreview,
   type CareerOraclePreview,
   type CareerPreviewPlayer,
@@ -61,7 +65,9 @@ import type {
   CurrentProspectScouting,
   PlayerMapFeedItem,
   PlayerRecord,
+  ProspectCoverageSummary,
   RecentCallupContext,
+  ServedProspectRank,
 } from '../src/domain/forecast.js'
 import { defaultSortForStage } from '../src/domain/forecast.js'
 import type { PlayerSignalsItem } from '../src/domain/playerSignals.js'
@@ -328,6 +334,29 @@ export interface CurrentMinorProfileRow extends CurrentMinorStatsRow {
   pitches: DatabaseNumber
 }
 
+export interface CurrentMinorRosterRow {
+  profile_id: string
+  mlbam_id: DatabaseNumber
+  player_type: 'Hitter' | 'Pitcher'
+  display_name: string
+  age: DatabaseNumber
+  active: boolean | null
+  mlb_debut_date: string | null
+  roster_status_code: string | null
+  roster_status_description: string | null
+  position: string | null
+  bats: string | null
+  throws: string | null
+  organization_mlbam_id: DatabaseNumber
+  organization_name: string | null
+  current_team_mlbam_id: DatabaseNumber
+  current_team_name: string | null
+  current_level: string | null
+  sport_id: DatabaseNumber
+  season: DatabaseNumber
+  known_at: string
+}
+
 export interface CurrentFangraphsScoutingRow {
   mlbam_id: DatabaseNumber
   source_role: 'Hitter' | 'Pitcher'
@@ -586,6 +615,7 @@ const currentRefreshSourceKeys = [
   'prospectSavant',
   'baseballReference',
   'mlbStatsApi',
+  'mlbRoster',
   'fangraphs',
 ] as const
 
@@ -845,6 +875,22 @@ function currentMinorOrganizationCode(row: CurrentMinorProfileRow): string | nul
 
 function currentMinorOrganizationName(row: CurrentMinorProfileRow): string | null {
   const code = currentMinorOrganizationCode(row)
+  return (code ? mlbTeamNames[code] : null) ?? row.organization_name
+}
+
+function currentMinorRosterOrganizationCode(row: CurrentMinorRosterRow): string | null {
+  const organizationId = numberOrNull(row.organization_mlbam_id)
+  if (organizationId !== null) {
+    const exact = mlbTeamCodeByMlbamId[Math.round(organizationId)]
+    if (exact) return exact
+  }
+  const organizationName = row.organization_name?.trim()
+  if (!organizationName) return null
+  return Object.entries(mlbTeamNames).find(([, name]) => name === organizationName)?.[0] ?? null
+}
+
+function currentMinorRosterOrganizationName(row: CurrentMinorRosterRow): string | null {
+  const code = currentMinorRosterOrganizationCode(row)
   return (code ? mlbTeamNames[code] : null) ?? row.organization_name
 }
 
@@ -1167,7 +1213,13 @@ function playerRecord(
     level?: string | null
     organization?: string | null
     organizationCode?: string | null
-    profileSource?: 'Prospect Savant' | 'MLB StatsAPI' | 'FanGraphs'
+    profileSource?: 'Prospect Savant' | 'MLB StatsAPI' | 'MLB StatsAPI Roster' | 'FanGraphs'
+    rosterStatus?: {
+      code: string | null
+      description: string | null
+      asOf: string | null
+    } | null
+    servedProspectRank?: ServedProspectRank | null
   } = { stage: 'pre_debut', mlbamId: databaseIdentifier(row.mlbam_id) },
 ) {
   const bats = row.bats && row.bats !== '0' ? row.bats : null
@@ -1198,6 +1250,11 @@ function playerRecord(
         dataset: 'Current MiLB Season Stats',
         datasetKey: 'current-milb-season-stats',
       }
+    : profileSource === 'MLB StatsAPI Roster'
+      ? {
+          dataset: 'Current MiLB Rosters',
+          datasetKey: 'current-milb-rosters',
+        }
     : profileSource === 'FanGraphs'
       ? {
           dataset: 'Current Prospect Scouting',
@@ -1223,6 +1280,7 @@ function playerRecord(
     age: lifecycle.age !== undefined ? lifecycle.age : roundedNumber(row.age, 0),
     level: displayedLevel,
     batsThrows,
+    rosterStatus: lifecycle.rosterStatus ?? null,
     psScore: roundedNumber(row.ps_score, 2),
     psPercentile: percentileOrNull(row.ps_percentile),
     agePercentile: currentMinorAgePercentile(
@@ -1275,6 +1333,7 @@ function playerRecord(
       : null,
     milbAlphaSignal,
     milbImpactRanking,
+    servedProspectRank: lifecycle.servedProspectRank ?? null,
     minorTraitEvidence: lifecycle.playerType === 'Two-way'
       ? null
       : minorTraitEvidence({
@@ -1659,9 +1718,16 @@ export interface UnifiedBoardCandidate {
   careerForecast: CareerForecast | null
   milbAlphaSignal: ResearchMilbAlphaSignal | null
   milbImpactRanking: ResearchMilbImpactRanking | null
+  liveMilbImpactPriorRanking?: ResearchLiveMilbImpactPriorRanking | null
+  servedProspectRank?: ServedProspectRank | null
   arrivalProbability36: number | null
   minorProfileId: string | null
-  minorProfileSource?: 'prospectSavant' | 'mlbStatsApi' | 'fangraphs'
+  minorProfileSource?: 'prospectSavant' | 'mlbStatsApi' | 'mlbStatsApiRoster' | 'fangraphs'
+  rosterStatus?: {
+    code: string | null
+    description: string | null
+    asOf: string | null
+  } | null
   previewPlayer: CareerPreviewPlayer | null
   recentCallupPrior: RecentCallupContext['prospectPrior'] | null
   currentStats?: CurrentMlbValueRow | null
@@ -1694,12 +1760,337 @@ function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
   )
 }
 
+function prospectScoringRole(
+  playerType: UnifiedBoardCandidate['playerType'],
+): 'Hitter' | 'Pitcher' {
+  return playerType === 'Pitcher' ? 'Pitcher' : 'Hitter'
+}
+
+function safeRate(numerator: DatabaseNumber, denominator: DatabaseNumber): number | null {
+  const top = numberOrNull(numerator)
+  const bottom = numberOrNull(denominator)
+  return top !== null && bottom !== null && bottom > 0 ? top / bottom : null
+}
+
+export function attachLiveProspectPriorRankings(
+  candidates: UnifiedBoardCandidate[],
+  currentStatsRows: CurrentMinorProfileRow[],
+): UnifiedBoardCandidate[] {
+  const statsByIdentity = new Map<string, CurrentMinorProfileRow>()
+  for (const row of currentStatsRows) {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    if (mlbamId === null) continue
+    const identity = `${mlbamId}:${row.player_type}`
+    if (statsByIdentity.has(identity)) {
+      throw new Error(`Duplicate official current MiLB stat identity: ${identity}`)
+    }
+    statsByIdentity.set(identity, row)
+  }
+
+  const inputs = candidates.flatMap((candidate) => {
+    if (
+      candidate.source !== 'minor' ||
+      candidate.stage !== 'pre_debut' ||
+      candidate.mlbamId === null ||
+      candidate.milbImpactRanking !== null
+    ) return []
+    const scoringRole = prospectScoringRole(candidate.playerType)
+    const row = statsByIdentity.get(`${candidate.mlbamId}:${scoringRole}`)
+    if (!row) return []
+    const officialStatsObserved = scoringRole === 'Pitcher'
+      ? (numberOrNull(row.outs) ?? 0) > 0 || (numberOrNull(row.ip) ?? 0) > 0
+      : (numberOrNull(row.pa) ?? 0) > 0
+    if (!officialStatsObserved) return []
+    return [{
+      mlbamId: candidate.mlbamId,
+      playerType: scoringRole,
+      officialStatsObserved,
+      season: row.season,
+      knownAt: row.known_at,
+      age: row.age ?? candidate.age,
+      level: row.current_level ?? row.highest_observed_level ?? candidate.level,
+      teamName: row.current_team_name,
+      pa: row.pa,
+      ba: row.ba,
+      slg: row.slg,
+      walkRate: safeRate(row.walks, row.pa),
+      strikeoutRate: safeRate(row.strikeouts, row.pa),
+      ip: row.ip,
+      kMinusBbRate: row.k_minus_bb_rate,
+    }]
+  })
+  const liveRankings = researchLiveMilbImpactPriorRankings(inputs)
+
+  return candidates.map((candidate) => {
+    const mlbamId = candidate.mlbamId
+    if (
+      candidate.source !== 'minor' ||
+      candidate.stage !== 'pre_debut' ||
+      mlbamId === null ||
+      candidate.milbImpactRanking !== null
+    ) {
+      return {
+        ...candidate,
+        liveMilbImpactPriorRanking: null,
+        servedProspectRank: null,
+      }
+    }
+    const role = prospectScoringRole(candidate.playerType).toLocaleLowerCase('en-US')
+    return {
+      ...candidate,
+      liveMilbImpactPriorRanking: liveRankings.get(`${mlbamId}:${role}`) ?? null,
+      servedProspectRank: null,
+    }
+  })
+}
+
+interface ProspectOrdinalBasis {
+  sourcePercentile: number
+  sourceRank: number
+  asOf: string
+  modelVersion: ServedProspectRank['modelVersion']
+  evidenceTier: ServedProspectRank['evidenceTier']
+  reasonCode: ServedProspectRank['reasonCode']
+  volatility: ServedProspectRank['volatility']
+  target: ServedProspectRank['target']
+}
+
+function supportedPercentile(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100
+}
+
+function candidateProspectOrdinalBasis(
+  candidate: UnifiedBoardCandidate,
+): ProspectOrdinalBasis | null {
+  if (candidate.source !== 'minor' || candidate.stage !== 'pre_debut') return null
+  const frozen = candidate.milbImpactRanking
+  if (frozen !== null) {
+    const usesPrior = candidate.milbAlphaSignal?.gates.minimumRawWorkload === false
+    const sourceRank = usesPrior ? frozen.priorRank : frozen.rank
+    const sourcePercentile = usesPrior ? frozen.priorRankPercentile : frozen.rankPercentile
+    if (!Number.isInteger(sourceRank) || !supportedPercentile(sourcePercentile)) return null
+    return {
+      sourcePercentile,
+      sourceRank,
+      asOf: frozen.frozenAsOf,
+      modelVersion: frozen.modelVersion,
+      evidenceTier: usesPrior
+        ? 'completed_season_prior'
+        : 'completed_season_full_model',
+      reasonCode: usesPrior ? 'thin_sample_prior' : null,
+      volatility: usesPrior ? 'high' : 'standard',
+      target: {
+        id: frozen.target.id,
+        label: frozen.target.label,
+        scope: frozen.target.scope,
+        windowStartSeason: frozen.target.windowStartSeason,
+        windowEndSeason: frozen.target.windowEndSeason,
+      },
+    }
+  }
+
+  const live = candidate.liveMilbImpactPriorRanking ?? null
+  if (live === null || !Number.isInteger(live.rank) || !supportedPercentile(live.rankPercentile)) {
+    return null
+  }
+  return {
+    sourcePercentile: live.rankPercentile,
+    sourceRank: live.rank,
+    asOf: live.featureAsOf,
+    modelVersion: 'milb-impact-live-prior-v1',
+    evidenceTier: 'live_in_season_prior',
+    reasonCode: 'live_in_season_prior',
+    volatility: live.volatility,
+    target: { ...live.target },
+  }
+}
+
+const prospectEvidenceTierOrder: Record<ServedProspectRank['evidenceTier'], number> = {
+  completed_season_full_model: 0,
+  completed_season_prior: 1,
+  live_in_season_prior: 2,
+}
+
+function exactProspectIdentityCompare(
+  left: UnifiedBoardCandidate,
+  right: UnifiedBoardCandidate,
+): number {
+  if (left.mlbamId !== null && right.mlbamId !== null) {
+    const leftMlbam = BigInt(left.mlbamId)
+    const rightMlbam = BigInt(right.mlbamId)
+    if (leftMlbam !== rightMlbam) return leftMlbam < rightMlbam ? -1 : 1
+  }
+  return prospectScoringRole(left.playerType).localeCompare(
+    prospectScoringRole(right.playerType),
+    'en-US',
+  ) || left.id.localeCompare(right.id)
+}
+
+export function assignServedProspectRanks(
+  candidates: UnifiedBoardCandidate[],
+): UnifiedBoardCandidate[] {
+  const reset = candidates.map((candidate) => ({ ...candidate, servedProspectRank: null }))
+  const scoreable = reset.flatMap((candidate) => {
+    const basis = candidateProspectOrdinalBasis(candidate)
+    return basis === null ? [] : [{ candidate, basis }]
+  }).toSorted((left, right) => (
+    right.basis.sourcePercentile - left.basis.sourcePercentile ||
+    prospectEvidenceTierOrder[left.basis.evidenceTier] -
+      prospectEvidenceTierOrder[right.basis.evidenceTier] ||
+    left.basis.sourceRank - right.basis.sourceRank ||
+    exactProspectIdentityCompare(left.candidate, right.candidate)
+  ))
+  const universeRows = scoreable.length
+  const servedByCandidate = new Map<string, ServedProspectRank>()
+  scoreable.forEach(({ candidate, basis }, index) => {
+    const rank = index + 1
+    servedByCandidate.set(candidateKey(candidate), {
+      rank,
+      rankPercentile: universeRows <= 1
+        ? 100
+        : Math.round(100_000_000 * (universeRows - rank) / (universeRows - 1)) / 1_000_000,
+      universeRows,
+      asOf: basis.asOf,
+      modelVersion: basis.modelVersion,
+      evidenceTier: basis.evidenceTier,
+      reasonCode: basis.reasonCode,
+      volatility: basis.volatility,
+      target: basis.target,
+    })
+  })
+  return reset.map((candidate) => ({
+    ...candidate,
+    servedProspectRank: servedByCandidate.get(candidateKey(candidate)) ?? null,
+  }))
+}
+
+export function scoreCurrentProspectUniverse(
+  candidates: UnifiedBoardCandidate[],
+  currentStatsRows: CurrentMinorProfileRow[],
+): UnifiedBoardCandidate[] {
+  return assignServedProspectRanks(
+    attachLiveProspectPriorRankings(candidates, currentStatsRows),
+  )
+}
+
 function candidateProspectScoreRank(candidate: UnifiedBoardCandidate): number | null {
   if (candidate.source !== 'minor' || candidate.stage !== 'pre_debut') return null
+  if (candidate.servedProspectRank !== undefined) {
+    return candidate.servedProspectRank?.rank ?? null
+  }
   if (candidate.milbAlphaSignal?.gates.minimumRawWorkload === false) {
     return candidate.milbImpactRanking?.priorRank ?? null
   }
   return candidate.milbImpactRanking?.rank ?? null
+}
+
+function coverageRate(covered: number, total: number): number {
+  return total === 0 ? 0 : Math.round(covered / total * 10_000) / 10_000
+}
+
+export function buildProspectCoverageSummary(input: {
+  canonicalMinors: UnifiedBoardCandidate[]
+  rosterRows: CurrentMinorRosterRow[]
+  currentStatsRows: CurrentMinorProfileRow[]
+  identityCrosswalk: MlbIdentityCrosswalk
+  censusAsOf: string | null
+}): ProspectCoverageSummary {
+  const prospects = input.canonicalMinors.filter(
+    (candidate) => candidate.stage === 'pre_debut',
+  )
+  const prospectMlbamIds = new Set(prospects.flatMap(
+    (candidate) => candidate.mlbamId === null ? [] : [candidate.mlbamId],
+  ))
+  const rosterPlayerIds = new Set(input.rosterRows.flatMap((row) => {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    return mlbamId === null ? [] : [mlbamId]
+  }))
+  const rosteredPreDebutIds = new Set(input.rosterRows.flatMap((row) => {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    if (mlbamId === null || row.mlb_debut_date !== null) return []
+    const exactIdentity = input.identityCrosswalk.byMlbam(mlbamId)
+    return exactIdentity?.firstMlbSeason === null || exactIdentity === null
+      ? [mlbamId]
+      : []
+  }))
+  const servedRosteredPreDebutPlayers = [...rosteredPreDebutIds].filter(
+    (mlbamId) => prospectMlbamIds.has(mlbamId),
+  ).length
+  const availableRankPlayers = prospects.filter(
+    (candidate) => candidateProspectScoreRank(candidate) !== null,
+  )
+  const fullModelPlayers = availableRankPlayers.filter((candidate) => (
+    candidate.servedProspectRank?.evidenceTier === 'completed_season_full_model' ||
+    (
+      candidate.servedProspectRank === undefined &&
+      candidate.milbImpactRanking !== null &&
+      candidate.milbAlphaSignal?.gates.minimumRawWorkload !== false
+    )
+  )).length
+  const liveInSeasonPriorPlayers = availableRankPlayers.filter(
+    (candidate) => candidate.servedProspectRank?.evidenceTier === 'live_in_season_prior',
+  ).length
+  const thinSamplePriorPlayers = availableRankPlayers.length -
+    fullModelPlayers - liveInSeasonPriorPlayers
+  const careerOutlookPlayers = prospects.filter(
+    (candidate) => candidateCareerIndex(candidate) !== null,
+  ).length
+  const currentStatsIdentityRoles = new Set(input.currentStatsRows.flatMap((row) => {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    return mlbamId === null ? [] : [`${mlbamId}:${row.player_type}`]
+  }))
+  const currentResultsPlayers = prospects.filter((candidate) => {
+    if (candidate.mlbamId === null) return false
+    if (candidate.playerType === 'Two-way') {
+      return currentStatsIdentityRoles.has(`${candidate.mlbamId}:Hitter`) ||
+        currentStatsIdentityRoles.has(`${candidate.mlbamId}:Pitcher`)
+    }
+    return currentStatsIdentityRoles.has(`${candidate.mlbamId}:${candidate.playerType}`)
+  }).length
+  const missingRosteredPreDebutPlayers = Math.max(
+    rosteredPreDebutIds.size - servedRosteredPreDebutPlayers,
+    0,
+  )
+
+  return {
+    version: 'prospect-coverage/v1',
+    census: {
+      source: 'MLB StatsAPI affiliated full rosters',
+      asOf: input.censusAsOf,
+      rosterPlayers: rosterPlayerIds.size,
+      rosteredPreDebutPlayers: rosteredPreDebutIds.size,
+      servedRosteredPreDebutPlayers,
+      missingRosteredPreDebutPlayers,
+      status: rosterPlayerIds.size === 0
+        ? 'unavailable'
+        : missingRosteredPreDebutPlayers === 0
+          ? 'complete'
+          : 'incomplete',
+    },
+    sourceUnionPreDebutPlayers: prospects.length,
+    identity: {
+      mlbamLinkedPlayers: prospectMlbamIds.size,
+      profileOnlyPlayers: prospects.filter((candidate) => candidate.mlbamId === null).length,
+    },
+    prospectRank: {
+      availablePlayers: availableRankPlayers.length,
+      fullModelPlayers,
+      thinSamplePriorPlayers,
+      liveInSeasonPriorPlayers,
+      frozenModelGapPlayers: prospects.length - availableRankPlayers.length,
+      coverageRate: coverageRate(availableRankPlayers.length, prospects.length),
+      frozenAsOf: researchMilbImpactSummary.frozenAsOf,
+    },
+    careerOutlook: {
+      availablePlayers: careerOutlookPlayers,
+      coverageRate: coverageRate(careerOutlookPlayers, prospects.length),
+    },
+    currentResults: {
+      availablePlayers: currentResultsPlayers,
+      coverageRate: coverageRate(currentResultsPlayers, prospects.length),
+    },
+    nullPolicy: 'unavailable_not_zero',
+  }
 }
 
 function candidateCareerWar(candidate: UnifiedBoardCandidate) {
@@ -2095,6 +2486,7 @@ interface MinorCandidateBuild {
   experiencedRowsExcludedFromProspectRankings: number
   currentSeasonDebutRowsIdentified: number
   idsRecoveredFromExactCrosswalk: number
+  idsRecoveredFromAuthoritativeCurrentSources: number
 }
 
 export function mergeCurrentUniverse(
@@ -2249,6 +2641,7 @@ export function minorCandidates(
   rows: MinorCandidateRow[],
   preview: CareerOraclePreview | null,
   identityCrosswalk: MlbIdentityCrosswalk,
+  authoritativeCurrentIdentityRoles: ReadonlySet<string> = new Set(),
 ): MinorCandidateBuild {
   const explicitMlbamIds = new Set(
     rows
@@ -2258,6 +2651,7 @@ export function minorCandidates(
   let experiencedRowsExcludedFromProspectRankings = 0
   let currentSeasonDebutRowsIdentified = 0
   let idsRecoveredFromExactCrosswalk = 0
+  let idsRecoveredFromAuthoritativeCurrentSources = 0
   const items: UnifiedBoardCandidate[] = []
 
   for (const row of rows) {
@@ -2266,12 +2660,24 @@ export function minorCandidates(
     const sourceIdentity = explicitMlbamId === null && sourceMlbamId !== null
       ? identityCrosswalk.byMlbam(sourceMlbamId)
       : null
+    const authoritativeCurrentMatch = sourceMlbamId !== null &&
+      authoritativeCurrentIdentityRoles.has(`${sourceMlbamId}:${row.player_type}`)
     const mlbamId = explicitMlbamId ?? (
-      sourceMlbamId !== null && (sourceIdentity !== null || explicitMlbamIds.has(sourceMlbamId))
+      sourceMlbamId !== null && (
+        sourceIdentity !== null ||
+        explicitMlbamIds.has(sourceMlbamId) ||
+        authoritativeCurrentMatch
+      )
         ? sourceMlbamId
         : null
     )
     if (explicitMlbamId === null && mlbamId !== null) idsRecoveredFromExactCrosswalk += 1
+    if (
+      explicitMlbamId === null &&
+      sourceIdentity === null &&
+      !explicitMlbamIds.has(sourceMlbamId ?? '') &&
+      authoritativeCurrentMatch
+    ) idsRecoveredFromAuthoritativeCurrentSources += 1
     const exactIdentity = identityCrosswalk.byMlbam(mlbamId)
     const hasMlbExperience = exactIdentity?.firstMlbSeason !== null &&
       exactIdentity?.firstMlbSeason !== undefined
@@ -2330,13 +2736,30 @@ export function minorCandidates(
     experiencedRowsExcludedFromProspectRankings,
     currentSeasonDebutRowsIdentified,
     idsRecoveredFromExactCrosswalk,
+    idsRecoveredFromAuthoritativeCurrentSources,
   }
+}
+
+export function authoritativeCurrentMinorIdentityRoles(
+  statsRows: CurrentMinorProfileRow[],
+  rosterRows: CurrentMinorRosterRow[],
+): ReadonlySet<string> {
+  return new Set([...statsRows, ...rosterRows].flatMap((row) => {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    return mlbamId === null ? [] : [`${mlbamId}:${row.player_type}`]
+  }))
 }
 
 export interface CurrentMinorUniverseAugmentation {
   items: UnifiedBoardCandidate[]
   liveProfileOverlays: number
   officialOnlyRoleRows: number
+}
+
+export interface CurrentMinorRosterAugmentation {
+  items: UnifiedBoardCandidate[]
+  liveProfileOverlays: number
+  rosterOnlyPlayers: number
 }
 
 function currentMinorCandidateLevel(row: CurrentMinorProfileRow): string {
@@ -2813,6 +3236,104 @@ export function augmentMinorCandidatesWithCurrentProfiles(
   }
 }
 
+export function augmentMinorCandidatesWithCurrentRoster(
+  candidates: UnifiedBoardCandidate[],
+  rows: CurrentMinorRosterRow[],
+  preview: CareerOraclePreview | null,
+  identityCrosswalk: MlbIdentityCrosswalk,
+): CurrentMinorRosterAugmentation {
+  const rosterByRole = new Map<string, CurrentMinorRosterRow>()
+  for (const row of rows) {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    if (mlbamId === null) continue
+    rosterByRole.set(`${mlbamId}:${row.player_type}`, row)
+  }
+
+  const matchedRosterKeys = new Set<string>()
+  let liveProfileOverlays = 0
+  const overlaid = candidates.map((candidate) => {
+    if (candidate.mlbamId === null || candidate.playerType === 'Two-way') return candidate
+    const key = `${candidate.mlbamId}:${candidate.playerType}`
+    const row = rosterByRole.get(key)
+    if (!row) return candidate
+    matchedRosterKeys.add(key)
+    liveProfileOverlays += 1
+    const organizationCode = currentMinorRosterOrganizationCode(row)
+    return {
+      ...candidate,
+      name: row.display_name.trim() || candidate.name,
+      age: roundedNumber(row.age, 0) ?? candidate.age,
+      level: row.current_level,
+      organization: currentMinorRosterOrganizationName(row) ?? candidate.organization,
+      organizationCode: organizationCode ?? candidate.organizationCode,
+      position: row.position ?? candidate.position,
+      rosterStatus: {
+        code: row.roster_status_code,
+        description: row.roster_status_description,
+        asOf: isoDate(row.known_at),
+      },
+    }
+  })
+
+  const rosterOnly = [...rosterByRole.entries()].flatMap(
+    ([key, row]): UnifiedBoardCandidate[] => {
+      if (matchedRosterKeys.has(key)) return []
+      const mlbamId = databaseIdentifier(row.mlbam_id)
+      if (mlbamId === null) return []
+      const exactIdentity = identityCrosswalk.byMlbam(mlbamId)
+      const hasMlbExperience = exactIdentity?.firstMlbSeason !== null &&
+        exactIdentity?.firstMlbSeason !== undefined
+      const stage = hasMlbExperience ? 'post_debut_minors' as const : 'pre_debut' as const
+      const forecastKey = `${mlbamId}:${row.player_type.toLocaleLowerCase('en-US')}`
+      const careerForecast = stage === 'pre_debut'
+        ? preview?.prospectForecasts[forecastKey]?.careerForecast ?? null
+        : null
+      const organizationCode = currentMinorRosterOrganizationCode(row)
+      return [{
+        id: row.profile_id,
+        source: 'minor' as const,
+        name: row.display_name,
+        playerType: row.player_type,
+        stage,
+        age: roundedNumber(row.age, 0),
+        level: row.current_level,
+        organization: currentMinorRosterOrganizationName(row),
+        organizationCode,
+        position: row.position ?? (row.player_type === 'Pitcher' ? 'P' : null),
+        mlbamId,
+        opportunityScore: 0,
+        minorRoleWorkload: { plateAppearances: 0, pitchingOuts: 0 },
+        careerForecast,
+        milbAlphaSignal: stage === 'pre_debut'
+          ? researchMilbAlphaSignal(mlbamId, row.player_type)
+          : null,
+        milbImpactRanking: stage === 'pre_debut'
+          ? researchMilbImpactRanking(mlbamId, row.player_type)
+          : null,
+        arrivalProbability36: stage === 'pre_debut'
+          ? careerForecast?.arrivalProbability36 ??
+            researchArrivalProbability(mlbamId, row.player_type, 36)
+          : null,
+        minorProfileId: row.profile_id,
+        minorProfileSource: 'mlbStatsApiRoster' as const,
+        rosterStatus: {
+          code: row.roster_status_code,
+          description: row.roster_status_description,
+          asOf: isoDate(row.known_at),
+        },
+        previewPlayer: null,
+        recentCallupPrior: null,
+      }]
+    },
+  )
+
+  return {
+    items: [...overlaid, ...rosterOnly],
+    liveProfileOverlays,
+    rosterOnlyPlayers: rosterOnly.length,
+  }
+}
+
 function currentMinorProfilePlayerRow(row: CurrentMinorProfileRow): PlayerRow {
   const organizationCode = currentMinorOrganizationCode(row)
   return {
@@ -2881,6 +3402,53 @@ function currentMinorProfilePlayerRow(row: CurrentMinorProfileRow): PlayerRow {
     k_minus_bb_percentile: null,
     velocity_percentile: null,
     age_percentile: null,
+  }
+}
+
+function currentMinorRosterPlayerRow(row: CurrentMinorRosterRow): PlayerRow {
+  const profile: CurrentMinorProfileRow = {
+    profile_id: row.profile_id,
+    mlbam_id: row.mlbam_id,
+    player_type: row.player_type,
+    display_name: row.display_name,
+    age: row.age,
+    active: row.active,
+    position: row.position,
+    bats: row.bats,
+    throws: row.throws,
+    organization_mlbam_id: row.organization_mlbam_id,
+    organization_name: row.organization_name,
+    current_team_name: row.current_team_name,
+    season: row.season,
+    current_level: row.current_level,
+    highest_observed_level: row.current_level,
+    levels_observed: row.current_level === null ? [] : [row.current_level],
+    known_at: row.known_at,
+    pa: null,
+    ba: null,
+    obp: null,
+    slg: null,
+    ops: null,
+    home_runs: null,
+    walks: null,
+    strikeouts: null,
+    stolen_bases: null,
+    ip: null,
+    outs: null,
+    pitches: null,
+    era: null,
+    whip: null,
+    pitching_strikeout_rate: null,
+    pitching_walk_rate: null,
+    k_minus_bb_rate: null,
+    pitching_strikeouts: null,
+    walks_allowed: null,
+  }
+  return {
+    ...currentMinorProfilePlayerRow(profile),
+    level: row.current_level ?? 'Org',
+    has_traditional: false,
+    source_variants: ['mlb-statsapi-current-milb-roster'],
   }
 }
 
@@ -3006,7 +3574,15 @@ export function matchesIdentityQuery(
   candidate: UnifiedBoardCandidate,
   query: Pick<PlayerQuery, 'q' | 'ids'>,
 ): boolean {
-  const idMatches = query.ids.length === 0 || query.ids.includes(candidate.id)
+  const canonicalRole = candidate.playerType === 'Pitcher' ? 'pitcher' : 'hitter'
+  const identityAliases = new Set([
+    candidate.id,
+    ...(candidate.mlbamId === null
+      ? []
+      : [`mlbam:${candidate.mlbamId}:${canonicalRole}`]),
+  ])
+  const idMatches = query.ids.length === 0 ||
+    query.ids.some((id) => identityAliases.has(id))
   const needle = normalizeSearchText(query.q)
   const compactNeedle = needle.replaceAll(' ', '')
   const textMatches = needle.length === 0 || [
@@ -3342,6 +3918,9 @@ export function snapshotId(parts: {
         candidate.level,
         candidate.organizationCode,
         candidate.position,
+        candidate.rosterStatus?.code ?? null,
+        candidate.rosterStatus?.description ?? null,
+        candidate.rosterStatus?.asOf ?? null,
         candidate.mlbamId,
         candidateCareerIndex(candidate),
         candidateOutcomeRank(candidate),
@@ -3353,8 +3932,10 @@ export function snapshotId(parts: {
         candidate.arrivalProbability36,
         candidate.milbAlphaSignal?.rank ?? null,
         candidateProspectScoreRank(candidate),
-        candidate.milbImpactRanking?.rankPercentile ?? null,
-        candidate.milbImpactRanking?.modelVersion ?? null,
+        candidate.servedProspectRank?.rankPercentile ?? null,
+        candidate.servedProspectRank?.modelVersion ?? null,
+        candidate.servedProspectRank?.evidenceTier ?? null,
+        candidate.servedProspectRank?.asOf ?? null,
         candidate.careerForecast?.careerChapter?.exceptionalTrajectory?.probability ?? null,
         Object.entries(outcome?.lineage ?? {}).sort(([left], [right]) => left.localeCompare(right)),
       ]
@@ -3488,6 +4069,7 @@ function degradedStaticResponse(
         cronObserved: false,
       },
       page: pageDetails(candidates.length, query),
+      prospectCoverage: null,
     }), publicCache)
     return
   }
@@ -3593,8 +4175,10 @@ export default async function handler(
       currentRefreshResult,
       identityOverlayResult,
       currentMinorUniverseResult,
+      currentMinorRosterUniverseResult,
       currentFangraphsUniverseResult,
       currentMinorSourceResult,
+      currentMinorRosterSourceResult,
       currentScoutingSourceResult,
     ] = await Promise.all([
       sql`
@@ -3708,6 +4292,32 @@ export default async function handler(
       `,
       sql`
         SELECT
+          profile_id,
+          mlbam_id,
+          player_type,
+          display_name,
+          age,
+          active,
+          mlb_debut_date::text AS mlb_debut_date,
+          roster_status_code,
+          roster_status_description,
+          position,
+          bats,
+          throws,
+          organization_mlbam_id,
+          organization_name,
+          current_team_mlbam_id,
+          current_team_name,
+          current_level,
+          sport_id,
+          season,
+          known_at::text AS known_at
+        FROM app.current_milb_roster_snapshot
+        WHERE display_name IS NOT NULL
+          AND btrim(display_name) <> ''
+      `,
+      sql`
+        SELECT
           served_resolved_mlbam_id AS mlbam_id,
           mlbam_id AS current_mlbam_id,
           fangraphs_id,
@@ -3750,6 +4360,12 @@ export default async function handler(
         SELECT
           count(*) AS rows,
           max(known_at)::text AS known_at
+        FROM app.current_milb_roster_snapshot
+      `,
+      sql`
+        SELECT
+          count(*) AS rows,
+          max(known_at)::text AS known_at
         FROM app.fangraphs_current_candidate_bridge_overlay
       `,
     ])
@@ -3759,12 +4375,16 @@ export default async function handler(
     const identityOverlayRows = identityOverlayResult as unknown as MlbIdentityOverlayRow[]
     const currentMinorProfileRows =
       currentMinorUniverseResult as unknown as CurrentMinorProfileRow[]
+    const currentMinorRosterRows =
+      currentMinorRosterUniverseResult as unknown as CurrentMinorRosterRow[]
     const currentFangraphsCandidateRows =
       currentFangraphsUniverseResult as unknown as CurrentFangraphsCandidateRow[]
     const currentFangraphsIdentityAudit = currentFangraphsResolutionAudit(
       currentFangraphsCandidateRows,
     )
     const currentMinorSource = (currentMinorSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
+    const currentMinorRosterSource =
+      (currentMinorRosterSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
     const currentScoutingSource = (currentScoutingSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
     const composedIdentity = composeMlbIdentityCrosswalk(
       staticIdentityCrosswalk,
@@ -3783,7 +4403,16 @@ export default async function handler(
       .filter((row) => identityCrosswalk.byBbref(row.bbref_id) === null)
       .map((row) => row.bbref_id)
     const currentMlbDataAsOf = latestIso(currentMlbRows.map((row) => isoDate(row.known_at)))
-    const minorBuild = minorCandidates(minorRoleRows, careerPreview, identityCrosswalk)
+    const authoritativeMinorIdentityRoles = authoritativeCurrentMinorIdentityRoles(
+      currentMinorProfileRows,
+      currentMinorRosterRows,
+    )
+    const minorBuild = minorCandidates(
+      minorRoleRows,
+      careerPreview,
+      identityCrosswalk,
+      authoritativeMinorIdentityRoles,
+    )
     const currentFangraphsBuild = augmentMinorCandidatesWithCurrentFangraphs(
       minorBuild.items,
       currentFangraphsCandidateRows,
@@ -3796,7 +4425,17 @@ export default async function handler(
       careerPreview,
       identityCrosswalk,
     )
-    const minorDedupe = dedupeMinorCandidates(currentMinorBuild.items)
+    const currentMinorRosterBuild = augmentMinorCandidatesWithCurrentRoster(
+      currentMinorBuild.items,
+      currentMinorRosterRows,
+      careerPreview,
+      identityCrosswalk,
+    )
+    const minorDedupe = dedupeMinorCandidates(currentMinorRosterBuild.items)
+    const servedMinorCandidates = scoreCurrentProspectUniverse(
+      minorDedupe.items,
+      currentMinorProfileRows,
+    )
     const currentOnlyMlb = currentOnlyMlbCandidates(
       currentMlbRows,
       careerPreview,
@@ -3807,9 +4446,12 @@ export default async function handler(
       ...currentOnlyMlb,
     ]
     const recentCallupCount = mlb.filter((candidate) => candidate.stage === 'recent_callup').length
-    const merged = mergeCurrentUniverse(mlb, minorDedupe.items)
+    const merged = mergeCurrentUniverse(mlb, servedMinorCandidates)
     const { canonicalMinors, crossStageDuplicatesRemoved } = merged
     const currentUniverse = merged.items
+    const servedProspectUniverse = canonicalMinors.filter(
+      (candidate) => candidate.stage === 'pre_debut' && candidate.servedProspectRank != null,
+    ).length
     const facets = buildPlayerFacets(currentUniverse, query)
     const filtered = sortBoardCandidates(
       currentUniverse.filter((candidate) => matchesQuery(candidate, query)),
@@ -3944,6 +4586,9 @@ export default async function handler(
     const currentMinorProfilesById = new Map(
       currentMinorProfileRows.map((row) => [row.profile_id, row]),
     )
+    const currentMinorRosterProfilesById = new Map(
+      currentMinorRosterRows.map((row) => [row.profile_id, row]),
+    )
     const currentFangraphsProfilesById = new Map(
       currentFangraphsCandidateRows.flatMap((row) => {
         const profileId = currentFangraphsProfileId(row)
@@ -3984,14 +4629,19 @@ export default async function handler(
       const officialProfile = candidate.minorProfileSource === 'mlbStatsApi'
         ? currentMinorProfilesById.get(candidate.minorProfileId!) ?? null
         : null
+      const rosterProfile = candidate.minorProfileSource === 'mlbStatsApiRoster'
+        ? currentMinorRosterProfilesById.get(candidate.minorProfileId!) ?? null
+        : null
       const fangraphsProfile = candidate.minorProfileSource === 'fangraphs'
         ? currentFangraphsProfilesById.get(candidate.minorProfileId!) ?? null
         : null
       const minorRow = officialProfile
         ? currentMinorProfilePlayerRow(officialProfile)
-        : fangraphsProfile
-          ? currentFangraphsProfilePlayerRow(fangraphsProfile)
-          : minorRowsById.get(candidate.minorProfileId!)
+        : rosterProfile
+          ? currentMinorRosterPlayerRow(rosterProfile)
+          : fangraphsProfile
+            ? currentFangraphsProfilePlayerRow(fangraphsProfile)
+            : minorRowsById.get(candidate.minorProfileId!)
       if (!minorRow) {
         throw new Error('Selected minor-league profile changed during the directory request')
       }
@@ -4011,8 +4661,12 @@ export default async function handler(
           level: candidate.level,
           organization: candidate.organization,
           organizationCode: candidate.organizationCode,
+          rosterStatus: candidate.rosterStatus ?? null,
+          servedProspectRank: candidate.servedProspectRank ?? null,
           profileSource: officialProfile
             ? 'MLB StatsAPI'
+            : rosterProfile
+              ? 'MLB StatsAPI Roster'
             : fangraphsProfile
               ? 'FanGraphs'
               : 'Prospect Savant',
@@ -4024,15 +4678,27 @@ export default async function handler(
     })
     const prospectSavantDataAsOf = latestIso(minorRoleRows.map((row) => isoDate(row.known_at)))
     const currentMinorStatsAsOf = isoDate(currentMinorSource?.known_at ?? null)
+    const currentMinorRosterAsOf = isoDate(currentMinorRosterSource?.known_at ?? null)
     const currentScoutingAsOf = isoDate(currentScoutingSource?.known_at ?? null)
     const minorDataAsOf = latestIso([
       prospectSavantDataAsOf,
       currentMinorStatsAsOf,
+      currentMinorRosterAsOf,
       currentScoutingAsOf,
     ])
+    const prospectCoverage = buildProspectCoverageSummary({
+      canonicalMinors,
+      rosterRows: currentMinorRosterRows,
+      currentStatsRows: currentMinorProfileRows,
+      identityCrosswalk,
+      censusAsOf: currentMinorRosterAsOf,
+    })
     const minorSeason = Math.max(
       ...minorRoleRows.map((row) => numberOrNull(row.season) ?? Number.NEGATIVE_INFINITY),
       ...currentMinorProfileRows.map(
+        (row) => numberOrNull(row.season) ?? Number.NEGATIVE_INFINITY,
+      ),
+      ...currentMinorRosterRows.map(
         (row) => numberOrNull(row.season) ?? Number.NEGATIVE_INFINITY,
       ),
       ...currentFangraphsCandidateRows.map(
@@ -4059,6 +4725,12 @@ export default async function handler(
           coverageComplete: (numberOrNull(currentMinorSource?.rows ?? null) ?? 0) > 0,
         },
         {
+          key: 'mlbRoster',
+          required: true,
+          statsChangedAt: currentMinorRosterAsOf,
+          coverageComplete: (numberOrNull(currentMinorRosterSource?.rows ?? null) ?? 0) > 0,
+        },
+        {
           key: 'baseballReference',
           required: true,
           statsChangedAt: currentMlbDataAsOf,
@@ -4080,6 +4752,11 @@ export default async function handler(
       currentFangraphsIdentityAudit.invalidResolutionRows > 0
         ? 'fangraphs_identity_resolution_invalid'
         : null,
+      prospectCoverage.census.status === 'incomplete'
+        ? 'prospect_roster_census_incomplete'
+        : prospectCoverage.census.status === 'unavailable'
+          ? 'prospect_roster_census_unavailable'
+          : null,
     ].filter((reason): reason is string => reason !== null)
     const currentDataStatus = identityReasonCodes.length === 0
       ? freshness.status
@@ -4135,6 +4812,7 @@ export default async function handler(
           dataAsOf: responseDataAsOf,
           freshness: responseFreshness,
           page: responsePage,
+          prospectCoverage,
         }),
         publicCache,
       )
@@ -4151,15 +4829,15 @@ export default async function handler(
         page: responsePage,
         meta: {
           source: careerPreview
-            ? 'Baseball Oracle + MLB StatsAPI + FanGraphs + Baseball-Reference + Prospect Savant'
-            : 'MLB StatsAPI + FanGraphs + Baseball-Reference + Prospect Savant',
+            ? 'Baseball Oracle + MLB StatsAPI rosters and stats + FanGraphs + Baseball-Reference + Prospect Savant'
+            : 'MLB StatsAPI rosters and stats + FanGraphs + Baseball-Reference + Prospect Savant',
           dataset: careerPreview
             ? 'Current Career Oracle universe'
             : 'Current MLB value and Minor League Leaders',
           season: Number.isFinite(minorSeason) ? minorSeason : null,
           dataAsOf: responseDataAsOf,
           currentDataFreshness: responseFreshness,
-          coverage: 'Current MLB evidence, official all-level MiLB season totals, current FanGraphs scouting, advanced minor-league tracking, and the completed-season career model census',
+          coverage: 'Official affiliated MiLB full-roster census, current MLB evidence, all-level MiLB season totals, current FanGraphs scouting, advanced minor-league tracking, and the completed-season career model census',
           forecastStatus: careerPreview?.releaseEligible ? 'published' : 'research_only',
           researchCoverage: currentUniverse.filter(
             (candidate) => candidate.careerForecast?.hofCaliberProbability != null,
@@ -4183,15 +4861,16 @@ export default async function handler(
           ).length,
           milbAlphaSignalVersion: 'milb-alpha-signal-v1',
           milbImpactRankingCoverage: currentUniverse.filter(
-            (candidate) => candidate.source === 'minor' && candidate.milbImpactRanking !== null,
+            (candidate) => candidate.source === 'minor' &&
+              candidate.servedProspectRank != null,
           ).length,
           milbImpactAlphaEligible: currentUniverse.filter(
             (candidate) => candidate.source === 'minor' &&
               candidate.milbAlphaSignal?.eligible === true &&
-              (candidate.milbImpactRanking?.rankPercentile ?? -1) >= 90,
+              (candidate.servedProspectRank?.rankPercentile ?? -1) >= 90,
           ).length,
           milbImpactRankingVersion: researchMilbImpactSummary.modelVersion,
-          milbImpactRankingUniverse: researchMilbImpactSummary.universeRows,
+          milbImpactRankingUniverse: servedProspectUniverse,
           minorTraitEvidenceVersion: 'minor-trait-evidence-v1',
           researchAsOf: careerPreview?.asOf ?? researchPreviewSummary.asOf,
           releaseEligible: careerPreview?.releaseEligible ?? false,
@@ -4204,6 +4883,7 @@ export default async function handler(
             recentCallups: recentCallupCount,
             mlb: mlb.length - recentCallupCount,
           },
+          prospectCoverage,
           rankScope: 'stage_specific',
           stageRankScope: 'declared_model_cohort_not_filtered_result',
           stageRankAvailability: {
@@ -4233,6 +4913,10 @@ export default async function handler(
               minorBuild.currentSeasonDebutRowsIdentified,
             minorIdsRecoveredFromExactCrosswalk:
               minorBuild.idsRecoveredFromExactCrosswalk,
+            minorIdsRecoveredFromAuthoritativeCurrentSources:
+              minorBuild.idsRecoveredFromAuthoritativeCurrentSources,
+            currentRosterPlayers: currentMinorRosterRows.length,
+            rosterOnlyPlayersAdded: currentMinorRosterBuild.rosterOnlyPlayers,
             identityPolicy:
               'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching',
             identityCrosswalkAsOf: identityCrosswalk.summary.asOf,

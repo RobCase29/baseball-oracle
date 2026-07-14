@@ -1,6 +1,6 @@
 # Data refresh and serving audit
 
-Audited July 13, 2026.
+Audited July 14, 2026.
 
 ## What production did before this change
 
@@ -34,8 +34,9 @@ opportunity when an upstream source was unavailable in the first window. The end
 1. Fails closed unless the request bears the exact `CRON_SECRET` value.
 2. Claims one job-level operational run so overlapping invocations do not duplicate
    work.
-3. Fetches all ten current Prospect Savant role and level slices in parallel with
-   the ten official MLB StatsAPI MiLB hitter/pitcher level slices.
+3. Fetches all ten current Prospect Savant role and level slices, the ten official
+   MLB StatsAPI MiLB hitter/pitcher level slices, and the official MiLB affiliated
+   plus 30-parent-organization full-roster census in parallel.
 4. Rejects every Prospect Savant payload unless at least 95% of rows retain a
    supported player identifier, the requested cohort, and role-specific core
    fields. Scheduled slices must also keep at least 60% of their prior row count
@@ -43,26 +44,30 @@ opportunity when an upstream source was unavailable in the first window. The end
 5. Refreshes `app.player_directory_snapshot` only after every Prospect Savant
    slice succeeds. Complete official level cohorts publish independently, so one
    unavailable Rookie slice cannot stale valid A through AAA data.
-6. Fetches the authorized Baseball-Reference current value batting and pitching
+6. Publishes the roster census atomically only after every required official team
+   response passes identity, cardinality, level, and organization checks. The
+   previous complete census remains served after any collection or audit failure.
+7. Fetches the authorized Baseball-Reference current value batting and pitching
    pages serially with the registered user agent, 3.2-second crawl delay, and at
    most two attempts per page for transient HTTP or network failures.
-7. Strictly parses both pages before landing immutable response bytes and rows.
-8. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
-9. Fetches and validates both current FanGraphs prospect-board sides, then
+8. Strictly parses both pages before landing immutable response bytes and rows.
+9. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
+10. Fetches and validates both current FanGraphs prospect-board sides, then
    publishes the newest season only when both hitters and pitchers are present.
-10. Enforces a 270-second request deadline below Vercel's 300-second function
-    limit. Prospect Savant, MLB StatsAPI, Baseball-Reference, and FanGraphs receive
-    bounded 130-, 130-, 80-, and 40-second windows. The first two run in parallel,
-    keeping the declared critical path at 250 seconds. HTTP work and crawl delays stop on
+11. Enforces a 270-second request deadline below Vercel's 300-second function
+    limit. Prospect Savant, MLB StatsAPI statistics, MLB StatsAPI rosters,
+    Baseball-Reference, and FanGraphs receive bounded 130-, 130-, 140-, 80-, and
+    40-second windows. The first three run in parallel, keeping the declared
+    source critical path at 260 seconds. HTTP work and crawl delays stop on
     abort, while PostgreSQL statements, lock waits, and idle transactions have
     server-side limits. One stalled provider therefore cannot consume the other
     required provider's opportunity or strand the operational receipt.
-11. Treats all four current sources as required and reports sanitized per-source
+12. Treats all five current sources as required and reports sanitized per-source
     failure messages through the health endpoint.
-12. Records success, failure, partial results, code commit, season, and timestamps in
+13. Records success, failure, partial results, code commit, season, and timestamps in
    `ops.refresh_run` even when source bytes have not changed.
 
-The two required sources use separate season clocks. Baseball-Reference current MLB
+The required sources use separate season clocks. Baseball-Reference current MLB
 value rolls over on April 1 UTC. Prospect Savant's A, A+, AA, and AAA hitter and
 pitcher slices also roll on April 1. Its two Rookie slices retain and recheck the
 prior season until June 1, after affiliated Rookie schedules begin. During that
@@ -74,6 +79,8 @@ cohorts or combining roles from different seasons. Health preserves
 `minimumSeason` when the ten-slice set spans two seasons. Each receipt records the
 standard-level and Rookie-level source seasons separately. A running receipt older
 than six minutes is closed as failed before the next invocation claims the job.
+The roster census uses the MLB season clock and records that source season
+separately from both MiLB statistical clocks.
 
 Vercel does not retry failed Cron invocations. The collectors make only bounded
 request-level retries, are content idempotent, and the next twice-daily invocation
@@ -88,8 +95,18 @@ value pages exist, merges two-way rows by exact Baseball-Reference ID, and expos
 current WAR, PA, IP, starts, retrieval time, and a descriptive within-role WAR
 percentile. `/api/players` also treats every row in that complete current snapshot
 as active MLB evidence, so a player can enter Rookie Track before the next frozen
-model census is trained. These values are current evidence, not model inputs, until
-a new point-in-time feature and scoring pipeline is promoted.
+model census is trained. Current MLB values remain evidence rather than career-model
+inputs until a new point-in-time feature and scoring pipeline is promoted.
+
+Official current MiLB statistics have one deliberately narrower scoring use. When
+an exact-MLBAM prospect has a current stat row but no completed-season impact rank,
+the serving layer applies the fitted hierarchical impact prior using role, level,
+age, and the role-appropriate performance signal. It ranks the result against the
+frozen reference universe and publishes a numeric `live_in_season_prior` with
+`very_high` volatility below 75 PA or 20 IP, `high` volatility at or above that
+role-appropriate workload, and the stat snapshot timestamp. It does not replace a
+completed-season full-model rank, expose its raw ordering probability as
+confidence, or create a Career Outlook forecast.
 
 For an exact modeled-player match, the current row is authoritative for team,
 position, age, workload, and current role. Multi-team aggregate codes such as
@@ -173,24 +190,23 @@ tuple, current-versus-history, or census disagreement withholds the MLBAM identi
 
 ## Remaining blockers to genuinely live forecasts
 
-1. **No online feature builder.** New raw records do not create versioned
-   `ml.feature_snapshot` rows.
-2. **No scheduled scorer or atomic publisher.** The `ml.prediction_batch` and
-   prediction tables exist, but the product still imports committed JSON artifacts.
-3. **MiLB ranks are frozen.** Prospect Savant 2026 traits update descriptively, but
-   the arrival and five-year impact ranks remain completed-2025 estimates.
+1. **No full online feature builder.** New raw records do not yet create the
+   versioned feature snapshots required to rerun every full champion model.
+2. **No scheduled full-model scorer or atomic publisher.** The product still
+   imports committed completed-season model artifacts. The live MiLB prior is a
+   narrow runtime fallback, not a replacement for that pipeline.
+3. **MiLB full-model ranks remain completed-season estimates.** A prospect absent
+   from that artifact now receives a numeric, explicitly high-volatility
+   in-season prior as soon as an eligible official stat row exists. That prior has
+   not yet been prospectively validated at partial-season landmarks.
 4. **MLB ranks are completed-season models.** Current Baseball-Reference WAR now
    reaches the dossier, but it does not change Career Oracle output.
-5. **FanGraphs is raw-only.** Its original default URL requests a 2021 season and
-   2022 prospect-board edition. Scheduled collection is disabled until an explicit
-   current URL is configured, and no normalized scouting-grade join exists yet.
-6. **The separate roster artifact is not scheduled.** Complete current value pages
-   now bridge newly active MLB players into the product twice daily, but a durable
-   30-team transaction/roster snapshot is still needed for authoritative assignment
-   changes before a player records new value-page statistics.
-7. **No freshness alert destination.** Health is observable by API, but failures do
+5. **FanGraphs remains a limited overlay.** The current board is collected, but a
+   normalized, validated scouting-grade feature join is not yet part of either
+   champion model.
+6. **No freshness alert destination.** Health is observable by API, but failures do
    not yet page, email, or open an incident.
-8. **No prospective evaluation stream.** Predictions are not persisted before new
+7. **No prospective evaluation stream.** Predictions are not persisted before new
    games, so real forward calibration and rank-stability monitoring cannot start.
 
 ## Recommended operating cadence
@@ -199,10 +215,11 @@ tuple, current-versus-history, or census disagreement withholds the MLBAM identi
 | --- | --- | --- | --- |
 | Prospect Savant current slices | Twice daily | Weekly | Publish the latest valid complete role pair per level only with 10/10 slices |
 | Baseball-Reference current value pair | Twice daily | Weekly | Publish current MLB evidence only with 2/2 sides |
-| MLB roster census | Daily | Weekly and after transaction bursts | Atomic complete 30-team snapshot |
+| MLB/MiLB roster census | Twice daily | Weekly and after transaction bursts | Atomic complete affiliate plus 30-organization snapshot; retain the prior snapshot if any required roster fetch fails |
 | FanGraphs board and grades | Weekly and after known board releases | Weekly | Normalize and reconcile identities before serving |
 | Exact MLB identity bridge | Every current refresh, plus weekly pinned-source review | Monthly pinned-source review | Auto-publish only exact page metadata that resolves through the pinned Chadwick lookup; conflicts stay unlinked |
-| Point-in-time feature build and score | Weekly | Monthly | Atomic batch after coverage, leakage, drift, and movement checks |
+| Live in-season MiLB prior | Every official MiLB stats refresh | Weekly when games are inactive | Rank every exact-ID current-stat player absent from the completed-season artifact; publish `very_high` below 75 PA/20 IP, otherwise `high`, plus the stat snapshot `asOf` |
+| Point-in-time full feature build and score | Weekly | Monthly | Atomic batch after coverage, leakage, drift, and movement checks |
 | Champion retraining tournament | Monthly challenger run | Full annual run after season close | Promotion only on untouched temporal gates |
 | Prospective scorecard | After every completed scoring window | Monthly summary | Never overwrite the prediction that preceded the outcome |
 

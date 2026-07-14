@@ -106,7 +106,8 @@
         "careerOutlookEstimandComparableAcrossStages",
         "currentResultsNormalizedAcrossStages",
         "paginationConsistency",
-        "identityPolicy"
+        "identityPolicy",
+        "prospectCoverage"
       ],
       "properties": {
         "marketIndependent": { "const": true },
@@ -119,7 +120,101 @@
         "careerOutlookEstimandComparableAcrossStages": { "const": false },
         "currentResultsNormalizedAcrossStages": { "const": true },
         "paginationConsistency": { "const": "page_number_not_snapshot_bound" },
-        "identityPolicy": { "const": "exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching" }
+        "identityPolicy": { "const": "exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching" },
+        "prospectCoverage": {
+          "anyOf": [
+            { "$ref": "#/$defs/prospectCoverage" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "prospectCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "census",
+        "sourceUnionPreDebutPlayers",
+        "identity",
+        "prospectRank",
+        "careerOutlook",
+        "currentResults",
+        "nullPolicy"
+      ],
+      "properties": {
+        "version": { "const": "prospect-coverage/v1" },
+        "census": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "asOf",
+            "rosterPlayers",
+            "rosteredPreDebutPlayers",
+            "servedRosteredPreDebutPlayers",
+            "missingRosteredPreDebutPlayers",
+            "status"
+          ],
+          "properties": {
+            "source": { "const": "MLB StatsAPI affiliated full rosters" },
+            "asOf": {
+              "anyOf": [
+                { "type": "string", "format": "date-time" },
+                { "type": "null" }
+              ]
+            },
+            "rosterPlayers": { "type": "integer", "minimum": 0 },
+            "rosteredPreDebutPlayers": { "type": "integer", "minimum": 0 },
+            "servedRosteredPreDebutPlayers": { "type": "integer", "minimum": 0 },
+            "missingRosteredPreDebutPlayers": { "type": "integer", "minimum": 0 },
+            "status": { "enum": ["complete", "incomplete", "unavailable"] }
+          }
+        },
+        "sourceUnionPreDebutPlayers": { "type": "integer", "minimum": 0 },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mlbamLinkedPlayers", "profileOnlyPlayers"],
+          "properties": {
+            "mlbamLinkedPlayers": { "type": "integer", "minimum": 0 },
+            "profileOnlyPlayers": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "prospectRank": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "availablePlayers",
+            "fullModelPlayers",
+            "thinSamplePriorPlayers",
+            "liveInSeasonPriorPlayers",
+            "frozenModelGapPlayers",
+            "coverageRate",
+            "frozenAsOf"
+          ],
+          "properties": {
+            "availablePlayers": { "type": "integer", "minimum": 0 },
+            "fullModelPlayers": { "type": "integer", "minimum": 0 },
+            "thinSamplePriorPlayers": { "type": "integer", "minimum": 0 },
+            "liveInSeasonPriorPlayers": { "type": "integer", "minimum": 0 },
+            "frozenModelGapPlayers": { "type": "integer", "minimum": 0 },
+            "coverageRate": { "type": "number", "minimum": 0, "maximum": 1 },
+            "frozenAsOf": { "type": "string", "format": "date-time" }
+          }
+        },
+        "careerOutlook": { "$ref": "#/$defs/coverageMeasure" },
+        "currentResults": { "$ref": "#/$defs/coverageMeasure" },
+        "nullPolicy": { "const": "unavailable_not_zero" }
+      }
+    },
+    "coverageMeasure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availablePlayers", "coverageRate"],
+      "properties": {
+        "availablePlayers": { "type": "integer", "minimum": 0 },
+        "coverageRate": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     },
     "externalIds": {
@@ -147,6 +242,7 @@
         "organization",
         "organizationCode",
         "position",
+        "rosterStatus",
         "effectiveAt"
       ],
       "properties": {
@@ -174,6 +270,26 @@
         "organization": { "$ref": "#/$defs/nullableString" },
         "organizationCode": { "$ref": "#/$defs/nullableString" },
         "position": { "$ref": "#/$defs/nullableString" },
+        "rosterStatus": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "description", "asOf"],
+              "properties": {
+                "code": { "$ref": "#/$defs/nullableString" },
+                "description": { "$ref": "#/$defs/nullableString" },
+                "asOf": {
+                  "anyOf": [
+                    { "type": "string", "format": "date-time" },
+                    { "type": "null" }
+                  ]
+                }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
         "effectiveAt": {
           "anyOf": [
             { "type": "string", "format": "date-time" },
@@ -246,7 +362,9 @@
         "comparableAcrossStages",
         "cohortId",
         "asOf",
-        "modelVersion"
+        "modelVersion",
+        "evidenceTier",
+        "volatility"
       ],
       "properties": {
         "label": { "enum": ["Prospect Rank", "Pre-Debut Rank", "MLB Career Rank"] },
@@ -272,7 +390,17 @@
             { "type": "null" }
           ]
         },
-        "modelVersion": { "$ref": "#/$defs/nullableString" }
+        "modelVersion": { "$ref": "#/$defs/nullableString" },
+        "evidenceTier": {
+          "enum": [
+            "completed_season_full_model",
+            "completed_season_prior",
+            "live_in_season_prior",
+            "current_mlb_model",
+            null
+          ]
+        },
+        "volatility": { "enum": ["standard", "high", "very_high", null] }
       },
       "allOf": [
         {
@@ -280,13 +408,44 @@
           "then": {
             "properties": {
               "rank": { "type": "integer", "minimum": 1 },
-              "universe": { "type": "integer", "minimum": 1 }
+              "universe": { "type": "integer", "minimum": 1 },
+              "evidenceTier": { "type": "string" },
+              "volatility": { "type": "string" }
             }
           }
         },
         {
           "if": { "properties": { "availability": { "enum": ["unavailable", "withheld", "unmatched"] } } },
-          "then": { "properties": { "rank": { "type": "null" } } }
+          "then": {
+            "properties": {
+              "rank": { "type": "null" },
+              "evidenceTier": { "type": "null" },
+              "volatility": { "type": "null" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "evidenceTier": { "const": "live_in_season_prior" } },
+            "required": ["evidenceTier"]
+          },
+          "then": {
+            "properties": {
+              "reasonCodes": {
+                "type": "array",
+                "contains": { "const": "live_in_season_prior" },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              "rank": { "type": "integer", "minimum": 1 },
+              "universe": { "type": "integer", "minimum": 1 },
+              "metricId": { "const": "milb_five_year_impact" },
+              "originRoute": { "const": "milb" },
+              "asOf": { "type": "string", "format": "date-time" },
+              "modelVersion": { "const": "milb-impact-live-prior-v1" },
+              "volatility": { "enum": ["high", "very_high"] }
+            }
+          }
         }
       ]
     },

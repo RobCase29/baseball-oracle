@@ -8,9 +8,14 @@ import {
 import { ingestFangraphsCurrentProspects } from '../../scripts/ingest/fangraphs-prospects.js'
 import {
   refreshCurrentMlbValueSnapshot,
+  refreshCurrentMilbRosterSnapshot,
   refreshCurrentMilbTraditionalSnapshot,
   refreshPlayerDirectorySnapshot,
 } from '../../scripts/ingest/player-directory.js'
+import {
+  ingestMlbStatsApiMilbRosterCensus,
+  type IngestMlbStatsApiMilbRosterResult,
+} from '../../scripts/ingest/mlb-statsapi-milb-roster.js'
 import {
   backfillMlbStatsApiMilb,
   buildMlbStatsApiMilbSlices,
@@ -31,6 +36,7 @@ export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
   prospectSavant: 130_000,
   mlbStatsApi: 130_000,
+  mlbRoster: 140_000,
   baseballReference: 80_000,
   fangraphs: 40_000,
 } as const
@@ -65,11 +71,13 @@ export interface CurrentRefreshResult {
       standardLevels: number
       rookieLevel: number
     }
+    mlbRoster: number
     baseballReference: number
     fangraphs: number
   }
   prospectSavant: RefreshSourceResult<ProspectSavantBackfillResult>
   mlbStatsApi: RefreshSourceResult<MlbStatsApiMilbBackfillResult>
+  mlbRoster: RefreshSourceResult<IngestMlbStatsApiMilbRosterResult>
   baseballReference: RefreshSourceResult<BaseballReferenceCurrentResult>
   fangraphs: RefreshSourceResult<FangraphsRefreshResult>
 }
@@ -79,6 +87,8 @@ export interface CurrentRefreshDependencies {
   refreshPlayerDirectorySnapshot: typeof refreshPlayerDirectorySnapshot
   backfillMlbStatsApiMilb: typeof backfillMlbStatsApiMilb
   refreshCurrentMilbTraditionalSnapshot: typeof refreshCurrentMilbTraditionalSnapshot
+  ingestMlbStatsApiMilbRosterCensus: typeof ingestMlbStatsApiMilbRosterCensus
+  refreshCurrentMilbRosterSnapshot: typeof refreshCurrentMilbRosterSnapshot
   ingestBaseballReferenceCurrentSeason: typeof ingestBaseballReferenceCurrentSeason
   refreshCurrentMlbValueSnapshot: typeof refreshCurrentMlbValueSnapshot
   ingestFangraphsCurrentProspects: typeof ingestFangraphsCurrentProspects
@@ -89,6 +99,8 @@ const defaultDependencies: CurrentRefreshDependencies = {
   refreshPlayerDirectorySnapshot,
   backfillMlbStatsApiMilb,
   refreshCurrentMilbTraditionalSnapshot,
+  ingestMlbStatsApiMilbRosterCensus,
+  refreshCurrentMilbRosterSnapshot,
   ingestBaseballReferenceCurrentSeason,
   refreshCurrentMlbValueSnapshot,
   ingestFangraphsCurrentProspects,
@@ -120,6 +132,7 @@ export function deriveRefreshRunStatus(
   const requiredStatuses = [
     result.prospectSavant.status,
     result.mlbStatsApi.status,
+    result.mlbRoster.status,
     result.baseballReference.status,
     result.fangraphs.status,
   ]
@@ -136,6 +149,7 @@ function aggregateError(
   for (const source of [
     'prospectSavant',
     'mlbStatsApi',
+    'mlbRoster',
     'baseballReference',
     'fangraphs',
   ] as const) {
@@ -215,6 +229,14 @@ function assertMlbStatsApiComplete(
   }
 }
 
+function assertMlbRosterComplete(
+  result: IngestMlbStatsApiMilbRosterResult,
+): void {
+  if (result.status === 'in_progress') {
+    throw new Error('MLB StatsAPI MiLB roster census remains in progress')
+  }
+}
+
 function assertBaseballReferenceComplete(result: BaseballReferenceCurrentResult): void {
   const incomplete = [result.batting, result.pitching]
     .filter((side) => side.status === 'in_progress')
@@ -254,7 +276,11 @@ export async function refreshCurrentSources(
     options.signal,
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
   )
-  const [prospectSavant, mlbStatsApi] = await Promise.all([
+  const mlbRosterSignal = sourceDeadlineSignal(
+    options.signal,
+    CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbRoster,
+  )
+  const [prospectSavant, mlbStatsApi, mlbRoster] = await Promise.all([
     attemptSource(
       () => dependencies.backfillProspectSavant({
         slices,
@@ -283,6 +309,18 @@ export async function refreshCurrentSources(
         assertMlbStatsApiComplete(sourceResult, mlbStatsApiSlices.length)
       },
       mlbStatsApiSignal,
+      options.signal,
+    ),
+    attemptSource(
+      () => dependencies.ingestMlbStatsApiMilbRosterCensus(season, {
+        signal: mlbRosterSignal,
+      }),
+      async (sourceResult) => {
+        assertMlbRosterComplete(sourceResult)
+        mlbRosterSignal.throwIfAborted()
+        await dependencies.refreshCurrentMilbRosterSnapshot()
+      },
+      mlbRosterSignal,
       options.signal,
     ),
   ])
@@ -333,11 +371,13 @@ export async function refreshCurrentSources(
         standardLevels: prospectSavantSeason,
         rookieLevel: prospectSavantRookieSeason,
       },
+      mlbRoster: season,
       baseballReference: season,
       fangraphs: season,
     },
     prospectSavant,
     mlbStatsApi,
+    mlbRoster,
     baseballReference,
     fangraphs,
   }

@@ -207,6 +207,95 @@ describe('player signals normalization', () => {
       rank: 14,
       availability: 'insufficient_sample',
       reasonCodes: ['thin_sample_prior'],
+      evidenceTier: 'completed_season_prior',
+      volatility: 'high',
+    })
+  })
+
+  it('exposes live in-season rank lineage and volatility to API consumers', () => {
+    const item = playerSignalsItem(record({
+      servedProspectRank: {
+        rank: 72,
+        rankPercentile: 98.9,
+        universeRows: 6_464,
+        asOf: '2026-07-14T10:00:00.000Z',
+        modelVersion: 'milb-impact-live-prior-v1',
+        evidenceTier: 'live_in_season_prior',
+        reasonCode: 'live_in_season_prior',
+        volatility: 'very_high',
+        target: {
+          id: 'mlb_war_next_5_ge_5',
+          label: 'At least 5 MLB WAR over the next five seasons',
+          scope: 'unconditional',
+          windowStartSeason: 2027,
+          windowEndSeason: 2031,
+        },
+      },
+      playerMap: {
+        ...(record().playerMap),
+        mappingStatus: 'insufficient_sample',
+        scores: {
+          outcome: {
+            rank: 72,
+            universe: 6_464,
+            target: 'mlb_war_next_5_ge_5',
+            asOf: '2026-07-14T10:00:00.000Z',
+          },
+        },
+      },
+    }))
+
+    expect(item.signals.stageRank).toMatchObject({
+      rank: 72,
+      availability: 'insufficient_sample',
+      reasonCodes: ['live_in_season_prior'],
+      asOf: '2026-07-14T10:00:00.000Z',
+      modelVersion: 'milb-impact-live-prior-v1',
+      evidenceTier: 'live_in_season_prior',
+      volatility: 'very_high',
+    })
+  })
+
+  it('labels a current census player outside the frozen batch as a model coverage gap', () => {
+    const base = record()
+    const item = playerSignalsItem(record({
+      currentMinorStats: null,
+      careerForecast: null,
+      milbImpactRanking: null,
+      playerMap: {
+        ...base.playerMap,
+        mappingStatus: 'coverage_gap',
+        careerIndex: {
+          ...base.playerMap.careerIndex,
+          value: null,
+          status: 'withheld',
+        },
+        scores: {
+          outcome: {
+            rank: null,
+            universe: null,
+            target: null,
+            asOf: null,
+          },
+        },
+      },
+    }))
+
+    expect(item.signals.stageRank).toMatchObject({
+      rank: null,
+      availability: 'unavailable',
+      reasonCodes: ['frozen_model_coverage_gap'],
+      evidenceTier: null,
+      volatility: null,
+    })
+    expect(item.signals.careerOutlook).toMatchObject({
+      value: null,
+      availability: 'withheld',
+      reasonCodes: ['frozen_model_coverage_gap'],
+    })
+    expect(item.signals.currentResults).toMatchObject({
+      availability: 'unavailable',
+      reasonCodes: ['current_results_unavailable'],
     })
   })
 
@@ -429,6 +518,7 @@ describe('player signals normalization', () => {
         cronObserved: true,
       },
       page: { page: 1, limit: 50, total: 1, totalPages: 1 },
+      prospectCoverage: null,
     })
     expect(staleResponse.items[0].signals.currentResults).toMatchObject({
       availability: 'stale',
@@ -474,6 +564,7 @@ describe('player signals normalization', () => {
         cronObserved: true,
       },
       page: { page: 1, limit: 50, total: 1, totalPages: 1 },
+      prospectCoverage: null,
     })
 
     expect(response).toMatchObject({

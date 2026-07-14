@@ -126,6 +126,7 @@ function representativeResponse(
       cronObserved: true,
     },
     page: { page: 1, limit: 50, total: 1, totalPages: 1 },
+    prospectCoverage: null,
   })
 }
 
@@ -188,6 +189,112 @@ describe('player-signals.v1 JSON Schema', () => {
     thin.items[0].signals.currentResults.hitting = null
     thin.items[0].signals.currentResults.totalWar = 0
     expect(schemaErrors(thin).join('\n')).toContain('/signals/currentResults/totalWar')
+  })
+
+  it('publishes live in-season ranks with explicit evidence time and volatility', () => {
+    const live = structuredClone(representativeResponse()) as unknown as {
+      items: Array<{
+        signals: {
+          stageRank: {
+            availability: string
+            reasonCodes: string[]
+            evidenceTier: string
+            volatility: string
+            asOf: string | null
+            modelVersion: string | null
+          }
+        }
+      }>
+      meta: { prospectCoverage: Record<string, unknown> | null }
+    }
+    Object.assign(live.items[0].signals.stageRank, {
+      availability: 'insufficient_sample',
+      reasonCodes: ['live_in_season_prior'],
+      evidenceTier: 'live_in_season_prior',
+      volatility: 'high',
+      asOf: '2026-07-13T22:00:00.000Z',
+      modelVersion: 'milb-impact-live-prior-v1',
+    })
+    live.meta.prospectCoverage = {
+      version: 'prospect-coverage/v1',
+      census: {
+        source: 'MLB StatsAPI affiliated full rosters',
+        asOf: '2026-07-13T22:00:00.000Z',
+        rosterPlayers: 8_200,
+        rosteredPreDebutPlayers: 6_500,
+        servedRosteredPreDebutPlayers: 6_500,
+        missingRosteredPreDebutPlayers: 0,
+        status: 'complete',
+      },
+      sourceUnionPreDebutPlayers: 6_900,
+      identity: { mlbamLinkedPlayers: 6_850, profileOnlyPlayers: 50 },
+      prospectRank: {
+        availablePlayers: 6_700,
+        fullModelPlayers: 4_000,
+        thinSamplePriorPlayers: 600,
+        liveInSeasonPriorPlayers: 2_100,
+        frozenModelGapPlayers: 200,
+        coverageRate: 0.971,
+        frozenAsOf: '2025-12-31T00:00:00.000Z',
+      },
+      careerOutlook: { availablePlayers: 4_600, coverageRate: 0.667 },
+      currentResults: { availablePlayers: 6_100, coverageRate: 0.884 },
+      nullPolicy: 'unavailable_not_zero',
+    }
+
+    expect(schemaErrors(live)).toEqual([])
+    const veryHighVolatility = structuredClone(live)
+    veryHighVolatility.items[0].signals.stageRank.volatility = 'very_high'
+    expect(schemaErrors(veryHighVolatility)).toEqual([])
+
+    const understated = structuredClone(live)
+    understated.items[0].signals.stageRank.reasonCodes = []
+    understated.items[0].signals.stageRank.volatility = 'standard'
+    understated.items[0].signals.stageRank.asOf = null
+    const errors = schemaErrors(understated).join('\n')
+    expect(errors).toContain('/signals/stageRank/reasonCodes')
+    expect(errors).toContain('/signals/stageRank/volatility')
+    expect(errors).toContain('/signals/stageRank/asOf')
+
+    const incompleteCoverage = structuredClone(live) as unknown as {
+      meta: { prospectCoverage: { prospectRank: Record<string, unknown> } }
+    }
+    delete incompleteCoverage.meta.prospectCoverage.prospectRank.liveInSeasonPriorPlayers
+    expect(schemaErrors(incompleteCoverage).join('\n')).toContain(
+      '/meta/prospectCoverage/prospectRank',
+    )
+  })
+
+  it('requires rank evidence fields to be null when Stage Rank is unavailable', () => {
+    const unavailable = structuredClone(representativeResponse()) as unknown as {
+      items: Array<{
+        signals: {
+          stageRank: {
+            availability: string
+            reasonCodes: string[]
+            rank: number | null
+            universe: number | null
+            evidenceTier: string | null
+            volatility: string | null
+          }
+        }
+      }>
+    }
+    Object.assign(unavailable.items[0].signals.stageRank, {
+      availability: 'unavailable',
+      reasonCodes: ['frozen_model_coverage_gap'],
+      rank: null,
+      universe: null,
+      evidenceTier: null,
+      volatility: null,
+    })
+    expect(schemaErrors(unavailable)).toEqual([])
+
+    unavailable.items[0].signals.stageRank.evidenceTier = 'completed_season_full_model'
+    unavailable.items[0].signals.stageRank.volatility = 'standard'
+    const errors = schemaErrors(unavailable).join('\n')
+    expect(errors).toContain('/signals/stageRank/evidenceTier')
+    expect(errors).toContain('/signals/stageRank/volatility')
   })
 
   it('accepts rookie, two-way MLB, stale, and unavailable result states', () => {

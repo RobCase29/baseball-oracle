@@ -211,6 +211,28 @@ export interface PlayerMapInput {
     frozenAsOf: string
     target: { id: string }
   } | null
+  servedProspectRank?: {
+    rank: number
+    rankPercentile: number
+    universeRows: number
+    asOf: string
+    modelVersion:
+      | 'milb-impact-five-calendar-year-war-v1'
+      | 'milb-impact-live-prior-v1'
+    evidenceTier:
+      | 'completed_season_full_model'
+      | 'completed_season_prior'
+      | 'live_in_season_prior'
+    reasonCode: 'thin_sample_prior' | 'live_in_season_prior' | null
+    volatility: 'standard' | 'high' | 'very_high'
+    target: {
+      id: 'mlb_war_next_5_ge_5'
+      label: string
+      scope: 'unconditional'
+      windowStartSeason: number
+      windowEndSeason: number
+    }
+  } | null
   milbAlphaSignal?: {
     eligible: boolean
     rank: number | null
@@ -583,7 +605,11 @@ function minorNextEvidence(player: PlayerMapInput): string[] {
   if (traits.coverage.missingPillars.length > 0) {
     steps.push(`Add ${traits.coverage.missingPillars.join(' and ')} evidence`)
   }
-  if (!player.milbImpactRanking) steps.push('Create an exact frozen model snapshot match')
+  if (player.servedProspectRank?.evidenceTier === 'live_in_season_prior') {
+    steps.push('Refresh the early estimate as official current-season workload grows')
+  } else if (!player.servedProspectRank && !player.milbImpactRanking) {
+    steps.push('Add official current-season workload for a live early estimate')
+  }
   if (steps.length === 0) steps.push('Refresh at the next completed-season model snapshot')
   return steps.slice(0, 3)
 }
@@ -609,6 +635,7 @@ function buildMinorMap(
 ): PlayerMapProfile {
   const handling = classifyPlayerHandling(player)
   const impact = player.milbImpactRanking
+  const servedImpact = player.servedProspectRank
   const arrival = player.milbAlphaSignal
   const career = player.careerForecast
   const traits = player.minorTraitEvidence
@@ -624,18 +651,30 @@ function buildMinorMap(
   const totalPillars = traits?.coverage.totalPillarCount ?? 0
   const evidenceValue = totalPillars > 0 ? 100 * coveredPillars / totalPillars : null
   const impactWorkloadSupported = arrival?.gates?.minimumRawWorkload !== false
-  const impactUsesPrior = Boolean(
+  const fallbackUsesPrior = Boolean(
     impact &&
     !impactWorkloadSupported &&
     Number.isInteger(impact.priorRank) &&
     validPercentile(impact.priorRankPercentile),
   )
-  const impactRank = impactUsesPrior ? impact?.priorRank ?? null : impactWorkloadSupported ? impact?.rank ?? null : null
-  const impactValue = impactUsesPrior
-    ? impact?.priorRankPercentile ?? null
-    : impactWorkloadSupported && validPercentile(impact?.rankPercentile)
-      ? impact?.rankPercentile ?? null
-      : null
+  const impactUsesPrior = servedImpact
+    ? servedImpact.evidenceTier !== 'completed_season_full_model'
+    : fallbackUsesPrior
+  const impactUsesLivePrior = servedImpact?.evidenceTier === 'live_in_season_prior'
+  const impactRank = servedImpact?.rank ?? (
+    fallbackUsesPrior ? impact?.priorRank ?? null : impactWorkloadSupported ? impact?.rank ?? null : null
+  )
+  const impactValue = servedImpact?.rankPercentile ?? (
+    fallbackUsesPrior
+      ? impact?.priorRankPercentile ?? null
+      : impactWorkloadSupported && validPercentile(impact?.rankPercentile)
+        ? impact?.rankPercentile ?? null
+        : null
+  )
+  const impactUniverse = servedImpact?.universeRows ?? impact?.universeRows ?? null
+  const impactAsOf = servedImpact?.asOf ?? impact?.frozenAsOf ?? null
+  const impactTarget = servedImpact?.target?.id ?? impact?.target?.id ?? null
+  const impactTargetLabel = servedImpact?.target?.label ?? 'at least 5 total MLB WAR over the next five seasons'
   const careerSupported = career !== null && career.publicationState !== 'withheld'
   const careerRank = careerSupported ? career?.rank ?? null : null
   const careerUniverse = 'minorUniverse' in context
@@ -711,8 +750,10 @@ function buildMinorMap(
   }
 
   const outlookText = impactValue === null
-    ? 'does not yet have a supported Prospect Score'
-    : `has a ${impactUsesPrior ? 'prior-led ' : ''}Prospect Score of ${impactValue.toFixed(1)} (${rankDisplay(impactRank, impact?.universeRows ?? null)}) for 2026-2030 MLB impact`
+    ? !impact && !servedImpact
+      ? 'is covered by the live player census but does not yet have eligible official statistics for a live estimate'
+      : 'does not yet have a supported Prospect Score'
+    : `has a ${impactUsesLivePrior ? 'volatile in-season ' : impactUsesPrior ? 'prior-led ' : ''}Prospect Score of ${impactValue.toFixed(1)} (${rankDisplay(impactRank, impactUniverse)}) for ${impactTargetLabel}`
   const runwayText = estimatedDebutAge === null
     ? ''
     : ` Projected MLB arrival age is ${estimatedDebutAge}, which shapes the remaining career runway.`
@@ -725,14 +766,12 @@ function buildMinorMap(
 
   return {
     version: PLAYER_MAP_VERSION,
-    asOf: career?.asOf ?? impact?.frozenAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
+    asOf: career?.asOf ?? impactAsOf ?? arrival?.asOf ?? player.provenance.retrievedAt,
     route: 'milb',
     mappingStatus: impactUsesPrior
       ? 'insufficient_sample'
       : impactValue !== null || careerIndex.value !== null
         ? 'scored'
-      : evidenceState === 'insufficient' || evidenceState === 'provisional'
-        ? 'insufficient_sample'
         : 'coverage_gap',
     claimStatus: impactValue !== null || careerIndex.value !== null ? 'research_only' : traitRows.length > 0 ? 'descriptive_only' : 'withheld',
     state,
@@ -761,22 +800,24 @@ function buildMinorMap(
         key: 'outcome',
         label: 'Prospect Score',
         value: impactValue,
-        display: !impact
-          ? 'Unmapped'
+        display: !impact && !servedImpact
+          ? 'Awaiting stats'
           : impactValue === null
-            ? 'Needs more data'
+            ? 'Rank unavailable'
             : percentileDisplay(impactValue),
         scale: 'ordinal_percentile',
         status: impactValue !== null ? 'research' : 'withheld',
-        basis: impactUsesPrior
+        basis: impactUsesLivePrior
+          ? 'Volatile in-season estimate from the trained age, level, role, and performance prior using the latest official statistics; it is reranked whenever current results refresh'
+          : impactUsesPrior
           ? 'Thin-sample rank from the transparent hierarchical age, level, role, and performance prior; the full model did not clear its frozen workload gate'
           : impact && !impactWorkloadSupported
             ? 'The completed-season model input did not clear its minimum workload gate and no hierarchical prior rank is available'
           : `Individualized frozen rank for reaching at least 5 total MLB WAR during 2026-2030; age, level, role, and performance are modeled together${player.level === 'Rk' ? '; Rookie-level calibration remains thin and should be read with extra caution' : ''}`,
-        target: impact?.target?.id ?? null,
+        target: impactTarget,
         rank: impactRank,
-        universe: impact?.universeRows ?? null,
-        asOf: impact?.frozenAsOf ?? null,
+        universe: impactUniverse,
+        asOf: impactAsOf,
       }),
       readiness: score({
         key: 'readiness',
@@ -845,8 +886,8 @@ function buildMinorMap(
     missingEvidence: [
       ...(traits?.coverage.missingPillars ?? []),
       ...(careerRank === null ? ['Runway-adjusted career estimate'] : []),
-      ...(!impact ? ['Frozen five-year impact rank'] : []),
-      ...(impact && !impactWorkloadSupported ? ['Stable completed-season impact sample'] : []),
+      ...(!impact && !servedImpact ? ['Five-year impact rank'] : []),
+      ...(impactUsesPrior ? ['Stable completed-season impact sample'] : []),
       ...(player.level === 'Rk' ? ['Prospective Rookie-level calibration'] : []),
       ...(!arrival?.ageContext ? ['Historical role-level age context'] : []),
     ],

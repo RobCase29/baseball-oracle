@@ -1,5 +1,9 @@
 import postgres from 'postgres'
 import { directDatabaseUrl } from '../../db/client.js'
+import {
+  MLB_STATSAPI_MILB_ROSTER_MINIMUM_ORGANIZATIONS,
+  MLB_STATSAPI_MILB_ROSTER_MINIMUM_UNIQUE_PLAYERS,
+} from './mlb-statsapi-milb-roster.js'
 import { currentRefreshDatabaseOptions } from './shared.js'
 
 export async function refreshPlayerDirectorySnapshot(): Promise<void> {
@@ -73,6 +77,110 @@ export function assertCurrentMilbTraditionalSnapshot(
   if (audit.missing_workload_rows > 0) {
     throw new Error(
       `Current MiLB traditional-stat snapshot contains ${audit.missing_workload_rows} row(s) without role workload`,
+    )
+  }
+}
+
+export interface CurrentMilbRosterSnapshotAudit {
+  profiles: number
+  distinct_mlbam_ids: number
+  roles: number
+  organizations: number
+  invalid_identity_rows: number
+  invalid_level_rows: number
+  missing_core_rows: number
+  identity_conflict_rows: number
+}
+
+export async function refreshCurrentMilbRosterSnapshot(): Promise<void> {
+  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(60_000))
+
+  try {
+    await sql.begin(async (transaction) => {
+      await transaction`REFRESH MATERIALIZED VIEW app.current_milb_roster_snapshot`
+      const [audit] = await transaction<CurrentMilbRosterSnapshotAudit[]>`
+        SELECT
+          count(*)::integer AS profiles,
+          count(DISTINCT mlbam_id)::integer AS distinct_mlbam_ids,
+          count(DISTINCT player_type)::integer AS roles,
+          count(DISTINCT organization_mlbam_id)::integer AS organizations,
+          count(*) FILTER (
+            WHERE mlbam_id IS NULL
+              OR mlbam_id <= 0
+              OR known_at IS NULL
+          )::integer AS invalid_identity_rows,
+          count(*) FILTER (
+            WHERE current_level IS NOT NULL
+              AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+          )::integer AS invalid_level_rows,
+          count(*) FILTER (
+            WHERE display_name IS NULL
+              OR active IS NULL
+              OR roster_status_code IS NULL
+              OR roster_status_description IS NULL
+              OR position IS NULL
+              OR organization_mlbam_id IS NULL
+              OR organization_name IS NULL
+              OR season IS NULL
+              OR roster_membership_count < 1
+          )::integer AS missing_core_rows,
+          count(*) FILTER (
+            WHERE role_count <> 1 OR organization_count <> 1
+          )::integer AS identity_conflict_rows
+        FROM app.current_milb_roster_snapshot
+      `
+      assertCurrentMilbRosterSnapshot(audit)
+    })
+  } finally {
+    await sql.end({ timeout: 5 })
+  }
+}
+
+export function assertCurrentMilbRosterSnapshot(
+  audit: CurrentMilbRosterSnapshotAudit | undefined,
+): void {
+  if (!audit) throw new Error('Current MiLB roster census audit returned no result')
+  if (audit.profiles < MLB_STATSAPI_MILB_ROSTER_MINIMUM_UNIQUE_PLAYERS) {
+    throw new Error(
+      `Current MiLB roster census has ${audit.profiles} profiles; expected at least ` +
+        `${MLB_STATSAPI_MILB_ROSTER_MINIMUM_UNIQUE_PLAYERS}`,
+    )
+  }
+  if (audit.profiles !== audit.distinct_mlbam_ids) {
+    throw new Error(
+      `Current MiLB roster census has ${audit.profiles} profiles but ` +
+        `${audit.distinct_mlbam_ids} distinct MLBAM identities`,
+    )
+  }
+  if (audit.roles !== 2) {
+    throw new Error(
+      `Current MiLB roster census has ${audit.roles} player role(s); expected Hitter and Pitcher`,
+    )
+  }
+  if (audit.organizations < MLB_STATSAPI_MILB_ROSTER_MINIMUM_ORGANIZATIONS) {
+    throw new Error(
+      `Current MiLB roster census covers ${audit.organizations} organizations; expected at ` +
+        `least ${MLB_STATSAPI_MILB_ROSTER_MINIMUM_ORGANIZATIONS}`,
+    )
+  }
+  if (audit.invalid_identity_rows > 0) {
+    throw new Error(
+      `Current MiLB roster census contains ${audit.invalid_identity_rows} invalid exact-identity row(s)`,
+    )
+  }
+  if (audit.invalid_level_rows > 0) {
+    throw new Error(
+      `Current MiLB roster census contains ${audit.invalid_level_rows} invalid level row(s)`,
+    )
+  }
+  if (audit.missing_core_rows > 0) {
+    throw new Error(
+      `Current MiLB roster census contains ${audit.missing_core_rows} row(s) without required roster context`,
+    )
+  }
+  if (audit.identity_conflict_rows > 0) {
+    throw new Error(
+      `Current MiLB roster census contains ${audit.identity_conflict_rows} cross-membership role or organization conflict(s)`,
     )
   }
 }

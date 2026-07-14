@@ -1125,7 +1125,7 @@ describe('unified Oracle Board shell', () => {
 
     expect(screen.getByText('PROSPECT OUTLOOK')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Prospect Rank unavailable' })).toBeInTheDocument()
-    expect(screen.getByText(/not enough matched model data/u)).toBeInTheDocument()
+    expect(screen.getByText(/Prospect Rank is not available yet/u)).toBeInTheDocument()
     expect(screen.queryByText('CAREER FORECAST WITHHELD')).not.toBeInTheDocument()
   })
 
