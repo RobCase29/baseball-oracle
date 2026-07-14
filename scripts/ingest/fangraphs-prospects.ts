@@ -58,8 +58,10 @@ export interface IngestFangraphsCurrentProspectsResult {
 
 export interface FangraphsCurrentSnapshotAudit {
   battingExactMlbamRows: number
+  battingResolvedMlbamRows: number
   battingRows: number
   pitchingExactMlbamRows: number
+  pitchingResolvedMlbamRows: number
   pitchingRows: number
   totalRows: number
 }
@@ -184,6 +186,27 @@ export function assertFangraphsCurrentSnapshot(
   audit: FangraphsCurrentSnapshotAudit | undefined,
 ): void {
   if (!audit) throw new Error('Current FanGraphs scouting snapshot audit returned no result')
+  const counts = [
+    audit.battingExactMlbamRows,
+    audit.battingResolvedMlbamRows,
+    audit.battingRows,
+    audit.pitchingExactMlbamRows,
+    audit.pitchingResolvedMlbamRows,
+    audit.pitchingRows,
+    audit.totalRows,
+  ]
+  if (counts.some((count) => !Number.isSafeInteger(count) || count < 0)) {
+    throw new Error('Current FanGraphs scouting snapshot audit contains invalid counts')
+  }
+  if (
+    audit.totalRows !== audit.battingRows + audit.pitchingRows ||
+    audit.battingExactMlbamRows > audit.battingResolvedMlbamRows ||
+    audit.battingResolvedMlbamRows > audit.battingRows ||
+    audit.pitchingExactMlbamRows > audit.pitchingResolvedMlbamRows ||
+    audit.pitchingResolvedMlbamRows > audit.pitchingRows
+  ) {
+    throw new Error('Current FanGraphs scouting snapshot audit is internally inconsistent')
+  }
   if (audit.battingRows < 250 || audit.pitchingRows < 250) {
     throw new Error(
       `Current FanGraphs scouting snapshot is undersized: ` +
@@ -192,7 +215,7 @@ export function assertFangraphsCurrentSnapshot(
   }
   if (audit.battingExactMlbamRows < 200 || audit.pitchingExactMlbamRows < 200) {
     throw new Error(
-      `Current FanGraphs scouting snapshot lacks exact MLBAM coverage: ` +
+      `Current FanGraphs scouting snapshot lacks current exact MLBAM coverage: ` +
         `${audit.battingExactMlbamRows} batting and ` +
         `${audit.pitchingExactMlbamRows} pitching rows`,
     )
@@ -208,10 +231,15 @@ export async function refreshFangraphsCurrentScoutingSnapshot(
       await transaction`
         REFRESH MATERIALIZED VIEW app.fangraphs_current_scouting_snapshot
       `
+      await transaction`
+        REFRESH MATERIALIZED VIEW app.fangraphs_current_candidate_census
+      `
       const [audit] = await transaction<{
         batting_exact_mlbam_rows: number
+        batting_resolved_mlbam_rows: number
         batting_rows: number
         pitching_exact_mlbam_rows: number
+        pitching_resolved_mlbam_rows: number
         pitching_rows: number
         total_rows: number
       }[]>`
@@ -220,19 +248,29 @@ export async function refreshFangraphsCurrentScoutingSnapshot(
           count(*) FILTER (WHERE source_role = 'Hitter')::integer AS batting_rows,
           count(*) FILTER (WHERE source_role = 'Pitcher')::integer AS pitching_rows,
           count(*) FILTER (
-            WHERE source_role = 'Hitter' AND mlbam_id IS NOT NULL
+            WHERE source_role = 'Hitter'
+              AND mlbam_resolution_status = 'current_exact'
           )::integer AS batting_exact_mlbam_rows,
           count(*) FILTER (
-            WHERE source_role = 'Pitcher' AND mlbam_id IS NOT NULL
-          )::integer AS pitching_exact_mlbam_rows
-        FROM app.fangraphs_current_scouting_snapshot
+            WHERE source_role = 'Hitter' AND resolved_mlbam_id IS NOT NULL
+          )::integer AS batting_resolved_mlbam_rows,
+          count(*) FILTER (
+            WHERE source_role = 'Pitcher'
+              AND mlbam_resolution_status = 'current_exact'
+          )::integer AS pitching_exact_mlbam_rows,
+          count(*) FILTER (
+            WHERE source_role = 'Pitcher' AND resolved_mlbam_id IS NOT NULL
+          )::integer AS pitching_resolved_mlbam_rows
+        FROM app.fangraphs_current_candidate_census
         WHERE report_season = ${season}
       `
       const normalizedAudit = audit
         ? {
             battingExactMlbamRows: audit.batting_exact_mlbam_rows,
+            battingResolvedMlbamRows: audit.batting_resolved_mlbam_rows,
             battingRows: audit.batting_rows,
             pitchingExactMlbamRows: audit.pitching_exact_mlbam_rows,
+            pitchingResolvedMlbamRows: audit.pitching_resolved_mlbam_rows,
             pitchingRows: audit.pitching_rows,
             totalRows: audit.total_rows,
           }

@@ -360,6 +360,7 @@ export interface CurrentFangraphsScoutingRow {
 
 export interface CurrentFangraphsCandidateRow {
   mlbam_id: DatabaseNumber
+  current_mlbam_id: DatabaseNumber
   fangraphs_id: string
   minor_master_id: string
   source_role: 'Hitter' | 'Pitcher'
@@ -374,6 +375,22 @@ export interface CurrentFangraphsCandidateRow {
   stats_ip: DatabaseNumber
   fangraphs_path: string | null
   known_at: string
+  mlbam_resolution_status:
+    | 'current_exact'
+    | 'historical_exact'
+    | 'current_tuple_conflict'
+    | 'historical_tuple_conflict'
+    | 'current_history_conflict'
+    | 'historical_census_conflict'
+    | 'unresolved'
+  mlbam_resolution_conflict: boolean
+  current_mlbam_candidate_count: DatabaseNumber
+  current_candidate_mlbam_id: DatabaseNumber
+  historical_mlbam_candidate_count: DatabaseNumber
+  historical_candidate_mlbam_id: DatabaseNumber
+  candidate_mlbam_person_tuples: DatabaseNumber
+  historical_identity_observations: DatabaseNumber
+  identity_known_at: string | null
 }
 
 interface CurrentRefreshRow {
@@ -2319,13 +2336,209 @@ export function currentFangraphsCandidateLevel(value: string | null): string {
   return fangraphsLevels(value)[0] ?? 'Rk'
 }
 
+const currentFangraphsResolutionStatuses = {
+  current_exact: true,
+  historical_exact: true,
+  current_tuple_conflict: true,
+  historical_tuple_conflict: true,
+  current_history_conflict: true,
+  historical_census_conflict: true,
+  unresolved: true,
+} as const
+
+type CurrentFangraphsResolutionStatus = keyof typeof currentFangraphsResolutionStatuses
+
+const currentFangraphsConflictStatuses = new Set<CurrentFangraphsResolutionStatus>([
+  'current_tuple_conflict',
+  'historical_tuple_conflict',
+  'current_history_conflict',
+  'historical_census_conflict',
+])
+
+function nonNegativeIntegerOrNull(value: DatabaseNumber): number | null {
+  const number = numberOrNull(value)
+  return number !== null && Number.isSafeInteger(number) && number >= 0 ? number : null
+}
+
+function fangraphsMlbamId(value: DatabaseNumber): string | null {
+  const identifier = databaseIdentifier(value)
+  return identifier === '0' ? null : identifier
+}
+
+function currentFangraphsResolutionStatus(
+  row: CurrentFangraphsCandidateRow,
+): CurrentFangraphsResolutionStatus | null {
+  const status: string = row.mlbam_resolution_status
+  return Object.hasOwn(currentFangraphsResolutionStatuses, status)
+    ? status as CurrentFangraphsResolutionStatus
+    : null
+}
+
+function currentFangraphsResolutionIsStructurallyValid(
+  row: CurrentFangraphsCandidateRow,
+): boolean {
+  const status = currentFangraphsResolutionStatus(row)
+  const currentCount = nonNegativeIntegerOrNull(row.current_mlbam_candidate_count)
+  const historicalCount = nonNegativeIntegerOrNull(row.historical_mlbam_candidate_count)
+  const candidatePersonTuples = nonNegativeIntegerOrNull(row.candidate_mlbam_person_tuples)
+  const historicalObservations = nonNegativeIntegerOrNull(
+    row.historical_identity_observations,
+  )
+  if (
+    status === null ||
+    currentCount === null ||
+    currentCount > 2 ||
+    historicalCount === null ||
+    candidatePersonTuples === null ||
+    historicalObservations === null ||
+    typeof row.fangraphs_id !== 'string' ||
+    !row.fangraphs_id.trim() ||
+    typeof row.minor_master_id !== 'string' ||
+    !row.minor_master_id.trim() ||
+    (row.source_role !== 'Hitter' && row.source_role !== 'Pitcher') ||
+    typeof row.mlbam_resolution_conflict !== 'boolean' ||
+    (row.identity_known_at !== null && typeof row.identity_known_at !== 'string')
+  ) return false
+
+  const resolvedId = fangraphsMlbamId(row.mlbam_id)
+  const currentRowId = fangraphsMlbamId(row.current_mlbam_id)
+  const currentCandidateId = fangraphsMlbamId(row.current_candidate_mlbam_id)
+  const historicalCandidateId = fangraphsMlbamId(row.historical_candidate_mlbam_id)
+  const malformedMlbamField = [
+    [row.mlbam_id, resolvedId],
+    [row.current_mlbam_id, currentRowId],
+    [row.current_candidate_mlbam_id, currentCandidateId],
+    [row.historical_candidate_mlbam_id, historicalCandidateId],
+  ].some(([rawValue, parsedValue]) => rawValue !== null && parsedValue === null)
+  const hasCandidateMlbam = (
+    currentCount === 1 && currentRowId !== null
+  ) || (
+    currentCount === 0 && historicalCount === 1
+  )
+  if (
+    malformedMlbamField ||
+    (currentCount === 0 && (currentCandidateId !== null || currentRowId !== null)) ||
+    (currentCount > 0 && currentCandidateId === null) ||
+    (currentCount === 1 && currentRowId !== null && currentRowId !== currentCandidateId) ||
+    (hasCandidateMlbam && candidatePersonTuples === 0) ||
+    (!hasCandidateMlbam && candidatePersonTuples !== 0) ||
+    (historicalCount === 0 && (
+      historicalCandidateId !== null ||
+      historicalObservations !== 0 ||
+      row.identity_known_at !== null
+    )) ||
+    (historicalCount > 0 && (
+      historicalCandidateId === null ||
+      historicalObservations < historicalCount ||
+      row.identity_known_at === null
+    ))
+  ) return false
+
+  const expectedStatus: CurrentFangraphsResolutionStatus = currentCount > 1
+    ? 'current_tuple_conflict'
+    : historicalCount > 1
+      ? 'historical_tuple_conflict'
+      : currentCount === 1 && historicalCount === 1 &&
+          currentCandidateId !== historicalCandidateId
+        ? 'current_history_conflict'
+        : candidatePersonTuples > 1
+          ? 'historical_census_conflict'
+          : currentRowId !== null && currentCount === 1
+            ? 'current_exact'
+            : currentRowId === null && currentCount === 0 && historicalCount === 1
+              ? 'historical_exact'
+              : 'unresolved'
+  const expectedConflict = currentFangraphsConflictStatuses.has(expectedStatus)
+  if (
+    status !== expectedStatus ||
+    row.mlbam_resolution_conflict !== expectedConflict
+  ) return false
+
+  if (status === 'current_exact') {
+    return candidatePersonTuples === 1 &&
+      resolvedId !== null &&
+      resolvedId === currentRowId &&
+      (historicalCount === 0 || historicalCandidateId === resolvedId)
+  }
+  if (status === 'historical_exact') {
+    return candidatePersonTuples === 1 &&
+      resolvedId !== null &&
+      resolvedId === historicalCandidateId
+  }
+  return resolvedId === null
+}
+
+export function currentFangraphsValidResolvedMlbamId(
+  row: CurrentFangraphsCandidateRow,
+): string | null {
+  if (!currentFangraphsResolutionIsStructurallyValid(row)) return null
+  const status = currentFangraphsResolutionStatus(row)
+  if (status !== 'current_exact' && status !== 'historical_exact') return null
+  return fangraphsMlbamId(row.mlbam_id)
+}
+
+export function currentFangraphsResolutionAudit(
+  rows: CurrentFangraphsCandidateRow[],
+) {
+  const statusCounts: Record<CurrentFangraphsResolutionStatus, number> = {
+    current_exact: 0,
+    historical_exact: 0,
+    current_tuple_conflict: 0,
+    historical_tuple_conflict: 0,
+    current_history_conflict: 0,
+    historical_census_conflict: 0,
+    unresolved: 0,
+  }
+  let invalidResolutionRows = 0
+  const historicalObservationsByTuple = new Map<string, number>()
+
+  for (const row of rows) {
+    const status = currentFangraphsResolutionStatus(row)
+    if (status === null || !currentFangraphsResolutionIsStructurallyValid(row)) {
+      invalidResolutionRows += 1
+      continue
+    }
+    statusCounts[status] += 1
+    const observations = nonNegativeIntegerOrNull(row.historical_identity_observations) ?? 0
+    if (observations > 0) {
+      historicalObservationsByTuple.set(
+        JSON.stringify([row.fangraphs_id, row.minor_master_id]),
+        observations,
+      )
+    }
+  }
+
+  const historicalIdentityObservations = [...historicalObservationsByTuple.values()]
+    .reduce((total, observations) => total + observations, 0)
+
+  return {
+    totalRoleRows: rows.length,
+    resolvedRoleRows: statusCounts.current_exact + statusCounts.historical_exact,
+    currentExactRoleRows: statusCounts.current_exact,
+    historicalExactRoleRows: statusCounts.historical_exact,
+    unresolvedRoleRows: statusCounts.unresolved,
+    conflictRoleRows:
+      statusCounts.current_tuple_conflict +
+      statusCounts.historical_tuple_conflict +
+      statusCounts.current_history_conflict +
+      statusCounts.historical_census_conflict,
+    currentTupleConflictRoleRows: statusCounts.current_tuple_conflict,
+    historicalTupleConflictRoleRows: statusCounts.historical_tuple_conflict,
+    currentHistoryConflictRoleRows: statusCounts.current_history_conflict,
+    historicalCensusConflictRoleRows: statusCounts.historical_census_conflict,
+    historicalIdentityTuples: historicalObservationsByTuple.size,
+    historicalIdentityObservations,
+    invalidResolutionRows,
+  }
+}
+
 function currentFangraphsOrganizationCode(row: CurrentFangraphsCandidateRow): string | null {
   const code = row.organization_code?.trim().toLocaleUpperCase('en-US') ?? ''
   return code && code !== '- - -' ? code : null
 }
 
 function currentFangraphsProfileId(row: CurrentFangraphsCandidateRow): string | null {
-  const mlbamId = databaseIdentifier(row.mlbam_id)
+  const mlbamId = currentFangraphsValidResolvedMlbamId(row)
   return mlbamId === null
     ? null
     : `fangraphs:${mlbamId}:${row.source_role.toLocaleLowerCase('en-US')}`
@@ -2367,7 +2580,7 @@ export function augmentMinorCandidatesWithCurrentFangraphs(
   const currentByRole = new Map<string, CurrentFangraphsCandidateRow>()
   let rowsWithoutExactMlbam = 0
   for (const row of rows) {
-    const mlbamId = databaseIdentifier(row.mlbam_id)
+    const mlbamId = currentFangraphsValidResolvedMlbamId(row)
     if (mlbamId === null) {
       rowsWithoutExactMlbam += 1
       continue
@@ -2399,7 +2612,7 @@ export function augmentMinorCandidatesWithCurrentFangraphs(
   const fangraphsOnly = [...currentByRole.entries()].flatMap(
     ([key, row]): UnifiedBoardCandidate[] => {
       if (matchedCurrentKeys.has(key)) return []
-      const mlbamId = databaseIdentifier(row.mlbam_id)
+      const mlbamId = currentFangraphsValidResolvedMlbamId(row)
       const profileId = currentFangraphsProfileId(row)
       if (mlbamId === null || profileId === null) return []
       const exactIdentity = identityCrosswalk.byMlbam(mlbamId)
@@ -2632,7 +2845,7 @@ function currentFangraphsProfilePlayerRow(row: CurrentFangraphsCandidateRow): Pl
     season: row.stats_season ?? row.report_season,
     bats: null,
     throws: null,
-    mlbam_id: row.mlbam_id,
+    mlbam_id: currentFangraphsValidResolvedMlbamId(row),
     minor_master_id: row.minor_master_id,
     fangraphs_path: row.fangraphs_path,
     known_at: row.known_at,
@@ -3292,23 +3505,33 @@ export default async function handler(
       `,
       sql`
         SELECT
-          mlbam_id,
+          resolved_mlbam_id AS mlbam_id,
+          mlbam_id AS current_mlbam_id,
           fangraphs_id,
           minor_master_id,
           source_role,
           player_name,
           organization_code,
           position,
-          age,
+          coalesce(age, historical_stats_age) AS age,
           report_season,
-          stats_season,
-          stats_level,
-          stats_pa,
-          stats_ip,
-          fangraphs_path,
-          known_at::text AS known_at
-        FROM app.fangraphs_current_scouting_snapshot
-        ORDER BY mlbam_id NULLS LAST, source_role, fangraphs_id
+          coalesce(stats_season, historical_stats_season) AS stats_season,
+          coalesce(stats_level, historical_stats_level) AS stats_level,
+          coalesce(stats_pa, historical_stats_pa) AS stats_pa,
+          coalesce(stats_ip, historical_stats_ip) AS stats_ip,
+          coalesce(fangraphs_path, historical_fangraphs_path) AS fangraphs_path,
+          known_at::text AS known_at,
+          mlbam_resolution_status,
+          mlbam_resolution_conflict,
+          current_mlbam_candidate_count,
+          current_candidate_mlbam_id,
+          historical_mlbam_candidate_count,
+          historical_candidate_mlbam_id,
+          candidate_mlbam_person_tuples,
+          historical_identity_observations,
+          historical_identity_known_at::text AS identity_known_at
+        FROM app.fangraphs_current_candidate_census
+        ORDER BY resolved_mlbam_id NULLS LAST, source_role, fangraphs_id
       `,
       sql`
         SELECT
@@ -3320,7 +3543,7 @@ export default async function handler(
         SELECT
           count(*) AS rows,
           max(known_at)::text AS known_at
-        FROM app.fangraphs_current_scouting_snapshot
+        FROM app.fangraphs_current_candidate_census
       `,
     ])
     const minorRoleRows = candidateResult as unknown as MinorCandidateRow[]
@@ -3331,6 +3554,9 @@ export default async function handler(
       currentMinorUniverseResult as unknown as CurrentMinorProfileRow[]
     const currentFangraphsCandidateRows =
       currentFangraphsUniverseResult as unknown as CurrentFangraphsCandidateRow[]
+    const currentFangraphsIdentityAudit = currentFangraphsResolutionAudit(
+      currentFangraphsCandidateRows,
+    )
     const currentMinorSource = (currentMinorSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
     const currentScoutingSource = (currentScoutingSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
     const composedIdentity = composeMlbIdentityCrosswalk(
@@ -3465,7 +3691,7 @@ export default async function handler(
       `,
       minorPageMlbamIds.length === 0 ? [] : sql`
         SELECT
-          mlbam_id,
+          resolved_mlbam_id AS mlbam_id,
           source_role,
           report_season,
           org_rank,
@@ -3501,8 +3727,8 @@ export default async function handler(
           bat_control,
           pitch_selection,
           known_at::text AS known_at
-        FROM app.fangraphs_current_scouting_snapshot
-        WHERE mlbam_id = ANY(${minorPageMlbamIds}::bigint[])
+        FROM app.fangraphs_current_candidate_census
+        WHERE resolved_mlbam_id = ANY(${minorPageMlbamIds}::bigint[])
       `,
     ])
     const minorRowsById = new Map(
@@ -3517,6 +3743,12 @@ export default async function handler(
         return profileId === null ? [] : [[profileId, row] as const]
       }),
     )
+    const validCurrentFangraphsIdentityKeys = new Set(
+      currentFangraphsCandidateRows.flatMap((row) => {
+        const mlbamId = currentFangraphsValidResolvedMlbamId(row)
+        return mlbamId === null ? [] : [`${mlbamId}:${row.source_role}`]
+      }),
+    )
     const currentMinorStatsByIdentity = new Map(
       currentMinorProfileRows.map((row) => [
         `${databaseIdentifier(row.mlbam_id)}:${row.player_type}`,
@@ -3524,10 +3756,13 @@ export default async function handler(
       ]),
     )
     const currentScoutingByIdentity = new Map(
-      (currentScoutingResult as unknown as CurrentFangraphsScoutingRow[]).map((row) => [
-        `${databaseIdentifier(row.mlbam_id)}:${row.source_role}`,
-        row,
-      ]),
+      (currentScoutingResult as unknown as CurrentFangraphsScoutingRow[]).flatMap((row) => {
+        const mlbamId = databaseIdentifier(row.mlbam_id)
+        const key = mlbamId === null ? null : `${mlbamId}:${row.source_role}`
+        return key !== null && validCurrentFangraphsIdentityKeys.has(key)
+          ? [[key, row] as const]
+          : []
+      }),
     )
     if (minorRowsById.size !== prospectSavantPageIds.length) {
       throw new Error('Selected minor-league profiles changed during the directory request')
@@ -3635,6 +3870,9 @@ export default async function handler(
       composedIdentity.overlay.conflicts.length > 0 ? 'identity_overlay_conflict' : null,
       currentIdentityConflicts.length > 0 ? 'identity_current_mlb_conflict' : null,
       unmatchedCurrentBbrefIds.length > 0 ? 'identity_current_mlb_unmatched' : null,
+      currentFangraphsIdentityAudit.invalidResolutionRows > 0
+        ? 'fangraphs_identity_resolution_invalid'
+        : null,
     ].filter((reason): reason is string => reason !== null)
     const currentDataStatus = identityReasonCodes.length === 0
       ? freshness.status
@@ -3750,16 +3988,8 @@ export default async function handler(
               minorBuild.currentSeasonDebutRowsIdentified,
             minorIdsRecoveredFromExactCrosswalk:
               minorBuild.idsRecoveredFromExactCrosswalk,
-            fangraphsExactCensusRoleRows:
-              currentFangraphsBuild.exactIdentityRoleRows,
-            fangraphsLiveProfileOverlays:
-              currentFangraphsBuild.liveProfileOverlays,
-            fangraphsOnlyRoleRows:
-              currentFangraphsBuild.fangraphsOnlyRoleRows,
-            fangraphsRowsWithoutExactMlbam:
-              currentFangraphsBuild.rowsWithoutExactMlbam,
             identityPolicy:
-              'exact_mlbam_bbref_plus_durable_chadwick_and_fangraphs_census_no_name_matching',
+              'exact_mlbam_bbref_plus_durable_chadwick_overlay_no_name_matching',
             identityCrosswalkAsOf: identityCrosswalk.summary.asOf,
             identityCrosswalkRecords: identityCrosswalk.summary.recordCount,
             identityCrosswalkStatus: identityFreshness.status,

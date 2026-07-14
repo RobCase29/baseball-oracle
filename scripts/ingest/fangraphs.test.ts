@@ -153,18 +153,31 @@ describe('FanGraphs ingestion contract', () => {
   it('fails closed when the normalized snapshot is undersized', () => {
     expect(() => assertFangraphsCurrentSnapshot({
       battingExactMlbamRows: 200,
+      battingResolvedMlbamRows: 225,
       battingRows: 250,
       pitchingExactMlbamRows: 200,
+      pitchingResolvedMlbamRows: 225,
       pitchingRows: 250,
       totalRows: 500,
     })).not.toThrow()
     expect(() => assertFangraphsCurrentSnapshot({
       battingExactMlbamRows: 199,
+      battingResolvedMlbamRows: 249,
       battingRows: 250,
       pitchingExactMlbamRows: 200,
+      pitchingResolvedMlbamRows: 249,
       pitchingRows: 250,
       totalRows: 500,
-    })).toThrow(/lacks exact MLBAM coverage/u)
+    })).toThrow(/lacks current exact MLBAM coverage/u)
+    expect(() => assertFangraphsCurrentSnapshot({
+      battingExactMlbamRows: 225,
+      battingResolvedMlbamRows: 224,
+      battingRows: 250,
+      pitchingExactMlbamRows: 225,
+      pitchingResolvedMlbamRows: 225,
+      pitchingRows: 250,
+      totalRows: 500,
+    })).toThrow(/internally inconsistent/u)
     expect(() => assertFangraphsCurrentSnapshot(undefined)).toThrow(/no result/u)
   })
 })

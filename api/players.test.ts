@@ -12,6 +12,8 @@ import {
   currentMlbComparisonRole,
   currentMlbTeamContext,
   currentFangraphsCandidateLevel,
+  currentFangraphsResolutionAudit,
+  currentFangraphsValidResolvedMlbamId,
   currentRoleForModeledPlayer,
   currentMlbMetrics,
   currentMinorAgePercentile,
@@ -124,8 +126,10 @@ function currentMinorProfile(
 function currentFangraphsCandidate(
   patch: Partial<CurrentFangraphsCandidateRow> = {},
 ): CurrentFangraphsCandidateRow {
+  const resolvedMlbamId = Object.hasOwn(patch, 'mlbam_id') ? patch.mlbam_id! : 805795
   return {
-    mlbam_id: 805795,
+    mlbam_id: resolvedMlbamId,
+    current_mlbam_id: null,
     fangraphs_id: 'sa3022609',
     minor_master_id: 'sa3022609',
     source_role: 'Hitter',
@@ -140,6 +144,15 @@ function currentFangraphsCandidate(
     stats_ip: null,
     fangraphs_path: '/players/aidan-miller/sa3022609/stats/batting',
     known_at: '2026-07-13T20:00:00.000Z',
+    mlbam_resolution_status: 'historical_exact',
+    mlbam_resolution_conflict: false,
+    current_mlbam_candidate_count: 0,
+    current_candidate_mlbam_id: null,
+    historical_mlbam_candidate_count: 1,
+    historical_candidate_mlbam_id: resolvedMlbamId,
+    candidate_mlbam_person_tuples: 1,
+    historical_identity_observations: 3,
+    identity_known_at: '2026-07-12T20:00:00.000Z',
     ...patch,
   }
 }
@@ -646,6 +659,12 @@ describe('FanGraphs exact-ID current prospect census', () => {
           mlbam_id: null,
           fangraphs_id: 'unresolved-aidan-miller',
           minor_master_id: 'unresolved-aidan-miller',
+          mlbam_resolution_status: 'unresolved',
+          historical_mlbam_candidate_count: 0,
+          historical_candidate_mlbam_id: null,
+          candidate_mlbam_person_tuples: 0,
+          historical_identity_observations: 0,
+          identity_known_at: null,
         }),
       ],
       null,
@@ -691,6 +710,151 @@ describe('FanGraphs exact-ID current prospect census', () => {
     ]))
   })
 
+  it('audits historical resolution states and rejects conflicts even if an ID leaks through', () => {
+    const rows = [
+      currentFangraphsCandidate({
+        current_mlbam_id: 805795,
+        current_mlbam_candidate_count: 1,
+        current_candidate_mlbam_id: 805795,
+        mlbam_resolution_status: 'current_exact',
+      }),
+      currentFangraphsCandidate(),
+      currentFangraphsCandidate({
+        mlbam_id: null,
+        mlbam_resolution_status: 'historical_tuple_conflict',
+        mlbam_resolution_conflict: true,
+        historical_mlbam_candidate_count: 2,
+        historical_candidate_mlbam_id: 805795,
+        candidate_mlbam_person_tuples: 0,
+      }),
+      currentFangraphsCandidate({
+        mlbam_id: null,
+        mlbam_resolution_status: 'historical_census_conflict',
+        mlbam_resolution_conflict: true,
+        historical_candidate_mlbam_id: 805795,
+        candidate_mlbam_person_tuples: 2,
+      }),
+      currentFangraphsCandidate({
+        mlbam_id: null,
+        mlbam_resolution_status: 'unresolved',
+        historical_mlbam_candidate_count: 0,
+        historical_candidate_mlbam_id: null,
+        candidate_mlbam_person_tuples: 0,
+        historical_identity_observations: 0,
+        identity_known_at: null,
+      }),
+    ]
+    expect(currentFangraphsResolutionAudit(rows)).toEqual({
+      totalRoleRows: 5,
+      resolvedRoleRows: 2,
+      currentExactRoleRows: 1,
+      historicalExactRoleRows: 1,
+      unresolvedRoleRows: 1,
+      conflictRoleRows: 2,
+      currentTupleConflictRoleRows: 0,
+      historicalTupleConflictRoleRows: 1,
+      currentHistoryConflictRoleRows: 0,
+      historicalCensusConflictRoleRows: 1,
+      historicalIdentityTuples: 1,
+      historicalIdentityObservations: 3,
+      invalidResolutionRows: 0,
+    })
+
+    const leakedConflict = currentFangraphsCandidate({
+      mlbam_resolution_status: 'historical_tuple_conflict',
+      mlbam_resolution_conflict: true,
+      historical_mlbam_candidate_count: 2,
+    })
+    const rejected = augmentMinorCandidatesWithCurrentFangraphs(
+      [],
+      [leakedConflict],
+      null,
+      requireMlbIdentityCrosswalk(),
+    )
+    expect(rejected).toMatchObject({ fangraphsOnlyRoleRows: 0, rowsWithoutExactMlbam: 1 })
+    expect(currentFangraphsResolutionAudit([leakedConflict]).invalidResolutionRows).toBe(1)
+  })
+
+  it('fails closed on cross-role, current-history, and malformed historical identities', () => {
+    const crossRoleRows = [
+      currentFangraphsCandidate({
+        mlbam_id: null,
+        current_mlbam_id: 805795,
+        current_mlbam_candidate_count: 2,
+        current_candidate_mlbam_id: 805795,
+        historical_mlbam_candidate_count: 0,
+        historical_candidate_mlbam_id: null,
+        candidate_mlbam_person_tuples: 0,
+        historical_identity_observations: 0,
+        identity_known_at: null,
+        mlbam_resolution_status: 'current_tuple_conflict',
+        mlbam_resolution_conflict: true,
+      }),
+      currentFangraphsCandidate({
+        mlbam_id: null,
+        current_mlbam_id: 999001,
+        current_mlbam_candidate_count: 2,
+        current_candidate_mlbam_id: 805795,
+        historical_mlbam_candidate_count: 0,
+        historical_candidate_mlbam_id: null,
+        candidate_mlbam_person_tuples: 0,
+        historical_identity_observations: 0,
+        identity_known_at: null,
+        source_role: 'Pitcher',
+        mlbam_resolution_status: 'current_tuple_conflict',
+        mlbam_resolution_conflict: true,
+      }),
+    ]
+    const crossRoleAudit = currentFangraphsResolutionAudit(crossRoleRows)
+    expect(crossRoleRows.map(currentFangraphsValidResolvedMlbamId)).toEqual([null, null])
+    expect(crossRoleAudit).toMatchObject({
+      conflictRoleRows: 2,
+      currentTupleConflictRoleRows: 2,
+      invalidResolutionRows: 0,
+      resolvedRoleRows: 0,
+    })
+    expect(augmentMinorCandidatesWithCurrentFangraphs(
+      [],
+      crossRoleRows,
+      null,
+      requireMlbIdentityCrosswalk(),
+    )).toMatchObject({ exactIdentityRoleRows: 0, rowsWithoutExactMlbam: 2 })
+
+    const currentHistoryConflict = currentFangraphsCandidate({
+      mlbam_id: null,
+      current_mlbam_id: 805795,
+      current_mlbam_candidate_count: 1,
+      current_candidate_mlbam_id: 805795,
+      historical_candidate_mlbam_id: 999001,
+      candidate_mlbam_person_tuples: 1,
+      mlbam_resolution_status: 'current_history_conflict',
+      mlbam_resolution_conflict: true,
+    })
+    expect(currentFangraphsValidResolvedMlbamId(currentHistoryConflict)).toBeNull()
+    expect(currentFangraphsResolutionAudit([currentHistoryConflict])).toMatchObject({
+      currentHistoryConflictRoleRows: 1,
+      invalidResolutionRows: 0,
+    })
+
+    const mislabeledCurrentHistory = currentFangraphsCandidate({
+      current_mlbam_id: 805795,
+      current_mlbam_candidate_count: 1,
+      current_candidate_mlbam_id: 805795,
+      historical_candidate_mlbam_id: 999001,
+      mlbam_resolution_status: 'current_exact',
+    })
+    const invalidHistoricalCount = currentFangraphsCandidate({
+      historical_mlbam_candidate_count: 2,
+      mlbam_resolution_status: 'historical_exact',
+    })
+    expect(currentFangraphsValidResolvedMlbamId(mislabeledCurrentHistory)).toBeNull()
+    expect(currentFangraphsValidResolvedMlbamId(invalidHistoricalCount)).toBeNull()
+    expect(currentFangraphsResolutionAudit([
+      mislabeledCurrentHistory,
+      invalidHistoricalCount,
+    ]).invalidResolutionRows).toBe(2)
+  })
+
   it('overlays only an exact role identity and never recovers a null ID by name', () => {
     const existing = candidate('prospect-savant:805795', {
       name: 'Aidan Miller',
@@ -707,7 +871,15 @@ describe('FanGraphs exact-ID current prospect census', () => {
     )
     const unresolved = augmentMinorCandidatesWithCurrentFangraphs(
       [existing],
-      [currentFangraphsCandidate({ mlbam_id: null })],
+      [currentFangraphsCandidate({
+        mlbam_id: null,
+        mlbam_resolution_status: 'unresolved',
+        historical_mlbam_candidate_count: 0,
+        historical_candidate_mlbam_id: null,
+        candidate_mlbam_person_tuples: 0,
+        historical_identity_observations: 0,
+        identity_known_at: null,
+      })],
       null,
       requireMlbIdentityCrosswalk(),
     )
