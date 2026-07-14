@@ -249,19 +249,19 @@ export async function refreshFangraphsCurrentScoutingSnapshot(
           count(*) FILTER (WHERE source_role = 'Pitcher')::integer AS pitching_rows,
           count(*) FILTER (
             WHERE source_role = 'Hitter'
-              AND mlbam_resolution_status = 'current_exact'
+              AND served_mlbam_resolution_status = 'current_exact'
           )::integer AS batting_exact_mlbam_rows,
           count(*) FILTER (
-            WHERE source_role = 'Hitter' AND resolved_mlbam_id IS NOT NULL
+            WHERE source_role = 'Hitter' AND served_resolved_mlbam_id IS NOT NULL
           )::integer AS batting_resolved_mlbam_rows,
           count(*) FILTER (
             WHERE source_role = 'Pitcher'
-              AND mlbam_resolution_status = 'current_exact'
+              AND served_mlbam_resolution_status = 'current_exact'
           )::integer AS pitching_exact_mlbam_rows,
           count(*) FILTER (
-            WHERE source_role = 'Pitcher' AND resolved_mlbam_id IS NOT NULL
+            WHERE source_role = 'Pitcher' AND served_resolved_mlbam_id IS NOT NULL
           )::integer AS pitching_resolved_mlbam_rows
-        FROM app.fangraphs_current_candidate_census
+        FROM app.fangraphs_current_candidate_bridge_overlay
         WHERE report_season = ${season}
       `
       const normalizedAudit = audit

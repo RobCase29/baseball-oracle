@@ -126,15 +126,19 @@ describe('current FanGraphs scouting snapshot migration', () => {
     )
     expect(scoutingRefresh).toBeGreaterThan(-1)
     expect(censusRefresh).toBeGreaterThan(scoutingRefresh)
-    expect(refreshSource).toContain('FROM app.fangraphs_current_candidate_census')
-    expect(refreshSource).toContain("mlbam_resolution_status = 'current_exact'")
+    expect(refreshSource).toContain(
+      'FROM app.fangraphs_current_candidate_bridge_overlay',
+    )
+    expect(refreshSource).toContain(
+      "served_mlbam_resolution_status = 'current_exact'",
+    )
     expect(refreshSource).toContain('AS batting_resolved_mlbam_rows')
     expect(refreshSource).toContain('AS pitching_resolved_mlbam_rows')
     expect(refreshSource).toContain(
-      'WHERE source_role = \'Hitter\' AND resolved_mlbam_id IS NOT NULL',
+      'WHERE source_role = \'Hitter\' AND served_resolved_mlbam_id IS NOT NULL',
     )
     expect(refreshSource).toContain(
-      'WHERE source_role = \'Pitcher\' AND resolved_mlbam_id IS NOT NULL',
+      'WHERE source_role = \'Pitcher\' AND served_resolved_mlbam_id IS NOT NULL',
     )
   })
 })

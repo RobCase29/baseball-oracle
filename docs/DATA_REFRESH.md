@@ -154,6 +154,23 @@ time. A successful scheduled check is considered stale after 26 hours, which giv
 the two daily windows room for normal execution delay while detecting two missed
 opportunities.
 
+## Completed-season FanGraphs identity bridge
+
+The 2026 board's locked completed-2025 responses provide exact identity evidence
+for current scouting rows that temporarily disappear from the in-season statistics
+side. The bridge is generated from the full conflict-free intersection of scout and
+statistics records on `(UPID, MinorMasterId, role)`, requiring a positive
+`xMLBAMID` and `Season = 2025`. Names are neither stored nor used for matching.
+
+- Hitter source SHA-256: `0053540e097f355e113d9a1733ac25bbf7faae3f4761660a83a821bf616fbbb0`
+- Pitcher source SHA-256: `88890ba8c075b686dc651057e3ca36580e9ed1e7906e2f21bc9cec5b396966ac`
+- Locked output: 1,093 exact records, 533 hitters and 560 pitchers
+- Records SHA-256: `cd305a89b93c10e98fe12560abd789e8d94feefd807427cbf7699cca324afe90`
+
+Run `npm run data:fangraphs-identity:check` after source acquisition. The serving
+overlay combines this evidence with current and historical observations. Any
+tuple, current-versus-history, or census disagreement withholds the MLBAM identity.
+
 ## Remaining blockers to genuinely live forecasts
 
 1. **No online feature builder.** New raw records do not create versioned

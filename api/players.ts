@@ -3505,7 +3505,7 @@ export default async function handler(
       `,
       sql`
         SELECT
-          resolved_mlbam_id AS mlbam_id,
+          served_resolved_mlbam_id AS mlbam_id,
           mlbam_id AS current_mlbam_id,
           fangraphs_id,
           minor_master_id,
@@ -3513,25 +3513,29 @@ export default async function handler(
           player_name,
           organization_code,
           position,
-          coalesce(age, historical_stats_age) AS age,
+          coalesce(age, served_historical_stats_age) AS age,
           report_season,
-          coalesce(stats_season, historical_stats_season) AS stats_season,
-          coalesce(stats_level, historical_stats_level) AS stats_level,
-          coalesce(stats_pa, historical_stats_pa) AS stats_pa,
-          coalesce(stats_ip, historical_stats_ip) AS stats_ip,
+          coalesce(stats_season, served_historical_stats_season) AS stats_season,
+          coalesce(stats_level, served_historical_stats_level) AS stats_level,
+          coalesce(stats_pa, served_historical_stats_pa) AS stats_pa,
+          coalesce(stats_ip, served_historical_stats_ip) AS stats_ip,
           coalesce(fangraphs_path, historical_fangraphs_path) AS fangraphs_path,
           known_at::text AS known_at,
-          mlbam_resolution_status,
-          mlbam_resolution_conflict,
+          served_mlbam_resolution_status AS mlbam_resolution_status,
+          served_mlbam_resolution_conflict AS mlbam_resolution_conflict,
           current_mlbam_candidate_count,
           current_candidate_mlbam_id,
-          historical_mlbam_candidate_count,
-          historical_candidate_mlbam_id,
-          candidate_mlbam_person_tuples,
-          historical_identity_observations,
-          historical_identity_known_at::text AS identity_known_at
-        FROM app.fangraphs_current_candidate_census
-        ORDER BY resolved_mlbam_id NULLS LAST, source_role, fangraphs_id
+          served_historical_mlbam_candidate_count
+            AS historical_mlbam_candidate_count,
+          served_historical_candidate_mlbam_id
+            AS historical_candidate_mlbam_id,
+          served_candidate_mlbam_person_tuples
+            AS candidate_mlbam_person_tuples,
+          served_historical_identity_observations
+            AS historical_identity_observations,
+          served_historical_identity_known_at::text AS identity_known_at
+        FROM app.fangraphs_current_candidate_bridge_overlay
+        ORDER BY served_resolved_mlbam_id NULLS LAST, source_role, fangraphs_id
       `,
       sql`
         SELECT
@@ -3543,7 +3547,7 @@ export default async function handler(
         SELECT
           count(*) AS rows,
           max(known_at)::text AS known_at
-        FROM app.fangraphs_current_candidate_census
+        FROM app.fangraphs_current_candidate_bridge_overlay
       `,
     ])
     const minorRoleRows = candidateResult as unknown as MinorCandidateRow[]
@@ -3691,7 +3695,7 @@ export default async function handler(
       `,
       minorPageMlbamIds.length === 0 ? [] : sql`
         SELECT
-          resolved_mlbam_id AS mlbam_id,
+          served_resolved_mlbam_id AS mlbam_id,
           source_role,
           report_season,
           org_rank,
@@ -3727,8 +3731,8 @@ export default async function handler(
           bat_control,
           pitch_selection,
           known_at::text AS known_at
-        FROM app.fangraphs_current_candidate_census
-        WHERE resolved_mlbam_id = ANY(${minorPageMlbamIds}::bigint[])
+        FROM app.fangraphs_current_candidate_bridge_overlay
+        WHERE served_resolved_mlbam_id = ANY(${minorPageMlbamIds}::bigint[])
       `,
     ])
     const minorRowsById = new Map(
