@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assertMlbStatsApiMilbRosterCensus,
@@ -5,7 +7,13 @@ import {
   buildMlbStatsApiMilbTeamsUrl,
   composeMlbStatsApiMilbRosterBundle,
   mapWithBoundedConcurrency,
+  MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET,
+  MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES,
+  MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES,
+  MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS,
   mlbStatsApiMilbRosterPlayerType,
+  mlbStatsApiMilbRosterRawBatchPolicy,
+  mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes,
   parseMlbStatsApiMilbRosterEnvelope,
   parseMlbStatsApiMilbTeamsEnvelope,
   quarantineStaleOrganizationMemberships,
@@ -275,6 +283,54 @@ describe('MLB StatsAPI full MiLB roster census', () => {
 
     expect(maximumActive).toBe(4)
     expect(result).toEqual(Array.from({ length: 20 }, (_, index) => index * 2))
+  })
+
+  it('uses a high-throughput raw batch below PostgreSQL parameter and payload limits', () => {
+    const policy = mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(4_096)
+
+    expect(policy.batchSize).toBe(MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS)
+    expect(policy.bindParameters).toBe(14_000)
+    expect(policy.bindParameterBudget).toBe(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET,
+    )
+    expect(policy.bindParameters).toBeLessThan(65_535)
+    expect(policy.estimatedBatchPayloadBytes).toBeLessThanOrEqual(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES,
+    )
+  })
+
+  it('reduces raw batch rows for unusually large records and rejects a single unsafe row', () => {
+    const adaptive = mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(20_000)
+    expect(adaptive.batchSize).toBeLessThan(MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS)
+    expect(adaptive.bindParameters).toBeLessThanOrEqual(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET,
+    )
+    expect(adaptive.estimatedBatchPayloadBytes).toBeLessThanOrEqual(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES,
+    )
+    expect(() => mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES -
+        MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES + 1,
+    )).toThrow(/per-statement safety budget/u)
+    expect(() => mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(-1))
+      .toThrow(/non-negative integer/u)
+  })
+
+  it('computes record payload size and passes the selected policy to raw landing', () => {
+    const policy = mlbStatsApiMilbRosterRawBatchPolicy([
+      { record: { id: 1, payload: 'x'.repeat(1_000) } },
+      { record: { id: 2, payload: 'x'.repeat(4_000) } },
+    ])
+    expect(policy.estimatedMaximumRowBytes).toBeGreaterThanOrEqual(
+      4_000 + MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES,
+    )
+
+    const source = readFileSync(
+      resolve(process.cwd(), 'scripts/ingest/mlb-statsapi-milb-roster.ts'),
+      'utf8',
+    )
+    expect(source).toContain('batchSize: rawLandingBatchPolicy.batchSize')
+    expect(source).toContain('rawLandingBatchPolicy,\n        sourceResponses:')
   })
 
   it('stores exact source texts and resolves parent-only affiliate assignment explicitly', () => {

@@ -1772,6 +1772,15 @@ function safeRate(numerator: DatabaseNumber, denominator: DatabaseNumber): numbe
   return top !== null && bottom !== null && bottom > 0 ? top / bottom : null
 }
 
+function officialCurrentMinorWorkloadObserved(
+  row: CurrentMinorProfileRow,
+  scoringRole: 'Hitter' | 'Pitcher',
+): boolean {
+  return scoringRole === 'Pitcher'
+    ? (numberOrNull(row.outs) ?? 0) > 0 || (numberOrNull(row.ip) ?? 0) > 0
+    : (numberOrNull(row.pa) ?? 0) > 0
+}
+
 export function attachLiveProspectPriorRankings(
   candidates: UnifiedBoardCandidate[],
   currentStatsRows: CurrentMinorProfileRow[],
@@ -1797,9 +1806,7 @@ export function attachLiveProspectPriorRankings(
     const scoringRole = prospectScoringRole(candidate.playerType)
     const row = statsByIdentity.get(`${candidate.mlbamId}:${scoringRole}`)
     if (!row) return []
-    const officialStatsObserved = scoringRole === 'Pitcher'
-      ? (numberOrNull(row.outs) ?? 0) > 0 || (numberOrNull(row.ip) ?? 0) > 0
-      : (numberOrNull(row.pa) ?? 0) > 0
+    const officialStatsObserved = officialCurrentMinorWorkloadObserved(row, scoringRole)
     if (!officialStatsObserved) return []
     return [{
       mlbamId: candidate.mlbamId,
@@ -1968,9 +1975,28 @@ export function scoreCurrentProspectUniverse(
   candidates: UnifiedBoardCandidate[],
   currentStatsRows: CurrentMinorProfileRow[],
 ): UnifiedBoardCandidate[] {
-  return assignServedProspectRanks(
+  const ranked = assignServedProspectRanks(
     attachLiveProspectPriorRankings(candidates, currentStatsRows),
   )
+  const officialWorkloadIdentities = new Set(currentStatsRows.flatMap((row) => {
+    const mlbamId = databaseIdentifier(row.mlbam_id)
+    if (mlbamId === null || !officialCurrentMinorWorkloadObserved(row, row.player_type)) return []
+    return [`${mlbamId}:${row.player_type}`]
+  }))
+  const missingRankIdentities = ranked.flatMap((candidate) => {
+    if (candidate.stage !== 'pre_debut' || candidate.mlbamId === null) return []
+    const identity = `${candidate.mlbamId}:${prospectScoringRole(candidate.playerType)}`
+    return officialWorkloadIdentities.has(identity) && candidate.servedProspectRank == null
+      ? [identity]
+      : []
+  })
+  if (missingRankIdentities.length > 0) {
+    throw new Error(
+      `Prospect scoring postcondition failed for official current MiLB workload identities: ` +
+        [...new Set(missingRankIdentities)].sort().join(', '),
+    )
+  }
+  return ranked
 }
 
 function candidateProspectScoreRank(candidate: UnifiedBoardCandidate): number | null {
@@ -4729,6 +4755,10 @@ export default async function handler(
           required: true,
           statsChangedAt: currentMinorRosterAsOf,
           coverageComplete: (numberOrNull(currentMinorRosterSource?.rows ?? null) ?? 0) > 0,
+          initialSourceProofAt:
+            (numberOrNull(currentMinorRosterSource?.rows ?? null) ?? 0) > 0
+              ? currentMinorRosterAsOf
+              : null,
         },
         {
           key: 'baseballReference',

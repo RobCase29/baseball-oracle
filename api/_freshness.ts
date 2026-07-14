@@ -36,6 +36,7 @@ export interface FreshnessSourceInput {
   required: boolean
   statsChangedAt: string | null
   coverageComplete: boolean | null
+  initialSourceProofAt?: string | null
 }
 
 export interface FreshnessReason {
@@ -231,7 +232,13 @@ export function assessCurrentDataFreshness(
       (run) => run.sourceStatuses?.[source.key] === 'succeeded',
     ) ?? null
     const lastCheckedAt = latestCheck?.finishedAt ?? null
-    const lastSuccessfulCheckAt = latestSuccessfulCheck?.finishedAt ?? null
+    const initialSourceProofAt = timestamp(source.initialSourceProofAt ?? null) === null
+      ? null
+      : source.initialSourceProofAt ?? null
+    // The first operational check owns source health, including a failed check.
+    const lastSuccessfulCheckAt = latestSuccessfulCheck?.finishedAt ?? (
+      latestCheck === null ? initialSourceProofAt : null
+    )
     const lastCheckStatus = latestCheck?.sourceStatuses?.[source.key] ?? null
 
     sourceStatuses[source.key] = {

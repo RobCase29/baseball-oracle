@@ -17,11 +17,19 @@ function run(overrides: Partial<FreshnessRun> = {}): FreshnessRun {
     finishedAt: '2026-07-13T10:20:00.000Z',
     sourceStatuses: {
       prospectSavant: 'succeeded',
+      mlbStatsApi: 'succeeded',
+      mlbRoster: 'succeeded',
       baseballReference: 'succeeded',
-      fangraphs: 'not_configured',
+      fangraphs: 'succeeded',
     },
     ...overrides,
   }
+}
+
+function runWithoutRosterStatus(overrides: Partial<FreshnessRun> = {}): FreshnessRun {
+  const value = run(overrides)
+  const { mlbRoster: _mlbRoster, ...sourceStatuses } = value.sourceStatuses ?? {}
+  return { ...value, sourceStatuses }
 }
 
 const sources = [
@@ -32,6 +40,18 @@ const sources = [
     coverageComplete: true,
   },
   {
+    key: 'mlbStatsApi',
+    required: true,
+    statsChangedAt: '2026-07-13T10:19:00.000Z',
+    coverageComplete: true,
+  },
+  {
+    key: 'mlbRoster',
+    required: true,
+    statsChangedAt: '2026-07-13T10:19:30.000Z',
+    coverageComplete: true,
+  },
+  {
     key: 'baseballReference',
     required: true,
     statsChangedAt: '2026-07-10T10:18:00.000Z',
@@ -39,9 +59,9 @@ const sources = [
   },
   {
     key: 'fangraphs',
-    required: false,
-    statsChangedAt: null,
-    coverageComplete: null,
+    required: true,
+    statsChangedAt: '2026-07-13T10:18:30.000Z',
+    coverageComplete: true,
   },
 ]
 
@@ -55,7 +75,7 @@ describe('current data freshness assessment', () => {
     })
 
     expect(result.status).toBe('ok')
-    expect(result.statsChangedAt).toBe('2026-07-12T10:18:00.000Z')
+    expect(result.statsChangedAt).toBe('2026-07-13T10:19:30.000Z')
     expect(result.lastCheckedAt).toBe('2026-07-13T10:20:00.000Z')
     expect(result.sources.baseballReference).toMatchObject({
       statsChangedAt: '2026-07-10T10:18:00.000Z',
@@ -93,7 +113,10 @@ describe('current data freshness assessment', () => {
       finishedAt: '2026-07-13T14:02:00.000Z',
       sourceStatuses: {
         prospectSavant: 'failed',
+        mlbStatsApi: 'succeeded',
+        mlbRoster: 'succeeded',
         baseballReference: 'succeeded',
+        fangraphs: 'succeeded',
       },
     })
     const result = assessCurrentDataFreshness({
@@ -143,6 +166,79 @@ describe('current data freshness assessment', () => {
     expect(result.reasons).toContainEqual({
       code: 'current_coverage_incomplete',
       source: 'baseballReference',
+    })
+  })
+
+  it('accepts a current audited snapshot as initial proof until an operational check appears', () => {
+    const result = assessCurrentDataFreshness({
+      now,
+      cronConfigured: true,
+      runs: [runWithoutRosterStatus()],
+      sources: sources.map((source) => source.key === 'mlbRoster'
+        ? {
+            ...source,
+            statsChangedAt: '2026-07-13T09:55:00.000Z',
+            initialSourceProofAt: '2026-07-13T09:55:00.000Z',
+          }
+        : source),
+    })
+
+    expect(result.status).toBe('ok')
+    expect(result.reasonCodes).not.toContain('required_source_check_missing')
+    expect(result.sources.mlbRoster).toMatchObject({
+      lastCheckedAt: null,
+      lastSuccessfulCheckAt: '2026-07-13T09:55:00.000Z',
+      lastCheckStatus: null,
+    })
+  })
+
+  it('retires initial proof after a failed operational source check', () => {
+    const failed = run({
+      status: 'failed',
+      startedAt: '2026-07-13T14:00:00.000Z',
+      finishedAt: '2026-07-13T14:02:00.000Z',
+      sourceStatuses: { mlbRoster: 'failed' },
+    })
+    const result = assessCurrentDataFreshness({
+      now,
+      cronConfigured: true,
+      runs: [runWithoutRosterStatus(), failed],
+      sources: sources.map((source) => source.key === 'mlbRoster'
+        ? {
+            ...source,
+            statsChangedAt: '2026-07-13T09:55:00.000Z',
+            initialSourceProofAt: '2026-07-13T09:55:00.000Z',
+          }
+        : source),
+    })
+
+    expect(result.status).toBe('stale')
+    expect(result.reasonCodes).toEqual(expect.arrayContaining([
+      'latest_scheduled_run_failed',
+      'required_source_check_missing',
+      'latest_required_source_check_failed',
+    ]))
+    expect(result.sources.mlbRoster.lastSuccessfulCheckAt).toBeNull()
+  })
+
+  it('does not let initial snapshot proof outlive the source freshness SLA', () => {
+    const result = assessCurrentDataFreshness({
+      now,
+      cronConfigured: true,
+      runs: [runWithoutRosterStatus()],
+      sources: sources.map((source) => source.key === 'mlbRoster'
+        ? {
+            ...source,
+            statsChangedAt: '2026-07-11T09:55:00.000Z',
+            initialSourceProofAt: '2026-07-11T09:55:00.000Z',
+          }
+        : source),
+    })
+
+    expect(result.status).toBe('stale')
+    expect(result.reasons).toContainEqual({
+      code: 'required_source_check_overdue',
+      source: 'mlbRoster',
     })
   })
 })

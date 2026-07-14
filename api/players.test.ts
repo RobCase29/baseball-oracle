@@ -762,6 +762,27 @@ describe('official MiLB current universe', () => {
     expect(attached.map((item) => item.liveMilbImpactPriorRanking)).toEqual([null, null])
   })
 
+  it('fails closed when exact official workload cannot produce a served prospect rank', () => {
+    expect(() => scoreCurrentProspectUniverse([
+      candidate('unsupported-live-level', {
+        mlbamId: '834597',
+        playerType: 'Hitter',
+        level: 'Unknown',
+        milbImpactRanking: null,
+      }),
+    ], [currentMinorProfile({
+      mlbam_id: 834597,
+      player_type: 'Hitter',
+      current_level: null,
+      highest_observed_level: null,
+      current_team_name: null,
+      pa: 12,
+    })])).toThrow(
+      'Prospect scoring postcondition failed for official current MiLB workload identities: ' +
+        '834597:Hitter',
+    )
+  })
+
   it('uses an exact official roster identity before dedupe and never crosses roles', () => {
     const sourceRow = {
       profile_id: 'prospect-savant:900000',

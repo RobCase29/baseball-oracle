@@ -152,10 +152,14 @@ identity-page failure does not suppress valid current statistics; it leaves that
 player explicitly unlinked and health degraded until a later refresh resolves it.
 
 The expanded `/api/health` response reads latest attempts and successful fetches
-from Neon, reports the latest valid 10-slice MiLB role-level set and two-side MLB
-coverage, includes scheduled and manual job receipts, and publishes a small
-build-generated manifest for all three committed model artifacts. It intentionally
-separates two clocks:
+from Neon, reports the latest valid 10-slice MiLB role-level set, the official
+full-roster census, and two-side MLB coverage, includes scheduled and manual job
+receipts, and publishes a small build-generated manifest for all three committed
+model artifacts. `currentCoverage.mlbRoster` exposes its season, exact MLBAM player
+count, pre-debut count, affiliate and parent-census coverage, organization count,
+status counts, quality failures, source timestamps, and `coverageComplete` gate.
+The roster also appears as the required `mlbRoster` key in freshness source status
+and per-run source receipts. Health intentionally separates two clocks:
 
 - `statsChangedAt` is when new source bytes were stored. It may remain old when a
   source is checked successfully but its content is unchanged.

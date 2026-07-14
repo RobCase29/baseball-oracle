@@ -52,6 +52,41 @@ interface SliceCoverageRow {
   newest_slice_at: string
 }
 
+export interface CurrentMlbRosterCoverageRow {
+  season: number
+  roster_players: string
+  distinct_mlbam_ids: string
+  rostered_predebut_players: string
+  organizations: string
+  affiliate_roster_players: string
+  parent_census_players: string
+  active_players: string
+  injured_players: string
+  invalid_identity_rows: string
+  invalid_core_rows: string
+  oldest_roster_at: string | null
+  newest_roster_at: string | null
+}
+
+export interface CurrentMlbRosterCoverage {
+  season: number
+  rosterPlayers: number
+  minimumPlayers: number
+  exactMlbamPlayers: number
+  rosteredPreDebutPlayers: number
+  organizations: number
+  expectedOrganizations: number
+  affiliateRosterPlayers: number
+  parentCensusPlayers: number
+  activePlayers: number
+  injuredPlayers: number
+  invalidIdentityRows: number
+  invalidCoreRows: number
+  oldestRosterAt: string | null
+  newestRosterAt: string | null
+  coverageComplete: boolean
+}
+
 interface CurrentMlbIdentityRow {
   bbref_id: string
   mlbam_id: bigint | number | string | null
@@ -68,19 +103,22 @@ interface RefreshRow {
 }
 
 const currentRefreshJobKey = 'current-baseball-source-refresh-v1'
-const refreshSourceKeys = [
+export const CURRENT_MILB_ROSTER_MINIMUM_PLAYERS = 7_000
+export const CURRENT_MILB_ROSTER_EXPECTED_ORGANIZATIONS = 30
+export const healthRefreshSourceKeys = [
   'prospectSavant',
   'baseballReference',
   'mlbStatsApi',
+  'mlbRoster',
   'fangraphs',
 ] as const
 
-function refreshSourceStatuses(
+export function refreshSourceStatuses(
   result: Record<string, unknown> | null,
 ): Record<string, RefreshSourceStatus> | undefined {
   if (!result) return undefined
   const statuses: Record<string, RefreshSourceStatus> = {}
-  for (const key of refreshSourceKeys) {
+  for (const key of healthRefreshSourceKeys) {
     const sourceResult = result[key]
     if (!sourceResult || typeof sourceResult !== 'object') continue
     const status = (sourceResult as { status?: unknown }).status
@@ -91,12 +129,12 @@ function refreshSourceStatuses(
   return Object.keys(statuses).length > 0 ? statuses : undefined
 }
 
-function refreshSourceErrors(
+export function refreshSourceErrors(
   result: Record<string, unknown> | null,
 ): Record<string, string> | undefined {
   if (!result) return undefined
   const errors: Record<string, string> = {}
-  for (const key of refreshSourceKeys) {
+  for (const key of healthRefreshSourceKeys) {
     const sourceResult = result[key]
     if (!sourceResult || typeof sourceResult !== 'object') continue
     const message = (sourceResult as { error?: { message?: unknown } }).error?.message
@@ -119,7 +157,9 @@ function freshnessRun(row: RefreshRow): FreshnessRun {
   }
 }
 
-function sourceKey(source: SourceRow): string | null {
+export function healthRefreshSourceKey(
+  source: Pick<SourceRow, 'source' | 'dataset'>,
+): string | null {
   if (source.source === 'prospect-savant' && source.dataset === 'minor-league-leaders') {
     return 'prospectSavant'
   }
@@ -129,10 +169,49 @@ function sourceKey(source: SourceRow): string | null {
   if (source.source === 'mlb-statsapi' && source.dataset === 'current-milb-season-stats') {
     return 'mlbStatsApi'
   }
+  if (source.source === 'mlb-statsapi' && source.dataset === 'current-milb-rosters') {
+    return 'mlbRoster'
+  }
   if (source.source === 'fangraphs' && source.dataset === 'prospect-board') {
     return 'fangraphs'
   }
   return null
+}
+
+export function currentMlbRosterCoverage(
+  row: CurrentMlbRosterCoverageRow | undefined,
+): CurrentMlbRosterCoverage | null {
+  if (!row) return null
+  const rosterPlayers = Number(row.roster_players)
+  const exactMlbamPlayers = Number(row.distinct_mlbam_ids)
+  const organizations = Number(row.organizations)
+  const invalidIdentityRows = Number(row.invalid_identity_rows)
+  const invalidCoreRows = Number(row.invalid_core_rows)
+  return {
+    season: row.season,
+    rosterPlayers,
+    minimumPlayers: CURRENT_MILB_ROSTER_MINIMUM_PLAYERS,
+    exactMlbamPlayers,
+    rosteredPreDebutPlayers: Number(row.rostered_predebut_players),
+    organizations,
+    expectedOrganizations: CURRENT_MILB_ROSTER_EXPECTED_ORGANIZATIONS,
+    affiliateRosterPlayers: Number(row.affiliate_roster_players),
+    parentCensusPlayers: Number(row.parent_census_players),
+    activePlayers: Number(row.active_players),
+    injuredPlayers: Number(row.injured_players),
+    invalidIdentityRows,
+    invalidCoreRows,
+    oldestRosterAt: row.oldest_roster_at,
+    newestRosterAt: row.newest_roster_at,
+    coverageComplete:
+      rosterPlayers >= CURRENT_MILB_ROSTER_MINIMUM_PLAYERS &&
+      exactMlbamPlayers === rosterPlayers &&
+      organizations === CURRENT_MILB_ROSTER_EXPECTED_ORGANIZATIONS &&
+      invalidIdentityRows === 0 &&
+      invalidCoreRows === 0 &&
+      row.oldest_roster_at !== null &&
+      row.newest_roster_at !== null,
+  }
 }
 
 export default async function handler(
@@ -160,7 +239,8 @@ export default async function handler(
     const staticIdentityCrosswalk = requireMlbIdentityCrosswalk()
     const chadwickKeyMlbamLookup = requireChadwickKeyMlbamLookup()
     const [healthResult, directoryResult, sourceResult, prospectCoverageResult,
-      mlbStatsApiCoverageResult, baseballReferenceCoverageResult,
+      mlbStatsApiCoverageResult, mlbRosterCoverageResult,
+      baseballReferenceCoverageResult,
       fangraphsCoverageResult, currentMlbIdentityResult, refreshResult,
       identityOverlayResult] = await Promise.all([
       sql`
@@ -331,6 +411,47 @@ export default async function handler(
         HAVING count(*) > 0
       `,
       sql`
+        SELECT
+          max(season)::integer AS season,
+          count(*)::text AS roster_players,
+          count(DISTINCT mlbam_id)::text AS distinct_mlbam_ids,
+          count(*) FILTER (WHERE mlb_debut_date IS NULL)::text
+            AS rostered_predebut_players,
+          count(DISTINCT organization_mlbam_id)::text AS organizations,
+          count(*) FILTER (WHERE affiliate_roster_membership_count > 0)::text
+            AS affiliate_roster_players,
+          count(*) FILTER (WHERE parent_census_membership_count > 0)::text
+            AS parent_census_players,
+          count(*) FILTER (WHERE roster_status_group = 'active')::text
+            AS active_players,
+          count(*) FILTER (WHERE roster_status_group = 'injured')::text
+            AS injured_players,
+          count(*) FILTER (
+            WHERE mlbam_id IS NULL OR mlbam_id <= 0 OR known_at IS NULL
+          )::text AS invalid_identity_rows,
+          count(*) FILTER (
+            WHERE display_name IS NULL
+              OR active IS NULL
+              OR roster_status_code IS NULL
+              OR roster_status_description IS NULL
+              OR position IS NULL
+              OR organization_mlbam_id IS NULL
+              OR organization_name IS NULL
+              OR season IS NULL
+              OR roster_membership_count < 1
+              OR role_count <> 1
+              OR organization_count <> 1
+              OR (
+                current_level IS NOT NULL
+                AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+              )
+          )::text AS invalid_core_rows,
+          min(known_at)::text AS oldest_roster_at,
+          max(known_at)::text AS newest_roster_at
+        FROM app.current_milb_roster_snapshot
+        HAVING count(*) > 0
+      `,
+      sql`
         WITH latest_side AS (
           SELECT DISTINCT ON (
             (run.parameters ->> 'season')::integer,
@@ -445,6 +566,9 @@ export default async function handler(
     const [prospectCoverage] = prospectCoverageResult as unknown as SliceCoverageRow[]
     const [mlbStatsApiCoverage] =
       mlbStatsApiCoverageResult as unknown as SliceCoverageRow[]
+    const [mlbRosterCoverageRow] =
+      mlbRosterCoverageResult as unknown as CurrentMlbRosterCoverageRow[]
+    const mlbRosterCoverage = currentMlbRosterCoverage(mlbRosterCoverageRow)
     const [baseballReferenceCoverage] =
       baseballReferenceCoverageResult as unknown as SliceCoverageRow[]
     const [fangraphsCoverage] =
@@ -457,7 +581,7 @@ export default async function handler(
     const refreshRuns = refreshRows.map(freshnessRun)
     const sourceByRefreshKey = new Map(
       sourceRows
-        .map((source) => [sourceKey(source), source] as const)
+        .map((source) => [healthRefreshSourceKey(source), source] as const)
         .filter((entry): entry is [string, SourceRow] => entry[0] !== null),
     )
     const freshness = assessCurrentDataFreshness({
@@ -488,6 +612,18 @@ export default async function handler(
           coverageComplete: mlbStatsApiCoverage
             ? Number(mlbStatsApiCoverage.observed_slices) === 10
             : false,
+        },
+        {
+          key: 'mlbRoster',
+          required: true,
+          statsChangedAt:
+            mlbRosterCoverage?.newestRosterAt ??
+            sourceByRefreshKey.get('mlbRoster')?.last_changed_at ??
+            null,
+          coverageComplete: mlbRosterCoverage?.coverageComplete ?? false,
+          initialSourceProofAt: mlbRosterCoverage?.coverageComplete
+            ? mlbRosterCoverage.newestRosterAt
+            : null,
         },
         {
           key: 'baseballReference',
@@ -566,7 +702,7 @@ export default async function handler(
           newestSourceAt: directory.newest_source_at,
         },
         sources: sourceRows.map((source) => {
-          const key = sourceKey(source)
+          const key = healthRefreshSourceKey(source)
           const refreshStatus = key ? freshness.sources[key] : null
           const statsChangedAt = refreshStatus?.statsChangedAt ?? source.last_changed_at
           return {
@@ -612,6 +748,7 @@ export default async function handler(
                 newestSliceAt: mlbStatsApiCoverage.newest_slice_at,
               }
             : null,
+          mlbRoster: mlbRosterCoverage,
           baseballReference: baseballReferenceCoverage
             ? {
                 season: baseballReferenceCoverage.season,

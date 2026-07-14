@@ -96,6 +96,11 @@ export const MLB_STATSAPI_MILB_ROSTER_MINIMUM_TEAM_ROWS = 10
 export const MLB_STATSAPI_MILB_ROSTER_MINIMUM_PARENT_TEAM_ROWS = 100
 export const MLB_STATSAPI_MILB_ROSTER_MINIMUM_PREVIOUS_RETENTION = 0.8
 export const MLB_STATSAPI_MILB_ROSTER_MAXIMUM_QUARANTINE_RATE = 0.005
+export const MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS = 2_000
+export const MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETERS_PER_ROW = 7
+export const MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET = 60_000
+export const MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES = 32 * 1024 * 1024
+export const MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES = 2_048
 
 const minimumTeamsBySport = new Map<number, number>([
   [11, 25],
@@ -193,6 +198,72 @@ export interface IngestMlbStatsApiMilbRosterOptions {
   concurrency?: number
   priorCardinality?: MlbStatsApiMilbRosterPriorCardinality | null
   signal?: AbortSignal
+}
+
+export interface MlbStatsApiMilbRosterRawBatchPolicy {
+  batchSize: number
+  bindParameters: number
+  bindParameterBudget: number
+  estimatedMaximumRowBytes: number
+  estimatedBatchPayloadBytes: number
+  payloadBudgetBytes: number
+  targetRows: number
+}
+
+export function mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(
+  maximumRecordBytes: number,
+): MlbStatsApiMilbRosterRawBatchPolicy {
+  if (!Number.isInteger(maximumRecordBytes) || maximumRecordBytes < 0) {
+    throw new Error('MiLB roster raw-record byte size must be a non-negative integer')
+  }
+  const estimatedMaximumRowBytes =
+    maximumRecordBytes + MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES
+  if (estimatedMaximumRowBytes > MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES) {
+    throw new Error(
+      `A MiLB roster raw record requires an estimated ${estimatedMaximumRowBytes} bytes; ` +
+        `the per-statement safety budget is ` +
+        `${MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES}`,
+    )
+  }
+  const bindRowLimit = Math.floor(
+    MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET /
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETERS_PER_ROW,
+  )
+  const payloadRowLimit = Math.max(
+    1,
+    Math.floor(
+      MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES /
+        estimatedMaximumRowBytes,
+    ),
+  )
+  const batchSize = Math.min(
+    MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS,
+    bindRowLimit,
+    payloadRowLimit,
+  )
+  return {
+    batchSize,
+    bindParameters:
+      batchSize * MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETERS_PER_ROW,
+    bindParameterBudget: MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_BIND_PARAMETER_BUDGET,
+    estimatedMaximumRowBytes,
+    estimatedBatchPayloadBytes: batchSize * estimatedMaximumRowBytes,
+    payloadBudgetBytes: MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES,
+    targetRows: MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS,
+  }
+}
+
+export function mlbStatsApiMilbRosterRawBatchPolicy(
+  records: readonly Pick<RawLandingRecord, 'record'>[],
+): MlbStatsApiMilbRosterRawBatchPolicy {
+  let maximumRecordBytes = 0
+  for (const { record } of records) {
+    maximumRecordBytes = Math.max(
+      maximumRecordBytes,
+      Buffer.byteLength(stableStringify(record), 'utf8'),
+    )
+  }
+  return mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(maximumRecordBytes)
 }
 
 function validateSeason(season: number): number {
@@ -838,6 +909,7 @@ export async function ingestMlbStatsApiMilbRosterCensus(
     })
     const fetchedAt = new Date()
     const bundle = composeMlbStatsApiMilbRosterBundle(census)
+    const rawLandingBatchPolicy = mlbStatsApiMilbRosterRawBatchPolicy(bundle.records)
     const landing = await persistRawLanding(sql, {
       signal: options.signal,
       sourceSlug: 'mlb-statsapi',
@@ -855,12 +927,14 @@ export async function ingestMlbStatsApiMilbRosterCensus(
         identityPolicy: 'exact_mlbam_only',
         rolePolicy: 'primary_pitcher_else_hitter_including_two_way',
         atomicBundle: true,
+        rawLandingBatchPolicy,
         sourceResponses: 1 + census.rosterResponses.length,
         semanticQuality: census.quality,
       },
       counts: {
         ...census.quality,
         rows: census.quality.rosterRows,
+        rawLandingBatchPolicy,
         schema: schemaFingerprint(bundle.records.map((record) => record.record)),
         sourceResponses: 1 + census.rosterResponses.length,
       },
@@ -884,6 +958,7 @@ export async function ingestMlbStatsApiMilbRosterCensus(
         bodyText: bundle.bodyText,
       },
       records: bundle.records,
+      batchSize: rawLandingBatchPolicy.batchSize,
     })
     options.signal?.throwIfAborted()
     return {
