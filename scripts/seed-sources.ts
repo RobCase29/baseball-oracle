@@ -12,12 +12,46 @@ interface ResearchSourceSeed {
   evidenceUri: string
   evidenceSha256?: string
   permissionVersion?: number
+  modelTraining?: boolean
+  validFrom?: string
   rawRedistribution: boolean
   commercialUse: boolean
   notes: string
 }
 
 const sources: ResearchSourceSeed[] = [
+  {
+    slug: 'harry-knows-ball',
+    name: 'HarryKnowsBall',
+    ownerUrl: 'https://harryknowsball.com/',
+    datasetKey: 'dynasty-rankings',
+    description: 'Crowdsourced dynasty rankings, seven- and thirty-day movement, rank histories, and most-viewed player signals.',
+    grain: 'One HarryKnowsBall player asset per atomic rankings and attention capture.',
+    basis: 'User-attested provider authorization',
+    evidenceUri: 'https://github.com/RobCase29/baseball-oracle/blob/main/docs/permissions/HARRY_KNOWS_BALL_ATTESTATION.md',
+    permissionVersion: 1,
+    modelTraining: false,
+    validFrom: '2026-07-16T00:00:00Z',
+    rawRedistribution: false,
+    commercialUse: true,
+    notes: 'Authorized for automated retrieval, retained research snapshots, internal analysis, and attributed derived/comparison display in Baseball Oracle and connected commercial product experiences. This external dynasty-market comparison is excluded from Oracle model inputs. Raw redistribution and independent source-data resale are not assumed.',
+  },
+  {
+    slug: 'harry-knows-ball',
+    name: 'HarryKnowsBall',
+    ownerUrl: 'https://harryknowsball.com/',
+    datasetKey: 'player-identity-pages',
+    description: 'Canonical HarryKnowsBall player pages retained as exact provider-published MLBAM identity evidence.',
+    grain: 'One canonical HarryKnowsBall player-page response and its explicit HKB-to-MLBAM identity assertion.',
+    basis: 'User-attested provider authorization',
+    evidenceUri: 'https://github.com/RobCase29/baseball-oracle/blob/main/docs/permissions/HARRY_KNOWS_BALL_ATTESTATION.md',
+    permissionVersion: 1,
+    modelTraining: false,
+    validFrom: '2026-07-16T00:00:00Z',
+    rawRedistribution: false,
+    commercialUse: true,
+    notes: 'Authorized for cautious exact-identity backfill supporting attributed derived/comparison display in Baseball Oracle and connected commercial product experiences. Only the provider-published mlbId on a player page may establish identity; names are diagnostic and never matching keys. Raw redistribution and independent source-data resale are not assumed.',
+  },
   {
     slug: 'mlb-statsapi',
     name: 'MLB StatsAPI',
@@ -203,12 +237,12 @@ async function seedSources() {
             ${sourceSeed.basis},
             true,
             true,
-            true,
+            ${sourceSeed.modelTraining ?? true},
             true,
             ${sourceSeed.rawRedistribution},
             ${sourceSeed.commercialUse},
-            '2026-07-11T00:00:00Z'::timestamptz,
-            '2026-07-11T00:00:00Z'::timestamptz,
+            ${sourceSeed.validFrom ?? '2026-07-11T00:00:00Z'}::timestamptz,
+            ${sourceSeed.validFrom ?? '2026-07-11T00:00:00Z'}::timestamptz,
             ${sourceSeed.evidenceUri},
             ${sourceSeed.evidenceSha256 ?? null},
             ${sourceSeed.notes}

@@ -22,6 +22,11 @@ import type {
   PlayersResponse,
   PlayersResponseMeta,
 } from './domain/forecast'
+import {
+  isCommunitySignalsResponse,
+  mlbamIdForCommunity,
+  type CommunitySignalItem,
+} from './domain/communitySignals'
 
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
@@ -133,6 +138,7 @@ function App() {
   const [landscapeLoading, setLandscapeLoading] = useState(false)
   const [landscapeError, setLandscapeError] = useState<string | null>(null)
   const [refreshTick, setRefreshTick] = useState(0)
+  const [communitySignals, setCommunitySignals] = useState<Record<string, CommunitySignalItem>>({})
   const selectionRequest = useRef(0)
   const deferredQuery = useDeferredValue(filters.query)
 
@@ -280,6 +286,48 @@ function App() {
 
   const selectedPlayer = selectedId
     ? players.find((player) => player.id === selectedId) ?? selectedPlayerRecord
+    : null
+
+  const communityIds = Array.from(new Set(
+    [...players, ...(selectedPlayer ? [selectedPlayer] : [])]
+      .map(mlbamIdForCommunity)
+      .filter((value): value is string => value !== null),
+  )).sort()
+  const communityIdsKey = communityIds.join(',')
+
+  useEffect(() => {
+    if (!communityIdsKey) {
+      setCommunitySignals({})
+      return
+    }
+
+    const controller = new AbortController()
+    const parameters = new URLSearchParams({ ids: communityIdsKey })
+
+    fetch(`/api/v1/community-signals?${parameters.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Community endpoint returned ${response.status}.`)
+        const result = (await response.json()) as unknown
+        if (!isCommunitySignalsResponse(result)) {
+          throw new Error('Community endpoint returned an unexpected response.')
+        }
+        setCommunitySignals(Object.fromEntries(
+          result.items.map((item) => [item.player.mlbamId, item]),
+        ))
+      })
+      .catch((requestError: unknown) => {
+        if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+        // Community sentiment is optional and never blocks the Oracle board.
+      })
+
+    return () => controller.abort()
+  }, [communityIdsKey, refreshTick])
+
+  const selectedCommunitySignal = selectedPlayer
+    ? (() => {
+        const mlbamId = mlbamIdForCommunity(selectedPlayer)
+        return mlbamId ? communitySignals[mlbamId] ?? null : null
+      })()
     : null
 
   function changeView(view: WorkspaceView) {
@@ -462,11 +510,13 @@ function App() {
             {selectedPlayer ? (
               <PlayerDossier
                 player={selectedPlayer}
+                communitySignal={selectedCommunitySignal}
                 onReturnToBoard={returnToBoard}
               />
             ) : (
               <ProspectBoard
                 players={players}
+                communitySignals={communitySignals}
                 selectedId={selectedId}
                 filters={filters}
                 pagination={pagination}

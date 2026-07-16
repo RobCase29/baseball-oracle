@@ -23,6 +23,10 @@ import type {
   StageFilter,
 } from '../domain/forecast'
 import {
+  mlbamIdForCommunity,
+  type CommunitySignalItem,
+} from '../domain/communitySignals'
+import {
   formatPosition,
   stageLabel,
 } from '../lib/forecast'
@@ -41,6 +45,7 @@ export type BoardDisplayMode = 'table' | 'landscape'
 
 interface ProspectBoardProps {
   players: PlayerRecord[]
+  communitySignals?: Record<string, CommunitySignalItem>
   selectedId: string | null
   filters: BoardFilters
   pagination: PlayersPage
@@ -62,6 +67,37 @@ interface ProspectBoardProps {
   onChangeDisplayMode?: (mode: BoardDisplayMode) => void
   onChangeFilters: (patch: Partial<BoardFilters>) => void
   onChangePage: (page: number) => void
+}
+
+function dynastyScoreDisplay(signal: CommunitySignalItem | undefined): string {
+  if (!signal) return 'Not matched'
+  if (signal.dynastyScore.signalStatus === 'default_floor') return 'Low signal'
+  return signal.dynastyScore.value?.toLocaleString() ?? '--'
+}
+
+function dynastyScoreDetail(
+  player: PlayerRecord,
+  signal: CommunitySignalItem | undefined,
+): { rank: string; movement: string | null; movementTone: 'positive' | 'negative' | 'flat' } {
+  if (!signal) return { rank: 'Community data unavailable', movement: null, movementTone: 'flat' }
+  if (signal.dynastyScore.signalStatus === 'default_floor') {
+    return { rank: 'Not enough community activity', movement: null, movementTone: 'flat' }
+  }
+
+  const score = signal.dynastyScore
+  const ranks = player.stage === 'pre_debut' && score.prospectRank !== null
+    ? [`Prospect #${score.prospectRank}`, ...(score.overallRank !== null ? [`Overall #${score.overallRank}`] : [])]
+    : score.overallRank !== null
+      ? [`Overall #${score.overallRank}`]
+      : []
+  const movement = score.movement.rank30d
+  return {
+    rank: ranks.join(' / ') || 'Rank unavailable',
+    movement: movement === null || movement === 0
+      ? null
+      : `${movement > 0 ? '+' : ''}${movement} ranks in 30d`,
+    movementTone: movement === null || movement === 0 ? 'flat' : movement > 0 ? 'positive' : 'negative',
+  }
 }
 
 const stages: Array<{ value: StageFilter; label: string }> = [
@@ -117,6 +153,7 @@ function emptyStateCopy(stage: StageFilter): { title: string; detail: string } {
 
 export function ProspectBoard({
   players,
+  communitySignals = {},
   selectedId,
   filters,
   pagination,
@@ -463,6 +500,12 @@ export function ProspectBoard({
                 <th scope="col">Player</th>
                 <th scope="col">{rankColumnLabel(filters.stage)}</th>
                 <th scope="col">Career Outlook</th>
+                <th
+                  scope="col"
+                  title="HarryKnowsBall crowdsourced dynasty sentiment; not used by the Oracle model"
+                >
+                  Dynasty Score
+                </th>
                 <th scope="col">Current Results</th>
               </tr>
             </thead>
@@ -475,6 +518,9 @@ export function ProspectBoard({
                 const routeRank = routeRankFor(player, playerMap)
                 const careerOutlook = careerOutlookFor(player, playerMap)
                 const currentResults = currentResultsFor(player, playerMap)
+                const mlbamId = mlbamIdForCommunity(player)
+                const communitySignal = mlbamId ? communitySignals[mlbamId] : undefined
+                const dynastyDetail = dynastyScoreDetail(player, communitySignal)
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -518,6 +564,23 @@ export function ProspectBoard({
                         {careerOutlook.band}
                       </strong>
                       <small>{careerOutlook.display} · {careerOutlook.basis}</small>
+                    </td>
+                    <td className="dynasty-score-cell">
+                      <span className="mobile-column-label">Dynasty Score</span>
+                      <strong
+                        className={`table-primary dynasty-score-value${communitySignal?.dynastyScore.signalStatus === 'default_floor' ? ' is-low-signal' : ''}`}
+                        title="HarryKnowsBall crowdsourced dynasty sentiment; not an Oracle model input"
+                      >
+                        {dynastyScoreDisplay(communitySignal)}
+                      </strong>
+                      <small>
+                        {dynastyDetail.rank}
+                        {dynastyDetail.movement ? (
+                          <span className={`dynasty-move dynasty-move--${dynastyDetail.movementTone}`}>
+                            {' · '}{dynastyDetail.movement}
+                          </span>
+                        ) : null}
+                      </small>
                     </td>
                     <td className="current-results-cell">
                       <span className="mobile-column-label">Current Results</span>

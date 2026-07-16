@@ -6,15 +6,20 @@ import {
   Check,
   CircleDashed,
   Database,
+  ExternalLink,
   Gauge,
   Info,
   Layers3,
   List,
+  Minus,
   ShieldCheck,
   Target,
+  TrendingDown,
   TrendingUp,
+  Users,
 } from 'lucide-react'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
+import type { CommunitySignalItem } from '../domain/communitySignals'
 import {
   developmentChapterLabel,
   eligibleMilbCeilingAlpha,
@@ -52,6 +57,7 @@ const MilbEvidenceProfile = lazy(() =>
 
 interface PlayerDossierProps {
   player: PlayerRecord
+  communitySignal?: CommunitySignalItem | null
   onReturnToBoard: () => void
 }
 
@@ -1072,8 +1078,164 @@ function formatRetrievedAt(value: string | null): string {
   }).format(parsed)
 }
 
+function formatCommunityTimestamp(value: string | null): string {
+  if (!value) return 'Freshness unavailable'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  }).format(parsed)
+}
+
+function rankPercentile(rank: number | null, universe: number | null): number | null {
+  if (
+    rank === null || universe === null || !Number.isFinite(rank) ||
+    !Number.isFinite(universe) || rank < 1 || universe < rank
+  ) return null
+  if (universe === 1) return 100
+  return 100 - ((rank - 1) / (universe - 1) * 100)
+}
+
+function DynastyMovement({ value, period }: { value: number | null; period: string }) {
+  const tone = value === null || value === 0 ? 'flat' : value > 0 ? 'positive' : 'negative'
+  const Icon = tone === 'positive' ? TrendingUp : tone === 'negative' ? TrendingDown : Minus
+  return (
+    <div className={`dynasty-movement dynasty-movement--${tone}`}>
+      <span>{period}</span>
+      <strong>
+        <Icon size={15} aria-hidden="true" />
+        {value === null ? 'Unavailable' : value === 0 ? 'No change' : `${value > 0 ? '+' : ''}${value} ranks`}
+      </strong>
+    </div>
+  )
+}
+
+function DynastyScorePanel({
+  player,
+  signal,
+}: {
+  player: PlayerRecord
+  signal: CommunitySignalItem | null
+}) {
+  const playerMap = playerMapFor(player)
+  if (!signal) {
+    return (
+      <section className="dossier-section dynasty-score-panel" aria-labelledby="dynasty-score-title">
+        <div className="section-heading-row">
+          <div>
+            <span className="eyebrow">CROWDSOURCED DYNASTY SENTIMENT</span>
+            <h2 id="dynasty-score-title">Dynasty Score</h2>
+          </div>
+          <Users size={18} aria-hidden="true" />
+        </div>
+        <div className="dynasty-unavailable">
+          <strong>Community score not matched</strong>
+          <span>This player is not connected to a HarryKnowsBall record yet. Oracle rankings remain available and unchanged.</span>
+        </div>
+      </section>
+    )
+  }
+
+  const score = signal.dynastyScore
+  const isLowSignal = score.signalStatus === 'default_floor'
+  const useProspectRank = player.stage === 'pre_debut' && score.prospectRank !== null
+  const communityRank = useProspectRank ? score.prospectRank : score.overallRank
+  const communityUniverse = useProspectRank ? score.prospectUniverse : score.overallUniverse
+  const oraclePercentile = rankPercentile(
+    playerMap.stageStanding.rank,
+    playerMap.stageStanding.universe,
+  )
+  const communityPercentile = isLowSignal
+    ? null
+    : rankPercentile(communityRank, communityUniverse)
+  const comparisonDelta = oraclePercentile !== null && communityPercentile !== null
+    ? oraclePercentile - communityPercentile
+    : null
+  const comparison = comparisonDelta === null
+    ? null
+    : comparisonDelta > 5
+      ? { label: 'Oracle ahead', tone: 'oracle' }
+      : comparisonDelta < -5
+        ? { label: 'Crowd ahead', tone: 'crowd' }
+        : { label: 'Aligned', tone: 'aligned' }
+  const attentionViews = useProspectRank && score.attention.prospectViews30d !== null
+    ? score.attention.prospectViews30d
+    : score.attention.views30d
+  const attentionRank = useProspectRank && score.attention.prospectRank30d !== null
+    ? score.attention.prospectRank30d
+    : score.attention.rank30d
+
+  return (
+    <section className="dossier-section dynasty-score-panel" aria-labelledby="dynasty-score-title">
+      <div className="section-heading-row dynasty-score-heading">
+        <div>
+          <span className="eyebrow">HARRYKNOWSBALL COMMUNITY</span>
+          <h2 id="dynasty-score-title">Dynasty Score</h2>
+        </div>
+        <span className="dynasty-independent-badge">Not an Oracle input</span>
+      </div>
+
+      <div className="dynasty-score-grid">
+        <div className="dynasty-score-primary">
+          <span>DYNASTY SCORE</span>
+          <strong className={isLowSignal ? 'is-low-signal' : ''}>
+            {isLowSignal ? 'Low signal' : score.value?.toLocaleString() ?? '--'}
+          </strong>
+          <small>{isLowSignal ? 'Not enough community activity' : '10-10,000 crowd value'}</small>
+        </div>
+        <div>
+          <span>OVERALL RANK</span>
+          <strong>{isLowSignal || score.overallRank === null ? '--' : `#${score.overallRank}`}</strong>
+          <small>{isLowSignal ? 'Rank withheld for low activity' : score.overallUniverse ? `of ${score.overallUniverse.toLocaleString()}` : 'Universe unavailable'}</small>
+        </div>
+        <div>
+          <span>PROSPECT RANK</span>
+          <strong>{isLowSignal || score.prospectRank === null ? '--' : `#${score.prospectRank}`}</strong>
+          <small>{isLowSignal ? 'Rank withheld for low activity' : score.prospectUniverse ? `of ${score.prospectUniverse.toLocaleString()}` : 'Not ranked as a prospect'}</small>
+        </div>
+        <DynastyMovement value={isLowSignal ? null : score.movement.rank7d} period="7-DAY MOVE" />
+        <DynastyMovement value={isLowSignal ? null : score.movement.rank30d} period="30-DAY MOVE" />
+        <div>
+          <span>30-DAY ATTENTION</span>
+          <strong>{attentionViews === null ? 'Unavailable' : attentionViews.toLocaleString()}</strong>
+          <small>{attentionRank === null ? 'Views are not reported as zero' : `#${attentionRank} most viewed`}</small>
+        </div>
+      </div>
+
+      {comparison ? (
+        <div className="dynasty-comparison">
+          <div>
+            <span>ORACLE VS DYNASTY CROWD</span>
+            <strong className={`dynasty-comparison--${comparison.tone}`}>{comparison.label}</strong>
+          </div>
+          <p>
+            Oracle {formatPercentileRank(oraclePercentile)} versus the crowd {formatPercentileRank(communityPercentile)} in their {useProspectRank ? 'prospect' : 'current player'} ranking pools. Percentiles are compared; raw ranks and scores are never blended.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="dynasty-source-note">
+        <Info size={14} aria-hidden="true" />
+        <span>
+          Crowdsourced dynasty sentiment, not a probability and not an Oracle model input. Updated {formatCommunityTimestamp(signal.source.updatedAt ?? signal.source.capturedAt)}.
+        </span>
+        <a href={signal.source.url} target="_blank" rel="noreferrer">
+          HarryKnowsBall <ExternalLink size={13} aria-hidden="true" />
+        </a>
+      </div>
+    </section>
+  )
+}
+
 export function PlayerDossier({
   player,
+  communitySignal = null,
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
@@ -1120,6 +1282,8 @@ export function PlayerDossier({
       </header>
 
       <PlayerMapScorecard player={player} />
+
+      <DynastyScorePanel player={player} signal={communitySignal} />
 
       {player.stage === 'recent_callup' ? (
         <details className="advanced-model-details">

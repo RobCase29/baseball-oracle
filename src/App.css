@@ -1304,22 +1304,27 @@
 
 .oracle-board-table th:nth-child(1),
 .oracle-board-table td:nth-child(1) {
-  width: 40%;
+  width: 34%;
 }
 
 .oracle-board-table th:nth-child(2),
 .oracle-board-table td:nth-child(2) {
-  width: 16%;
+  width: 14%;
 }
 
 .oracle-board-table th:nth-child(3),
 .oracle-board-table td:nth-child(3) {
-  width: 19%;
+  width: 17%;
 }
 
 .oracle-board-table th:nth-child(4),
 .oracle-board-table td:nth-child(4) {
-  width: 25%;
+  width: 17%;
+}
+
+.oracle-board-table th:nth-child(5),
+.oracle-board-table td:nth-child(5) {
+  width: 18%;
 }
 
 .board-table th,
@@ -1482,7 +1487,8 @@
 
 .rank-summary,
 .outlook-value,
-.current-results {
+.current-results,
+.dynasty-score-value {
   display: block;
   color: var(--ink);
   font-family: var(--mono);
@@ -1516,6 +1522,27 @@
 
 .current-results--positive {
   color: var(--green-dark);
+}
+
+.dynasty-score-value {
+  color: #315a70;
+}
+
+.dynasty-score-value.is-low-signal {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.dynasty-move {
+  white-space: nowrap;
+}
+
+.dynasty-move--positive {
+  color: var(--green-dark);
+}
+
+.dynasty-move--negative {
+  color: #a14e38;
 }
 
 .chapter-label {
@@ -3221,6 +3248,192 @@
   padding: 17px 20px;
 }
 
+.dynasty-score-panel {
+  background: #fbfcfc;
+  border-bottom: 1px solid var(--line);
+}
+
+.dynasty-score-heading {
+  margin-bottom: 13px;
+}
+
+.dynasty-independent-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  color: #315a70;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #eef4f7;
+  border: 1px solid #cbdce5;
+  border-radius: 3px;
+}
+
+.dynasty-score-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.dynasty-score-grid > div {
+  min-width: 0;
+  min-height: 78px;
+  padding: 11px 10px;
+  border-right: 1px solid var(--line);
+}
+
+.dynasty-score-grid > div:last-child {
+  border-right: 0;
+}
+
+.dynasty-score-grid span,
+.dynasty-comparison span {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.dynasty-score-grid strong {
+  display: flex;
+  min-height: 25px;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.dynasty-score-grid strong.is-low-signal {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.dynasty-score-grid small {
+  display: block;
+  margin-top: 3px;
+  color: #818b88;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.dynasty-score-primary strong {
+  color: #315a70;
+  font-size: 20px;
+}
+
+.dynasty-movement--positive strong {
+  color: var(--green-dark);
+}
+
+.dynasty-movement--negative strong {
+  color: #a14e38;
+}
+
+.dynasty-movement--flat strong {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.dynasty-comparison {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+  padding: 10px 11px;
+  background: #f4f7f7;
+  border-left: 3px solid #9aada7;
+}
+
+.dynasty-comparison strong {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.dynasty-comparison--oracle {
+  color: var(--green-dark);
+}
+
+.dynasty-comparison--crowd {
+  color: #865b18;
+}
+
+.dynasty-comparison--aligned {
+  color: #315a70;
+}
+
+.dynasty-comparison p {
+  margin: 0;
+  color: #64706d;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.dynasty-source-note {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  color: #6f7976;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.dynasty-source-note > svg {
+  color: #879490;
+}
+
+.dynasty-source-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #315a70;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dynasty-source-note a:hover {
+  text-decoration: underline;
+}
+
+.dynasty-unavailable {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 12px;
+  color: var(--muted);
+  background: #f4f6f5;
+  border-left: 3px solid #c3cbc8;
+}
+
+.dynasty-unavailable strong {
+  flex: 0 0 auto;
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.dynasty-unavailable span {
+  font-size: 9px;
+  line-height: 1.45;
+}
+
 .section-heading-row {
   display: flex;
   align-items: center;
@@ -4463,22 +4676,27 @@
 
   .oracle-board-table th:nth-child(1),
   .oracle-board-table td:nth-child(1) {
-    width: 37%;
+    width: 31%;
   }
 
   .oracle-board-table th:nth-child(2),
   .oracle-board-table td:nth-child(2) {
-    width: 17%;
+    width: 15%;
   }
 
   .oracle-board-table th:nth-child(3),
   .oracle-board-table td:nth-child(3) {
-    width: 20%;
+    width: 18%;
   }
 
   .oracle-board-table th:nth-child(4),
   .oracle-board-table td:nth-child(4) {
-    width: 26%;
+    width: 18%;
+  }
+
+  .oracle-board-table th:nth-child(5),
+  .oracle-board-table td:nth-child(5) {
+    width: 18%;
   }
 }
 
@@ -4548,7 +4766,7 @@
   .oracle-board-table tbody tr {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 74px 96px;
-    min-height: 112px;
+    min-height: 148px;
     border-bottom: 1px solid #e7ebe9;
   }
 
@@ -4560,7 +4778,8 @@
   .oracle-board-table tbody td:nth-child(1),
   .oracle-board-table tbody td:nth-child(2),
   .oracle-board-table tbody td:nth-child(3),
-  .oracle-board-table tbody td:nth-child(4) {
+  .oracle-board-table tbody td:nth-child(4),
+  .oracle-board-table tbody td:nth-child(5) {
     display: block;
     width: auto;
     height: auto;
@@ -4598,32 +4817,31 @@
     grid-column: 3;
   }
 
-  .oracle-board-table tbody td:nth-child(4) {
-    display: grid;
-    grid-column: 1 / -1;
+  .oracle-board-table tbody td:nth-child(4),
+  .oracle-board-table tbody td:nth-child(5) {
     grid-row: 2;
-    grid-template-columns: 86px minmax(0, 1fr);
-    align-items: baseline;
-    gap: 8px;
     padding: 8px 11px 10px;
     background: #f8faf9;
     border-top: 1px solid var(--line);
   }
 
-  .oracle-board-table tbody td:nth-child(4) .mobile-column-label {
+  .oracle-board-table tbody td:nth-child(4) {
     grid-column: 1;
-    grid-row: 1 / span 2;
-    align-self: center;
-    margin-bottom: 0;
+    border-right: 1px solid var(--line);
   }
 
-  .oracle-board-table tbody td:nth-child(4) .current-results {
-    grid-column: 2;
+  .oracle-board-table tbody td:nth-child(5) {
+    grid-column: 2 / -1;
   }
 
-  .oracle-board-table tbody td:nth-child(4) small {
-    grid-column: 2;
-    margin-top: 2px;
+  .oracle-board-table tbody td:nth-child(4) .mobile-column-label,
+  .oracle-board-table tbody td:nth-child(5) .mobile-column-label {
+    margin-bottom: 4px;
+  }
+
+  .oracle-board-table tbody td:nth-child(4) small,
+  .oracle-board-table tbody td:nth-child(5) small {
+    margin-top: 3px;
   }
 
   .oracle-board-table .outlook-value {
@@ -4692,6 +4910,31 @@
 }
 
 @container dossier (max-width: 650px) {
+  .dynasty-score-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dynasty-score-grid > div {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dynasty-score-grid > div:nth-child(3),
+  .dynasty-score-grid > div:nth-child(6) {
+    border-right: 0;
+  }
+
+  .dynasty-score-grid > div:nth-child(n + 4) {
+    border-bottom: 0;
+  }
+
+  .dynasty-source-note {
+    grid-template-columns: 14px minmax(0, 1fr);
+  }
+
+  .dynasty-source-note a {
+    grid-column: 2;
+  }
+
   .player-map-heading {
     grid-template-columns: 96px minmax(0, 1fr);
     gap: 12px;
@@ -4853,6 +5096,37 @@
 
   .evidence-profile-legend {
     justify-content: flex-start;
+  }
+}
+
+@container dossier (max-width: 480px) {
+  .dynasty-score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dynasty-score-grid > div,
+  .dynasty-score-grid > div:nth-child(3) {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dynasty-score-grid > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .dynasty-score-grid > div:nth-child(n + 5) {
+    border-bottom: 0;
+  }
+
+  .dynasty-comparison {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .dynasty-unavailable {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 }
 

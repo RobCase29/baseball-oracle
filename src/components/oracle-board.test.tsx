@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
+import type { CommunitySignalItem } from '../domain/communitySignals'
 import { buildPlayerMap, PLAYER_MAP_VERSION } from '../domain/playerMap'
 import { PlayerDossier } from './PlayerDossier'
 import { ProspectBoard } from './ProspectBoard'
@@ -429,6 +430,39 @@ const player: PlayerRecord = {
   careerForecast: forecast,
 }
 
+const communitySignal: CommunitySignalItem = {
+  recordVersion: 'community-player-signal/v1',
+  player: {
+    oracleId: player.id,
+    mlbamId: '123',
+    hkbId: 'hkb-123',
+    name: player.name,
+  },
+  dynastyScore: {
+    label: 'Dynasty Score',
+    value: 4_152,
+    signalStatus: 'ranked',
+    overallRank: 31,
+    overallUniverse: 1_744,
+    prospectRank: 1,
+    prospectUniverse: 620,
+    movement: { rank7d: 4, rank30d: 24, value7d: 175, value30d: 710 },
+    attention: {
+      views30d: 1_234,
+      rank30d: 8,
+      prospectViews30d: 982,
+      prospectRank30d: 2,
+    },
+    history: { rank30d: [55, 31], value30d: [3_442, 4_152] },
+  },
+  source: {
+    name: 'HarryKnowsBall',
+    url: 'https://harryknowsball.com/player/actual-player-hkb-123',
+    capturedAt: '2026-07-16T17:00:00.000Z',
+    updatedAt: '2026-07-16T16:56:45.455Z',
+  },
+}
+
 describe('unified Oracle Board shell', () => {
   it('hydrates cached v1 maps from the fixed forecast universe instead of the legacy active universe', () => {
     const rankedPlayer = {
@@ -468,7 +502,7 @@ describe('unified Oracle Board shell', () => {
     expect(hydrated.stageStanding.topPercent).toBeCloseTo(0.1084, 4)
   })
 
-  it('opens Directory as a noncompetitive four-column player table', () => {
+  it('opens Directory as a noncompetitive player table with a separate community signal', () => {
     const onChangeFilters = vi.fn()
     render(
       <ProspectBoard
@@ -492,6 +526,7 @@ describe('unified Oracle Board shell', () => {
       'Player',
       'Stage Rank',
       'Career Outlook',
+      'Dynasty Score',
       'Current Results',
     ])
     expect(screen.getByText('--')).toBeInTheDocument()
@@ -518,6 +553,49 @@ describe('unified Oracle Board shell', () => {
       level: 'All',
       sort: 'stageStanding',
     })
+  })
+
+  it('shows HarryKnowsBall as an independent Dynasty Score without changing Oracle ranks', () => {
+    const { unmount } = render(
+      <ProspectBoard
+        players={[player]}
+        communitySignals={{ '123': communitySignal }}
+        selectedId={null}
+        filters={{ query: '', stage: 'Minors', playerType: 'All', level: 'All', sort: 'prospectScore' }}
+        pagination={{ page: 1, limit: 50, total: 1, totalPages: 1 }}
+        loading={false}
+        error={null}
+        onSelect={vi.fn()}
+        onChangeFilters={vi.fn()}
+        onChangePage={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'Dynasty Score' })).toHaveAttribute(
+      'title',
+      expect.stringContaining('not used by the Oracle model'),
+    )
+    expect(screen.getByText('4,152')).toBeInTheDocument()
+    expect(screen.getByText(/Prospect #1 \/ Overall #31/u)).toBeInTheDocument()
+    expect(screen.getByText(/\+24 ranks in 30d/u)).toBeInTheDocument()
+
+    unmount()
+    render(
+      <PlayerDossier
+        player={player}
+        communitySignal={communitySignal}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Dynasty Score' })).toBeInTheDocument()
+    expect(screen.getByText('10-10,000 crowd value')).toBeInTheDocument()
+    expect(screen.getByText('+24 ranks')).toBeInTheDocument()
+    expect(screen.getByText(/not a probability and not an Oracle model input/u)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /HarryKnowsBall/u })).toHaveAttribute(
+      'href',
+      communitySignal.source.url,
+    )
   })
 
   it('disables the minor-league level filter in the MLB view', () => {
