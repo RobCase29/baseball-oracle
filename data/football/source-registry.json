@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "football-market-source-registry/v1",
+  "updatedAt": "2026-07-16",
+  "sources": [
+    {
+      "id": "keeptradecut-devy",
+      "coverage": "college_devy_market",
+      "url": "https://keeptradecut.com/devy-rankings",
+      "automatedAccess": "prohibited",
+      "derivedDisplay": "prohibited",
+      "modelTraining": "prohibited",
+      "rightsState": "blocked",
+      "reason": "Published FAQ and terms prohibit scraping, full-ranking use in tools, derivative use, and redistribution.",
+      "termsUrl": "https://keeptradecut.com/terms-and-conditions"
+    },
+    {
+      "id": "keeptradecut-dynasty",
+      "coverage": "nfl_dynasty_market",
+      "url": "https://keeptradecut.com/dynasty-rankings",
+      "automatedAccess": "prohibited",
+      "derivedDisplay": "prohibited",
+      "modelTraining": "prohibited",
+      "rightsState": "blocked",
+      "reason": "Published FAQ and terms prohibit scraping, full-ranking use in tools, derivative use, and redistribution.",
+      "termsUrl": "https://keeptradecut.com/terms-and-conditions"
+    },
+    {
+      "id": "dynasty-daddy-first-party",
+      "coverage": "nfl_dynasty_market",
+      "url": "https://dynasty-daddy.com/fantasy-rankings",
+      "automatedAccess": "pending_written_permission",
+      "derivedDisplay": "pending_written_permission",
+      "modelTraining": "pending_written_permission",
+      "rightsState": "unknown_fail_closed",
+      "reason": "No documented public API, stability commitment, or downstream-use license was found. Third-party markets displayed by Dynasty Daddy require separate upstream permission."
+    },
+    {
+      "id": "college-football-data",
+      "coverage": "college_identity_roster_production_recruiting",
+      "url": "https://collegefootballdata.com/",
+      "automatedAccess": "api_key_required",
+      "derivedDisplay": "tier_and_terms_review_required",
+      "modelTraining": "tier_and_terms_review_required",
+      "rightsState": "planned",
+      "reason": "Official API provides player statistics and recruiting data. Product builders are directed to Tier 3 or above; configure a key only after selecting the appropriate app tier.",
+      "termsUrl": "https://collegefootballdata.com/terms"
+    }
+  ]
+}

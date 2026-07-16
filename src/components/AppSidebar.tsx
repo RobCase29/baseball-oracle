@@ -1,10 +1,12 @@
 import {
   BarChart3,
   FlaskConical,
+  Goal,
   PanelLeftClose,
   PanelLeftOpen,
   ScanSearch,
 } from 'lucide-react'
+import './AppSidebarFootballLink.css'
 
 export type WorkspaceView = 'Board' | 'Model lab'
 
@@ -52,6 +54,14 @@ export function AppSidebar({
             <span>{displayLabel}</span>
           </button>
         ))}
+        <a
+          className="sport-switch-link"
+          href="/football"
+          title="Football Oracle"
+        >
+          <Goal size={18} aria-hidden="true" />
+          <span>Football</span>
+        </a>
       </nav>
 
       <div className="sidebar-status">

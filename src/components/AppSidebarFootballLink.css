@@ -1,0 +1,75 @@
+.sidebar-nav .sport-switch-link {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  color: #adb8b3;
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.sidebar-nav .sport-switch-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-nav .sport-switch-link span {
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.app-sidebar.is-collapsed .sidebar-nav .sport-switch-link {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 0;
+}
+
+.app-sidebar.is-collapsed .sidebar-nav .sport-switch-link span {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .sidebar-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sidebar-nav .sport-switch-link,
+  .app-sidebar.is-collapsed .sidebar-nav .sport-switch-link {
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 42px;
+    padding: 0 7px;
+  }
+
+  .sidebar-nav .sport-switch-link span,
+  .app-sidebar.is-collapsed .sidebar-nav .sport-switch-link span {
+    display: inline;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .sidebar-nav .sport-switch-link,
+  .app-sidebar.is-collapsed .sidebar-nav .sport-switch-link {
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 5px;
+  }
+
+  .sidebar-nav .sport-switch-link span,
+  .app-sidebar.is-collapsed .sidebar-nav .sport-switch-link span {
+    font-size: 8px;
+    line-height: 1;
+  }
+}

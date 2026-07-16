@@ -3,6 +3,12 @@
   "framework": "vite",
   "buildCommand": "npm run db:deploy && npm run bootstrap:mlb-rosters:remote && npm run archive:register-catalog:remote && npm run build",
   "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/football",
+      "destination": "/football/index.html"
+    }
+  ],
   "functions": {
     "api/admin/*.ts": {
       "maxDuration": 300
