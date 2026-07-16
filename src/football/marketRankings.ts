@@ -1,4 +1,9 @@
 import type { FootballPosition, FootballUniverse } from './footballData'
+import type {
+  FootballMarketComparisonScope,
+  FootballMarketRanking as LiveFootballMarketRanking,
+  FootballMarketProviderId,
+} from './marketFeedContract'
 
 export interface MarketRanking {
   name: string
@@ -11,6 +16,15 @@ export interface MarketRanking {
   positionUniverseSize: number
   positionPercentile: number
   asOf: string
+  provider?: FootballMarketProviderId
+  providerPlayerId?: string
+  requestedFormatId?: string
+  comparisonScope?: FootballMarketComparisonScope
+  overallRank?: number | null
+  value?: number | null
+  tier?: number | null
+  sourceUrl?: string
+  fetchedAt?: string
 }
 
 export interface MarketConsensus {
@@ -34,7 +48,7 @@ const REQUIRED_COLUMNS = [
 ] as const
 const POSITIONS = new Set<FootballPosition>(['QB', 'WR', 'RB', 'TE'])
 const UNIVERSES = new Set<FootballUniverse>(['college', 'nfl'])
-const BLOCKED_SOURCE_KEYS = ['keeptradecut', 'dynastydaddy', 'adpdaddy'] as const
+const RESERVED_AUTOMATED_SOURCE_KEYS = ['keeptradecut', 'dynastydaddy', 'adpdaddy'] as const
 
 export function normalizeFootballPlayerName(value: string): string {
   return value
@@ -76,9 +90,9 @@ function normalizeSourceKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-function isBlockedSource(value: string): boolean {
+function isReservedAutomatedSource(value: string): boolean {
   const key = normalizeSourceKey(value)
-  return key === 'ktc' || BLOCKED_SOURCE_KEYS.some((blockedKey) => key.includes(blockedKey))
+  return key === 'ktc' || RESERVED_AUTOMATED_SOURCE_KEYS.some((reservedKey) => key.includes(reservedKey))
 }
 
 function isIsoCalendarDate(value: string): boolean {
@@ -124,8 +138,8 @@ export function parseMarketRankingsCsv(input: string): MarketRanking[] {
     if (!UNIVERSES.has(universe)) throw new Error(`Row ${rowNumber}: universe must be college or nfl.`)
     if (!POSITIONS.has(position)) throw new Error(`Row ${rowNumber}: position must be QB, WR, RB, or TE.`)
     if (!source) throw new Error(`Row ${rowNumber}: source is required.`)
-    if (isBlockedSource(source)) {
-      throw new Error(`Row ${rowNumber}: ${source} is link-only until written reuse permission exists.`)
+    if (isReservedAutomatedSource(source)) {
+      throw new Error(`Row ${rowNumber}: ${source} is reserved for the verified automated feed.`)
     }
     if (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(formatId)) {
       throw new Error(`Row ${rowNumber}: format_id must be a lowercase underscore-delimited identifier.`)
@@ -168,6 +182,57 @@ export function parseMarketRankingsCsv(input: string): MarketRanking[] {
   }
 
   return rankings
+}
+
+export function marketRankingFromLiveFeed(ranking: LiveFootballMarketRanking): MarketRanking {
+  return {
+    name: ranking.name,
+    normalizedName: ranking.normalizedName,
+    universe: ranking.universe,
+    position: ranking.position,
+    source: ranking.providerLabel,
+    formatId: ranking.formatId,
+    positionRank: ranking.positionRank,
+    positionUniverseSize: ranking.positionUniverseSize,
+    positionPercentile: ranking.positionPercentile,
+    asOf: ranking.fetchedAt.slice(0, 10),
+    provider: ranking.provider,
+    providerPlayerId: ranking.providerPlayerId,
+    requestedFormatId: ranking.requestedFormatId,
+    comparisonScope: ranking.comparisonScope,
+    overallRank: ranking.overallRank,
+    value: ranking.value,
+    tier: ranking.tier,
+    sourceUrl: ranking.sourceUrl,
+    fetchedAt: ranking.fetchedAt,
+  }
+}
+
+export function marketRankingsForPlayer(
+  rankings: readonly MarketRanking[],
+  name: string,
+  universe: FootballUniverse,
+  position: FootballPosition,
+  formatId: string,
+): MarketRanking[] {
+  const normalizedName = normalizeFootballPlayerName(name)
+  return rankings
+    .filter((ranking) => (
+      ranking.normalizedName === normalizedName &&
+      ranking.universe === universe &&
+      ranking.position === position &&
+      (
+        ranking.formatId === formatId ||
+        (
+          ranking.comparisonScope === 'provider_default_directional' &&
+          ranking.requestedFormatId === formatId
+        )
+      )
+    ))
+    .sort((left, right) => {
+      if (left.comparisonScope === right.comparisonScope) return left.source.localeCompare(right.source)
+      return left.comparisonScope === 'provider_default_directional' ? 1 : -1
+    })
 }
 
 export function marketConsensusFor(

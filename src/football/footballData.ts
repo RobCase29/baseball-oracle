@@ -106,7 +106,7 @@ export const footballPlayers: readonly FootballPlayer[] = [
     oracleRank: 3,
     researchScore: 0.739435,
     evidenceState: 'completed_season',
-    summary: 'A stable top-tier WR signal whose eventual edge label depends on a rights-attested same-format market snapshot.',
+    summary: 'A stable top-tier WR signal whose edge label now updates against the authorized same-format market snapshot.',
   },
   {
     id: 'nfl-puka-nacua',
@@ -202,7 +202,7 @@ export const footballPlayers: readonly FootballPlayer[] = [
     oracleRank: 3,
     researchScore: 0.641563,
     evidenceState: 'completed_season',
-    summary: 'A useful disagreement candidate once licensed market ranks are loaded, especially across different TE-premium assumptions.',
+    summary: 'A useful disagreement candidate across the selected TE-premium assumptions in the authorized live market feed.',
   },
   {
     id: 'nfl-tyler-warren',
@@ -214,7 +214,7 @@ export const footballPlayers: readonly FootballPlayer[] = [
     oracleRank: 4,
     researchScore: 0.618289,
     evidenceState: 'completed_season',
-    summary: 'A young TE profile retained near the top of the internal cohort while external market access remains link-only.',
+    summary: 'A young TE profile retained near the top of the internal cohort, now paired with attributed live market context.',
   },
   {
     id: 'college-arch-manning',
@@ -346,7 +346,7 @@ export const footballPlayers: readonly FootballPlayer[] = [
     oracleRank: null,
     researchScore: null,
     evidenceState: 'feature_feed_pending',
-    summary: 'Included for future feature coverage; a rights-attested market rank can be imported but does not become an Oracle score.',
+    summary: 'Included for future feature coverage; the authorized Devy market rank is visible but does not become an Oracle score.',
   },
   {
     id: 'college-jadan-baugh',

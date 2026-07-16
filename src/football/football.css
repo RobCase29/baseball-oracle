@@ -237,6 +237,40 @@ input {
   color: #aab6af;
 }
 
+.fo-feed-providers {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 4px 0 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fo-feed-providers li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  background: rgba(12, 20, 17, 0.5);
+  border: 1px solid var(--fo-line);
+  border-radius: 999px;
+}
+
+.fo-feed-providers strong,
+.fo-feed-providers span {
+  color: #9baaa2;
+  font-size: 8px;
+}
+
+.fo-feed-providers li.is-available strong {
+  color: var(--fo-green-strong);
+}
+
+.fo-feed-providers li.is-unavailable strong {
+  color: #f3b0b0;
+}
+
 .fo-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -681,6 +715,57 @@ input {
   color: var(--fo-muted);
   font-size: 10px;
   line-height: 1.6;
+}
+
+.fo-provider-ranks {
+  display: grid;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.fo-provider-ranks > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 11px;
+  background: #101915;
+  border: 1px solid var(--fo-line);
+  border-radius: 7px;
+}
+
+.fo-provider-ranks span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fo-provider-ranks span:last-child {
+  flex: 0 0 auto;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.fo-provider-ranks strong {
+  color: var(--fo-text);
+  font-size: 10px;
+}
+
+.fo-provider-ranks span:last-child strong {
+  color: var(--fo-green-strong);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+}
+
+.fo-provider-ranks small {
+  overflow: hidden;
+  color: #71847a;
+  font-size: 8px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fo-link-row {

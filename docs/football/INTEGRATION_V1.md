@@ -1,6 +1,6 @@
 # Football Oracle integration v1
 
-Status: research preview
+Status: live market beta
 Route: `/football`
 Parent product: Baseball Oracle
 
@@ -48,36 +48,57 @@ The page distinguishes three concepts:
 - **Dynasty edge:** a future, validated translation from expected production to
   above-replacement fantasy utility. v1 does not make this claim.
 
-The browser import accepts only rights-attested, licensed or self-authored rows:
+The page automatically requests normalized market rows from:
+
+```text
+GET /api/football/v1/market-rankings?universe=college|nfl&format=<exact KTC format>
+```
+
+KTC Devy and Dynasty rows retain one of eight exact 12-team, half-PPR format
+identities: 1QB or Superflex crossed with no TEP, TE+, TE++, or TE+++. Dynasty
+Daddy market 14 is a separate provider-default 1QB/Superflex directional lens;
+it is displayed beside KTC but is not relabeled as an exact KTC format and is
+not included in the exact-format consensus.
+
+The optional browser import accepts only rights-attested, licensed or
+self-authored rows:
 
 ```text
 name,universe,position,source,format_id,position_rank,position_universe_size,as_of,rights_attested
 ```
 
-Known KTC and Dynasty Daddy aliases are rejected while their registry states are
-blocked or pending. Comparisons require an exact `format_id`, then convert each
-source rank to a within-source position percentile using its declared
-`position_universe_size`. The market consensus is the median source percentile.
-A positive display gap means Oracle percentile minus market percentile is
-positive. Imported data is session-local and is not uploaded or persisted.
+Known KTC and Dynasty Daddy aliases are reserved for the verified automatic
+feeds. Exact comparisons convert each source rank to a within-source position
+percentile using its source universe size. The exact-format consensus is the
+median eligible source percentile. A positive display gap means Oracle
+percentile minus market percentile is positive. Imported data is session-local
+and is not uploaded or persisted.
 
 KTC states that Devy and Dynasty values use different scales. Raw values are
 therefore never compared across college and NFL routes.
 
-## External source posture
+## Authorized source posture
 
-- [KTC FAQ](https://keeptradecut.com/frequently-asked-questions) says no API or
-  CSV exists and prohibits scraping or reproducing full values in tools.
-- [KTC Terms](https://keeptradecut.com/terms-and-conditions) prohibit automated
-  extraction, derivative use, redistribution, and use on another website.
-- [Dynasty Daddy](https://dynasty-daddy.com/fantasy-rankings) displays pro
-  markets and download/upload controls but publishes no supported reuse API or
-  downstream data license. It remains fail-closed pending written permission.
+- The project owner attested direct permission from KTC and Dynasty Daddy after
+  the intended retrieval, caching, attributed display, and derived-comparison
+  uses were stated. The evidence boundary is recorded in
+  `docs/permissions/FOOTBALL_MARKET_SOURCE_ATTESTATION.md`.
+- [KTC Dynasty](https://keeptradecut.com/dynasty-rankings) and
+  [KTC Devy](https://keeptradecut.com/devy-rankings) are retrieved directly on
+  the server. Their embedded JSON is bounded, balanced-scanned, parsed without
+  executing page JavaScript, normalized, and schema-validated.
+- [Dynasty Daddy](https://dynasty-daddy.com/fantasy-rankings) first-party market
+  14 is retrieved directly and kept source-defined. ADP Daddy, Redraft Daddy,
+  KTC-via-Dynasty-Daddy, and every other embedded market remain excluded.
 - [CollegeFootballData](https://collegefootballdata.com/api-tiers) provides an
   official player-statistics API and recommends Tier 3+ for app builders. It is
   a college feature-source candidate once its terms are reviewed and an
   appropriate key and tier are configured.
 
-The page links to live market boards but does not automatically retrieve or
-republish them. `data/football/source-registry.json` is the machine-readable
-gate for future adapters.
+The server response exposes normalized comparison fields only, never the raw
+provider payload. Requests are bounded, time-limited, and cached for 15 minutes
+with one hour of stale-while-revalidate. Each provider fails independently, so
+the UI can report a partial snapshot without silently substituting another
+market. `data/football/source-registry.json` is the machine-readable rights
+gate, and market readings remain comparison signals rather than model-training
+features.

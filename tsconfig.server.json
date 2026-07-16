@@ -23,6 +23,7 @@
     "src/domain/playerMap.ts",
     "src/domain/playerSignals.ts",
     "src/domain/communitySignals.ts",
-    "src/domain/playerHandling.ts"
+    "src/domain/playerHandling.ts",
+    "src/football/marketFeedContract.ts"
   ]
 }

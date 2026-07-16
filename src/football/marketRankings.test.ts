@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   marketConsensusFor,
+  marketRankingsForPlayer,
   normalizeFootballPlayerName,
   parseMarketRankingsCsv,
 } from './marketRankings'
@@ -101,9 +102,9 @@ describe('football market ranking CSV parsing', () => {
     )
   })
 
-  it.each(['KTC', 'Keep Trade Cut', 'Dynasty Daddy', 'ADP Daddy'])('rejects restricted source alias %s', (source) => {
+  it.each(['KTC', 'Keep Trade Cut', 'Dynasty Daddy', 'ADP Daddy'])('reserves automated source alias %s', (source) => {
     const csv = `${HEADER}\nArch Manning,college,QB,${source},sf_12t_half_ppr_no_tep,1,40,2026-07-16,true`
-    expect(() => parseMarketRankingsCsv(csv)).toThrow(/link-only until written reuse permission exists/u)
+    expect(() => parseMarketRankingsCsv(csv)).toThrow(/reserved for the verified automated feed/u)
   })
 })
 
@@ -143,5 +144,46 @@ describe('football market consensus isolation', () => {
     })
     expect(marketConsensusFor(rankings, 'Arch Manning', 'college', 'TE', 'sf_12t_half_ppr_no_tep')).toBeNull()
     expect(marketConsensusFor(rankings, 'Dante Moore', 'college', 'QB', 'sf_12t_half_ppr_no_tep')).toBeNull()
+  })
+
+  it('shows a provider-default row without blending it into exact-format consensus', () => {
+    const rankings = [
+      {
+        name: 'Jared Goff',
+        normalizedName: 'jaredgoff',
+        universe: 'nfl' as const,
+        position: 'QB' as const,
+        source: 'KeepTradeCut Dynasty',
+        formatId: 'sf_12t_half_ppr_no_tep',
+        positionRank: 12,
+        positionUniverseSize: 64,
+        positionPercentile: 82.54,
+        asOf: '2026-07-16',
+        comparisonScope: 'exact_format' as const,
+        requestedFormatId: 'sf_12t_half_ppr_no_tep',
+      },
+      {
+        name: 'Jared Goff',
+        normalizedName: 'jaredgoff',
+        universe: 'nfl' as const,
+        position: 'QB' as const,
+        source: 'Dynasty Daddy',
+        formatId: 'dd_sf_provider_default',
+        positionRank: 14,
+        positionUniverseSize: 62,
+        positionPercentile: 78.69,
+        asOf: '2026-07-16',
+        comparisonScope: 'provider_default_directional' as const,
+        requestedFormatId: 'sf_12t_half_ppr_no_tep',
+      },
+    ]
+
+    expect(marketConsensusFor(rankings, 'Jared Goff', 'nfl', 'QB', 'sf_12t_half_ppr_no_tep')).toMatchObject({
+      sourceCount: 1,
+      sources: ['KeepTradeCut Dynasty'],
+      positionRank: 12,
+    })
+    expect(marketRankingsForPlayer(rankings, 'Jared Goff', 'nfl', 'QB', 'sf_12t_half_ppr_no_tep'))
+      .toHaveLength(2)
   })
 })

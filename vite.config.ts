@@ -22,6 +22,7 @@ export default defineConfig({
       '/api/players': publicApiTarget,
       '/api/v1/player-signals': publicApiTarget,
       '/api/model-status': publicApiTarget,
+      '/api/football': publicApiTarget,
     },
   },
 })
