@@ -13,7 +13,6 @@ const canonicalOracleIdPattern = /^[A-Za-z0-9][A-Za-z0-9:._~'@/+-]{0,199}$/u
 const mlbamIdPattern = /^\d{1,12}$/u
 const prefixedMlbamIdPattern = /^mlbam:(\d{1,12})(?::(?:hitter|pitcher|two-way))?$/iu
 const publicCache = 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
-const canonicalSourceUrl = 'https://harryknowsball.com/rankings'
 
 type DatabaseNumber = bigint | number | string | null
 
@@ -179,7 +178,7 @@ function requiredPositiveId(value: DatabaseNumber, label: string): string {
 function dynastyValue(value: DatabaseNumber): number {
   const number = integerOrNull(value)
   if (number === null || number < 10 || number > 10_000) {
-    throw new Error('Invalid HarryKnowsBall dynasty value')
+    throw new Error('Invalid Dynasty Score value')
   }
   return number
 }
@@ -218,20 +217,6 @@ function timestamp(value: string | null, required: boolean): string | null {
   return new Date(value).toISOString()
 }
 
-function sourceUrl(value: string | null): string {
-  if (value === null) return canonicalSourceUrl
-  try {
-    const url = new URL(value)
-    if (
-      url.protocol === 'https:' &&
-      (url.hostname === 'harryknowsball.com' || url.hostname === 'www.harryknowsball.com')
-    ) return url.toString()
-  } catch {
-    // Fall through to the canonical attribution URL.
-  }
-  return canonicalSourceUrl
-}
-
 export function communitySignalItem(row: CommunitySignalRow): CommunitySignalItem {
   const value = dynastyValue(row.dynasty_value)
   const capturedAt = timestamp(row.captured_at, true)
@@ -239,7 +224,6 @@ export function communitySignalItem(row: CommunitySignalRow): CommunitySignalIte
     player: {
       oracleId: row.oracle_player_id,
       mlbamId: requiredPositiveId(row.mlbam_id, 'MLBAM ID'),
-      hkbId: row.hkb_player_id,
       name: row.player_name,
     },
     dynastyScore: {
@@ -270,11 +254,9 @@ export function communitySignalItem(row: CommunitySignalRow): CommunitySignalIte
         ),
       },
     },
-    source: {
-      name: 'HarryKnowsBall',
-      url: sourceUrl(row.source_url),
+    observation: {
       capturedAt,
-      updatedAt: timestamp(row.source_updated_at, false),
+      dataUpdatedAt: timestamp(row.source_updated_at, false),
     },
   }
   const digest = createHash('sha256').update(JSON.stringify(itemWithoutVersion)).digest('hex')
@@ -315,18 +297,18 @@ export function communitySignalsResponse(
     }
   }
 
-  const observedAt = latestTimestamp(items.map((item) => item.source.capturedAt))
-  const sourceUpdatedAt = latestTimestamp(items.map((item) => item.source.updatedAt))
+  const observedAt = latestTimestamp(items.map((item) => item.observation.capturedAt))
+  const dataUpdatedAt = latestTimestamp(items.map((item) => item.observation.dataUpdatedAt))
   const snapshot = observedAt === null ? null : {
-    id: `community-signals-snapshot/v1:${createHash('sha256').update(JSON.stringify({
+    id: `dynasty-scores-snapshot/v1:${createHash('sha256').update(JSON.stringify({
       schemaVersion: COMMUNITY_SIGNALS_SCHEMA_VERSION,
       contractVersion: COMMUNITY_SIGNALS_CONTRACT_VERSION,
       observedAt,
-      sourceUpdatedAt,
+      dataUpdatedAt,
       records: items.map((item) => item.recordVersion).sort(),
     })).digest('hex')}`,
     observedAt,
-    sourceUpdatedAt,
+    dataUpdatedAt,
   }
   return {
     schemaVersion: COMMUNITY_SIGNALS_SCHEMA_VERSION,
@@ -338,11 +320,11 @@ export function communitySignalsResponse(
       nullMeans: 'unavailable_not_zero',
       nullMeansUnavailableNotZero: true,
       identityPolicy: 'exact_mlbam_join_no_name_matching',
-      signalType: 'crowdsourced_dynasty_sentiment',
+      signalType: 'external_dynasty_consensus',
       dynastyScoreScale: {
         minimum: 10,
         maximum: 10_000,
-        unit: 'HarryKnowsBall dynasty value',
+        unit: 'dynasty score points',
         isProbability: false,
       },
       requestedIds,

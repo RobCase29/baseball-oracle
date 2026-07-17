@@ -435,7 +435,6 @@ const communitySignal: CommunitySignalItem = {
   player: {
     oracleId: player.id,
     mlbamId: '123',
-    hkbId: 'hkb-123',
     name: player.name,
   },
   dynastyScore: {
@@ -455,11 +454,9 @@ const communitySignal: CommunitySignalItem = {
     },
     history: { rank30d: [55, 31], value30d: [3_442, 4_152] },
   },
-  source: {
-    name: 'HarryKnowsBall',
-    url: 'https://harryknowsball.com/player/actual-player-hkb-123',
+  observation: {
     capturedAt: '2026-07-16T17:00:00.000Z',
-    updatedAt: '2026-07-16T16:56:45.455Z',
+    dataUpdatedAt: '2026-07-16T16:56:45.455Z',
   },
 }
 
@@ -527,9 +524,10 @@ describe('unified Oracle Board shell', () => {
       'Stage Rank',
       'Career Outlook',
       'Dynasty Score',
+      'Momentum',
       'Current Results',
     ])
-    expect(screen.getByText('--')).toBeInTheDocument()
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0)
     expect(screen.getByText('MLB regular')).toBeInTheDocument()
     expect(screen.getByText('61/100 · If MLB is reached')).toBeInTheDocument()
     expect(screen.getByText('Results pending')).toBeInTheDocument()
@@ -555,7 +553,7 @@ describe('unified Oracle Board shell', () => {
     })
   })
 
-  it('shows HarryKnowsBall as an independent Dynasty Score without changing Oracle ranks', () => {
+  it('shows dynasty consensus independently without changing Oracle ranks', () => {
     const { unmount } = render(
       <ProspectBoard
         players={[player]}
@@ -577,7 +575,8 @@ describe('unified Oracle Board shell', () => {
     )
     expect(screen.getByText('4,152')).toBeInTheDocument()
     expect(screen.getByText(/Prospect #1 \/ Overall #31/u)).toBeInTheDocument()
-    expect(screen.getByText(/\+24 ranks in 30d/u)).toBeInTheDocument()
+    expect(screen.getByText(/\+24 ranks in 30 days/u)).toBeInTheDocument()
+    expect(screen.getByText('+3.9 pts')).toBeInTheDocument()
 
     unmount()
     render(
@@ -592,10 +591,7 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('10-10,000 crowd value')).toBeInTheDocument()
     expect(screen.getByText('+24 ranks')).toBeInTheDocument()
     expect(screen.getByText(/not a probability and not an Oracle model input/u)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /HarryKnowsBall/u })).toHaveAttribute(
-      'href',
-      communitySignal.source.url,
-    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('disables the minor-league level filter in the MLB view', () => {
@@ -748,7 +744,7 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getByText('--')).toBeInTheDocument()
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0)
     expect(screen.getByText('Not available')).toBeInTheDocument()
     expect(screen.getByText('Solid MLB start')).toBeInTheDocument()
 
@@ -809,6 +805,7 @@ describe('unified Oracle Board shell', () => {
       level: 'All',
       team: 'All',
       position: 'All',
+      signal: 'All',
     })
   })
 
@@ -903,7 +900,7 @@ describe('unified Oracle Board shell', () => {
       />,
     )
 
-    expect(screen.getAllByText('--')).toHaveLength(1)
+    expect(screen.getAllByText('--').length).toBeGreaterThan(0)
     expect(screen.getByText('#7')).toBeInTheDocument()
   })
 

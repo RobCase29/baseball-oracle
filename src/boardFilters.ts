@@ -7,6 +7,7 @@ export const defaultBoardFilters: BoardFilters = {
   level: 'All',
   team: 'All',
   position: 'All',
+  signal: 'All',
   sort: 'prospectScore',
 }
 
@@ -16,6 +17,7 @@ export function filtersFromUrl(): BoardFilters {
   const playerType = parameters.get('playerType')
   const level = parameters.get('level')
   const sort = parameters.get('sort')
+  const signal = parameters.get('signal')
   const resolvedStage: BoardFilters['stage'] = stage === 'All' || stage === 'Minors' || stage === 'RC' || stage === 'MLB'
     ? stage
     : defaultBoardFilters.stage
@@ -30,6 +32,10 @@ export function filtersFromUrl(): BoardFilters {
     'nearTermImpact',
     'finalWar',
     'arrival36',
+    'dynastyScore',
+    'dynastyRiser',
+    'oracleAhead',
+    'crowdAhead',
     'age',
     'name',
   ])
@@ -68,6 +74,10 @@ export function filtersFromUrl(): BoardFilters {
     level: resolvedStage === 'MLB' || resolvedStage === 'RC' ? 'All' : resolvedLevel,
     team: parameters.get('team') ?? defaultBoardFilters.team,
     position: parameters.get('position') ?? defaultBoardFilters.position,
+    signal: signal === 'dynastyAvailable' || signal === 'fastRisers' ||
+      signal === 'oracleAhead' || signal === 'crowdAhead' || signal === 'bothTop10'
+      ? signal
+      : 'All',
     sort: stageSort,
   }
 }

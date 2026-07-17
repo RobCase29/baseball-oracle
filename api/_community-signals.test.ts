@@ -92,7 +92,6 @@ describe('community signals contract', () => {
       player: {
         oracleId: 'mlbam:660271',
         mlbamId: '660271',
-        hkbId: 'ohtani-hkb',
       },
       dynastyScore: {
         label: 'Dynasty Score',
@@ -103,7 +102,7 @@ describe('community signals contract', () => {
         attention: { views30d: 120, rank30d: 2 },
         history: { rank30d: [2, 1, 1], value30d: [9_950, 9_980, 10_000] },
       },
-      source: { name: 'HarryKnowsBall' },
+      observation: { capturedAt: '2026-07-16T17:00:00.000Z' },
     })
 
     const floor = communitySignalItem(row({ dynasty_value: 10, overall_rank: 840 }))
@@ -119,7 +118,7 @@ describe('community signals contract', () => {
     expect(item.dynastyScore.attention).toMatchObject({ views30d: null, rank30d: null })
     expect(item.dynastyScore.history.rank30d).toBeNull()
     expect(() => communitySignalItem(row({ dynasty_value: 10_001 }))).toThrow(
-      'Invalid HarryKnowsBall dynasty value',
+      'Invalid Dynasty Score value',
     )
   })
 
@@ -148,7 +147,7 @@ describe('community signals contract', () => {
     ]
     const response = communitySignalsResponse(firstRows, ['691176', 'missing:id', '660271'])
     expect(response.items.map((item) => item.player.name)).toEqual(['Joe Mack', 'Shohei Ohtani'])
-    expect(response.snapshot?.id).toMatch(/^community-signals-snapshot\/v1:[a-f0-9]{64}$/u)
+    expect(response.snapshot?.id).toMatch(/^dynasty-scores-snapshot\/v1:[a-f0-9]{64}$/u)
     expect(response.meta).toMatchObject({
       excludedFromOracleModel: true,
       nullMeans: 'unavailable_not_zero',
@@ -177,10 +176,10 @@ describe('/api/v1/community-signals handler', () => {
     expect(loadRows).toHaveBeenCalledWith('postgres://test', [], ['660271'])
     expect(first.response.statusCode).toBe(200)
     expect(first.headers.get('cache-control')).toContain('s-maxage=300')
-    expect(first.headers.get('x-snapshot-id')).toMatch(/^community-signals-snapshot\/v1:/u)
+    expect(first.headers.get('x-snapshot-id')).toMatch(/^dynasty-scores-snapshot\/v1:/u)
     expect(first.headers.get('etag')).toMatch(/^"[A-Za-z0-9_-]{43}"$/u)
     expect(JSON.parse(first.body ?? '{}')).toMatchObject({
-      schemaVersion: 'community-signals.v1',
+      schemaVersion: 'dynasty-scores.v1',
       items: [{ dynastyScore: { label: 'Dynasty Score', value: 10_000 } }],
     })
 

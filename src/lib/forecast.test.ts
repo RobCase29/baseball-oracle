@@ -24,6 +24,7 @@ const baseFilters: BoardFilters = {
   level: 'All',
   team: 'All',
   position: 'All',
+  signal: 'All',
   sort: 'hofProbability',
 }
 

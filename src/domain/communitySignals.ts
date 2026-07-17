@@ -1,5 +1,5 @@
-export const COMMUNITY_SIGNALS_SCHEMA_VERSION = 'community-signals.v1' as const
-export const COMMUNITY_SIGNALS_CONTRACT_VERSION = 'community-signals-contract/v1' as const
+export const COMMUNITY_SIGNALS_SCHEMA_VERSION = 'dynasty-scores.v1' as const
+export const COMMUNITY_SIGNALS_CONTRACT_VERSION = 'dynasty-scores-contract/v1' as const
 
 export type DynastySignalStatus = 'ranked' | 'default_floor'
 
@@ -8,7 +8,6 @@ export interface CommunitySignalItem {
   player: {
     oracleId: string | null
     mlbamId: string
-    hkbId: string
     name: string
   }
   dynastyScore: {
@@ -36,11 +35,9 @@ export interface CommunitySignalItem {
       value30d: Array<number | null> | null
     }
   }
-  source: {
-    name: 'HarryKnowsBall'
-    url: string
+  observation: {
     capturedAt: string
-    updatedAt: string | null
+    dataUpdatedAt: string | null
   }
 }
 
@@ -50,7 +47,7 @@ export interface CommunitySignalsResponse {
   snapshot: {
     id: string
     observedAt: string
-    sourceUpdatedAt: string | null
+    dataUpdatedAt: string | null
   } | null
   items: CommunitySignalItem[]
   meta: {
@@ -58,11 +55,11 @@ export interface CommunitySignalsResponse {
     nullMeans: 'unavailable_not_zero'
     nullMeansUnavailableNotZero: true
     identityPolicy: 'exact_mlbam_join_no_name_matching'
-    signalType: 'crowdsourced_dynasty_sentiment'
+    signalType: 'external_dynasty_consensus'
     dynastyScoreScale: {
       minimum: 10
       maximum: 10_000
-      unit: 'HarryKnowsBall dynasty value'
+      unit: 'dynasty score points'
       isProbability: false
     }
     requestedIds: string[]

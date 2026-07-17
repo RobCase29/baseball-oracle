@@ -12,7 +12,7 @@ The attested scope covers:
 - retention of source responses and point-in-time research snapshots;
 - exact player identity resolution from provider-published identifiers;
 - internal research and analysis; and
-- attributed derived and comparison display in Baseball Oracle and its
+- source-neutral derived and comparison display in Baseball Oracle and its
   connected commercial product experiences.
 
 ## Product Boundary
@@ -21,11 +21,12 @@ HarryKnowsBall data is an external dynasty-market comparison signal. It is kept
 separate from Baseball Oracle's independent statistical projections and is not
 silently blended into Oracle model scores.
 
-This attestation includes attributed commercial use of derived and comparison
-signals in the named product experiences. It does not assume permission to
+This attestation includes commercial use of derived and comparison signals in
+the named product experiences. Public product surfaces may use source-neutral
+Dynasty Score labeling while internal ingestion and audit records retain source
+lineage. It does not assume permission to
 redistribute raw HarryKnowsBall responses or independently resell the source
-data. Provider attribution and links to the source remain attached to derived
-displays.
+data.
 
 ## Identity Policy
 

@@ -89,10 +89,15 @@ const playerSorts = [
   'nearTermImpact',
   'finalWar',
   'arrival36',
+  'dynastyScore',
+  'dynastyRiser',
+  'oracleAhead',
+  'crowdAhead',
   'age',
   'name',
 ] as const
 const playerViews = ['full', 'map', 'signals'] as const
+const playerSignalFilters = ['All', 'dynastyAvailable', 'fastRisers', 'oracleAhead', 'crowdAhead', 'bothTop10'] as const
 const maximumPlayerIds = 50
 const playerMapFeedSchemaVersion = 'player-map-feed.v4' as const
 const rankingContractVersion = 'player-ranking-contract/v1' as const
@@ -107,6 +112,7 @@ const queryParameterNames = new Set([
   'level',
   'team',
   'position',
+  'signal',
   'sort',
   'page',
   'limit',
@@ -157,6 +163,7 @@ const querySchema = z.object({
     .refine((value) => value !== 'ALL')
     .nullable()
     .default(null),
+  signal: z.enum(playerSignalFilters).default('All'),
   sort: z.enum(playerSorts).optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -168,6 +175,7 @@ type PlayerStage = (typeof playerStages)[number]
 type PlayerLevel = (typeof playerLevels)[number]
 type PlayerSort = (typeof playerSorts)[number]
 type PlayerView = (typeof playerViews)[number]
+type PlayerSignalFilter = (typeof playerSignalFilters)[number]
 
 export interface PlayerQuery {
   q: string
@@ -177,6 +185,7 @@ export interface PlayerQuery {
   level: PlayerLevel
   team: string | null
   position: string | null
+  signal: PlayerSignalFilter
   sort: PlayerSort
   page: number
   limit: number
@@ -446,6 +455,17 @@ interface CurrentSourceSnapshotRow {
   known_at: string | null
 }
 
+interface DynastyComparisonRow {
+  mlbam_id: DatabaseNumber
+  dynasty_value: DatabaseNumber
+  overall_rank: DatabaseNumber
+  overall_universe: DatabaseNumber
+  prospect_rank: DatabaseNumber
+  prospect_universe: DatabaseNumber
+  rank_change_30d: DatabaseNumber
+  value_change_30d: DatabaseNumber
+}
+
 interface ObservedMetric {
   key: string
   label: string
@@ -553,6 +573,7 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
       level: readSingleParameter(url.searchParams, 'level'),
       team: readSingleParameter(url.searchParams, 'team'),
       position: readSingleParameter(url.searchParams, 'position'),
+      signal: readSingleParameter(url.searchParams, 'signal'),
       sort: readSingleParameter(url.searchParams, 'sort'),
       page: readSingleParameter(url.searchParams, 'page'),
       limit: readSingleParameter(url.searchParams, 'limit'),
@@ -569,11 +590,13 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
       parsed.data.stage === 'All' &&
       sort !== 'name' &&
       sort !== 'age' &&
-      sort !== 'careerIndex'
+      sort !== 'careerIndex' &&
+      sort !== 'dynastyScore' &&
+      sort !== 'dynastyRiser'
     ) return null
     if (sort === 'prospectScore' && parsed.data.stage !== 'Minors') return null
 
-    return { ...parsed.data, sort }
+    return { ...parsed.data, signal: parsed.data.signal ?? 'All', sort }
   } catch {
     return null
   }
@@ -1731,6 +1754,7 @@ export interface UnifiedBoardCandidate {
   previewPlayer: CareerPreviewPlayer | null
   recentCallupPrior: RecentCallupContext['prospectPrior'] | null
   currentStats?: CurrentMlbValueRow | null
+  dynastySignal?: DynastyComparisonRow | null
 }
 
 function candidateKey(candidate: UnifiedBoardCandidate): string {
@@ -1758,6 +1782,68 @@ function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
   return careerIndexValue(
     careerIndexWarQuantiles(candidatePlayerMapRoute(candidate), forecast),
   )
+}
+
+function dynastyRankContext(candidate: UnifiedBoardCandidate): {
+  rank: number | null
+  universe: number | null
+} {
+  const signal = candidate.dynastySignal
+  if (!signal || numberOrNull(signal.dynasty_value) === 10) {
+    return { rank: null, universe: null }
+  }
+  const prospect = candidate.source === 'minor' && candidate.stage === 'pre_debut'
+  return {
+    rank: (() => {
+      const value = numberOrNull(prospect ? signal.prospect_rank : signal.overall_rank)
+      return value !== null && Number.isSafeInteger(value) && value > 0 ? value : null
+    })(),
+    universe: (() => {
+      const value = numberOrNull(prospect ? signal.prospect_universe : signal.overall_universe)
+      return value !== null && Number.isSafeInteger(value) && value > 0 ? value : null
+    })(),
+  }
+}
+
+function rankPercentile(rank: number | null, universe: number | null): number | null {
+  if (rank === null || universe === null || universe < 2 || rank > universe) return null
+  return 100 * (universe - rank) / (universe - 1)
+}
+
+function candidateDynastyPercentile(candidate: UnifiedBoardCandidate): number | null {
+  const context = dynastyRankContext(candidate)
+  return rankPercentile(context.rank, context.universe)
+}
+
+function candidateDynastyMomentum(candidate: UnifiedBoardCandidate): number | null {
+  const signal = candidate.dynastySignal
+  const context = dynastyRankContext(candidate)
+  const rankChange = numberOrNull(signal?.rank_change_30d ?? null)
+  return rankChange === null || context.universe === null
+    ? null
+    : 100 * rankChange / context.universe
+}
+
+function candidateOracleDynastyGap(candidate: UnifiedBoardCandidate): number | null {
+  if (candidate.source !== 'minor' || candidate.stage !== 'pre_debut') return null
+  const oracle = candidate.servedProspectRank?.rankPercentile ?? null
+  const dynasty = candidateDynastyPercentile(candidate)
+  return oracle === null || dynasty === null ? null : oracle - dynasty
+}
+
+function matchesSignalFilter(
+  candidate: UnifiedBoardCandidate,
+  filter: PlayerSignalFilter,
+): boolean {
+  if (filter === 'All') return true
+  const dynasty = candidateDynastyPercentile(candidate)
+  if (filter === 'dynastyAvailable') return dynasty !== null
+  if (filter === 'fastRisers') return (candidateDynastyMomentum(candidate) ?? 0) >= 1
+  const gap = candidateOracleDynastyGap(candidate)
+  if (filter === 'oracleAhead') return gap !== null && gap >= 10
+  if (filter === 'crowdAhead') return gap !== null && gap <= -10
+  const oracle = candidate.servedProspectRank?.rankPercentile ?? null
+  return oracle !== null && dynasty !== null && oracle >= 90 && dynasty >= 90
 }
 
 function prospectScoringRole(
@@ -2148,6 +2234,36 @@ export function sortUnifiedCandidates(
     if (sort === 'age') {
       return compareNullableNumber(left.age, right.age, 'ascending') || idTie
     }
+    if (sort === 'dynastyScore') {
+      return (
+        compareNullableNumber(
+          numberOrNull(left.dynastySignal?.dynasty_value ?? null),
+          numberOrNull(right.dynastySignal?.dynasty_value ?? null),
+          'descending',
+        ) ||
+        compareNullableNumber(candidateDynastyPercentile(left), candidateDynastyPercentile(right), 'descending') ||
+        idTie
+      )
+    }
+    if (sort === 'dynastyRiser') {
+      return (
+        compareNullableNumber(candidateDynastyMomentum(left), candidateDynastyMomentum(right), 'descending') ||
+        compareNullableNumber(candidateDynastyPercentile(left), candidateDynastyPercentile(right), 'descending') ||
+        idTie
+      )
+    }
+    if (sort === 'oracleAhead') {
+      return (
+        compareNullableNumber(candidateOracleDynastyGap(left), candidateOracleDynastyGap(right), 'descending') ||
+        idTie
+      )
+    }
+    if (sort === 'crowdAhead') {
+      return (
+        compareNullableNumber(candidateOracleDynastyGap(left), candidateOracleDynastyGap(right), 'ascending') ||
+        idTie
+      )
+    }
     if (sort === 'arrival36') {
       if (left.source === 'minor' && right.source === 'minor') {
         return (
@@ -2257,7 +2373,12 @@ export function sortBoardCandidates(
     ))
   }
   if (query.stage === 'All') {
-    return sortUnifiedCandidates(items, query.sort === 'age' ? 'age' : 'name')
+    return sortUnifiedCandidates(
+      items,
+      query.sort === 'age' || query.sort === 'dynastyScore' || query.sort === 'dynastyRiser'
+        ? query.sort
+        : 'name',
+    )
   }
   return sortUnifiedCandidates(items, query.sort)
 }
@@ -2332,6 +2453,10 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
         'descending',
         compact ? null : 'careerForecast.arrivalProbability36',
       ),
+    dynastyScore: metric('dynasty_score', 'descending', null),
+    dynastyRiser: metric('dynasty_rank_percentile_change_30d', 'descending', null),
+    oracleAhead: metric('oracle_minus_dynasty_percentile_points', 'descending', null),
+    crowdAhead: metric('oracle_minus_dynasty_percentile_points', 'ascending', null),
     age: metric('age', 'ascending', compact ? 'context.age' : 'age'),
     name: metric('display_name', 'ascending', nameField),
   }
@@ -4212,6 +4337,7 @@ export default async function handler(
       currentMinorSourceResult,
       currentMinorRosterSourceResult,
       currentScoutingSourceResult,
+      dynastyComparisonResult,
     ] = await Promise.all([
       sql`
         SELECT
@@ -4400,6 +4526,19 @@ export default async function handler(
           max(known_at)::text AS known_at
         FROM app.fangraphs_current_candidate_bridge_overlay
       `,
+      sql`
+        SELECT
+          mlbam_id,
+          dynasty_value,
+          overall_rank,
+          overall_universe,
+          prospect_rank,
+          prospect_universe,
+          rank_change_30d,
+          value_change_30d
+        FROM app.hkb_current_comparison_signal
+        WHERE mlbam_id IS NOT NULL
+      `,
     ])
     const minorRoleRows = candidateResult as unknown as MinorCandidateRow[]
     const currentMlbRows = currentMlbResult as unknown as CurrentMlbValueRow[]
@@ -4418,6 +4557,12 @@ export default async function handler(
     const currentMinorRosterSource =
       (currentMinorRosterSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
     const currentScoutingSource = (currentScoutingSourceResult as unknown as CurrentSourceSnapshotRow[])[0] ?? null
+    const dynastyByMlbam = new Map(
+      (dynastyComparisonResult as unknown as DynastyComparisonRow[]).map((row) => [
+        databaseIdentifier(row.mlbam_id),
+        row,
+      ]),
+    )
     const composedIdentity = composeMlbIdentityCrosswalk(
       staticIdentityCrosswalk,
       identityOverlayRows,
@@ -4480,13 +4625,20 @@ export default async function handler(
     const recentCallupCount = mlb.filter((candidate) => candidate.stage === 'recent_callup').length
     const merged = mergeCurrentUniverse(mlb, servedMinorCandidates)
     const { canonicalMinors, crossStageDuplicatesRemoved } = merged
-    const currentUniverse = merged.items
+    const currentUniverse = merged.items.map((candidate) => ({
+      ...candidate,
+      dynastySignal: candidate.mlbamId === null
+        ? null
+        : dynastyByMlbam.get(candidate.mlbamId) ?? null,
+    }))
     const servedProspectUniverse = canonicalMinors.filter(
       (candidate) => candidate.stage === 'pre_debut' && candidate.servedProspectRank != null,
     ).length
     const facets = buildPlayerFacets(currentUniverse, query)
     const filtered = sortBoardCandidates(
-      currentUniverse.filter((candidate) => matchesQuery(candidate, query)),
+      currentUniverse.filter((candidate) => (
+        matchesQuery(candidate, query) && matchesSignalFilter(candidate, query.signal)
+      )),
       query,
     )
     const pageCandidates = filtered.slice(offset, offset + query.limit)

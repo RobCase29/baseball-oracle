@@ -171,6 +171,7 @@ function App() {
     if (filters.level !== 'All') parameters.set('level', filters.level)
     if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
     if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
+    if (filters.signal && filters.signal !== 'All') parameters.set('signal', filters.signal)
 
     setLoading(true)
     setError(null)
@@ -200,6 +201,7 @@ function App() {
     filters.level,
     filters.playerType,
     filters.position,
+    filters.signal,
     filters.sort,
     filters.stage,
     filters.team,
@@ -230,6 +232,7 @@ function App() {
     if (filters.level !== 'All') parameters.set('level', filters.level)
     if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
     if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
+    if (filters.signal && filters.signal !== 'All') parameters.set('signal', filters.signal)
 
     setLandscapeItems([])
     setLandscapeTotal(0)
@@ -265,6 +268,7 @@ function App() {
     filters.level,
     filters.playerType,
     filters.position,
+    filters.signal,
     filters.stage,
     filters.team,
     refreshTick,
@@ -278,6 +282,7 @@ function App() {
     if (filters.level !== 'All') parameters.set('level', filters.level)
     if (filters.team && filters.team !== 'All') parameters.set('team', filters.team)
     if (filters.position && filters.position !== 'All') parameters.set('position', filters.position)
+    if (filters.signal && filters.signal !== 'All') parameters.set('signal', filters.signal)
     if (filters.sort !== defaultBoardFilters.sort) parameters.set('sort', filters.sort)
     if (page > 1) parameters.set('page', page.toString())
     const query = parameters.toString()
@@ -304,7 +309,7 @@ function App() {
     const controller = new AbortController()
     const parameters = new URLSearchParams({ ids: communityIdsKey })
 
-    fetch(`/api/v1/community-signals?${parameters.toString()}`, { signal: controller.signal })
+    fetch(`/api/v1/dynasty-scores?${parameters.toString()}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Community endpoint returned ${response.status}.`)
         const result = (await response.json()) as unknown

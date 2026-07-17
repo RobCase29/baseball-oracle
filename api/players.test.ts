@@ -477,6 +477,7 @@ function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
     level: 'All',
     team: null,
     position: null,
+    signal: 'All',
     sort: 'alphaOpportunity',
     page: 1,
     limit: 50,

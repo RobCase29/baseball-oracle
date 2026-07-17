@@ -1298,33 +1298,38 @@
 }
 
 .oracle-board-table {
-  min-width: 880px;
+  min-width: 1160px;
   table-layout: fixed;
 }
 
 .oracle-board-table th:nth-child(1),
 .oracle-board-table td:nth-child(1) {
-  width: 34%;
+  width: 27%;
 }
 
 .oracle-board-table th:nth-child(2),
 .oracle-board-table td:nth-child(2) {
-  width: 14%;
+  width: 12%;
 }
 
 .oracle-board-table th:nth-child(3),
 .oracle-board-table td:nth-child(3) {
-  width: 17%;
+  width: 14%;
 }
 
 .oracle-board-table th:nth-child(4),
 .oracle-board-table td:nth-child(4) {
-  width: 17%;
+  width: 13%;
 }
 
 .oracle-board-table th:nth-child(5),
 .oracle-board-table td:nth-child(5) {
-  width: 18%;
+  width: 12%;
+}
+
+.oracle-board-table th:nth-child(n + 6),
+.oracle-board-table td:nth-child(n + 6) {
+  width: 11%;
 }
 
 .board-table th,
@@ -1526,6 +1531,30 @@
 
 .dynasty-score-value {
   color: #315a70;
+}
+
+.dynasty-momentum-cell .dynasty-move {
+  display: block;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.signal-gap {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.signal-gap--oracle {
+  color: var(--green-dark);
+}
+
+.signal-gap--crowd {
+  color: #9b6112;
+}
+
+.signal-gap--aligned {
+  color: var(--muted);
 }
 
 .dynasty-score-value.is-low-signal {

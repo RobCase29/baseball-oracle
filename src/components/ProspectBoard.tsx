@@ -100,6 +100,55 @@ function dynastyScoreDetail(
   }
 }
 
+function percentileFromRank(rank: number | null, universe: number | null): number | null {
+  if (rank === null || universe === null || universe < 2 || rank > universe) return null
+  return 100 * (universe - rank) / (universe - 1)
+}
+
+function dynastyMomentum(
+  player: PlayerRecord,
+  signal: CommunitySignalItem | undefined,
+): { display: string; detail: string; tone: 'positive' | 'negative' | 'flat' } {
+  if (!signal || signal.dynastyScore.signalStatus === 'default_floor') {
+    return { display: '--', detail: 'Not enough history', tone: 'flat' }
+  }
+  const score = signal.dynastyScore
+  const useProspect = player.stage === 'pre_debut' && score.prospectUniverse !== null
+  const universe = useProspect ? score.prospectUniverse : score.overallUniverse
+  const ranks = score.movement.rank30d
+  if (ranks === null || universe === null || universe < 1) {
+    return { display: '--', detail: '30-day change unavailable', tone: 'flat' }
+  }
+  const points = Math.round(ranks / universe * 1_000) / 10
+  return {
+    display: `${points > 0 ? '+' : ''}${points.toFixed(1)} pts`,
+    detail: `${ranks > 0 ? '+' : ''}${ranks} ranks in 30 days`,
+    tone: points > 0 ? 'positive' : points < 0 ? 'negative' : 'flat',
+  }
+}
+
+function oracleDynastyGap(
+  player: PlayerRecord,
+  signal: CommunitySignalItem | undefined,
+): { display: string; detail: string; tone: 'oracle' | 'crowd' | 'aligned' } | null {
+  if (player.stage !== 'pre_debut' || !signal || signal.dynastyScore.signalStatus === 'default_floor') {
+    return null
+  }
+  const oracle = player.servedProspectRank?.rankPercentile ?? null
+  const dynasty = percentileFromRank(
+    signal.dynastyScore.prospectRank,
+    signal.dynastyScore.prospectUniverse,
+  )
+  if (oracle === null || dynasty === null) return null
+  const gap = Math.round((oracle - dynasty) * 10) / 10
+  if (Math.abs(gap) < 5) {
+    return { display: 'Aligned', detail: `${Math.abs(gap).toFixed(1)} percentile pts`, tone: 'aligned' }
+  }
+  return gap > 0
+    ? { display: `Oracle +${gap.toFixed(1)}`, detail: 'Model leads consensus', tone: 'oracle' }
+    : { display: `Crowd +${Math.abs(gap).toFixed(1)}`, detail: 'Consensus leads model', tone: 'crowd' }
+}
+
 const stages: Array<{ value: StageFilter; label: string }> = [
   { value: 'All', label: 'Directory' },
   { value: 'Minors', label: 'Prospects' },
@@ -183,6 +232,7 @@ export function ProspectBoard({
     filters.level !== 'All' ? filters.level : null,
     filters.team && filters.team !== 'All' ? filters.team : null,
     filters.position && filters.position !== 'All' ? filters.position : null,
+    filters.signal && filters.signal !== 'All' ? filters.signal : null,
   ].filter(Boolean).length
   const teamOptions = withCurrentFacet(facets?.teams ?? [], filters.team)
   const positionOptions = withCurrentFacet(facets?.positions ?? [], filters.position)
@@ -271,6 +321,10 @@ export function ProspectBoard({
                     filters.sort === 'nearTermImpact' ||
                     filters.sort === 'finalWar' ||
                     filters.sort === 'arrival36'
+                  )
+                ) || (
+                  stage.value !== 'Minors' && (
+                    filters.sort === 'oracleAhead' || filters.sort === 'crowdAhead'
                   )
                 )
                 onChangeFilters({
@@ -378,15 +432,19 @@ export function ProspectBoard({
             {filters.stage === 'All' ? (
               <>
                 <option value="name">Player name</option>
+                <option value="dynastyScore">Dynasty Score</option>
+                <option value="dynastyRiser">Fastest risers · 30 days</option>
                 <option value="age">Youngest first</option>
               </>
             ) : (
               <>
-                {filters.stage === 'Minors' ? (
-                  <option value="prospectScore">Prospect Rank</option>
-                ) : null}
+                {filters.stage === 'Minors' ? <option value="prospectScore">Prospect Rank</option> : null}
                 {filters.stage !== 'Minors' ? <option value="stageStanding">{rankColumnLabel(filters.stage)}</option> : null}
                 <option value="careerIndex">Career Outlook</option>
+                <option value="dynastyScore">Dynasty Score</option>
+                <option value="dynastyRiser">Fastest risers · 30 days</option>
+                {filters.stage === 'Minors' ? <option value="oracleAhead">Oracle ahead of consensus</option> : null}
+                {filters.stage === 'Minors' ? <option value="crowdAhead">Consensus ahead of Oracle</option> : null}
                 {filters.stage !== 'Minors' && filters.stage !== 'RC' ? (
                   <option value="nearTermImpact">Next 3-year upside</option>
                 ) : null}
@@ -403,6 +461,24 @@ export function ProspectBoard({
           </select>
         </label>
 
+        <label className="select-field">
+          <span>Signal</span>
+          <select
+            aria-label="Score signal"
+            value={filters.signal ?? 'All'}
+            onChange={(event) =>
+              onChangeFilters({ signal: event.target.value as BoardFilters['signal'] })
+            }
+          >
+            <option value="All">All score signals</option>
+            <option value="dynastyAvailable">Has Dynasty Score</option>
+            <option value="fastRisers">Fast risers · 30 days</option>
+            {filters.stage === 'Minors' ? <option value="oracleAhead">Oracle ahead by 10+ pts</option> : null}
+            {filters.stage === 'Minors' ? <option value="crowdAhead">Consensus ahead by 10+ pts</option> : null}
+            {filters.stage === 'Minors' ? <option value="bothTop10">Top 10% in both</option> : null}
+          </select>
+        </label>
+
           <button
             className="filter-reset"
             type="button"
@@ -413,6 +489,7 @@ export function ProspectBoard({
               level: 'All',
               team: 'All',
               position: 'All',
+              signal: 'All',
             })}
             title="Clear player filters"
           >
@@ -502,10 +579,18 @@ export function ProspectBoard({
                 <th scope="col">Career Outlook</th>
                 <th
                   scope="col"
-                  title="HarryKnowsBall crowdsourced dynasty sentiment; not used by the Oracle model"
+                  title="External dynasty consensus; not used by the Oracle model"
                 >
                   Dynasty Score
                 </th>
+                <th scope="col" title="30-day rank movement normalized to percentile points">
+                  Momentum
+                </th>
+                {filters.stage === 'Minors' ? (
+                  <th scope="col" title="Difference between Oracle and dynasty-consensus percentiles">
+                    Signal Gap
+                  </th>
+                ) : null}
                 <th scope="col">Current Results</th>
               </tr>
             </thead>
@@ -521,6 +606,8 @@ export function ProspectBoard({
                 const mlbamId = mlbamIdForCommunity(player)
                 const communitySignal = mlbamId ? communitySignals[mlbamId] : undefined
                 const dynastyDetail = dynastyScoreDetail(player, communitySignal)
+                const momentum = dynastyMomentum(player, communitySignal)
+                const signalGap = oracleDynastyGap(player, communitySignal)
 
                 return (
                   <tr key={player.id} className={selected ? 'is-selected' : ''}>
@@ -569,19 +656,30 @@ export function ProspectBoard({
                       <span className="mobile-column-label">Dynasty Score</span>
                       <strong
                         className={`table-primary dynasty-score-value${communitySignal?.dynastyScore.signalStatus === 'default_floor' ? ' is-low-signal' : ''}`}
-                        title="HarryKnowsBall crowdsourced dynasty sentiment; not an Oracle model input"
+                        title="External dynasty consensus; not an Oracle model input"
                       >
                         {dynastyScoreDisplay(communitySignal)}
                       </strong>
                       <small>
                         {dynastyDetail.rank}
-                        {dynastyDetail.movement ? (
-                          <span className={`dynasty-move dynasty-move--${dynastyDetail.movementTone}`}>
-                            {' · '}{dynastyDetail.movement}
-                          </span>
-                        ) : null}
                       </small>
                     </td>
+                    <td className="dynasty-momentum-cell">
+                      <span className="mobile-column-label">Momentum</span>
+                      <strong className={`table-primary dynasty-move dynasty-move--${momentum.tone}`}>
+                        {momentum.display}
+                      </strong>
+                      <small>{momentum.detail}</small>
+                    </td>
+                    {filters.stage === 'Minors' ? (
+                      <td className="signal-gap-cell">
+                        <span className="mobile-column-label">Signal Gap</span>
+                        <strong className={`table-primary signal-gap signal-gap--${signalGap?.tone ?? 'aligned'}`}>
+                          {signalGap?.display ?? '--'}
+                        </strong>
+                        <small>{signalGap?.detail ?? 'Comparable ranks unavailable'}</small>
+                      </td>
+                    ) : null}
                     <td className="current-results-cell">
                       <span className="mobile-column-label">Current Results</span>
                       <strong className={`table-primary current-results current-results--${currentResults.tone}`}>

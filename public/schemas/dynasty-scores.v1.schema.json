@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://baseball-oracle.vercel.app/schemas/community-signals.v1.schema.json",
-  "title": "Baseball Oracle Community Signals v1",
+  "$id": "https://baseball-oracle.vercel.app/schemas/dynasty-scores.v1.schema.json",
+  "title": "Baseball Oracle Dynasty Scores v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "contractVersion", "snapshot", "items", "meta"],
   "properties": {
-    "schemaVersion": { "const": "community-signals.v1" },
-    "contractVersion": { "const": "community-signals-contract/v1" },
+    "schemaVersion": { "const": "dynasty-scores.v1" },
+    "contractVersion": { "const": "dynasty-scores-contract/v1" },
     "snapshot": {
       "anyOf": [
         { "$ref": "#/$defs/snapshot" },
@@ -31,14 +31,14 @@
     "snapshot": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "observedAt", "sourceUpdatedAt"],
+      "required": ["id", "observedAt", "dataUpdatedAt"],
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^community-signals-snapshot/v1:[a-f0-9]{64}$"
+          "pattern": "^dynasty-scores-snapshot/v1:[a-f0-9]{64}$"
         },
         "observedAt": { "type": "string", "format": "date-time" },
-        "sourceUpdatedAt": {
+        "dataUpdatedAt": {
           "anyOf": [
             { "type": "string", "format": "date-time" },
             { "type": "null" }
@@ -49,11 +49,10 @@
     "player": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["oracleId", "mlbamId", "hkbId", "name"],
+      "required": ["oracleId", "mlbamId", "name"],
       "properties": {
         "oracleId": { "type": ["string", "null"] },
         "mlbamId": { "type": "string", "pattern": "^[1-9][0-9]{0,11}$" },
-        "hkbId": { "type": "string", "minLength": 1 },
         "name": { "type": "string", "minLength": 1 }
       }
     },
@@ -153,19 +152,13 @@
         }
       ]
     },
-    "source": {
+    "observation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "url", "capturedAt", "updatedAt"],
+      "required": ["capturedAt", "dataUpdatedAt"],
       "properties": {
-        "name": { "const": "HarryKnowsBall" },
-        "url": {
-          "type": "string",
-          "format": "uri",
-          "pattern": "^https://(www\\.)?harryknowsball\\.com/"
-        },
         "capturedAt": { "type": "string", "format": "date-time" },
-        "updatedAt": {
+        "dataUpdatedAt": {
           "anyOf": [
             { "type": "string", "format": "date-time" },
             { "type": "null" }
@@ -176,7 +169,7 @@
     "item": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["recordVersion", "player", "dynastyScore", "source"],
+      "required": ["recordVersion", "player", "dynastyScore", "observation"],
       "properties": {
         "recordVersion": {
           "type": "string",
@@ -184,7 +177,7 @@
         },
         "player": { "$ref": "#/$defs/player" },
         "dynastyScore": { "$ref": "#/$defs/dynastyScore" },
-        "source": { "$ref": "#/$defs/source" }
+        "observation": { "$ref": "#/$defs/observation" }
       }
     },
     "meta": {
@@ -205,7 +198,7 @@
         "nullMeans": { "const": "unavailable_not_zero" },
         "nullMeansUnavailableNotZero": { "const": true },
         "identityPolicy": { "const": "exact_mlbam_join_no_name_matching" },
-        "signalType": { "const": "crowdsourced_dynasty_sentiment" },
+        "signalType": { "const": "external_dynasty_consensus" },
         "dynastyScoreScale": {
           "type": "object",
           "additionalProperties": false,
@@ -213,7 +206,7 @@
           "properties": {
             "minimum": { "const": 10 },
             "maximum": { "const": 10000 },
-            "unit": { "const": "HarryKnowsBall dynasty value" },
+            "unit": { "const": "dynasty score points" },
             "isProbability": { "const": false }
           }
         },

@@ -9,7 +9,7 @@ import {
 } from './_community-signals.js'
 
 const schema = JSON.parse(readFileSync(
-  new URL('../public/schemas/community-signals.v1.schema.json', import.meta.url),
+  new URL('../public/schemas/dynasty-scores.v1.schema.json', import.meta.url),
   'utf8',
 )) as object
 const require = createRequire(import.meta.url)
@@ -54,7 +54,7 @@ function row(overrides: Partial<CommunitySignalRow> = {}): CommunitySignalRow {
   }
 }
 
-describe('community-signals.v1 JSON Schema', () => {
+describe('dynasty-scores.v1 JSON Schema', () => {
   it('accepts normalized ranked, floor, and empty responses', () => {
     expect(schemaErrors(communitySignalsResponse([row()], ['660271']))).toEqual([])
     expect(schemaErrors(communitySignalsResponse([

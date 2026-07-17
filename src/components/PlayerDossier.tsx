@@ -6,7 +6,6 @@ import {
   Check,
   CircleDashed,
   Database,
-  ExternalLink,
   Gauge,
   Info,
   Layers3,
@@ -1136,7 +1135,7 @@ function DynastyScorePanel({
         </div>
         <div className="dynasty-unavailable">
           <strong>Community score not matched</strong>
-          <span>This player is not connected to a HarryKnowsBall record yet. Oracle rankings remain available and unchanged.</span>
+          <span>This player does not have a matched Dynasty Score yet. Oracle rankings remain available and unchanged.</span>
         </div>
       </section>
     )
@@ -1175,7 +1174,7 @@ function DynastyScorePanel({
     <section className="dossier-section dynasty-score-panel" aria-labelledby="dynasty-score-title">
       <div className="section-heading-row dynasty-score-heading">
         <div>
-          <span className="eyebrow">HARRYKNOWSBALL COMMUNITY</span>
+          <span className="eyebrow">DYNASTY CONSENSUS</span>
           <h2 id="dynasty-score-title">Dynasty Score</h2>
         </div>
         <span className="dynasty-independent-badge">Not an Oracle input</span>
@@ -1223,11 +1222,8 @@ function DynastyScorePanel({
       <div className="dynasty-source-note">
         <Info size={14} aria-hidden="true" />
         <span>
-          Crowdsourced dynasty sentiment, not a probability and not an Oracle model input. Updated {formatCommunityTimestamp(signal.source.updatedAt ?? signal.source.capturedAt)}.
+          External dynasty consensus, not a probability and not an Oracle model input. Updated {formatCommunityTimestamp(signal.observation.dataUpdatedAt ?? signal.observation.capturedAt)}.
         </span>
-        <a href={signal.source.url} target="_blank" rel="noreferrer">
-          HarryKnowsBall <ExternalLink size={13} aria-hidden="true" />
-        </a>
       </div>
     </section>
   )
