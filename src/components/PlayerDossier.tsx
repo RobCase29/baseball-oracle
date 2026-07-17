@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import type { CommunitySignalItem } from '../domain/communitySignals'
+import type { CardMarketResponse } from '../domain/cardMarket'
 import {
   developmentChapterLabel,
   eligibleMilbCeilingAlpha,
@@ -34,6 +35,7 @@ import {
   stageLabel,
 } from '../lib/forecast'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
+import { CardMarketPanel } from './CardMarketPanel'
 import {
   bestCurrentScoutingGrade,
   currentMinorSlashLine,
@@ -57,6 +59,9 @@ const MilbEvidenceProfile = lazy(() =>
 interface PlayerDossierProps {
   player: PlayerRecord
   communitySignal?: CommunitySignalItem | null
+  cardMarket?: CardMarketResponse | null
+  cardMarketLoading?: boolean
+  cardMarketError?: string | null
   onReturnToBoard: () => void
 }
 
@@ -1232,6 +1237,9 @@ function DynastyScorePanel({
 export function PlayerDossier({
   player,
   communitySignal = null,
+  cardMarket = null,
+  cardMarketLoading = false,
+  cardMarketError = null,
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
@@ -1280,6 +1288,12 @@ export function PlayerDossier({
       <PlayerMapScorecard player={player} />
 
       <DynastyScorePanel player={player} signal={communitySignal} />
+
+      <CardMarketPanel
+        response={cardMarket}
+        loading={cardMarketLoading}
+        error={cardMarketError}
+      />
 
       {player.stage === 'recent_callup' ? (
         <details className="advanced-model-details">

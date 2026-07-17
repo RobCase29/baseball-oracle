@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import type { CommunitySignalItem } from '../domain/communitySignals'
+import type { CardMarketResponse } from '../domain/cardMarket'
 import { buildPlayerMap, PLAYER_MAP_VERSION } from '../domain/playerMap'
 import { PlayerDossier } from './PlayerDossier'
 import { ProspectBoard } from './ProspectBoard'
@@ -460,6 +461,118 @@ const communitySignal: CommunitySignalItem = {
   },
 }
 
+const cardMarket: CardMarketResponse = {
+  schemaVersion: 'card-market.v1',
+  player: player.name,
+  generatedAt: '2026-07-17T12:00:00.000Z',
+  snapshotGeneratedAt: '2026-07-17T11:55:00.000Z',
+  modelVersion: 'card-market-v3',
+  count: 2,
+  warnings: [],
+  items: [
+    {
+      modelId: 'actual-player:2026-bowman:raw-base-auto',
+      matchKey: 'actual player|2026 bowman',
+      player: {
+        name: player.name,
+        normalizedName: 'actual player',
+        currentTeamCode: 'EX',
+        currentTeamName: 'Example Club',
+        checklistTeam: 'Example Club',
+      },
+      card: {
+        release: '2026 Bowman',
+        releaseYear: 2026,
+        productFamily: 'Bowman',
+        cardType: 'Base Auto',
+        grade: 'Raw',
+      },
+      valuation: {
+        amount: 106.46,
+        currency: 'USD',
+        low: 81.29,
+        high: 139.44,
+        confidenceScore: 87,
+        evidenceTier: 'observed',
+        evidenceQuality: 'strong',
+        actionable: true,
+      },
+      evidence: {
+        sales: 10,
+        effectiveSales: 8.85,
+        sales30: 10,
+        sales90: 10,
+        auctionSales: 7,
+        binSales: 3,
+        volatility: 0.18,
+        latestSaleAt: '2026-06-22T12:00:00.000Z',
+      },
+      freshness: {
+        modelGeneratedAt: '2026-07-17T11:55:00.000Z',
+        modelAgeDays: 0,
+        latestSaleAgeDays: 25,
+        stale: false,
+      },
+      variations: [{
+        key: 'refractor',
+        label: 'Refractor /499',
+        multiplier: 1.7,
+        amount: 181,
+        low: 145,
+        high: 220,
+        confidence: 0.72,
+        evidenceTier: 'modeled',
+        actionable: true,
+      }],
+    },
+    {
+      modelId: 'actual-player:2025-bowman-draft:raw-base-auto',
+      matchKey: 'actual player|2025 bowman draft',
+      player: {
+        name: player.name,
+        normalizedName: 'actual player',
+        currentTeamCode: 'EX',
+        currentTeamName: 'Example Club',
+        checklistTeam: 'Example Club',
+      },
+      card: {
+        release: '2025 Bowman Draft',
+        releaseYear: 2025,
+        productFamily: 'Bowman Draft',
+        cardType: 'Base Auto',
+        grade: 'Raw',
+      },
+      valuation: {
+        amount: 74,
+        currency: 'USD',
+        low: 60,
+        high: 91,
+        confidenceScore: 63,
+        evidenceTier: 'observed',
+        evidenceQuality: 'moderate',
+        actionable: true,
+      },
+      evidence: {
+        sales: 5,
+        effectiveSales: 4.5,
+        sales30: 2,
+        sales90: 5,
+        auctionSales: 3,
+        binSales: 2,
+        volatility: 0.25,
+        latestSaleAt: '2026-07-02T12:00:00.000Z',
+      },
+      freshness: {
+        modelGeneratedAt: '2026-07-17T11:55:00.000Z',
+        modelAgeDays: 0,
+        latestSaleAgeDays: 15,
+        stale: false,
+      },
+      variations: [],
+    },
+  ],
+}
+
 describe('unified Oracle Board shell', () => {
   it('hydrates cached v1 maps from the fixed forecast universe instead of the legacy active universe', () => {
     const rankedPlayer = {
@@ -592,6 +705,27 @@ describe('unified Oracle Board shell', () => {
     expect(screen.getByText('+24 ranks')).toBeInTheDocument()
     expect(screen.getByText(/not a probability and not an Oracle model input/u)).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('adds card-market evidence without presenting it as a return forecast or Oracle input', () => {
+    render(
+      <PlayerDossier
+        player={player}
+        cardMarket={cardMarket}
+        onReturnToBoard={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Raw autograph market' })).toBeInTheDocument()
+    expect(screen.getByText('2026 Bowman')).toBeInTheDocument()
+    expect(screen.getByText('$106')).toBeInTheDocument()
+    expect(screen.getByText('$81–$139')).toBeInTheDocument()
+    expect(screen.getByText('87/100')).toBeInTheDocument()
+    expect(screen.getByText('Strong evidence')).toBeInTheDocument()
+    expect(screen.getByText('2025 Bowman Draft')).toBeInTheDocument()
+    expect(screen.getByText(/does not change Oracle rankings/u)).toBeInTheDocument()
+    expect(screen.getByText(/No card-return forecast is implied/u)).toBeInTheDocument()
+    expect(screen.queryByText(/expected return/iu)).not.toBeInTheDocument()
   })
 
   it('disables the minor-league level filter in the MLB view', () => {

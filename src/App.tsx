@@ -27,6 +27,10 @@ import {
   mlbamIdForCommunity,
   type CommunitySignalItem,
 } from './domain/communitySignals'
+import {
+  isCardMarketResponse,
+  type CardMarketResponse,
+} from './domain/cardMarket'
 
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
@@ -139,6 +143,9 @@ function App() {
   const [landscapeError, setLandscapeError] = useState<string | null>(null)
   const [refreshTick, setRefreshTick] = useState(0)
   const [communitySignals, setCommunitySignals] = useState<Record<string, CommunitySignalItem>>({})
+  const [cardMarket, setCardMarket] = useState<CardMarketResponse | null>(null)
+  const [cardMarketLoading, setCardMarketLoading] = useState(false)
+  const [cardMarketError, setCardMarketError] = useState<string | null>(null)
   const selectionRequest = useRef(0)
   const deferredQuery = useDeferredValue(filters.query)
 
@@ -335,6 +342,41 @@ function App() {
       })()
     : null
 
+  useEffect(() => {
+    if (!selectedPlayer) {
+      setCardMarket(null)
+      setCardMarketLoading(false)
+      setCardMarketError(null)
+      return
+    }
+
+    const controller = new AbortController()
+    const parameters = new URLSearchParams({ player: selectedPlayer.name })
+    setCardMarket(null)
+    setCardMarketLoading(true)
+    setCardMarketError(null)
+
+    fetch(`/api/v1/card-market?${parameters.toString()}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Card market endpoint returned ${response.status}.`)
+        const result = (await response.json()) as unknown
+        if (!isCardMarketResponse(result)) {
+          throw new Error('Card market endpoint returned an unexpected response.')
+        }
+        setCardMarket(result)
+      })
+      .catch((requestError: unknown) => {
+        if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+        setCardMarket(null)
+        setCardMarketError('Card-market pricing is temporarily unavailable.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCardMarketLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [refreshTick, selectedPlayer])
+
   function changeView(view: WorkspaceView) {
     selectionRequest.current += 1
     setActiveView(view)
@@ -516,6 +558,9 @@ function App() {
               <PlayerDossier
                 player={selectedPlayer}
                 communitySignal={selectedCommunitySignal}
+                cardMarket={cardMarket}
+                cardMarketLoading={cardMarketLoading}
+                cardMarketError={cardMarketError}
                 onReturnToBoard={returnToBoard}
               />
             ) : (
