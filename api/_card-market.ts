@@ -6,6 +6,7 @@ import {
   type CardMarketModel,
   type CardMarketResponse,
 } from '../src/domain/cardMarket.js'
+import { isOracleSession } from './_oracle-auth.js'
 
 const CARD_MARKET_MODEL_VERSION = 'card-market-v1'
 const CACHE_FRESH_MS = 5 * 60 * 1_000
@@ -81,6 +82,7 @@ interface CardMarketDependencies {
   apiKey: () => string | null
   fetcher: typeof fetch
   now?: () => number
+  authenticated?: (request: IncomingMessage) => boolean
 }
 
 interface CachedMarketResponse {
@@ -94,6 +96,7 @@ const dependencies: CardMarketDependencies = {
   apiBase: () => process.env.BACKSTOP_API_BASE?.trim() || 'https://backstopcards.com',
   apiKey: () => process.env.BACKSTOP_API_KEY?.trim() || null,
   fetcher: fetch,
+  authenticated: isOracleSession,
 }
 
 function singleParameter(parameters: URLSearchParams, name: string): string | null {
@@ -263,6 +266,10 @@ export function createCardMarketHandler(
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.setHeader('Allow', 'GET, HEAD')
       sendJson(request, response, 405, { error: 'Method not allowed' })
+      return
+    }
+    if (!(inputDependencies.authenticated ?? isOracleSession)(request)) {
+      sendJson(request, response, 401, { error: 'Authentication required' })
       return
     }
     const query = parseCardMarketQuery(request)

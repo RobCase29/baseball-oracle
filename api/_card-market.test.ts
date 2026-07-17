@@ -135,6 +135,7 @@ describe('card market adapter', () => {
       apiBase: () => 'https://backstopcards.com',
       apiKey: () => 'server-secret',
       fetcher,
+      authenticated: () => true,
     })
     const recorder = responseRecorder()
     await handler(request('/api/v1/card-market?player=Aiva%20Arquette'), recorder.response)
@@ -157,6 +158,7 @@ describe('card market adapter', () => {
       apiBase: () => 'https://backstopcards.com',
       apiKey: () => null,
       fetcher: vi.fn() as unknown as typeof fetch,
+      authenticated: () => true,
     })(request('/api/v1/card-market?player=Aiva'), unconfigured.response)
     expect(unconfigured.response.statusCode).toBe(503)
 
@@ -165,6 +167,7 @@ describe('card market adapter', () => {
       apiBase: () => 'https://backstopcards.com',
       apiKey: () => 'bad-key',
       fetcher: vi.fn(async () => new Response('{}', { status: 401 })) as unknown as typeof fetch,
+      authenticated: () => true,
     })(request('/api/v1/card-market?player=Aiva'), unauthorized.response)
     expect(unauthorized.response.statusCode).toBe(503)
     expect(unauthorized.body).not.toContain('bad-key')
@@ -183,6 +186,7 @@ describe('card market adapter', () => {
       apiKey: () => 'server-secret',
       fetcher: fetchMock as unknown as typeof fetch,
       now: () => now,
+      authenticated: () => true,
     })
 
     const first = responseRecorder()
@@ -201,5 +205,19 @@ describe('card market adapter', () => {
       warnings: ['market_data_stale_fallback'],
       items: [{ valuation: { amount: 106.46 } }],
     })
+  })
+
+  it('rejects unauthenticated requests before calling the private feed', async () => {
+    const fetcher = vi.fn()
+    const recorder = responseRecorder()
+    await createCardMarketHandler({
+      apiBase: () => 'https://backstopcards.com',
+      apiKey: () => 'server-secret',
+      fetcher: fetcher as unknown as typeof fetch,
+      authenticated: () => false,
+    })(request('/api/v1/card-market?player=Aiva'), recorder.response)
+
+    expect(recorder.response.statusCode).toBe(401)
+    expect(fetcher).not.toHaveBeenCalled()
   })
 })

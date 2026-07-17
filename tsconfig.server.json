@@ -16,6 +16,7 @@
     "types": ["node"]
   },
   "include": [
+    "middleware.ts",
     "api/**/*.ts",
     "db/**/*.ts",
     "scripts/**/*.ts",

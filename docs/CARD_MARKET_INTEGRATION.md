@@ -33,6 +33,10 @@ BACKSTOP_API_KEY
 `BACKSTOP_API_BASE` is optional and defaults to the production player-model API.
 Neither variable may use a `VITE_` prefix.
 
+The primary Oracle URL and APIs are protected by the application access-code
+session. The card-market route also validates the signed session itself so a
+routing change cannot accidentally expose the private feed.
+
 ## Product Boundary
 
 The UI labels the values as card-market evidence and explicitly avoids expected

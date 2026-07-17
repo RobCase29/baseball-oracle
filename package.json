@@ -74,6 +74,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.6.1",
+    "@vercel/functions": "^3.7.5",
     "drizzle-orm": "^0.45.2",
     "jsdom": "^26.1.0",
     "lucide-react": "^1.24.0",
