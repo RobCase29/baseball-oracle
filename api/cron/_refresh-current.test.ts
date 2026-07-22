@@ -197,7 +197,10 @@ describe('current source refresh isolation', () => {
     )
     expect(stubs.ingestMlbStatsApiMilbRosterCensus).toHaveBeenCalledWith(
       2026,
-      { signal: expect.any(AbortSignal) },
+      expect.objectContaining({
+        publishCurrentSnapshot: expect.any(Function),
+        signal: expect.any(AbortSignal),
+      }),
     )
     expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledOnce()
     expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledWith(

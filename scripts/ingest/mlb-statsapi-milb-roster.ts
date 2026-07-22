@@ -191,12 +191,18 @@ export interface IngestMlbStatsApiMilbRosterResult {
   rosterRows: number
   uniquePlayers: number
   season: number
+  snapshotPublished?: boolean
 }
 
 export interface IngestMlbStatsApiMilbRosterOptions {
   apiBase?: string
   concurrency?: number
   priorCardinality?: MlbStatsApiMilbRosterPriorCardinality | null
+  publishCurrentSnapshot?: (
+    census: FetchedMlbStatsApiMilbRosterCensus,
+    knownAt: Date,
+    signal?: AbortSignal,
+  ) => Promise<void>
   signal?: AbortSignal
 }
 
@@ -970,6 +976,12 @@ export async function ingestMlbStatsApiMilbRosterCensus(
       batchSize: rawLandingBatchPolicy.batchSize,
     })
     options.signal?.throwIfAborted()
+    let snapshotPublished = false
+    if (landing.status !== 'in_progress' && options.publishCurrentSnapshot) {
+      await options.publishCurrentSnapshot(census, fetchedAt, options.signal)
+      snapshotPublished = true
+    }
+    options.signal?.throwIfAborted()
     return {
       status: landing.status,
       responseHash: bundle.responseHash,
@@ -977,6 +989,7 @@ export async function ingestMlbStatsApiMilbRosterCensus(
       rosterRows: census.quality.rosterRows,
       uniquePlayers: census.quality.uniquePlayers,
       season: census.season,
+      ...(snapshotPublished ? { snapshotPublished: true } : {}),
     }
   } finally {
     await sql.end({ timeout: 5 })

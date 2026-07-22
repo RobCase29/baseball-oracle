@@ -79,6 +79,8 @@ opportunity when an upstream source was unavailable in the first window. The end
     Publication builds and validates a temporary staged table, then replaces the
     served roster rows atomically so API readers retain the prior valid census
     until the new one commits.
+    Scheduled runs build that stage from the already validated in-memory census,
+    avoiding a second scan of the immutable raw archive.
     The scheduled Prospect Savant probe uses one bounded 30-second attempt per
     slice and stops after the first outage, preserving the remaining execution
     window for official and independent sources. Historical backfills retain the

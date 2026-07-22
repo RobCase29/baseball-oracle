@@ -24,6 +24,7 @@ import {
   type MlbStatsApiMilbRosterResponse,
   type MlbStatsApiMilbRosterTeam,
 } from './mlb-statsapi-milb-roster.js'
+import { currentMilbRosterSnapshotRows } from './player-directory.js'
 import { sha256 } from './shared.js'
 
 function team(
@@ -394,5 +395,28 @@ describe('MLB StatsAPI full MiLB roster census', () => {
       organization: { id: 116, name: 'Detroit Tigers' },
       assignmentTeam: { id: 512, name: 'Affiliate 512' },
     })
+
+    const snapshotRows = currentMilbRosterSnapshotRows(
+      census,
+      new Date('2026-07-22T03:00:00Z'),
+    )
+    expect(snapshotRows).toEqual([
+      expect.objectContaining({
+        mlbam_id: 701_552,
+        membership_kind: 'affiliate',
+        current_team_mlbam_id: 512,
+        current_level: 'AAA',
+        roster_membership_count: 1,
+        organization_count: 1,
+      }),
+      expect.objectContaining({
+        mlbam_id: 808_124,
+        membership_kind: 'parent_census',
+        current_team_mlbam_id: 512,
+        current_level: 'AAA',
+        roster_membership_count: 1,
+        organization_count: 1,
+      }),
+    ])
   })
 })

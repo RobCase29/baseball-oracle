@@ -272,6 +272,9 @@ describe('official current MiLB roster census', () => {
       'CREATE TEMP TABLE current_milb_roster_snapshot_stage',
     )
     expect(playerDirectorySource).toContain(
+      'currentMilbRosterSnapshotRows(census, knownAt)',
+    )
+    expect(playerDirectorySource).toContain(
       'FROM app.current_milb_roster_computed',
     )
     expect(playerDirectorySource).toContain(

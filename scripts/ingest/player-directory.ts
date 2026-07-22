@@ -3,6 +3,9 @@ import { directDatabaseUrl } from '../../db/client.js'
 import {
   MLB_STATSAPI_MILB_ROSTER_MINIMUM_ORGANIZATIONS,
   MLB_STATSAPI_MILB_ROSTER_MINIMUM_UNIQUE_PLAYERS,
+  mlbStatsApiMilbRosterPlayerType,
+  type FetchedMlbStatsApiMilbRosterCensus,
+  type MlbStatsApiMilbRosterTeam,
 } from './mlb-statsapi-milb-roster.js'
 import { awaitCancelableQuery, currentRefreshDatabaseOptions } from './shared.js'
 
@@ -147,8 +150,272 @@ export interface CurrentMilbRosterSnapshotAudit {
   identity_conflict_rows: number
 }
 
+interface CurrentMilbRosterSnapshotRow {
+  profile_id: string
+  mlbam_id: number
+  membership_kind: 'affiliate' | 'parent_census'
+  player_type: 'Hitter' | 'Pitcher'
+  display_name: string
+  age: number | null
+  mlb_debut_date: string | null
+  active: boolean
+  roster_status_code: string
+  roster_status_description: string
+  roster_status_group: string
+  position: string
+  bats: string | null
+  throws: string | null
+  organization_mlbam_id: number
+  organization_name: string
+  current_team_mlbam_id: number | null
+  current_team_name: string | null
+  current_level: string | null
+  sport_id: number | null
+  current_league_name: string | null
+  current_league_abbreviation: string | null
+  rookie_affiliate_family: string | null
+  season: number
+  known_at: Date
+  roster_membership_count: number
+  affiliate_roster_membership_count: number
+  parent_census_membership_count: number
+  role_count: number
+  organization_count: number
+  roster_memberships: Record<string, unknown>[]
+}
+
+interface CurrentMilbRosterMembership {
+  row: Omit<
+    CurrentMilbRosterSnapshotRow,
+    | 'profile_id'
+    | 'roster_membership_count'
+    | 'affiliate_roster_membership_count'
+    | 'parent_census_membership_count'
+    | 'role_count'
+    | 'organization_count'
+    | 'roster_memberships'
+  >
+  level_rank: number
+}
+
+const currentMilbRosterSnapshotColumns = [
+  'profile_id',
+  'mlbam_id',
+  'membership_kind',
+  'player_type',
+  'display_name',
+  'age',
+  'mlb_debut_date',
+  'active',
+  'roster_status_code',
+  'roster_status_description',
+  'roster_status_group',
+  'position',
+  'bats',
+  'throws',
+  'organization_mlbam_id',
+  'organization_name',
+  'current_team_mlbam_id',
+  'current_team_name',
+  'current_level',
+  'sport_id',
+  'current_league_name',
+  'current_league_abbreviation',
+  'rookie_affiliate_family',
+  'season',
+  'known_at',
+  'roster_membership_count',
+  'affiliate_roster_membership_count',
+  'parent_census_membership_count',
+  'role_count',
+  'organization_count',
+  'roster_memberships',
+] as const
+
+function rosterStatusGroup(description: string): string {
+  const normalized = description.toLowerCase()
+  if (description === 'Active') return 'active'
+  if (description === 'Rehab Assignment') return 'rehab'
+  if (normalized.startsWith('injured')) return 'injured'
+  if (description === 'Development List') return 'development'
+  if (normalized.includes('restricted')) return 'restricted'
+  if ([
+    'Administrative Leave',
+    'Military Leave',
+    'Not Yet Reported',
+    'Reserve List (Minors)',
+    'Suspended # days',
+    'Temporary Inactive List',
+  ].includes(description)) return 'inactive'
+  return 'other'
+}
+
+function teamRecord(team: MlbStatsApiMilbRosterTeam | null): Record<string, unknown> | null {
+  return team as Record<string, unknown> | null
+}
+
+function nestedString(record: Record<string, unknown> | null, key: string): string | null {
+  const value = record?.[key]
+  return typeof value === 'string' && value.trim() ? value : null
+}
+
+function assignmentLevel(team: MlbStatsApiMilbRosterTeam | null): {
+  level: string | null
+  rank: number
+} {
+  const sportId = team?.sport.id
+  if (sportId === 16) return { level: 'Rk', rank: 1 }
+  if (sportId === 14) return { level: 'A', rank: 2 }
+  if (sportId === 13) return { level: 'A+', rank: 3 }
+  if (sportId === 12) return { level: 'AA', rank: 4 }
+  if (sportId === 11) return { level: 'AAA', rank: 5 }
+  return { level: null, rank: 0 }
+}
+
+function membershipPriority(membership: CurrentMilbRosterMembership): number[] {
+  const statusPriority = new Map([
+    ['rehab', 1],
+    ['active', 2],
+    ['development', 3],
+    ['injured', 4],
+    ['restricted', 5],
+    ['inactive', 6],
+  ])
+  return [
+    membership.row.membership_kind === 'affiliate' ? 1 : 2,
+    statusPriority.get(membership.row.roster_status_group) ?? 7,
+    -membership.level_rank,
+    membership.row.current_team_mlbam_id ?? Number.MAX_SAFE_INTEGER,
+  ]
+}
+
+function compareMemberships(
+  left: CurrentMilbRosterMembership,
+  right: CurrentMilbRosterMembership,
+): number {
+  const leftPriority = membershipPriority(left)
+  const rightPriority = membershipPriority(right)
+  for (let index = 0; index < leftPriority.length; index += 1) {
+    const difference = leftPriority[index] - rightPriority[index]
+    if (difference !== 0) return difference
+  }
+  return 0
+}
+
+export function currentMilbRosterSnapshotRows(
+  census: FetchedMlbStatsApiMilbRosterCensus,
+  knownAt: Date,
+): CurrentMilbRosterSnapshotRow[] {
+  const affiliateTeamsById = new Map(census.teams.map((team) => [team.id, team]))
+  const membershipsByPlayer = new Map<number, CurrentMilbRosterMembership[]>()
+
+  for (const response of census.rosterResponses) {
+    for (const entry of response.roster) {
+      const currentTeam = entry.person.currentTeam
+      const currentTeamRecord = currentTeam !== null &&
+        typeof currentTeam === 'object' &&
+        !Array.isArray(currentTeam)
+        ? currentTeam as Record<string, unknown>
+        : null
+      const currentTeamId = typeof currentTeamRecord?.id === 'number'
+        ? currentTeamRecord.id
+        : null
+      const assignmentTeam = response.membershipKind === 'affiliate'
+        ? response.team
+        : currentTeamId === null
+          ? null
+          : affiliateTeamsById.get(currentTeamId) ?? null
+      const assignment = teamRecord(assignmentTeam)
+      const league = assignment?.league !== null &&
+        typeof assignment?.league === 'object' &&
+        !Array.isArray(assignment.league)
+        ? assignment.league as Record<string, unknown>
+        : null
+      const { level, rank } = assignmentLevel(assignmentTeam)
+      const statusGroup = rosterStatusGroup(entry.status.description)
+      const rookieAffiliateFamily = assignmentTeam?.name.startsWith('ACL ')
+        ? 'ACL'
+        : assignmentTeam?.name.startsWith('FCL ')
+          ? 'FCL'
+          : assignmentTeam?.name.startsWith('DSL ')
+            ? 'DSL'
+            : null
+      const membership: CurrentMilbRosterMembership = {
+        level_rank: rank,
+        row: {
+          mlbam_id: entry.person.id,
+          membership_kind: response.membershipKind,
+          player_type: mlbStatsApiMilbRosterPlayerType(entry),
+          display_name: entry.person.fullName,
+          age: entry.person.currentAge ?? null,
+          mlb_debut_date: entry.person.mlbDebutDate?.match(/^\d{4}-\d{2}-\d{2}$/u)
+            ? entry.person.mlbDebutDate
+            : null,
+          active: entry.person.active,
+          roster_status_code: entry.status.code,
+          roster_status_description: entry.status.description,
+          roster_status_group: statusGroup,
+          position: entry.person.primaryPosition.abbreviation || entry.position.abbreviation,
+          bats: entry.person.batSide?.code ?? null,
+          throws: entry.person.pitchHand?.code ?? null,
+          organization_mlbam_id: response.team.parentOrgId,
+          organization_name: response.team.parentOrgName,
+          current_team_mlbam_id: assignmentTeam?.id ?? null,
+          current_team_name: assignmentTeam?.name ?? null,
+          current_level: level,
+          sport_id: assignmentTeam?.sport.id ?? null,
+          current_league_name: nestedString(league, 'name'),
+          current_league_abbreviation: nestedString(league, 'abbreviation'),
+          rookie_affiliate_family: rookieAffiliateFamily,
+          season: census.season,
+          known_at: knownAt,
+        },
+      }
+      const memberships = membershipsByPlayer.get(entry.person.id) ?? []
+      memberships.push(membership)
+      membershipsByPlayer.set(entry.person.id, memberships)
+    }
+  }
+
+  return [...membershipsByPlayer.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([mlbamId, memberships]) => {
+      memberships.sort(compareMemberships)
+      const representative = memberships[0].row
+      return {
+        profile_id: `mlb-statsapi-roster:${mlbamId}`,
+        ...representative,
+        roster_membership_count: memberships.length,
+        affiliate_roster_membership_count: memberships.filter(
+          ({ row }) => row.membership_kind === 'affiliate',
+        ).length,
+        parent_census_membership_count: memberships.filter(
+          ({ row }) => row.membership_kind === 'parent_census',
+        ).length,
+        role_count: new Set(memberships.map(({ row }) => row.player_type)).size,
+        organization_count: new Set(
+          memberships.map(({ row }) => row.organization_mlbam_id),
+        ).size,
+        roster_memberships: memberships.map(({ row }) => ({
+          teamMlbamId: row.current_team_mlbam_id,
+          teamName: row.current_team_name,
+          organizationMlbamId: row.organization_mlbam_id,
+          organizationName: row.organization_name,
+          level: row.current_level,
+          sportId: row.sport_id,
+          statusCode: row.roster_status_code,
+          statusDescription: row.roster_status_description,
+          statusGroup: row.roster_status_group,
+          membershipKind: row.membership_kind,
+        })),
+      }
+    })
+}
+
 export async function refreshCurrentMilbRosterSnapshot(
   signal?: AbortSignal,
+  census?: FetchedMlbStatsApiMilbRosterCensus,
+  knownAt = new Date(),
 ): Promise<void> {
   signal?.throwIfAborted()
   const statementTimeoutMs = 320_000
@@ -185,13 +452,37 @@ export async function refreshCurrentMilbRosterSnapshot(
     }, 10_000)
     waitProbe.unref()
     await sql.begin(async (transaction) => {
-      await awaitCancelableQuery(transaction`
-        CREATE TEMP TABLE current_milb_roster_snapshot_stage
-        ON COMMIT DROP
-        AS
-        SELECT *
-        FROM app.current_milb_roster_computed
-      `.execute(), signal)
+      if (census) {
+        const rows = currentMilbRosterSnapshotRows(census, knownAt)
+        await transaction`
+          CREATE TEMP TABLE current_milb_roster_snapshot_stage (
+            LIKE app.current_milb_roster_snapshot INCLUDING DEFAULTS
+          ) ON COMMIT DROP
+        `
+        for (let offset = 0; offset < rows.length; offset += 1_000) {
+          signal?.throwIfAborted()
+          const batch = rows.slice(offset, offset + 1_000).map((row) => ({
+            ...row,
+            roster_memberships: transaction.json(
+              row.roster_memberships as postgres.JSONValue,
+            ),
+          }))
+          await transaction`
+            INSERT INTO current_milb_roster_snapshot_stage ${transaction(
+              batch,
+              ...currentMilbRosterSnapshotColumns,
+            )}
+          `
+        }
+      } else {
+        await awaitCancelableQuery(transaction`
+          CREATE TEMP TABLE current_milb_roster_snapshot_stage
+          ON COMMIT DROP
+          AS
+          SELECT *
+          FROM app.current_milb_roster_computed
+        `.execute(), signal)
+      }
       signal?.throwIfAborted()
 
       const [audit] = await transaction<CurrentMilbRosterSnapshotAudit[]>`

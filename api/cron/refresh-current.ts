@@ -433,11 +433,15 @@ export async function refreshCurrentSources(
     'mlbRoster',
     () => dependencies.ingestMlbStatsApiMilbRosterCensus(season, {
       signal: mlbRosterSignal,
+      publishCurrentSnapshot: (census, knownAt, signal) =>
+        dependencies.refreshCurrentMilbRosterSnapshot(signal, census, knownAt),
     }),
     async (sourceResult) => {
       assertMlbRosterComplete(sourceResult)
       mlbRosterSignal.throwIfAborted()
-      await dependencies.refreshCurrentMilbRosterSnapshot(mlbRosterSignal)
+      if (!sourceResult.snapshotPublished) {
+        await dependencies.refreshCurrentMilbRosterSnapshot(mlbRosterSignal)
+      }
     },
     mlbRosterSignal,
     options.signal,
