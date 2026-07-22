@@ -6,6 +6,52 @@ import {
 } from './mlb-statsapi-milb-roster.js'
 import { awaitCancelableQuery, currentRefreshDatabaseOptions } from './shared.js'
 
+async function logRosterSnapshotWait(refreshPid: number): Promise<void> {
+  const diagnostics = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(5_000))
+  try {
+    const rows = await diagnostics<{
+      blocked_state: string | null
+      blocked_wait_event_type: string | null
+      blocked_wait_event: string | null
+      blocker_pid: number | null
+      blocker_application_name: string | null
+      blocker_state: string | null
+      blocker_wait_event_type: string | null
+      blocker_wait_event: string | null
+      blocker_query_age_seconds: number | null
+      blocker_transaction_age_seconds: number | null
+      blocker_query: string | null
+    }[]>`
+      SELECT
+        blocked.state AS blocked_state,
+        blocked.wait_event_type AS blocked_wait_event_type,
+        blocked.wait_event AS blocked_wait_event,
+        blocker.pid AS blocker_pid,
+        blocker.application_name AS blocker_application_name,
+        blocker.state AS blocker_state,
+        blocker.wait_event_type AS blocker_wait_event_type,
+        blocker.wait_event AS blocker_wait_event,
+        extract(epoch FROM now() - blocker.query_start)::integer
+          AS blocker_query_age_seconds,
+        extract(epoch FROM now() - blocker.xact_start)::integer
+          AS blocker_transaction_age_seconds,
+        left(regexp_replace(blocker.query, E'\\s+', ' ', 'g'), 160)
+          AS blocker_query
+      FROM pg_stat_activity AS blocked
+      LEFT JOIN LATERAL unnest(pg_blocking_pids(blocked.pid)) AS blocked_by(pid)
+        ON true
+      LEFT JOIN pg_stat_activity AS blocker
+        ON blocker.pid = blocked_by.pid
+      WHERE blocked.pid = ${refreshPid}
+    `
+    console.warn('[snapshot-refresh] roster publication wait diagnostic', rows)
+  } catch (error) {
+    console.error('[snapshot-refresh] roster wait diagnostic failed', error)
+  } finally {
+    await diagnostics.end({ timeout: 5 })
+  }
+}
+
 export async function refreshPlayerDirectorySnapshot(
   signal?: AbortSignal,
 ): Promise<void> {
@@ -106,12 +152,33 @@ export async function refreshCurrentMilbRosterSnapshot(
 ): Promise<void> {
   signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(60_000))
+  let waitProbe: ReturnType<typeof setTimeout> | null = null
 
   try {
     signal?.throwIfAborted()
+    const [session] = await sql<{
+      pid: number
+      statement_timeout: string
+      lock_timeout: string
+      application_name: string
+    }[]>`
+      SELECT
+        pg_backend_pid() AS pid,
+        current_setting('statement_timeout') AS statement_timeout,
+        current_setting('lock_timeout') AS lock_timeout,
+        current_setting('application_name') AS application_name
+    `
+    if (!session) throw new Error('Roster snapshot database session is unavailable')
+    console.log('[snapshot-refresh] roster publication session', session)
+    waitProbe = setTimeout(() => {
+      void logRosterSnapshotWait(session.pid)
+    }, 10_000)
+    waitProbe.unref()
     await awaitCancelableQuery(sql`
       REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_roster_snapshot
     `.execute(), signal)
+    clearTimeout(waitProbe)
+    waitProbe = null
     const [audit] = await sql<CurrentMilbRosterSnapshotAudit[]>`
       SELECT
         count(*)::integer AS profiles,
@@ -146,6 +213,7 @@ export async function refreshCurrentMilbRosterSnapshot(
     assertCurrentMilbRosterSnapshot(audit)
     signal?.throwIfAborted()
   } finally {
+    if (waitProbe) clearTimeout(waitProbe)
     await sql.end({ timeout: 5 })
   }
 }
