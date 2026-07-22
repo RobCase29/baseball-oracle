@@ -99,54 +99,52 @@ export async function refreshCurrentMilbRosterSnapshot(
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(60_000))
 
   try {
-    await sql.begin(async (transaction) => {
-      signal?.throwIfAborted()
-      const refreshQuery = transaction`
-        REFRESH MATERIALIZED VIEW app.current_milb_roster_snapshot
-      `.execute()
-      const cancelRefresh = () => refreshQuery.cancel()
-      signal?.addEventListener('abort', cancelRefresh, { once: true })
-      if (signal?.aborted) cancelRefresh()
-      try {
-        await refreshQuery
-      } finally {
-        signal?.removeEventListener('abort', cancelRefresh)
-      }
-      signal?.throwIfAborted()
-      const [audit] = await transaction<CurrentMilbRosterSnapshotAudit[]>`
-        SELECT
-          count(*)::integer AS profiles,
-          count(DISTINCT mlbam_id)::integer AS distinct_mlbam_ids,
-          count(DISTINCT player_type)::integer AS roles,
-          count(DISTINCT organization_mlbam_id)::integer AS organizations,
-          count(*) FILTER (
-            WHERE mlbam_id IS NULL
-              OR mlbam_id <= 0
-              OR known_at IS NULL
-          )::integer AS invalid_identity_rows,
-          count(*) FILTER (
-            WHERE current_level IS NOT NULL
-              AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
-          )::integer AS invalid_level_rows,
-          count(*) FILTER (
-            WHERE display_name IS NULL
-              OR active IS NULL
-              OR roster_status_code IS NULL
-              OR roster_status_description IS NULL
-              OR position IS NULL
-              OR organization_mlbam_id IS NULL
-              OR organization_name IS NULL
-              OR season IS NULL
-              OR roster_membership_count < 1
-          )::integer AS missing_core_rows,
-          count(*) FILTER (
-            WHERE role_count <> 1 OR organization_count <> 1
-          )::integer AS identity_conflict_rows
-        FROM app.current_milb_roster_snapshot
-      `
-      assertCurrentMilbRosterSnapshot(audit)
-      signal?.throwIfAborted()
-    })
+    signal?.throwIfAborted()
+    const refreshQuery = sql`
+      REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_roster_snapshot
+    `.execute()
+    const cancelRefresh = () => refreshQuery.cancel()
+    signal?.addEventListener('abort', cancelRefresh, { once: true })
+    if (signal?.aborted) cancelRefresh()
+    try {
+      await refreshQuery
+    } finally {
+      signal?.removeEventListener('abort', cancelRefresh)
+    }
+    signal?.throwIfAborted()
+    const [audit] = await sql<CurrentMilbRosterSnapshotAudit[]>`
+      SELECT
+        count(*)::integer AS profiles,
+        count(DISTINCT mlbam_id)::integer AS distinct_mlbam_ids,
+        count(DISTINCT player_type)::integer AS roles,
+        count(DISTINCT organization_mlbam_id)::integer AS organizations,
+        count(*) FILTER (
+          WHERE mlbam_id IS NULL
+            OR mlbam_id <= 0
+            OR known_at IS NULL
+        )::integer AS invalid_identity_rows,
+        count(*) FILTER (
+          WHERE current_level IS NOT NULL
+            AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+        )::integer AS invalid_level_rows,
+        count(*) FILTER (
+          WHERE display_name IS NULL
+            OR active IS NULL
+            OR roster_status_code IS NULL
+            OR roster_status_description IS NULL
+            OR position IS NULL
+            OR organization_mlbam_id IS NULL
+            OR organization_name IS NULL
+            OR season IS NULL
+            OR roster_membership_count < 1
+        )::integer AS missing_core_rows,
+        count(*) FILTER (
+          WHERE role_count <> 1 OR organization_count <> 1
+        )::integer AS identity_conflict_rows
+      FROM app.current_milb_roster_snapshot
+    `
+    assertCurrentMilbRosterSnapshot(audit)
+    signal?.throwIfAborted()
   } finally {
     await sql.end({ timeout: 5 })
   }

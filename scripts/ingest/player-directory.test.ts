@@ -27,6 +27,10 @@ const currentMilbRosterMigration = readFileSync(
   resolve(process.cwd(), 'db/migrations/0019_mlb_statsapi_current_milb_roster.sql'),
   'utf8',
 )
+const playerDirectorySource = readFileSync(
+  resolve(process.cwd(), 'scripts/ingest/player-directory.ts'),
+  'utf8',
+)
 
 function directoryProjection(sql: string): string {
   const projection = sql.match(
@@ -211,6 +215,16 @@ describe('official current MiLB roster census', () => {
     expect(currentMilbRosterMigration).toContain('representative.rookie_affiliate_family')
     expect(currentMilbRosterMigration).toContain(
       'CREATE UNIQUE INDEX current_milb_roster_mlbam_uidx',
+    )
+  })
+
+  it('publishes without blocking API readers and cancels an aborted refresh query', () => {
+    expect(playerDirectorySource).toContain(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_roster_snapshot',
+    )
+    expect(playerDirectorySource).toContain('const cancelRefresh = () => refreshQuery.cancel()')
+    expect(playerDirectorySource).toContain(
+      "signal?.addEventListener('abort', cancelRefresh, { once: true })",
     )
   })
 })
