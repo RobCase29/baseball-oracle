@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import type { BaseballReferenceCurrentResult } from '../../scripts/ingest/baseball-reference-current.js'
 import type {
@@ -19,6 +20,11 @@ import {
   refreshCurrentSources,
   type CurrentRefreshDependencies,
 } from './refresh-current.js'
+
+const refreshCurrentSource = readFileSync(
+  new URL('./refresh-current.ts', import.meta.url),
+  'utf8',
+)
 
 const completeProspectSavant: ProspectSavantBackfillResult = {
   attempted: 10,
@@ -134,6 +140,13 @@ describe('current baseball season selection', () => {
     expect(CURRENT_REFRESH_STALE_RUN_MS).toBeGreaterThan(
       CURRENT_REFRESH_EXECUTION_BUDGET_MS,
     )
+  })
+
+  it('terminates stale active and abandoned-transaction snapshot sessions', () => {
+    expect(refreshCurrentSource).toContain("state = 'active'")
+    expect(refreshCurrentSource).toContain("state LIKE 'idle in transaction%'")
+    expect(refreshCurrentSource).toContain('pg_terminate_backend')
+    expect(refreshCurrentSource).toContain('currentRefreshMaterializedViewPattern')
   })
 })
 

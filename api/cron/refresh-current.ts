@@ -243,7 +243,7 @@ const currentRefreshMaterializedViewPattern =
   'current_milb_roster_snapshot|current_mlb_value_snapshot|' +
   'fangraphs_current_scouting_snapshot|fangraphs_current_candidate_census)'
 
-async function cancelStaleCurrentRefreshQueries(
+async function terminateStaleCurrentRefreshSessions(
   sql: ReturnType<typeof postgres>,
   now: Date,
 ): Promise<number> {
@@ -253,18 +253,27 @@ async function cancelStaleCurrentRefreshQueries(
     WHERE pid <> pg_backend_pid()
       AND datname = current_database()
       AND usename = current_user
-      AND state = 'active'
-      AND query_start < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+      AND backend_type = 'client backend'
+      AND (
+        (
+          state = 'active'
+          AND query_start < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+        )
+        OR (
+          state LIKE 'idle in transaction%'
+          AND state_change < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+        )
+      )
       AND query ~* ${currentRefreshMaterializedViewPattern}
   `
-  let cancelled = 0
+  let terminated = 0
   for (const staleQuery of staleQueries) {
-    const [result] = await sql<{ cancelled: boolean }[]>`
-      SELECT pg_cancel_backend(${staleQuery.pid}) AS cancelled
+    const [result] = await sql<{ terminated: boolean }[]>`
+      SELECT pg_terminate_backend(${staleQuery.pid}) AS terminated
     `
-    if (result?.cancelled) cancelled += 1
+    if (result?.terminated) terminated += 1
   }
-  return cancelled
+  return terminated
 }
 
 function assertProspectSavantComplete(
@@ -498,14 +507,14 @@ export default async function handler(
   let result: CurrentRefreshResult | null = null
 
   try {
-    const cancelledStaleQueries = await cancelStaleCurrentRefreshQueries(sql, now)
+    const terminatedStaleSessions = await terminateStaleCurrentRefreshSessions(sql, now)
       .catch((error: unknown) => {
         console.error('[current-refresh] stale query cleanup failed', safeError(error))
         return 0
       })
-    if (cancelledStaleQueries > 0) {
-      console.log('[current-refresh] cancelled stale materialized-view refreshes', {
-        cancelled: cancelledStaleQueries,
+    if (terminatedStaleSessions > 0) {
+      console.log('[current-refresh] terminated stale materialized-view sessions', {
+        terminated: terminatedStaleSessions,
       })
     }
 
