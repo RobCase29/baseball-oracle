@@ -34,6 +34,7 @@ const jobKey = 'current-baseball-source-refresh-v1'
 export const CURRENT_REFRESH_PLATFORM_BUDGET_MS = 800_000
 export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 750_000
 export const CURRENT_REFRESH_STALE_RUN_MS = 15 * 60_000
+export const CURRENT_REFRESH_STALE_QUERY_MS = 5 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
   prospectSavant: 160_000,
   mlbStatsApi: 150_000,
@@ -236,6 +237,36 @@ function sourceDeadlineSignal(
     : timeoutSignal
 }
 
+const currentRefreshMaterializedViewPattern =
+  '^\\s*REFRESH\\s+MATERIALIZED\\s+VIEW\\s+(?:CONCURRENTLY\\s+)?' +
+  'app\\.(?:player_directory_snapshot|current_milb_traditional_snapshot|' +
+  'current_milb_roster_snapshot|current_mlb_value_snapshot|' +
+  'fangraphs_current_scouting_snapshot|fangraphs_current_candidate_census)'
+
+async function cancelStaleCurrentRefreshQueries(
+  sql: ReturnType<typeof postgres>,
+  now: Date,
+): Promise<number> {
+  const staleQueries = await sql<{ pid: number }[]>`
+    SELECT pid
+    FROM pg_stat_activity
+    WHERE pid <> pg_backend_pid()
+      AND datname = current_database()
+      AND usename = current_user
+      AND state = 'active'
+      AND query_start < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+      AND query ~* ${currentRefreshMaterializedViewPattern}
+  `
+  let cancelled = 0
+  for (const staleQuery of staleQueries) {
+    const [result] = await sql<{ cancelled: boolean }[]>`
+      SELECT pg_cancel_backend(${staleQuery.pid}) AS cancelled
+    `
+    if (result?.cancelled) cancelled += 1
+  }
+  return cancelled
+}
+
 function assertProspectSavantComplete(
   result: ProspectSavantBackfillResult,
   expectedSlices: number,
@@ -365,7 +396,7 @@ export async function refreshCurrentSources(
     async (sourceResult) => {
       assertMlbRosterComplete(sourceResult)
       mlbRosterSignal.throwIfAborted()
-      await dependencies.refreshCurrentMilbRosterSnapshot()
+      await dependencies.refreshCurrentMilbRosterSnapshot(mlbRosterSignal)
     },
     mlbRosterSignal,
     options.signal,
@@ -467,6 +498,17 @@ export default async function handler(
   let result: CurrentRefreshResult | null = null
 
   try {
+    const cancelledStaleQueries = await cancelStaleCurrentRefreshQueries(sql, now)
+      .catch((error: unknown) => {
+        console.error('[current-refresh] stale query cleanup failed', safeError(error))
+        return 0
+      })
+    if (cancelledStaleQueries > 0) {
+      console.log('[current-refresh] cancelled stale materialized-view refreshes', {
+        cancelled: cancelledStaleQueries,
+      })
+    }
+
     await sql`
       UPDATE ops.refresh_run
       SET

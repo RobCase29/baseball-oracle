@@ -181,6 +181,9 @@ describe('current source refresh isolation', () => {
       { signal: expect.any(AbortSignal) },
     )
     expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledOnce()
+    expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledWith(
+      expect.any(AbortSignal),
+    )
     expect(
       vi.mocked(stubs.backfillProspectSavant).mock.invocationCallOrder[0],
     ).toBeLessThan(

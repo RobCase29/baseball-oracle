@@ -63,8 +63,11 @@ opportunity when an upstream source was unavailable in the first window. The end
     and the remaining 50 seconds are reserved for operational receipts and clean
     connection shutdown. HTTP work and crawl delays stop on
     abort, while PostgreSQL statements, lock waits, and idle transactions have
-    server-side limits. One stalled provider therefore cannot consume the other
-    required provider's opportunity or strand the operational receipt.
+    server-side limits. The large roster publication also cancels its active
+    PostgreSQL query on abort, and each job clears same-owner materialized-view
+    refreshes left active for more than five minutes by an interrupted invocation.
+    One stalled provider therefore cannot consume the other required provider's
+    opportunity or strand the operational receipt.
 12. Treats all five current sources as required and reports sanitized per-source
     failure messages through the health endpoint.
 13. Records success, failure, partial results, code commit, season, and timestamps in

@@ -92,12 +92,27 @@ export interface CurrentMilbRosterSnapshotAudit {
   identity_conflict_rows: number
 }
 
-export async function refreshCurrentMilbRosterSnapshot(): Promise<void> {
+export async function refreshCurrentMilbRosterSnapshot(
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(60_000))
 
   try {
     await sql.begin(async (transaction) => {
-      await transaction`REFRESH MATERIALIZED VIEW app.current_milb_roster_snapshot`
+      signal?.throwIfAborted()
+      const refreshQuery = transaction`
+        REFRESH MATERIALIZED VIEW app.current_milb_roster_snapshot
+      `.execute()
+      const cancelRefresh = () => refreshQuery.cancel()
+      signal?.addEventListener('abort', cancelRefresh, { once: true })
+      if (signal?.aborted) cancelRefresh()
+      try {
+        await refreshQuery
+      } finally {
+        signal?.removeEventListener('abort', cancelRefresh)
+      }
+      signal?.throwIfAborted()
       const [audit] = await transaction<CurrentMilbRosterSnapshotAudit[]>`
         SELECT
           count(*)::integer AS profiles,
@@ -130,6 +145,7 @@ export async function refreshCurrentMilbRosterSnapshot(): Promise<void> {
         FROM app.current_milb_roster_snapshot
       `
       assertCurrentMilbRosterSnapshot(audit)
+      signal?.throwIfAborted()
     })
   } finally {
     await sql.end({ timeout: 5 })
