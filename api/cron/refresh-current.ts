@@ -34,11 +34,11 @@ const jobKey = 'current-baseball-source-refresh-v1'
 export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 270_000
 export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
-  prospectSavant: 130_000,
-  mlbStatsApi: 130_000,
-  mlbRoster: 140_000,
-  baseballReference: 80_000,
-  fangraphs: 40_000,
+  prospectSavant: 160_000,
+  mlbStatsApi: 150_000,
+  mlbRoster: 170_000,
+  baseballReference: 35_000,
+  fangraphs: 55_000,
 } as const
 
 export type RefreshRunStatus = 'succeeded' | 'partial' | 'failed'
