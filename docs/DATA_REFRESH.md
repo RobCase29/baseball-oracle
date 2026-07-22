@@ -36,7 +36,9 @@ opportunity when an upstream source was unavailable in the first window. The end
    work.
 3. Fetches all ten current Prospect Savant role and level slices, the ten official
    MLB StatsAPI MiLB hitter/pitcher level slices, and the official MiLB affiliated
-   plus 30-parent-organization full-roster census in parallel.
+   plus 30-parent-organization full-roster census sequentially. This prevents the
+   three database-heavy raw landings and materialized-view publications from
+   contending with one another.
 4. Rejects every Prospect Savant payload unless at least 95% of rows retain a
    supported player identifier, the requested cohort, and role-specific core
    fields. Scheduled slices must also keep at least 60% of their prior row count
@@ -54,11 +56,12 @@ opportunity when an upstream source was unavailable in the first window. The end
 9. Refreshes `app.current_mlb_value_snapshot` only after both sides succeed.
 10. Fetches and validates both current FanGraphs prospect-board sides, then
    publishes the newest season only when both hitters and pitchers are present.
-11. Enforces a 270-second request deadline below Vercel's 300-second function
+11. Enforces a 750-second request deadline below Vercel's 800-second function
     limit. Prospect Savant, MLB StatsAPI statistics, MLB StatsAPI rosters,
-    Baseball-Reference, and FanGraphs receive bounded 130-, 130-, 140-, 80-, and
-    40-second windows. The first three run in parallel, keeping the declared
-    source critical path at 260 seconds. HTTP work and crawl delays stop on
+    Baseball-Reference, and FanGraphs receive bounded 160-, 150-, 240-, 35-, and
+    55-second windows. The source windows total less than the request deadline,
+    and the remaining 50 seconds are reserved for operational receipts and clean
+    connection shutdown. HTTP work and crawl delays stop on
     abort, while PostgreSQL statements, lock waits, and idle transactions have
     server-side limits. One stalled provider therefore cannot consume the other
     required provider's opportunity or strand the operational receipt.

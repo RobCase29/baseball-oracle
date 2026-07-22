@@ -31,12 +31,13 @@ import { hasValidCronAuthorization, sendJson } from '../_admin.js'
 
 const jobKey = 'current-baseball-source-refresh-v1'
 
-export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 270_000
-export const CURRENT_REFRESH_STALE_RUN_MS = 6 * 60_000
+export const CURRENT_REFRESH_PLATFORM_BUDGET_MS = 800_000
+export const CURRENT_REFRESH_EXECUTION_BUDGET_MS = 750_000
+export const CURRENT_REFRESH_STALE_RUN_MS = 15 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
   prospectSavant: 160_000,
   mlbStatsApi: 150_000,
-  mlbRoster: 170_000,
+  mlbRoster: 240_000,
   baseballReference: 35_000,
   fangraphs: 55_000,
 } as const

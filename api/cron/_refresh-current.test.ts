@@ -10,6 +10,7 @@ import type { ProspectSavantBackfillResult } from '../../scripts/ingest/prospect
 import {
   baseballSeasonForDate,
   CURRENT_REFRESH_EXECUTION_BUDGET_MS,
+  CURRENT_REFRESH_PLATFORM_BUDGET_MS,
   CURRENT_REFRESH_SOURCE_BUDGETS_MS,
   CURRENT_REFRESH_STALE_RUN_MS,
   attemptSource,
@@ -116,12 +117,20 @@ describe('current baseball season selection', () => {
     expect(baseballSeasonForDate(new Date('2027-03-31T23:59:59Z'))).toBe(2026)
   })
 
-  it('keeps source and stale-run budgets within the Vercel execution window', () => {
-    expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS).toBeLessThan(300_000)
+  it('keeps sequential source and stale-run budgets within the Vercel execution window', () => {
+    expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS).toBeLessThan(
+      CURRENT_REFRESH_PLATFORM_BUDGET_MS,
+    )
     expect(Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS).every(
       (budget) => budget < CURRENT_REFRESH_EXECUTION_BUDGET_MS,
     )).toBe(true)
-    expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS + 30_000).toBeLessThanOrEqual(300_000)
+    expect(Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS).reduce(
+      (total, budget) => total + budget,
+      0,
+    )).toBeLessThan(CURRENT_REFRESH_EXECUTION_BUDGET_MS)
+    expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS + 50_000).toBeLessThanOrEqual(
+      CURRENT_REFRESH_PLATFORM_BUDGET_MS,
+    )
     expect(CURRENT_REFRESH_STALE_RUN_MS).toBeGreaterThan(
       CURRENT_REFRESH_EXECUTION_BUDGET_MS,
     )

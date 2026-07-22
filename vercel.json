@@ -18,7 +18,7 @@
       "maxDuration": 300
     },
     "api/cron/*.ts": {
-      "maxDuration": 300
+      "maxDuration": 800
     }
   },
   "crons": [
