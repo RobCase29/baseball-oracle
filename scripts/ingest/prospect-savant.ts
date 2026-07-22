@@ -305,8 +305,10 @@ export function buildProspectSavantCurrentSlices(season: number): ProspectSavant
 export async function fetchProspectSavantLeaders(
   url: string,
   signal?: AbortSignal,
+  requestOptions: { attempts?: number; timeoutMs?: number } = {},
 ): Promise<Response> {
   return fetchWithRetry(url, {
+    attempts: requestOptions.attempts,
     sourceName: 'Prospect Savant',
     signal,
     headers: {
@@ -314,6 +316,6 @@ export async function fetchProspectSavantLeaders(
       'User-Agent':
         'BaseballOracleResearch/0.1 (+https://github.com/RobCase29/baseball-oracle)',
     },
-    timeoutMs: 60_000,
+    timeoutMs: requestOptions.timeoutMs ?? 60_000,
   })
 }

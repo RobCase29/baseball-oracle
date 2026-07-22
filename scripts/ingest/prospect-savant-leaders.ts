@@ -49,6 +49,8 @@ export interface IngestProspectSavantResult {
 interface ProspectSavantIngestOptions {
   apiBase?: string
   enforceCurrentCardinality?: boolean
+  requestAttempts?: number
+  requestTimeoutMs?: number
   signal?: AbortSignal
 }
 
@@ -105,7 +107,10 @@ export async function ingestProspectSavantSlice(
         PROSPECT_SAVANT_DEFAULT_API_BASE,
     ),
   )
-  const response = await fetchProspectSavantLeaders(url, options.signal)
+  const response = await fetchProspectSavantLeaders(url, options.signal, {
+    attempts: options.requestAttempts,
+    timeoutMs: options.requestTimeoutMs,
+  })
   const body = await response.text()
   options.signal?.throwIfAborted()
   const fetchedAt = new Date()
@@ -195,7 +200,10 @@ export async function backfillProspectSavant(options: {
   delayMs?: number
   apiBase?: string
   enforceCurrentCardinality?: boolean
+  requestAttempts?: number
+  requestTimeoutMs?: number
   signal?: AbortSignal
+  stopOnFailure?: boolean
   onProgress?: (result: IngestProspectSavantResult) => void
 } = {}): Promise<ProspectSavantBackfillResult> {
   const slices = options.slices ?? buildProspectSavantHistoricalSlices()
@@ -220,6 +228,8 @@ export async function backfillProspectSavant(options: {
       const result = await ingestProspectSavantSlice(slice, {
         apiBase: options.apiBase,
         enforceCurrentCardinality: options.enforceCurrentCardinality,
+        requestAttempts: options.requestAttempts,
+        requestTimeoutMs: options.requestTimeoutMs,
         signal: options.signal,
       })
       if (result.status === 'stored') summary.stored += 1
@@ -233,6 +243,7 @@ export async function backfillProspectSavant(options: {
         slice,
         message: error instanceof Error ? error.message : 'Unknown ingestion error',
       })
+      if (options.stopOnFailure) break
     }
 
     if (index < slices.length - 1 && delayMs > 0) {

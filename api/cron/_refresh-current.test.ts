@@ -231,6 +231,11 @@ describe('current source refresh isolation', () => {
     )
 
     const prospectOptions = vi.mocked(stubs.backfillProspectSavant).mock.calls[0]![0]
+    expect(prospectOptions).toMatchObject({
+      requestAttempts: 1,
+      requestTimeoutMs: 30_000,
+      stopOnFailure: true,
+    })
     expect(prospectOptions?.slices?.filter((slice) => slice.level !== 'Rk')
       .every((slice) => slice.season === 2027)).toBe(true)
     expect(prospectOptions?.slices?.filter((slice) => slice.level === 'Rk')

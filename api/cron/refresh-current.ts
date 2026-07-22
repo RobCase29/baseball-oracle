@@ -390,7 +390,10 @@ export async function refreshCurrentSources(
       slices,
       delayMs: 250,
       enforceCurrentCardinality: true,
+      requestAttempts: 1,
+      requestTimeoutMs: 30_000,
       signal: prospectSavantSignal,
+      stopOnFailure: true,
     }),
     async (sourceResult) => {
       assertProspectSavantComplete(sourceResult, slices.length)
