@@ -34,6 +34,13 @@ const optimizedCurrentMilbRosterMigration = readFileSync(
   ),
   'utf8',
 )
+const atomicCurrentMilbRosterMigration = readFileSync(
+  resolve(
+    process.cwd(),
+    'db/migrations/0021_atomic_current_milb_roster_publication.sql',
+  ),
+  'utf8',
+)
 const playerDirectorySource = readFileSync(
   resolve(process.cwd(), 'scripts/ingest/player-directory.ts'),
   'utf8',
@@ -241,11 +248,10 @@ describe('official current MiLB roster census', () => {
     expect(optimizedCurrentMilbRosterMigration).not.toContain('app.jsonb_number')
   })
 
-  it('publishes core snapshots without blocking API readers', () => {
+  it('publishes materialized core snapshots without blocking API readers', () => {
     for (const view of [
       'player_directory_snapshot',
       'current_milb_traditional_snapshot',
-      'current_milb_roster_snapshot',
       'current_mlb_value_snapshot',
     ]) {
       expect(playerDirectorySource).toContain(
@@ -253,5 +259,26 @@ describe('official current MiLB roster census', () => {
       )
     }
     expect(playerDirectorySource).toContain('awaitCancelableQuery')
+  })
+
+  it('stages, validates, and atomically replaces the served roster table', () => {
+    expect(atomicCurrentMilbRosterMigration).toContain(
+      'roster_source AS MATERIALIZED',
+    )
+    expect(atomicCurrentMilbRosterMigration).toContain(
+      'CREATE TABLE app.current_milb_roster_snapshot AS',
+    )
+    expect(playerDirectorySource).toContain(
+      'CREATE TEMP TABLE current_milb_roster_snapshot_stage',
+    )
+    expect(playerDirectorySource).toContain(
+      'FROM app.current_milb_roster_computed',
+    )
+    expect(playerDirectorySource).toContain(
+      'DELETE FROM app.current_milb_roster_snapshot',
+    )
+    expect(playerDirectorySource).toContain(
+      'INSERT INTO app.current_milb_roster_snapshot',
+    )
   })
 })
