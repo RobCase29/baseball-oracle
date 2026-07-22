@@ -11,6 +11,7 @@ import {
   MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_PAYLOAD_BUDGET_BYTES,
   MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_ROW_OVERHEAD_BYTES,
   MLB_STATSAPI_MILB_ROSTER_RAW_BATCH_TARGET_ROWS,
+  isMlbStatsApiSyntheticRosterEntry,
   mlbStatsApiMilbRosterPlayerType,
   mlbStatsApiMilbRosterRawBatchPolicy,
   mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes,
@@ -199,6 +200,29 @@ describe('MLB StatsAPI full MiLB roster census', () => {
     expect(() =>
       parseMlbStatsApiMilbRosterEnvelope(rosterBody(sourceTeam, [valid], 999), sourceTeam),
     ).toThrow(/identified itself as team 999/u)
+  })
+
+  it('quarantines MLB StatsAPI synthetic batter and pitcher identities', () => {
+    const sourceTeam = team(512, 11, 116)
+    const batterOne = entry(682_291, 116)
+    batterOne.person.fullName = 'Batter One'
+    batterOne.person.currentAge = undefined
+    const pitcherTwo = entry(682_292, 116, { primaryType: 'Pitcher' })
+    pitcherTwo.person.fullName = 'Pitcher Two'
+    const legitimateSurname = entry(682_293, 116)
+    legitimateSurname.person.fullName = 'Batter Jones'
+
+    expect(isMlbStatsApiSyntheticRosterEntry(batterOne)).toBe(true)
+    expect(isMlbStatsApiSyntheticRosterEntry(pitcherTwo)).toBe(true)
+    expect(isMlbStatsApiSyntheticRosterEntry(legitimateSurname)).toBe(false)
+
+    const parsed = parseMlbStatsApiMilbRosterEnvelope(
+      rosterBody(sourceTeam, [batterOne, pitcherTwo, legitimateSurname]),
+      sourceTeam,
+    )
+    expect(parsed.roster.map((item) => item.person.id)).toEqual([682_293])
+    expect(parsed.reportedRows).toBe(3)
+    expect(parsed.quarantinedRows).toBe(2)
   })
 
   it('quarantines stale old-organization rows while retaining current evidence', () => {

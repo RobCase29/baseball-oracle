@@ -210,6 +210,14 @@ export interface MlbStatsApiMilbRosterRawBatchPolicy {
   targetRows: number
 }
 
+const mlbStatsApiSyntheticRosterName = /^(?:Batter|Pitcher)\s+(?:One|Two)$/iu
+
+export function isMlbStatsApiSyntheticRosterEntry(
+  entry: Pick<MlbStatsApiMilbRosterEntry, 'person'>,
+): boolean {
+  return mlbStatsApiSyntheticRosterName.test(entry.person.fullName.trim())
+}
+
 export function mlbStatsApiMilbRosterRawBatchPolicyForMaxRecordBytes(
   maximumRecordBytes: number,
 ): MlbStatsApiMilbRosterRawBatchPolicy {
@@ -357,6 +365,7 @@ export function parseMlbStatsApiMilbRosterEnvelope(
     }
     const entry = parsed.data
     if (
+      isMlbStatsApiSyntheticRosterEntry(entry) ||
       seenPlayerIds.has(entry.person.id) ||
       (entry.parentTeamId !== undefined && entry.parentTeamId !== team.parentOrgId)
     ) {

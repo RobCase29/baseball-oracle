@@ -13,6 +13,7 @@ import {
   CURRENT_REFRESH_EXECUTION_BUDGET_MS,
   CURRENT_REFRESH_SOURCE_BUDGETS_MS,
   CURRENT_REFRESH_STALE_RUN_MS,
+  attemptSource,
   deriveRefreshRunStatus,
   prospectSavantRookieSeasonForDate,
   refreshCurrentSources,
@@ -141,6 +142,23 @@ describe('current baseball season selection', () => {
 })
 
 describe('current source refresh isolation', () => {
+  it('returns a failed source result when a collector ignores its abort signal', async () => {
+    const controller = new AbortController()
+    const neverSettles = new Promise<never>(() => undefined)
+    const attempt = attemptSource(
+      'stuck-source',
+      () => neverSettles,
+      () => undefined,
+      controller.signal,
+    )
+    controller.abort(new Error('source deadline elapsed'))
+
+    await expect(attempt).resolves.toEqual({
+      status: 'failed',
+      error: { message: 'source deadline elapsed' },
+    })
+  })
+
   it('reports success when every current source publishes completely', async () => {
     const stubs = dependencies()
     const result = await refreshCurrentSources(2026, stubs)

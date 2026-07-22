@@ -159,25 +159,67 @@ function aggregateError(
   return Object.keys(sources).length > 0 ? { sources } : null
 }
 
-async function attemptSource<T>(
+function raceWithAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(
+      signal.reason ?? new DOMException('The operation was aborted', 'AbortError'),
+    )
+    operation.then(
+      (value) => {
+        signal.removeEventListener('abort', abort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', abort)
+        reject(error)
+      },
+    )
+    if (signal.aborted) {
+      abort()
+      return
+    }
+    signal.addEventListener('abort', abort, { once: true })
+  })
+}
+
+export async function attemptSource<T>(
+  source: string,
   collect: () => Promise<T>,
   publish: (result: T) => Promise<void> | void = () => undefined,
   signal?: AbortSignal,
   fatalSignal?: AbortSignal,
 ): Promise<RefreshSourceResult<T>> {
   let result: T | undefined
+  const startedAt = Date.now()
+  console.log('[current-refresh] source started', { source })
   try {
-    signal?.throwIfAborted()
-    result = await collect()
-    signal?.throwIfAborted()
-    await publish(result)
-    signal?.throwIfAborted()
-    return { status: 'succeeded', result }
+    const operation = async (): Promise<T> => {
+      signal?.throwIfAborted()
+      result = await collect()
+      signal?.throwIfAborted()
+      await publish(result)
+      signal?.throwIfAborted()
+      return result
+    }
+    const completedResult = await (signal
+      ? raceWithAbort(operation(), signal)
+      : operation())
+    console.log('[current-refresh] source succeeded', {
+      source,
+      elapsedMs: Date.now() - startedAt,
+    })
+    return { status: 'succeeded', result: completedResult }
   } catch (error) {
     fatalSignal?.throwIfAborted()
+    const safe = safeError(error)
+    console.error('[current-refresh] source failed', {
+      source,
+      elapsedMs: Date.now() - startedAt,
+      error: safe.message,
+    })
     return {
       status: 'failed',
-      error: safeError(error),
+      error: safe,
       ...(result === undefined ? {} : { result }),
     }
   }
@@ -282,6 +324,7 @@ export async function refreshCurrentSources(
   )
   const [prospectSavant, mlbStatsApi, mlbRoster] = await Promise.all([
     attemptSource(
+      'prospectSavant',
       () => dependencies.backfillProspectSavant({
         slices,
         delayMs: 250,
@@ -297,6 +340,7 @@ export async function refreshCurrentSources(
       options.signal,
     ),
     attemptSource(
+      'mlbStatsApi',
       () => dependencies.backfillMlbStatsApiMilb({
         slices: mlbStatsApiSlices,
         delayMs: 100,
@@ -312,6 +356,7 @@ export async function refreshCurrentSources(
       options.signal,
     ),
     attemptSource(
+      'mlbRoster',
       () => dependencies.ingestMlbStatsApiMilbRosterCensus(season, {
         signal: mlbRosterSignal,
       }),
@@ -330,6 +375,7 @@ export async function refreshCurrentSources(
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.baseballReference,
   )
   const baseballReference = await attemptSource(
+    'baseballReference',
     () => dependencies.ingestBaseballReferenceCurrentSeason(
       season,
       {
@@ -351,6 +397,7 @@ export async function refreshCurrentSources(
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs,
   )
   const fangraphs = await attemptSource(
+    'fangraphs',
     () => dependencies.ingestFangraphsCurrentProspects({
       season,
       signal: fangraphsSignal,

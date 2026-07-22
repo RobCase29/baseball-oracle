@@ -36,6 +36,22 @@ function constantEqual(left: string, right: string): boolean {
   return difference === 0
 }
 
+function bearerToken(request: Request): string | null {
+  const authorization = request.headers.get('authorization')
+  if (!authorization?.startsWith('Bearer ')) return null
+  return authorization.slice(7).trim() || null
+}
+
+function validServerAuthorization(request: Request, pathname: string): boolean {
+  const expected = pathname.startsWith('/api/cron/')
+    ? process.env.CRON_SECRET?.trim()
+    : pathname.startsWith('/api/admin/')
+      ? process.env.INGESTION_SECRET?.trim()
+      : null
+  const provided = bearerToken(request)
+  return Boolean(expected && provided && constantEqual(provided, expected))
+}
+
 async function sessionSignature(payload: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
@@ -68,6 +84,7 @@ async function validSession(request: Request): Promise<boolean> {
 export default async function oracleAccess(request: Request): Promise<Response> {
   const url = new URL(request.url)
   if (publicPath(url.pathname)) return next()
+  if (validServerAuthorization(request, url.pathname)) return next()
   if (await validSession(request)) return next()
 
   if (url.pathname.startsWith('/api/')) {
