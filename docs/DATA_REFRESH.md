@@ -63,11 +63,12 @@ opportunity when an upstream source was unavailable in the first window. The end
     and the remaining 50 seconds are reserved for operational receipts and clean
     connection shutdown. HTTP work and crawl delays stop on
     abort, while PostgreSQL statements, lock waits, and idle transactions have
-    server-side limits. The large roster publication also cancels its active
-    PostgreSQL query on abort and refreshes concurrently against its unique
-    profile index so API readers do not block publication. Each job also clears
-    same-owner materialized-view refreshes left active for more than five minutes
-    by an interrupted invocation.
+    server-side limits. Every core player snapshot receives the source abort
+    signal and refreshes concurrently against its unique identity index, so API
+    readers do not block publication and an expired source actively cancels its
+    PostgreSQL query. FanGraphs publications are also actively cancelled on
+    abort. Each job clears same-owner materialized-view refreshes left active for
+    more than five minutes by an interrupted invocation.
     One stalled provider therefore cannot consume the other required provider's
     opportunity or strand the operational receipt.
 12. Treats all five current sources as required and reports sanitized per-source

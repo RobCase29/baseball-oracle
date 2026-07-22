@@ -13,6 +13,7 @@ import {
 } from './fangraphs.js'
 import { persistRawLanding } from './raw-landing.js'
 import {
+  awaitCancelableQuery,
   disambiguateSourceRecordKeys,
   currentRefreshDatabaseOptions,
   idempotencyKey,
@@ -224,16 +225,19 @@ export function assertFangraphsCurrentSnapshot(
 
 export async function refreshFangraphsCurrentScoutingSnapshot(
   season: number,
+  signal?: AbortSignal,
 ): Promise<number> {
+  signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
   try {
     return await sql.begin(async (transaction) => {
-      await transaction`
+      await awaitCancelableQuery(transaction`
         REFRESH MATERIALIZED VIEW app.fangraphs_current_scouting_snapshot
-      `
-      await transaction`
+      `.execute(), signal)
+      await awaitCancelableQuery(transaction`
         REFRESH MATERIALIZED VIEW app.fangraphs_current_candidate_census
-      `
+      `.execute(), signal)
+      signal?.throwIfAborted()
       const [audit] = await transaction<{
         batting_exact_mlbam_rows: number
         batting_resolved_mlbam_rows: number
@@ -276,6 +280,7 @@ export async function refreshFangraphsCurrentScoutingSnapshot(
           }
         : undefined
       assertFangraphsCurrentSnapshot(normalizedAudit)
+      signal?.throwIfAborted()
       return normalizedAudit?.totalRows ?? 0
     })
   } finally {
@@ -306,7 +311,10 @@ export async function ingestFangraphsCurrentProspects(
     throw new Error('Current FanGraphs refresh is still in progress')
   }
 
-  const snapshotRows = await refreshFangraphsCurrentScoutingSnapshot(options.season)
+  const snapshotRows = await refreshFangraphsCurrentScoutingSnapshot(
+    options.season,
+    options.signal,
+  )
   options.signal?.throwIfAborted()
   return { batting, pitching, season: options.season, snapshotRows }
 }

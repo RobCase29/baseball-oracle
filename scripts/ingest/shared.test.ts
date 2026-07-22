@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   abortableDelay,
+  awaitCancelableQuery,
   boundedSourceRecordKey,
   CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
   CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
@@ -58,6 +59,24 @@ describe('shared ingestion helpers', () => {
     controller.abort(new Error('Source budget elapsed'))
 
     await expect(waiting).rejects.toThrow('Source budget elapsed')
+  })
+
+  it('cancels an active database query when its source deadline aborts', async () => {
+    const controller = new AbortController()
+    let rejectQuery: (reason: Error) => void = () => undefined
+    const pending = new Promise<never>((_resolve, reject) => {
+      rejectQuery = reject
+    })
+    const cancel = vi.fn(() => rejectQuery(new Error('Database query cancelled')))
+    const waiting = awaitCancelableQuery({
+      cancel,
+      then: pending.then.bind(pending),
+    }, controller.signal)
+
+    controller.abort(new Error('Source budget elapsed'))
+
+    await expect(waiting).rejects.toThrow('Database query cancelled')
+    expect(cancel).toHaveBeenCalledOnce()
   })
 
   it('bounds refresh database statements and lock waits on the server', () => {

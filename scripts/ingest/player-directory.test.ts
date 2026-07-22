@@ -218,13 +218,17 @@ describe('official current MiLB roster census', () => {
     )
   })
 
-  it('publishes without blocking API readers and cancels an aborted refresh query', () => {
-    expect(playerDirectorySource).toContain(
-      'REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_roster_snapshot',
-    )
-    expect(playerDirectorySource).toContain('const cancelRefresh = () => refreshQuery.cancel()')
-    expect(playerDirectorySource).toContain(
-      "signal?.addEventListener('abort', cancelRefresh, { once: true })",
-    )
+  it('publishes core snapshots without blocking API readers', () => {
+    for (const view of [
+      'player_directory_snapshot',
+      'current_milb_traditional_snapshot',
+      'current_milb_roster_snapshot',
+      'current_mlb_value_snapshot',
+    ]) {
+      expect(playerDirectorySource).toContain(
+        `REFRESH MATERIALIZED VIEW CONCURRENTLY app.${view}`,
+      )
+    }
+    expect(playerDirectorySource).toContain('awaitCancelableQuery')
   })
 })

@@ -176,6 +176,9 @@ describe('current source refresh isolation', () => {
       signal: expect.any(AbortSignal),
     })
     expect(stubs.refreshCurrentMilbTraditionalSnapshot).toHaveBeenCalledOnce()
+    expect(stubs.refreshCurrentMilbTraditionalSnapshot).toHaveBeenCalledWith(
+      expect.any(AbortSignal),
+    )
     expect(stubs.ingestMlbStatsApiMilbRosterCensus).toHaveBeenCalledWith(
       2026,
       { signal: expect.any(AbortSignal) },
@@ -184,10 +187,16 @@ describe('current source refresh isolation', () => {
     expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledWith(
       expect.any(AbortSignal),
     )
+    expect(stubs.refreshCurrentMlbValueSnapshot).toHaveBeenCalledWith(
+      expect.any(AbortSignal),
+    )
     expect(
       vi.mocked(stubs.backfillProspectSavant).mock.invocationCallOrder[0],
     ).toBeLessThan(
       vi.mocked(stubs.backfillMlbStatsApiMilb).mock.invocationCallOrder[0]!,
+    )
+    expect(stubs.refreshPlayerDirectorySnapshot).toHaveBeenCalledWith(
+      expect.any(AbortSignal),
     )
     expect(
       vi.mocked(stubs.backfillMlbStatsApiMilb).mock.invocationCallOrder[0],

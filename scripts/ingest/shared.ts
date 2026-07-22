@@ -15,6 +15,26 @@ export interface RetryOptions {
 export const CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS = 20_000
 export const CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS = 5_000
 
+export interface CancelableQuery extends PromiseLike<unknown> {
+  cancel(): void
+}
+
+export async function awaitCancelableQuery(
+  query: CancelableQuery,
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
+  const cancel = () => query.cancel()
+  signal?.addEventListener('abort', cancel, { once: true })
+  if (signal?.aborted) cancel()
+  try {
+    await query
+  } finally {
+    signal?.removeEventListener('abort', cancel)
+  }
+  signal?.throwIfAborted()
+}
+
 export function currentRefreshDatabaseOptions(
   statementTimeoutMs = CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
 ) {

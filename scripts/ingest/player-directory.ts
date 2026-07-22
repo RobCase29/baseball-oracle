@@ -4,13 +4,18 @@ import {
   MLB_STATSAPI_MILB_ROSTER_MINIMUM_ORGANIZATIONS,
   MLB_STATSAPI_MILB_ROSTER_MINIMUM_UNIQUE_PLAYERS,
 } from './mlb-statsapi-milb-roster.js'
-import { currentRefreshDatabaseOptions } from './shared.js'
+import { awaitCancelableQuery, currentRefreshDatabaseOptions } from './shared.js'
 
-export async function refreshPlayerDirectorySnapshot(): Promise<void> {
+export async function refreshPlayerDirectorySnapshot(
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 
   try {
-    await sql`REFRESH MATERIALIZED VIEW app.player_directory_snapshot`
+    await awaitCancelableQuery(sql`
+      REFRESH MATERIALIZED VIEW CONCURRENTLY app.player_directory_snapshot
+    `.execute(), signal)
   } finally {
     await sql.end({ timeout: 5 })
   }
@@ -24,31 +29,35 @@ export interface CurrentMilbTraditionalSnapshotAudit {
   missing_workload_rows: number
 }
 
-export async function refreshCurrentMilbTraditionalSnapshot(): Promise<void> {
+export async function refreshCurrentMilbTraditionalSnapshot(
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 
   try {
-    await sql.begin(async (transaction) => {
-      await transaction`REFRESH MATERIALIZED VIEW app.current_milb_traditional_snapshot`
-      const [audit] = await transaction<CurrentMilbTraditionalSnapshotAudit[]>`
-        SELECT
-          count(*)::integer AS profiles,
-          count(DISTINCT player_type)::integer AS roles,
-          count(*) FILTER (
-            WHERE mlbam_id IS NULL OR mlbam_id <= 0 OR known_at IS NULL
-          )::integer AS invalid_identity_rows,
-          count(*) FILTER (
-            WHERE highest_observed_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
-              OR (current_level IS NOT NULL AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA'))
-          )::integer AS invalid_level_rows,
-          count(*) FILTER (
-            WHERE (player_type = 'Hitter' AND pa IS NULL)
-              OR (player_type = 'Pitcher' AND outs IS NULL)
-          )::integer AS missing_workload_rows
-        FROM app.current_milb_traditional_snapshot
-      `
-      assertCurrentMilbTraditionalSnapshot(audit)
-    })
+    await awaitCancelableQuery(sql`
+      REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_traditional_snapshot
+    `.execute(), signal)
+    const [audit] = await sql<CurrentMilbTraditionalSnapshotAudit[]>`
+      SELECT
+        count(*)::integer AS profiles,
+        count(DISTINCT player_type)::integer AS roles,
+        count(*) FILTER (
+          WHERE mlbam_id IS NULL OR mlbam_id <= 0 OR known_at IS NULL
+        )::integer AS invalid_identity_rows,
+        count(*) FILTER (
+          WHERE highest_observed_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA')
+            OR (current_level IS NOT NULL AND current_level NOT IN ('Rk', 'A', 'A+', 'AA', 'AAA'))
+        )::integer AS invalid_level_rows,
+        count(*) FILTER (
+          WHERE (player_type = 'Hitter' AND pa IS NULL)
+            OR (player_type = 'Pitcher' AND outs IS NULL)
+        )::integer AS missing_workload_rows
+      FROM app.current_milb_traditional_snapshot
+    `
+    assertCurrentMilbTraditionalSnapshot(audit)
+    signal?.throwIfAborted()
   } finally {
     await sql.end({ timeout: 5 })
   }
@@ -100,18 +109,9 @@ export async function refreshCurrentMilbRosterSnapshot(
 
   try {
     signal?.throwIfAborted()
-    const refreshQuery = sql`
+    await awaitCancelableQuery(sql`
       REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_milb_roster_snapshot
-    `.execute()
-    const cancelRefresh = () => refreshQuery.cancel()
-    signal?.addEventListener('abort', cancelRefresh, { once: true })
-    if (signal?.aborted) cancelRefresh()
-    try {
-      await refreshQuery
-    } finally {
-      signal?.removeEventListener('abort', cancelRefresh)
-    }
-    signal?.throwIfAborted()
+    `.execute(), signal)
     const [audit] = await sql<CurrentMilbRosterSnapshotAudit[]>`
       SELECT
         count(*)::integer AS profiles,
@@ -199,31 +199,35 @@ export function assertCurrentMilbRosterSnapshot(
   }
 }
 
-export async function refreshCurrentMlbValueSnapshot(): Promise<void> {
+export async function refreshCurrentMlbValueSnapshot(
+  signal?: AbortSignal,
+): Promise<void> {
+  signal?.throwIfAborted()
   const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions())
 
   try {
-    await sql.begin(async (transaction) => {
-      await transaction`REFRESH MATERIALIZED VIEW app.current_mlb_value_snapshot`
-      const [audit] = await transaction<{
-        invalid_two_way_rows: number
-        invalid_small_cohort_percentiles: number
-        identity_conflicts: number
-      }[]>`
-        SELECT
-          count(*) FILTER (
-            WHERE observed_role = 'Two-way'
-              AND NOT (has_substantive_batting AND has_substantive_pitching)
-          )::integer AS invalid_two_way_rows,
-          count(*) FILTER (
-            WHERE role_peer_count < 25
-              AND current_war_percentile IS NOT NULL
-          )::integer AS invalid_small_cohort_percentiles,
-          count(*) FILTER (WHERE identity_conflict)::integer AS identity_conflicts
-        FROM app.current_mlb_value_snapshot
-      `
-      assertCurrentMlbRoleSnapshot(audit)
-    })
+    await awaitCancelableQuery(sql`
+      REFRESH MATERIALIZED VIEW CONCURRENTLY app.current_mlb_value_snapshot
+    `.execute(), signal)
+    const [audit] = await sql<{
+      invalid_two_way_rows: number
+      invalid_small_cohort_percentiles: number
+      identity_conflicts: number
+    }[]>`
+      SELECT
+        count(*) FILTER (
+          WHERE observed_role = 'Two-way'
+            AND NOT (has_substantive_batting AND has_substantive_pitching)
+        )::integer AS invalid_two_way_rows,
+        count(*) FILTER (
+          WHERE role_peer_count < 25
+            AND current_war_percentile IS NOT NULL
+        )::integer AS invalid_small_cohort_percentiles,
+        count(*) FILTER (WHERE identity_conflict)::integer AS identity_conflicts
+      FROM app.current_mlb_value_snapshot
+    `
+    assertCurrentMlbRoleSnapshot(audit)
+    signal?.throwIfAborted()
   } finally {
     await sql.end({ timeout: 5 })
   }

@@ -357,7 +357,7 @@ export async function refreshCurrentSources(
     async (sourceResult) => {
       assertProspectSavantComplete(sourceResult, slices.length)
       prospectSavantSignal.throwIfAborted()
-      await dependencies.refreshPlayerDirectorySnapshot()
+      await dependencies.refreshPlayerDirectorySnapshot(prospectSavantSignal)
     },
     prospectSavantSignal,
     options.signal,
@@ -377,7 +377,7 @@ export async function refreshCurrentSources(
     }),
     async (sourceResult) => {
       mlbStatsApiSignal.throwIfAborted()
-      await dependencies.refreshCurrentMilbTraditionalSnapshot()
+      await dependencies.refreshCurrentMilbTraditionalSnapshot(mlbStatsApiSignal)
       assertMlbStatsApiComplete(sourceResult, mlbStatsApiSlices.length)
     },
     mlbStatsApiSignal,
@@ -418,7 +418,7 @@ export async function refreshCurrentSources(
     async (sourceResult) => {
       assertBaseballReferenceComplete(sourceResult)
       baseballReferenceSignal.throwIfAborted()
-      await dependencies.refreshCurrentMlbValueSnapshot()
+      await dependencies.refreshCurrentMlbValueSnapshot(baseballReferenceSignal)
     },
     baseballReferenceSignal,
     options.signal,
