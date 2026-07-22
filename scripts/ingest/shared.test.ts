@@ -3,6 +3,7 @@ import {
   abortableDelay,
   awaitCancelableQuery,
   boundedSourceRecordKey,
+  CURRENT_REFRESH_DB_APPLICATION_NAME,
   CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
   CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
   currentRefreshDatabaseOptions,
@@ -82,6 +83,7 @@ describe('shared ingestion helpers', () => {
   it('bounds refresh database statements and lock waits on the server', () => {
     expect(currentRefreshDatabaseOptions()).toMatchObject({
       connection: {
+        application_name: CURRENT_REFRESH_DB_APPLICATION_NAME,
         statement_timeout: CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS,
         lock_timeout: CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
         idle_in_transaction_session_timeout:

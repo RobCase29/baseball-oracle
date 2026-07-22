@@ -14,6 +14,7 @@ export interface RetryOptions {
 
 export const CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS = 20_000
 export const CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS = 5_000
+export const CURRENT_REFRESH_DB_APPLICATION_NAME = 'baseball-oracle-current-refresh'
 
 export interface CancelableQuery extends PromiseLike<unknown> {
   cancel(): void
@@ -47,6 +48,7 @@ export function currentRefreshDatabaseOptions(
     idle_timeout: 10,
     connect_timeout: 15,
     connection: {
+      application_name: CURRENT_REFRESH_DB_APPLICATION_NAME,
       statement_timeout: statementTimeoutMs,
       lock_timeout: CURRENT_REFRESH_DB_LOCK_TIMEOUT_MS,
       idle_in_transaction_session_timeout: statementTimeoutMs + 5_000,

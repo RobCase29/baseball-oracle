@@ -26,7 +26,10 @@ import {
   type ProspectSavantBackfillResult,
 } from '../../scripts/ingest/prospect-savant-leaders.js'
 import { buildProspectSavantCurrentSlices } from '../../scripts/ingest/prospect-savant.js'
-import { currentRefreshDatabaseOptions } from '../../scripts/ingest/shared.js'
+import {
+  CURRENT_REFRESH_DB_APPLICATION_NAME,
+  currentRefreshDatabaseOptions,
+} from '../../scripts/ingest/shared.js'
 import { hasValidCronAuthorization, sendJson } from '../_admin.js'
 
 const jobKey = 'current-baseball-source-refresh-v1'
@@ -247,24 +250,50 @@ async function terminateStaleCurrentRefreshSessions(
   sql: ReturnType<typeof postgres>,
   now: Date,
 ): Promise<number> {
+  const staleBefore = new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)
   const staleQueries = await sql<{ pid: number }[]>`
-    SELECT pid
-    FROM pg_stat_activity
-    WHERE pid <> pg_backend_pid()
-      AND datname = current_database()
-      AND usename = current_user
-      AND backend_type = 'client backend'
+    SELECT DISTINCT activity.pid
+    FROM pg_stat_activity AS activity
+    LEFT JOIN pg_locks AS relation_lock
+      ON relation_lock.pid = activity.pid
+      AND relation_lock.relation IS NOT NULL
+    LEFT JOIN pg_class AS relation
+      ON relation.oid = relation_lock.relation
+    LEFT JOIN pg_namespace AS namespace
+      ON namespace.oid = relation.relnamespace
+    WHERE activity.pid <> pg_backend_pid()
+      AND activity.datname = current_database()
+      AND activity.usename = current_user
+      AND activity.backend_type = 'client backend'
       AND (
         (
-          state = 'active'
-          AND query_start < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+          activity.state = 'active'
+          AND activity.query_start < ${staleBefore}
+          AND activity.query ~* ${currentRefreshMaterializedViewPattern}
         )
         OR (
-          state LIKE 'idle in transaction%'
-          AND state_change < ${new Date(now.getTime() - CURRENT_REFRESH_STALE_QUERY_MS)}
+          activity.state LIKE 'idle in transaction%'
+          AND activity.state_change < ${staleBefore}
+          AND activity.query ~* ${currentRefreshMaterializedViewPattern}
+        )
+        OR (
+          namespace.nspname = 'app'
+          AND relation.relname IN (
+            'player_directory_snapshot',
+            'current_milb_traditional_snapshot',
+            'current_milb_roster_snapshot',
+            'current_mlb_value_snapshot',
+            'fangraphs_current_scouting_snapshot',
+            'fangraphs_current_candidate_census'
+          )
+          AND coalesce(activity.xact_start, activity.query_start) < ${staleBefore}
+        )
+        OR (
+          activity.application_name = ${CURRENT_REFRESH_DB_APPLICATION_NAME}
+          AND activity.state IN ('active', 'idle in transaction', 'idle in transaction (aborted)')
+          AND coalesce(activity.xact_start, activity.query_start) < ${staleBefore}
         )
       )
-      AND query ~* ${currentRefreshMaterializedViewPattern}
   `
   let terminated = 0
   for (const staleQuery of staleQueries) {

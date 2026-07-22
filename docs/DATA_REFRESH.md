@@ -67,9 +67,10 @@ opportunity when an upstream source was unavailable in the first window. The end
     signal and refreshes concurrently against its unique identity index, so API
     readers do not block publication and an expired source actively cancels its
     PostgreSQL query. FanGraphs publications are also actively cancelled on
-    abort. Each job terminates same-owner materialized-view sessions left active
-    or abandoned in a transaction for more than five minutes by an interrupted
-    invocation.
+    abort. Each job terminates same-owner materialized-view sessions left active,
+    abandoned in a transaction, or still holding a core snapshot relation lock
+    for more than five minutes by an interrupted invocation. Refresh connections
+    are tagged with a dedicated database application name for the same cleanup.
     One stalled provider therefore cannot consume the other required provider's
     opportunity or strand the operational receipt.
 12. Treats all five current sources as required and reports sanitized per-source
