@@ -27,6 +27,13 @@ const currentMilbRosterMigration = readFileSync(
   resolve(process.cwd(), 'db/migrations/0019_mlb_statsapi_current_milb_roster.sql'),
   'utf8',
 )
+const optimizedCurrentMilbRosterMigration = readFileSync(
+  resolve(
+    process.cwd(),
+    'db/migrations/0020_optimize_current_milb_roster_source.sql',
+  ),
+  'utf8',
+)
 const playerDirectorySource = readFileSync(
   resolve(process.cwd(), 'scripts/ingest/player-directory.ts'),
   'utf8',
@@ -216,6 +223,22 @@ describe('official current MiLB roster census', () => {
     expect(currentMilbRosterMigration).toContain(
       'CREATE UNIQUE INDEX current_milb_roster_mlbam_uidx',
     )
+  })
+
+  it('parses each roster numeric field once before the two snapshot aggregates', () => {
+    expect(optimizedCurrentMilbRosterMigration).toContain(
+      'parsed_record AS MATERIALIZED',
+    )
+    expect(optimizedCurrentMilbRosterMigration).toContain(
+      'source_record AS MATERIALIZED',
+    )
+    expect(optimizedCurrentMilbRosterMigration).toContain(
+      "source_record.membership_kind IN ('affiliate', 'parent_census')",
+    )
+    expect(optimizedCurrentMilbRosterMigration).toContain(
+      "source_record.record_json -> 'assignmentTeam' = 'null'::jsonb",
+    )
+    expect(optimizedCurrentMilbRosterMigration).not.toContain('app.jsonb_number')
   })
 
   it('publishes core snapshots without blocking API readers', () => {

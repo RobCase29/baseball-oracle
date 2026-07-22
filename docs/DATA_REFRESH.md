@@ -74,6 +74,8 @@ opportunity when an upstream source was unavailable in the first window. The end
     The heavy roster publication receives a 340-second source window and sets its
     320-second PostgreSQL statement timeout in-session because some hosted direct
     connections do not honor timeout values supplied in the startup packet.
+    Its source view materializes one pass of the latest raw census and parses each
+    numeric JSON field once before representative and membership aggregation.
     The scheduled Prospect Savant probe uses one bounded 30-second attempt per
     slice and stops after the first outage, preserving the remaining execution
     window for official and independent sources. Historical backfills retain the
