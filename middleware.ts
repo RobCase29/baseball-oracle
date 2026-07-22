@@ -42,12 +42,22 @@ function bearerToken(request: Request): string | null {
   return authorization.slice(7).trim() || null
 }
 
+function serverReadPath(pathname: string): boolean {
+  return pathname === '/api/health' ||
+    pathname === '/api/model-status' ||
+    pathname === '/api/players' ||
+    pathname === '/api/v1/dynasty-scores' ||
+    pathname === '/api/v1/player-signals'
+}
+
 function validServerAuthorization(request: Request, pathname: string): boolean {
   const expected = pathname.startsWith('/api/cron/')
     ? process.env.CRON_SECRET?.trim()
     : pathname.startsWith('/api/admin/')
       ? process.env.INGESTION_SECRET?.trim()
-      : null
+      : serverReadPath(pathname)
+        ? process.env.ORACLE_API_KEY?.trim()
+        : null
   const provided = bearerToken(request)
   return Boolean(expected && provided && constantEqual(provided, expected))
 }
