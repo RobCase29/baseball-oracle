@@ -314,61 +314,61 @@ export async function refreshCurrentSources(
     options.signal,
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
   )
+  const prospectSavant = await attemptSource(
+    'prospectSavant',
+    () => dependencies.backfillProspectSavant({
+      slices,
+      delayMs: 250,
+      enforceCurrentCardinality: true,
+      signal: prospectSavantSignal,
+    }),
+    async (sourceResult) => {
+      assertProspectSavantComplete(sourceResult, slices.length)
+      prospectSavantSignal.throwIfAborted()
+      await dependencies.refreshPlayerDirectorySnapshot()
+    },
+    prospectSavantSignal,
+    options.signal,
+  )
+
   const mlbStatsApiSignal = sourceDeadlineSignal(
     options.signal,
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
   )
+  const mlbStatsApi = await attemptSource(
+    'mlbStatsApi',
+    () => dependencies.backfillMlbStatsApiMilb({
+      slices: mlbStatsApiSlices,
+      delayMs: 100,
+      enforceCurrentCardinality: true,
+      signal: mlbStatsApiSignal,
+    }),
+    async (sourceResult) => {
+      mlbStatsApiSignal.throwIfAborted()
+      await dependencies.refreshCurrentMilbTraditionalSnapshot()
+      assertMlbStatsApiComplete(sourceResult, mlbStatsApiSlices.length)
+    },
+    mlbStatsApiSignal,
+    options.signal,
+  )
+
   const mlbRosterSignal = sourceDeadlineSignal(
     options.signal,
     CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbRoster,
   )
-  const [prospectSavant, mlbStatsApi, mlbRoster] = await Promise.all([
-    attemptSource(
-      'prospectSavant',
-      () => dependencies.backfillProspectSavant({
-        slices,
-        delayMs: 250,
-        enforceCurrentCardinality: true,
-        signal: prospectSavantSignal,
-      }),
-      async (sourceResult) => {
-        assertProspectSavantComplete(sourceResult, slices.length)
-        prospectSavantSignal.throwIfAborted()
-        await dependencies.refreshPlayerDirectorySnapshot()
-      },
-      prospectSavantSignal,
-      options.signal,
-    ),
-    attemptSource(
-      'mlbStatsApi',
-      () => dependencies.backfillMlbStatsApiMilb({
-        slices: mlbStatsApiSlices,
-        delayMs: 100,
-        enforceCurrentCardinality: true,
-        signal: mlbStatsApiSignal,
-      }),
-      async (sourceResult) => {
-        mlbStatsApiSignal.throwIfAborted()
-        await dependencies.refreshCurrentMilbTraditionalSnapshot()
-        assertMlbStatsApiComplete(sourceResult, mlbStatsApiSlices.length)
-      },
-      mlbStatsApiSignal,
-      options.signal,
-    ),
-    attemptSource(
-      'mlbRoster',
-      () => dependencies.ingestMlbStatsApiMilbRosterCensus(season, {
-        signal: mlbRosterSignal,
-      }),
-      async (sourceResult) => {
-        assertMlbRosterComplete(sourceResult)
-        mlbRosterSignal.throwIfAborted()
-        await dependencies.refreshCurrentMilbRosterSnapshot()
-      },
-      mlbRosterSignal,
-      options.signal,
-    ),
-  ])
+  const mlbRoster = await attemptSource(
+    'mlbRoster',
+    () => dependencies.ingestMlbStatsApiMilbRosterCensus(season, {
+      signal: mlbRosterSignal,
+    }),
+    async (sourceResult) => {
+      assertMlbRosterComplete(sourceResult)
+      mlbRosterSignal.throwIfAborted()
+      await dependencies.refreshCurrentMilbRosterSnapshot()
+    },
+    mlbRosterSignal,
+    options.signal,
+  )
 
   const baseballReferenceSignal = sourceDeadlineSignal(
     options.signal,

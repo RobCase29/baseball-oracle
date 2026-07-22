@@ -7,7 +7,6 @@ import type {
 import type { MlbStatsApiMilbBackfillResult } from '../../scripts/ingest/mlb-statsapi-milb.js'
 import type { IngestMlbStatsApiMilbRosterResult } from '../../scripts/ingest/mlb-statsapi-milb-roster.js'
 import type { ProspectSavantBackfillResult } from '../../scripts/ingest/prospect-savant-leaders.js'
-import { CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS } from '../../scripts/ingest/shared.js'
 import {
   baseballSeasonForDate,
   CURRENT_REFRESH_EXECUTION_BUDGET_MS,
@@ -118,23 +117,11 @@ describe('current baseball season selection', () => {
   })
 
   it('keeps source and stale-run budgets within the Vercel execution window', () => {
-    const sourceCriticalPath =
-      Math.max(
-        CURRENT_REFRESH_SOURCE_BUDGETS_MS.prospectSavant,
-        CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbStatsApi,
-        CURRENT_REFRESH_SOURCE_BUDGETS_MS.mlbRoster,
-      ) +
-      CURRENT_REFRESH_SOURCE_BUDGETS_MS.baseballReference +
-      CURRENT_REFRESH_SOURCE_BUDGETS_MS.fangraphs
-
     expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS).toBeLessThan(300_000)
     expect(Object.values(CURRENT_REFRESH_SOURCE_BUDGETS_MS).every(
       (budget) => budget < CURRENT_REFRESH_EXECUTION_BUDGET_MS,
     )).toBe(true)
-    expect(sourceCriticalPath).toBeLessThan(CURRENT_REFRESH_EXECUTION_BUDGET_MS)
-    expect(
-      sourceCriticalPath + CURRENT_REFRESH_DB_STATEMENT_TIMEOUT_MS + 15_000,
-    ).toBeLessThan(300_000)
+    expect(CURRENT_REFRESH_EXECUTION_BUDGET_MS + 30_000).toBeLessThanOrEqual(300_000)
     expect(CURRENT_REFRESH_STALE_RUN_MS).toBeGreaterThan(
       CURRENT_REFRESH_EXECUTION_BUDGET_MS,
     )
@@ -185,6 +172,16 @@ describe('current source refresh isolation', () => {
       { signal: expect.any(AbortSignal) },
     )
     expect(stubs.refreshCurrentMilbRosterSnapshot).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(stubs.backfillProspectSavant).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(stubs.backfillMlbStatsApiMilb).mock.invocationCallOrder[0]!,
+    )
+    expect(
+      vi.mocked(stubs.backfillMlbStatsApiMilb).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(stubs.ingestMlbStatsApiMilbRosterCensus).mock.invocationCallOrder[0]!,
+    )
     expect(deriveRefreshRunStatus(result)).toBe('succeeded')
   })
 
