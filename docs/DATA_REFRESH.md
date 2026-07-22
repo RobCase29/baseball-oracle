@@ -71,6 +71,9 @@ opportunity when an upstream source was unavailable in the first window. The end
     abandoned in a transaction, or still holding a core snapshot relation lock
     for more than five minutes by an interrupted invocation. Refresh connections
     are tagged with a dedicated database application name for the same cleanup.
+    The heavy roster publication receives a 340-second source window and sets its
+    320-second PostgreSQL statement timeout in-session because some hosted direct
+    connections do not honor timeout values supplied in the startup packet.
     One stalled provider therefore cannot consume the other required provider's
     opportunity or strand the operational receipt.
 12. Treats all five current sources as required and reports sanitized per-source

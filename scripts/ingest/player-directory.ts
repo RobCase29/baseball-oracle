@@ -151,11 +151,21 @@ export async function refreshCurrentMilbRosterSnapshot(
   signal?: AbortSignal,
 ): Promise<void> {
   signal?.throwIfAborted()
-  const sql = postgres(directDatabaseUrl(), currentRefreshDatabaseOptions(60_000))
+  const statementTimeoutMs = 320_000
+  const lockTimeoutMs = 5_000
+  const sql = postgres(
+    directDatabaseUrl(),
+    currentRefreshDatabaseOptions(statementTimeoutMs),
+  )
   let waitProbe: ReturnType<typeof setTimeout> | null = null
 
   try {
     signal?.throwIfAborted()
+    await sql`
+      SELECT
+        set_config('statement_timeout', ${statementTimeoutMs.toString()}, false),
+        set_config('lock_timeout', ${lockTimeoutMs.toString()}, false)
+    `
     const [session] = await sql<{
       pid: number
       statement_timeout: string

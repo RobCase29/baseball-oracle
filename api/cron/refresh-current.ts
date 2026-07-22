@@ -41,7 +41,7 @@ export const CURRENT_REFRESH_STALE_QUERY_MS = 5 * 60_000
 export const CURRENT_REFRESH_SOURCE_BUDGETS_MS = {
   prospectSavant: 160_000,
   mlbStatsApi: 150_000,
-  mlbRoster: 240_000,
+  mlbRoster: 340_000,
   baseballReference: 35_000,
   fangraphs: 55_000,
 } as const
