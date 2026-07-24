@@ -36,6 +36,7 @@ import {
   isBinderScoresResponse,
   type BinderScoresResponse,
 } from './domain/binderScore'
+import { identityCoverageNeedsRefresh } from './lib/identityFreshness'
 
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
@@ -544,10 +545,7 @@ function App() {
     })
   }
 
-  const identityNeedsRefresh = (
-    meta.identity?.identityCrosswalkStatus !== undefined &&
-    meta.identity.identityCrosswalkStatus !== 'current'
-  ) || (meta.identity?.unmatchedCurrentBbrefIds ?? 0) > 0
+  const identityNeedsRefresh = identityCoverageNeedsRefresh(meta.identity)
   const baseballTopbarStatus = loading && players.length === 0
     ? 'loading'
     : error
