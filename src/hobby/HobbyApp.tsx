@@ -1,6 +1,5 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import {
-  ArrowUpRight,
   Database,
   LockKeyhole,
   Orbit,
@@ -19,14 +18,25 @@ import {
 } from '../domain/binderScore'
 import { InvestorWorkbench } from './InvestorWorkbench'
 import {
+  FOOTBALL_MARKET_FORMAT_IDS,
+  isFootballMarketFeedResponse,
+  type FootballMarketFeedResponse,
+  type FootballMarketFormatId,
+} from '../football/marketFeedContract'
+import {
   ResearchLensTabs,
   type HobbyResearchLens,
+  type YoungPlayerSport,
 } from './ResearchLensTabs'
 import {
   YoungInvestorWorkbench,
   type YoungPlayerAgeCeiling,
   type YoungPlayerStage,
 } from './YoungInvestorWorkbench'
+import {
+  FootballYoungInvestorWorkbench,
+  type FootballYoungPosition,
+} from './FootballYoungInvestorWorkbench'
 
 const PAGE_SIZE = 50
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
@@ -34,6 +44,10 @@ const DEFAULT_SORT: MagnificentXSortKey = 'cohort_rank'
 const DEFAULT_DIRECTION: MagnificentXSortDirection = 'asc'
 const DEFAULT_YOUNG_AGE: YoungPlayerAgeCeiling = 25
 const DEFAULT_YOUNG_STAGE: YoungPlayerStage = 'All'
+const DEFAULT_YOUNG_SPORT: YoungPlayerSport = 'baseball'
+const DEFAULT_FOOTBALL_POSITION: FootballYoungPosition = 'WR'
+const DEFAULT_FOOTBALL_FORMAT: FootballMarketFormatId =
+  'sf_12t_half_ppr_no_tep'
 
 const validDomains = new Set<MagnificentXDomain>([
   'baseball',
@@ -77,6 +91,12 @@ function initialParameters(): URLSearchParams {
 
 function initialLens(): HobbyResearchLens {
   return initialParameters().get('lens') === 'young' ? 'young' : 'market'
+}
+
+function initialYoungSport(): YoungPlayerSport {
+  return initialParameters().get('sport') === 'football'
+    ? 'football'
+    : DEFAULT_YOUNG_SPORT
 }
 
 function initialDomain(): MagnificentXDomain | 'all' {
@@ -138,6 +158,22 @@ function initialYoungStage(): YoungPlayerStage {
     : DEFAULT_YOUNG_STAGE
 }
 
+function initialFootballPosition(): FootballYoungPosition {
+  const value = initialParameters().get('position')
+  return value === 'QB' || value === 'WR' || value === 'RB' || value === 'TE'
+    ? value
+    : DEFAULT_FOOTBALL_POSITION
+}
+
+function initialFootballFormat(): FootballMarketFormatId {
+  const value = initialParameters().get('format')
+  return value && FOOTBALL_MARKET_FORMAT_IDS.includes(
+    value as FootballMarketFormatId,
+  )
+    ? value as FootballMarketFormatId
+    : DEFAULT_FOOTBALL_FORMAT
+}
+
 function formatDate(value: string | undefined): string {
   if (!value) return 'Loading'
   const parsed = new Date(value)
@@ -152,7 +188,9 @@ function formatDate(value: string | undefined): string {
 
 export function HobbyApp() {
   const [lens, setLens] = useState<HobbyResearchLens>(initialLens)
-  const [search, setSearch] = useState(() => initialParameters().get('q') ?? '')
+  const [search, setSearch] = useState(() => (
+    initialLens() === 'market' ? initialParameters().get('q') ?? '' : ''
+  ))
   const [domain, setDomain] = useState<MagnificentXDomain | 'all'>(initialDomain)
   const [posture, setPosture] = useState<
     MagnificentXResearchPosture | 'all'
@@ -165,6 +203,17 @@ export function HobbyApp() {
     useState<YoungPlayerAgeCeiling>(initialYoungAge)
   const [youngStage, setYoungStage] =
     useState<YoungPlayerStage>(initialYoungStage)
+  const [youngSport, setYoungSport] =
+    useState<YoungPlayerSport>(initialYoungSport)
+  const [footballPosition, setFootballPosition] =
+    useState<FootballYoungPosition>(initialFootballPosition)
+  const [footballFormat, setFootballFormat] =
+    useState<FootballMarketFormatId>(initialFootballFormat)
+  const [footballSearch, setFootballSearch] = useState(() => (
+    initialLens() === 'young' && initialYoungSport() === 'football'
+      ? initialParameters().get('q') ?? ''
+      : ''
+  ))
   const [response, setResponse] = useState<MagnificentXFeedResponse | null>(null)
   const [loading, setLoading] = useState(() => initialLens() === 'market')
   const [error, setError] = useState<string | null>(null)
@@ -173,6 +222,12 @@ export function HobbyApp() {
   const [youngLoading, setYoungLoading] =
     useState(() => initialLens() === 'young')
   const [youngError, setYoungError] = useState<string | null>(null)
+  const [footballResponse, setFootballResponse] =
+    useState<FootballMarketFeedResponse | null>(null)
+  const [footballLoading, setFootballLoading] = useState(() => (
+    initialLens() === 'young' && initialYoungSport() === 'football'
+  ))
+  const [footballError, setFootballError] = useState<string | null>(null)
   const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
@@ -192,17 +247,17 @@ export function HobbyApp() {
     setLoading(true)
     setError(null)
     setResponse(null)
-    fetch(`/api/v1/magnificent-x?${parameters.toString()}`, {
+    fetch(`/api/v1/hobby-oracle?${parameters.toString()}`, {
       cache: 'no-store',
       signal: controller.signal,
     })
       .then(async (result) => {
         if (!result.ok) {
-          throw new Error(`Investor board returned ${result.status}.`)
+          throw new Error(`Hobby Oracle returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
         if (!isMagnificentXFeedResponse(payload)) {
-          throw new Error('Investor board returned an unexpected response.')
+          throw new Error('Hobby Oracle returned an unexpected response.')
         }
         setResponse(payload)
       })
@@ -217,7 +272,7 @@ export function HobbyApp() {
         setError(
           requestError instanceof Error
             ? requestError.message
-            : 'Unable to load the investor board.',
+            : 'Unable to load Hobby Oracle.',
         )
       })
       .finally(() => {
@@ -228,7 +283,7 @@ export function HobbyApp() {
   }, [deferredSearch, direction, domain, lens, page, posture, sort])
 
   useEffect(() => {
-    if (lens !== 'young') return
+    if (lens !== 'young' || youngSport !== 'baseball') return
     const controller = new AbortController()
     const parameters = new URLSearchParams({
       stage: youngStage,
@@ -275,7 +330,60 @@ export function HobbyApp() {
       })
 
     return () => controller.abort()
-  }, [lens, page, youngAgeMax, youngStage])
+  }, [lens, page, youngAgeMax, youngSport, youngStage])
+
+  useEffect(() => {
+    if (lens !== 'young' || youngSport !== 'football') return
+    const controller = new AbortController()
+    const parameters = new URLSearchParams({
+      universe: 'college',
+      format: footballFormat,
+    })
+
+    setFootballLoading(true)
+    setFootballError(null)
+    setFootballResponse(null)
+    fetch(`/api/football/v1/market-rankings?${parameters.toString()}`, {
+      cache: 'no-store',
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    })
+      .then(async (result) => {
+        if (!result.ok) {
+          throw new Error(`Football market watchlist returned ${result.status}.`)
+        }
+        const payload = (await result.json()) as unknown
+        if (
+          !isFootballMarketFeedResponse(payload) ||
+          payload.request.universe !== 'college' ||
+          payload.request.formatId !== footballFormat
+        ) {
+          throw new Error(
+            'Football market watchlist returned an unexpected response.',
+          )
+        }
+        setFootballResponse(payload)
+      })
+      .catch((requestError: unknown) => {
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === 'AbortError'
+        ) {
+          return
+        }
+        setFootballResponse(null)
+        setFootballError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Unable to load the football market watchlist.',
+        )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setFootballLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [footballFormat, lens, youngSport])
 
   useEffect(() => {
     if (
@@ -296,19 +404,39 @@ export function HobbyApp() {
     const url = new URL(window.location.href)
     if (lens === 'young') {
       url.searchParams.set('lens', 'young')
-      url.searchParams.set('maxAge', youngAgeMax.toString())
-      if (youngStage === DEFAULT_YOUNG_STAGE) url.searchParams.delete('stage')
-      else url.searchParams.set('stage', youngStage)
-      url.searchParams.delete('q')
       url.searchParams.delete('domain')
       url.searchParams.delete('posture')
       url.searchParams.delete('sort')
       url.searchParams.delete('direction')
+      if (youngSport === 'football') {
+        const normalizedFootballSearch = footballSearch.trim()
+        url.searchParams.set('sport', 'football')
+        url.searchParams.set('position', footballPosition)
+        url.searchParams.set('format', footballFormat)
+        if (normalizedFootballSearch) {
+          url.searchParams.set('q', normalizedFootballSearch)
+        } else {
+          url.searchParams.delete('q')
+        }
+        url.searchParams.delete('maxAge')
+        url.searchParams.delete('stage')
+      } else {
+        url.searchParams.delete('sport')
+        url.searchParams.set('maxAge', youngAgeMax.toString())
+        if (youngStage === DEFAULT_YOUNG_STAGE) url.searchParams.delete('stage')
+        else url.searchParams.set('stage', youngStage)
+        url.searchParams.delete('q')
+        url.searchParams.delete('position')
+        url.searchParams.delete('format')
+      }
     } else {
       const normalizedSearch = search.trim()
       url.searchParams.delete('lens')
+      url.searchParams.delete('sport')
       url.searchParams.delete('maxAge')
       url.searchParams.delete('stage')
+      url.searchParams.delete('position')
+      url.searchParams.delete('format')
       if (normalizedSearch) url.searchParams.set('q', normalizedSearch)
       else url.searchParams.delete('q')
       if (domain === 'all') url.searchParams.delete('domain')
@@ -324,12 +452,16 @@ export function HobbyApp() {
   }, [
     direction,
     domain,
+    footballFormat,
+    footballPosition,
+    footballSearch,
     lens,
     page,
     posture,
     search,
     sort,
     youngAgeMax,
+    youngSport,
     youngStage,
   ])
 
@@ -353,8 +485,18 @@ export function HobbyApp() {
     setPage(1)
   }
 
+  function selectPositions(): void {
+    setLens('market')
+    setPage(1)
+  }
+
   function selectYoungPlayers(): void {
     setLens('young')
+    setPage(1)
+  }
+
+  function changeYoungSport(value: YoungPlayerSport): void {
+    setYoungSport(value)
     setPage(1)
   }
 
@@ -393,16 +535,30 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  const universeCount = response?.cohorts.reduce(
-    (total, cohort) => total + cohort.subjectCount,
-    0,
-  ) ?? 0
-  const buildCandidateCount = response?.cohorts.reduce(
-    (total, cohort) => total + cohort.marketLeaderCount,
-    0,
-  ) ?? 0
+  function changeFootballPosition(value: FootballYoungPosition): void {
+    setFootballPosition(value)
+    setPage(1)
+  }
+
+  function changeFootballFormat(value: FootballMarketFormatId): void {
+    setFootballFormat(value)
+    setPage(1)
+  }
+
+  function changeFootballSearch(value: string): void {
+    setFootballSearch(value)
+    setPage(1)
+  }
+
+  function resetFootballFilters(): void {
+    setFootballPosition(DEFAULT_FOOTBALL_POSITION)
+    setFootballFormat(DEFAULT_FOOTBALL_FORMAT)
+    setFootballSearch('')
+    setPage(1)
+  }
+
   const marketFreshness = response?.snapshot.freshness.status ?? 'unknown'
-  const youngFreshness = youngResponse === null
+  const baseballYoungFreshness = youngResponse === null
     ? 'unknown'
     : youngResponse.snapshot.baseballFreshness.status === 'current' &&
         youngResponse.snapshot.marketFreshness.status === 'current'
@@ -411,7 +567,41 @@ export function HobbyApp() {
           youngResponse.snapshot.marketFreshness.status === 'stale'
         ? 'stale'
         : 'unknown'
-  const freshness = lens === 'young' ? youngFreshness : marketFreshness
+  const footballKtcStatus = footballResponse?.providers.find(
+    (provider) => provider.provider === 'keeptradecut',
+  )?.status
+  const footballYoungFreshness = footballResponse === null
+    ? 'unknown'
+    : footballKtcStatus === 'available'
+      ? 'current'
+      : 'stale'
+  const freshness = lens === 'market'
+    ? marketFreshness
+    : youngSport === 'football'
+      ? footballYoungFreshness
+      : baseballYoungFreshness
+  const normalizedFootballSearch = footballSearch.trim().toLocaleLowerCase(
+    'en-US',
+  )
+  const footballResultCount = footballResponse?.rankings.filter((row) => (
+    row.provider === 'keeptradecut' &&
+    row.universe === 'college' &&
+    row.position === footballPosition &&
+    (
+      !normalizedFootballSearch ||
+      row.name.toLocaleLowerCase('en-US').includes(normalizedFootballSearch)
+    )
+  )).length ?? 0
+  const resultCount = lens === 'market'
+    ? response?.page.total
+    : youngSport === 'football'
+      ? footballResultCount
+      : youngResponse?.page.total
+  const dataThrough = lens === 'market'
+    ? response?.snapshot.dataThrough
+    : youngSport === 'football'
+      ? footballResponse?.generatedAt
+      : youngResponse?.snapshot.marketDataThrough
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
@@ -419,89 +609,44 @@ export function HobbyApp() {
   return (
     <div className="mx-app">
       <header className="mx-topbar">
-        <a className="mx-brand" href="/hobby" aria-label="Magnificent X investor board">
+        <a className="mx-brand" href="/hobby" aria-label="Hobby Oracle">
           <span className="mx-brand-mark" aria-hidden="true">
             <Orbit size={18} />
           </span>
           <span>
             <small>ORACLE</small>
-            <strong>MAGNIFICENT X</strong>
+            <strong>HOBBY ORACLE</strong>
           </span>
         </a>
         <nav className="mx-nav" aria-label="Oracle products">
-          <a href="/">Baseball</a>
-          <a href="/football">Football</a>
-          <a
-            href="https://www.gemrate.com/sales-trends"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Athlete data <ArrowUpRight size={11} aria-hidden="true" />
-          </a>
-          <a
-            href="https://www.gemrate.com/sales-trends-pokemon"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Pokémon data <ArrowUpRight size={11} aria-hidden="true" />
-          </a>
+          <a href="/">Baseball Oracle</a>
+          <a href="/football">Football Research</a>
+          <a href="#methodology">Data &amp; methodology</a>
         </nav>
       </header>
 
       <main className="mx-main">
-        <section className="mx-page-heading" aria-labelledby="investor-board-title">
+        <section className="mx-page-heading" aria-labelledby="investor-workbench-title">
           <div className="mx-heading-copy">
             <span>LONG-HORIZON COLLECTION RESEARCH</span>
-            <h1 id="investor-board-title">Investor Board</h1>
+            <h1 id="investor-workbench-title">Investor Workbench</h1>
             <p>
-              {lens === 'young'
-                ? 'Find the strongest scored prospects, recent callups, and young MLB players inside an Oracle age window.'
-                : 'Screen who belongs on the build list, hold list, or sidelines. Open a row only when you need the evidence behind the call.'}
+              {lens === 'market'
+                ? 'Screen long-term collection positions across sports and Pokémon, then open only the evidence you need.'
+                : youngSport === 'football'
+                  ? 'Track live College / Devy market attention while production conviction and verified NFL age ranking remain gated.'
+                  : 'Find the strongest scored baseball prospects, recent callups, and young MLB players inside an Oracle age window.'}
             </p>
           </div>
 
           <dl className="mx-snapshot-strip">
             <div>
-              <dt>{lens === 'young' ? 'Young screen' : 'Universe'}</dt>
-              <dd>
-                {lens === 'young'
-                  ? youngResponse?.page.total.toLocaleString() ?? '—'
-                  : universeCount > 0
-                    ? universeCount.toLocaleString()
-                    : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt>{lens === 'young' ? 'Age lens' : 'Build screen'}</dt>
-              <dd>
-                {lens === 'young'
-                  ? `≤ ${youngAgeMax}`
-                  : freshness === 'current' && buildCandidateCount > 0
-                    ? buildCandidateCount.toLocaleString()
-                    : freshness === 'stale'
-                      ? 'Suspended'
-                      : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt>{lens === 'young' ? 'Score model' : 'History'}</dt>
-              <dd>
-                {lens === 'young'
-                  ? 'Binder v1'
-                  : response
-                    ? `${response.snapshot.historyMonths} mo`
-                    : '—'}
-              </dd>
+              <dt>Results</dt>
+              <dd>{resultCount?.toLocaleString() ?? '—'}</dd>
             </div>
             <div>
               <dt>Data through</dt>
-              <dd>
-                {formatDate(
-                  lens === 'young'
-                    ? youngResponse?.snapshot.marketDataThrough
-                    : response?.snapshot.dataThrough,
-                )}
-              </dd>
+              <dd>{formatDate(dataThrough)}</dd>
             </div>
             <div className={`mx-freshness mx-freshness--${freshness}`}>
               <dt>Snapshot</dt>
@@ -516,14 +661,18 @@ export function HobbyApp() {
         <aside className="mx-boundary-note" aria-label="Research scope">
           <LockKeyhole size={15} aria-hidden="true" />
           <strong>
-            {lens === 'young'
-              ? 'Age is a lens—not a shortcut.'
-              : 'Research posture—not a card order.'}
+            {lens === 'market'
+              ? 'Subject demand is the screen.'
+              : youngSport === 'football'
+                ? 'Market watchlist—not a conviction rank.'
+                : 'Age is a lens—not a shortcut.'}
           </strong>
           <span>
-            {lens === 'young'
-              ? 'The ranking uses the existing Binder Score; age is already a modest 11.25% of its pre-penalty total. Recent callup is not an official rookie designation.'
-              : 'Build and hold candidates identify durable subject demand. Exact-card valuation, supply, liquidity, and return evidence are still required.'}
+            {lens === 'market'
+              ? 'Exact-card valuation, supply, liquidity, and return evidence still decide whether a position is investable.'
+              : youngSport === 'football'
+                ? 'Verified age, production quality, card demand, and expected appreciation are not inferred from a Devy market rank.'
+                : 'The existing Binder Score is re-ordered inside the selected age and stage universe; the base posture does not change.'}
           </span>
         </aside>
 
@@ -534,24 +683,14 @@ export function HobbyApp() {
           <ResearchLensTabs
             lens={lens}
             posture={posture}
+            youngSport={youngSport}
             showRefresh={showRefreshPosture}
+            onMarketSelect={selectPositions}
             onYoungSelect={selectYoungPlayers}
+            onYoungSportSelect={changeYoungSport}
             onPostureSelect={changePosture}
           />
-          {lens === 'young' ? (
-            <YoungInvestorWorkbench
-              response={youngResponse}
-              loading={youngLoading}
-              error={youngError}
-              ageMax={youngAgeMax}
-              stage={youngStage}
-              page={page}
-              onAgeMaxChange={changeYoungAge}
-              onStageChange={changeYoungStage}
-              onPageChange={setPage}
-              onReset={resetYoungFilters}
-            />
-          ) : (
+          {lens === 'market' ? (
             <InvestorWorkbench
               response={response}
               loading={loading}
@@ -569,21 +708,63 @@ export function HobbyApp() {
               onPageChange={setPage}
               onReset={resetFilters}
             />
+          ) : youngSport === 'football' ? (
+            <FootballYoungInvestorWorkbench
+              response={footballResponse}
+              loading={footballLoading}
+              error={footballError}
+              position={footballPosition}
+              formatId={footballFormat}
+              search={footballSearch}
+              page={page}
+              onPositionChange={changeFootballPosition}
+              onFormatChange={changeFootballFormat}
+              onSearchChange={changeFootballSearch}
+              onPageChange={setPage}
+              onReset={resetFootballFilters}
+            />
+          ) : (
+            <YoungInvestorWorkbench
+              response={youngResponse}
+              loading={youngLoading}
+              error={youngError}
+              ageMax={youngAgeMax}
+              stage={youngStage}
+              page={page}
+              onAgeMaxChange={changeYoungAge}
+              onStageChange={changeYoungStage}
+              onPageChange={setPage}
+              onReset={resetYoungFilters}
+            />
           )}
         </section>
       </main>
 
-      <footer className="mx-footer">
-        <span>
-          {lens === 'young'
-            ? 'Young Players · Baseball Oracle + Binder Score research'
-            : 'Magnificent X · subject-level demand research'}
-        </span>
-        <span>
-          {lens === 'young'
-            ? 'Cross-stage heuristic · exact-card action withheld'
-            : '18-month provisional model · exact-card action withheld'}
-        </span>
+      <footer className="mx-footer" id="methodology">
+        <span>Hobby Oracle · long-horizon collection research</span>
+        <nav aria-label="Data sources">
+          <a
+            href="https://www.gemrate.com/sales-trends"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GemRate Athlete
+          </a>
+          <a
+            href="https://www.gemrate.com/sales-trends-pokemon"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GemRate Pokémon
+          </a>
+          <a
+            href="https://keeptradecut.com/devy-rankings"
+            target="_blank"
+            rel="noreferrer"
+          >
+            KTC Devy
+          </a>
+        </nav>
       </footer>
     </div>
   )

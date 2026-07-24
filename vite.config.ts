@@ -25,6 +25,7 @@ export default defineConfig({
       '/api/model-status': publicApiTarget,
       '/api/football': publicApiTarget,
       '/api/v1/magnificent-x': publicApiTarget,
+      '/api/v1/hobby-oracle': publicApiTarget,
     },
   },
 })

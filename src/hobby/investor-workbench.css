@@ -18,31 +18,55 @@
   white-space: nowrap;
 }
 
-.iw-posture-tabs {
-  min-height: 50px;
-  display: flex;
-  align-items: stretch;
-  gap: 2px;
-  overflow-x: auto;
-  padding: 7px;
+.iw-research-nav {
   border-bottom: 1px solid var(--mx-line);
   background: #0b1210;
+}
+
+.iw-mode-tabs,
+.iw-posture-tabs,
+.iw-sport-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
   scrollbar-width: none;
 }
 
+.iw-mode-tabs {
+  min-height: 54px;
+  padding: 8px;
+}
+
+.iw-mode-tabs + .iw-posture-tabs,
+.iw-mode-tabs + .iw-sport-tabs {
+  border-top: 1px solid var(--mx-line);
+}
+
+.iw-posture-tabs,
+.iw-sport-tabs {
+  min-height: 42px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.iw-mode-tabs::-webkit-scrollbar,
 .iw-posture-tabs::-webkit-scrollbar {
   display: none;
 }
 
+.iw-mode-tabs button,
+.iw-sport-tabs button,
 .iw-posture-tabs button {
   flex: 0 0 auto;
   min-width: 74px;
-  padding: 0 15px;
+  min-height: 32px;
+  padding: 0 14px;
   border: 0;
   border-radius: 7px;
   color: var(--mx-muted);
   background: transparent;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 720;
   cursor: pointer;
   transition:
@@ -50,26 +74,47 @@
     background 140ms ease;
 }
 
+.iw-mode-tabs button {
+  min-width: 138px;
+  min-height: 38px;
+  font-size: 0.82rem;
+}
+
+.iw-mode-tabs button:hover,
+.iw-sport-tabs button:hover,
 .iw-posture-tabs button:hover {
   color: var(--mx-text);
   background: rgba(255, 255, 255, 0.035);
 }
 
+.iw-mode-tabs button[aria-pressed="true"],
+.iw-sport-tabs button[aria-pressed="true"],
 .iw-posture-tabs button[aria-pressed="true"] {
   color: #0a110e;
   background: var(--mx-lime);
 }
 
-.iw-posture-tabs .iw-young-tab {
-  min-width: 112px;
-  margin-right: 7px;
-  color: var(--mx-mint);
-  box-shadow: 8px 0 0 -7px var(--mx-line-strong);
+.iw-sport-tabs button[aria-pressed="true"] {
+  background: var(--mx-mint);
 }
 
-.iw-posture-tabs .iw-young-tab[aria-pressed="true"] {
-  color: #08100d;
-  background: var(--mx-mint);
+.iw-sport-tabs button span {
+  margin-left: 5px;
+  color: currentColor;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.iw-tab-status {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0 10px;
+  color: var(--mx-amber);
+  font-size: 0.66rem;
+  font-weight: 680;
 }
 
 .iw-controls {

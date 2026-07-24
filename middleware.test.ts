@@ -78,6 +78,7 @@ describe('Oracle routing authentication', () => {
       '/api/model-status',
       '/api/players?view=map',
       '/api/v1/dynasty-scores?ids=1',
+      '/api/v1/hobby-oracle?domain=football',
       '/api/v1/magnificent-x?domain=pokemon',
       '/api/v1/player-signals?stage=Minors',
     ]) {

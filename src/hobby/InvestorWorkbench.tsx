@@ -252,12 +252,12 @@ export function InvestorWorkbench({
     >
       <div className="iw-sr-only" role="status" aria-live="polite" aria-atomic="true">
         {loading
-          ? 'Updating investor board results.'
+          ? 'Updating Hobby Oracle results.'
           : error
             ? ''
             : `${pagination.total.toLocaleString()} matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
       </div>
-      <div className="iw-controls" role="group" aria-label="Investor board filters">
+      <div className="iw-controls" role="group" aria-label="Position filters">
         <label className="iw-search">
           <span className="iw-control-label">Subject</span>
           <span className="iw-input-shell">
@@ -632,12 +632,12 @@ export function InvestorWorkbench({
         <div className="iw-empty" role="status">
           <strong>No subjects match this screen.</strong>
           <span>Broaden the posture, cohort, or search.</span>
-          <button type="button" onClick={onReset}>Reset investor board</button>
+          <button type="button" onClick={onReset}>Reset position filters</button>
         </div>
       ) : null}
 
       {!error && pagination.totalPages > 1 ? (
-        <nav className="iw-pagination" aria-label="Investor board result pages">
+        <nav className="iw-pagination" aria-label="Position result pages">
           <button
             type="button"
             disabled={loading || pagination.page <= 1}

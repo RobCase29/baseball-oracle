@@ -23,6 +23,7 @@ import {
   type BinderScoreFeedItem,
   type BinderScoresResponse,
 } from '../domain/binderScore'
+import type { FootballMarketFeedResponse } from '../football/marketFeedContract'
 import { HobbyApp } from './HobbyApp'
 
 beforeEach(() => {
@@ -292,6 +293,63 @@ function youngFixtureResponse(): BinderScoresResponse {
   }
 }
 
+function footballFixtureResponse(): FootballMarketFeedResponse {
+  return {
+    schemaVersion: 'football-market-feed.v1',
+    generatedAt: '2026-07-24T19:30:00.000Z',
+    request: {
+      universe: 'college',
+      formatId: 'sf_12t_half_ppr_no_tep',
+    },
+    providers: [
+      {
+        provider: 'keeptradecut',
+        label: 'KeepTradeCut Devy',
+        status: 'available',
+        sourceUrl: 'https://keeptradecut.com/devy-rankings',
+        fetchedAt: '2026-07-24T19:30:00.000Z',
+        rowCount: 120,
+        errorCode: null,
+        comparisonScope: 'exact_format',
+        formatId: 'sf_12t_half_ppr_no_tep',
+      },
+      {
+        provider: 'dynasty-daddy',
+        label: 'Dynasty Daddy',
+        status: 'unsupported',
+        sourceUrl: 'https://dynasty-daddy.com/fantasy-rankings',
+        fetchedAt: null,
+        rowCount: 0,
+        errorCode: 'unsupported_universe',
+        comparisonScope: 'provider_default_directional',
+        formatId: 'dd_sf_provider_default',
+      },
+    ],
+    rankings: [
+      {
+        provider: 'keeptradecut',
+        providerLabel: 'KeepTradeCut Devy',
+        providerPlayerId: 'ktc-jeremiah-smith',
+        name: 'Jeremiah Smith',
+        normalizedName: 'jeremiahsmith',
+        universe: 'college',
+        position: 'WR',
+        requestedFormatId: 'sf_12t_half_ppr_no_tep',
+        formatId: 'sf_12t_half_ppr_no_tep',
+        comparisonScope: 'exact_format',
+        positionRank: 1,
+        positionUniverseSize: 72,
+        positionPercentile: 100,
+        overallRank: 2,
+        value: 9_420,
+        tier: 1,
+        sourceUrl: 'https://keeptradecut.com/devy-rankings',
+        fetchedAt: '2026-07-24T19:30:00.000Z',
+      },
+    ],
+  }
+}
+
 function jsonResponse(payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     status: 200,
@@ -299,7 +357,7 @@ function jsonResponse(payload: unknown): Response {
   })
 }
 
-describe('Magnificent X investor board', () => {
+describe('Hobby Oracle investor workbench', () => {
   it('renders a dense decision table and keeps exact-card action withheld', async () => {
     vi.stubGlobal(
       'fetch',
@@ -309,10 +367,10 @@ describe('Magnificent X investor board', () => {
     render(<HobbyApp />)
 
     expect(
-      screen.getByRole('heading', { name: 'Investor Board' }),
+      screen.getByRole('heading', { name: 'Investor Workbench' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Research posture—not a card order.'),
+      screen.getByText('Subject demand is the screen.'),
     ).toBeInTheDocument()
 
     const pikachu = await screen.findByText('Pikachu')
@@ -342,11 +400,11 @@ describe('Magnificent X investor board', () => {
       .toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: /6M YoY/u }))
       .toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Baseball' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Baseball Oracle' })).toHaveAttribute(
       'href',
       '/',
     )
-    expect(screen.getByRole('link', { name: /Pokémon data/u })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'GemRate Pokémon' })).toHaveAttribute(
       'href',
       'https://www.gemrate.com/sales-trends-pokemon',
     )
@@ -358,7 +416,7 @@ describe('Magnificent X investor board', () => {
     render(<HobbyApp />)
 
     await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
     fireEvent.change(screen.getByLabelText('Cohort'), {
       target: { value: 'pokemon' },
     })
@@ -371,7 +429,7 @@ describe('Magnificent X investor board', () => {
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v1/magnificent-x?')
+      expect(latestUrl).toContain('/api/v1/hobby-oracle?')
       expect(latestUrl).toContain('domain=pokemon')
       expect(latestUrl).toContain('posture=hold_candidate')
       expect(latestUrl).toContain('q=Pikachu')
@@ -407,11 +465,9 @@ describe('Magnificent X investor board', () => {
         'posture=needs_refresh',
       )
     })
-    expect(await screen.findByText('Suspended')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      await screen.findByText('Build rank suspended · refresh queue shown'),
+    ).toBeInTheDocument()
     expect(screen.getAllByText('Needs refresh')).toHaveLength(2)
   })
 
@@ -431,7 +487,7 @@ describe('Magnificent X investor board', () => {
     render(<HobbyApp />)
 
     await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Young players' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Young Players' }))
 
     const player = await screen.findByText('Jackson Holliday')
     const row = player.closest('tr')
@@ -444,7 +500,7 @@ describe('Magnificent X investor board', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Young player rank' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Young players' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Young Players' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -472,11 +528,12 @@ describe('Magnificent X investor board', () => {
       expect(latestUrl).toContain('stage=Minors')
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Positions' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
     await screen.findByText('Pikachu')
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v1/magnificent-x?')
+      expect(latestUrl).toContain('/api/v1/hobby-oracle?')
       expect(latestUrl).toContain('posture=hold_candidate')
       expect(latestUrl).toContain('sort=name')
       expect(latestUrl).toContain('direction=asc')
@@ -487,6 +544,59 @@ describe('Magnificent X investor board', () => {
     expect(screen.queryByText('#2')).not.toBeInTheDocument()
   })
 
+  it('adds a live football Devy watchlist without inventing an Oracle rank', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      return Promise.resolve(jsonResponse(
+        url.includes('/api/football/v1/market-rankings')
+          ? footballFixtureResponse()
+          : fixtureResponse(),
+      ))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<HobbyApp />)
+
+    await screen.findByText('Pikachu')
+    fireEvent.click(screen.getByRole('button', { name: 'Young Players' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Football Beta' }))
+
+    const player = await screen.findByText('Jeremiah Smith')
+    const row = player.closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row!).getByText('#1')).toBeInTheDocument()
+    expect(within(row!).getByText('of 72')).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Devy position rank' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Market watchlist—not a conviction rank.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('NFL age screen withheld')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Young player rank' }),
+    ).not.toBeInTheDocument()
+
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('/api/football/v1/market-rankings?')
+      expect(latestUrl).toContain('universe=college')
+      expect(latestUrl).toContain('format=sf_12t_half_ppr_no_tep')
+    })
+    expect(window.location.search).toContain('lens=young')
+    expect(window.location.search).toContain('sport=football')
+    expect(window.location.search).toContain('position=WR')
+
+    fireEvent.click(
+      within(row!).getByRole('button', {
+        name: 'Show football prospect detail for Jeremiah Smith',
+      }),
+    )
+    expect(
+      screen.getByText('Production conviction is not released'),
+    ).toBeInTheDocument()
+  })
+
   it('does not leave stale rows visible after a failed screen request', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtureResponse()))
     vi.stubGlobal('fetch', fetchMock)
@@ -494,7 +604,7 @@ describe('Magnificent X investor board', () => {
 
     await screen.findByText('Pikachu')
     fetchMock.mockRejectedValueOnce(new Error('Filter request failed.'))
-    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Filter request failed.',
