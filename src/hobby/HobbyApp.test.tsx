@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   cleanup,
   fireEvent,
@@ -16,9 +16,12 @@ import {
   type MagnificentXFeedItem,
   type MagnificentXFeedResponse,
   type MagnificentXSubjectType,
-  type MagnificentXTaxonomyStatus,
 } from '../domain/magnificentX'
 import { HobbyApp } from './HobbyApp'
+
+beforeEach(() => {
+  window.history.replaceState({}, '', '/hobby')
+})
 
 afterEach(() => {
   cleanup()
@@ -36,17 +39,16 @@ function feedItem(input: {
   name: string
   type: MagnificentXSubjectType
   domain: MagnificentXDomain
-  taxonomyStatus?: MagnificentXTaxonomyStatus
   rank: number
   cohortSize: number
   percentile: number
+  freshnessStatus?: 'current' | 'stale'
 }): MagnificentXFeedItem {
   const assessment = buildMagnificentXAssessment({
     row: {
       subjectType: input.type,
       domain: input.domain,
-      taxonomyStatus:
-        input.taxonomyStatus ?? 'coherent_provider_cohort',
+      taxonomyStatus: 'coherent_provider_cohort',
       sourceCategory: input.domain,
       subjectName: input.name,
       normalizedName: input.name.toLocaleLowerCase('en-US'),
@@ -59,7 +61,7 @@ function feedItem(input: {
     withinCohortPercentile: input.percentile,
     globalScalePercentile: null,
     identityStatus: 'source_name_only',
-    freshnessStatus: 'current',
+    freshnessStatus: input.freshnessStatus ?? 'current',
   })
   return {
     recordVersion: 'magnificent-x-feed-item/v1',
@@ -78,7 +80,9 @@ function feedItem(input: {
   }
 }
 
-function fixtureResponse(): MagnificentXFeedResponse {
+function fixtureResponse(
+  freshnessStatus: 'current' | 'stale' = 'current',
+): MagnificentXFeedResponse {
   return {
     schemaVersion: 'magnificent-x-feed.v1',
     contractVersion: 'magnificent-x-contract/v1',
@@ -90,10 +94,12 @@ function fixtureResponse(): MagnificentXFeedResponse {
       publishedAt: '2026-07-12T00:00:00.000Z',
       acquiredAt: '2026-07-24T18:00:00.000Z',
       freshness: {
-        status: 'current',
+        status: freshnessStatus,
         cadence: 'monthly',
         nextExpectedBy: '2026-08-20T00:00:00.000Z',
-        reasonCodes: [],
+        reasonCodes: freshnessStatus === 'current'
+          ? []
+          : ['monthly_snapshot_overdue'],
       },
     },
     items: [
@@ -105,6 +111,7 @@ function fixtureResponse(): MagnificentXFeedResponse {
         rank: 2,
         cohortSize: 1_022,
         percentile: 99.9,
+        freshnessStatus,
       }),
       feedItem({
         id: 'athlete:michael-jordan',
@@ -114,6 +121,7 @@ function fixtureResponse(): MagnificentXFeedResponse {
         rank: 1,
         cohortSize: 839,
         percentile: 100,
+        freshnessStatus,
       }),
     ],
     cohorts: [
@@ -134,7 +142,7 @@ function fixtureResponse(): MagnificentXFeedResponse {
     ],
     page: {
       page: 1,
-      limit: 24,
+      limit: 50,
       total: 2,
       totalPages: 1,
     },
@@ -164,8 +172,8 @@ function jsonResponse(payload: unknown): Response {
   })
 }
 
-describe('Magnificent X hobby research UI', () => {
-  it('renders provisional cohort evidence while explicitly withholding every full designation', async () => {
+describe('Magnificent X investor board', () => {
+  it('renders a dense decision table and keeps exact-card action withheld', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(jsonResponse(fixtureResponse())),
@@ -174,77 +182,129 @@ describe('Magnificent X hobby research UI', () => {
     render(<HobbyApp />)
 
     expect(
-      screen.getByRole('heading', { name: /Find enduring hobby demand/u }),
+      screen.getByRole('heading', { name: 'Investor Board' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'No full designations. By design.' }),
+      screen.getByText('Research posture—not a card order.'),
     ).toBeInTheDocument()
 
-    const pikachuHeading = await screen.findByRole('heading', { name: 'Pikachu' })
-    const pikachuCard = pikachuHeading.closest('article')
-    expect(pikachuCard).not.toBeNull()
-    expect(within(pikachuCard!).getByText(/Rank/u)).toHaveTextContent(
-      'Rank #2 of 1,022',
-    )
+    const pikachu = await screen.findByText('Pikachu')
+    const row = pikachu.closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row!).getByText('Build candidate')).toBeInTheDocument()
+    expect(within(row!).getByText('#2')).toBeInTheDocument()
+    expect(within(row!).getByText('99.9 pct')).toBeInTheDocument()
+    expect(screen.getByText('Exact-card action withheld')).toBeInTheDocument()
     expect(
-      within(pikachuCard!).getByText(/Character-level demand only/u),
-    ).toBeInTheDocument()
-    expect(
-      within(pikachuCard!).getByText(/Why designation is withheld/u),
+      screen.getByText(/Cross-hobby order is a screen only/u),
     ).toBeInTheDocument()
 
     fireEvent.click(
-      within(pikachuCard!).getByText(/Why designation is withheld/u),
+      within(row!).getByRole('button', {
+        name: 'Show research detail for Pikachu',
+      }),
     )
     expect(
-      within(pikachuCard!).getByText(
-        'Exact-card set, year, variation, grade, scarcity, and price evidence are missing.',
-      ),
+      screen.getByText(/Character demand only/u),
     ).toBeInTheDocument()
-    expect(screen.getByText(/18 complete months/u)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Baseball Oracle/u })).toHaveAttribute(
+    expect(
+      screen.getByText(/Exact-card, grade, scarcity, and price evidence/u),
+    ).toBeInTheDocument()
+
+    expect(screen.getByRole('columnheader', { name: /TTM demand/u }))
+      .toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /6M YoY/u }))
+      .toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Baseball' })).toHaveAttribute(
       'href',
       '/',
     )
-    expect(screen.getByRole('link', { name: /Football Oracle/u })).toHaveAttribute(
-      'href',
-      '/football',
-    )
-    expect(screen.getByRole('link', { name: /Pokémon source/u })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Pokémon data/u })).toHaveAttribute(
       'href',
       'https://www.gemrate.com/sales-trends-pokemon',
     )
   })
 
-  it('sends domain, tier, and search filters through the versioned API', async () => {
+  it('persists posture, cohort, search, and full-universe sort controls', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtureResponse()))
     vi.stubGlobal('fetch', fetchMock)
     render(<HobbyApp />)
 
-    await screen.findByRole('heading', { name: 'Pikachu' })
-    fireEvent.change(screen.getByLabelText('Provider cohort'), {
+    await screen.findByText('Pikachu')
+    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+    fireEvent.change(screen.getByLabelText('Cohort'), {
       target: { value: 'pokemon' },
     })
-    fireEvent.change(screen.getByLabelText('Research tier'), {
-      target: { value: 'market_leader' },
-    })
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search subjects' }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Subject' }), {
       target: { value: 'Pikachu' },
+    })
+    fireEvent.change(screen.getByLabelText('Sort'), {
+      target: { value: 'ttm_sales' },
     })
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
       expect(latestUrl).toContain('/api/v1/magnificent-x?')
       expect(latestUrl).toContain('domain=pokemon')
-      expect(latestUrl).toContain('tier=market_leader')
+      expect(latestUrl).toContain('posture=hold_candidate')
       expect(latestUrl).toContain('q=Pikachu')
+      expect(latestUrl).toContain('sort=ttm_sales')
+      expect(latestUrl).toContain('direction=desc')
       expect(latestUrl).toContain('page=1')
-      expect(latestUrl).toContain('limit=24')
+      expect(latestUrl).toContain('limit=50')
     })
+    expect(window.location.search).toContain('posture=hold_candidate')
+    expect(window.location.search).toContain('sort=ttm_sales')
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
-    expect(screen.getByLabelText('Provider cohort')).toHaveValue('all')
-    expect(screen.getByLabelText('Research tier')).toHaveValue('all')
-    expect(screen.getByRole('searchbox', { name: 'Search subjects' })).toHaveValue('')
+    expect(screen.getByLabelText('Cohort')).toHaveValue('all')
+    expect(screen.getByRole('button', { name: 'Build' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByRole('searchbox', { name: 'Subject' })).toHaveValue('')
+    expect(screen.getByLabelText('Sort')).toHaveValue('cohort_rank')
+    expect(screen.getByLabelText('Direction')).toHaveValue('asc')
+  })
+
+  it('suspends the build screen when the market snapshot is stale', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
+      jsonResponse(fixtureResponse('stale')),
+    ))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<HobbyApp />)
+
+    await waitFor(() => {
+      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain(
+        'posture=needs_refresh',
+      )
+    })
+    expect(await screen.findByText('Suspended')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getAllByText('Needs refresh')).toHaveLength(2)
+  })
+
+  it('does not leave stale rows visible after a failed screen request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtureResponse()))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<HobbyApp />)
+
+    await screen.findByText('Pikachu')
+    fetchMock.mockRejectedValueOnce(new Error('Filter request failed.'))
+    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Filter request failed.',
+    )
+    expect(screen.queryByText('Pikachu')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('table', {
+        name: 'Long-term collection research table',
+      }),
+    ).not.toBeInTheDocument()
   })
 })

@@ -6,11 +6,15 @@ import {
   MAGNIFICENT_X_MODEL_VERSION,
   buildMagnificentXAssessment,
   midrankPercentiles,
+  researchPostureForAssessment,
   type MagnificentXDomain,
   type MagnificentXFeedItem,
   type MagnificentXFeedResponse,
   type MagnificentXIdentityStatus,
+  type MagnificentXResearchPosture,
   type MagnificentXResearchTier,
+  type MagnificentXSortDirection,
+  type MagnificentXSortKey,
   type MagnificentXSourceRow,
   type MagnificentXTaxonomyStatus,
 } from '../src/domain/magnificentX.js'
@@ -65,6 +69,9 @@ export interface MagnificentXQuery {
   q?: string
   domain?: MagnificentXDomain | 'all'
   tier?: MagnificentXResearchTier | 'all'
+  posture?: MagnificentXResearchPosture | 'all'
+  sort?: MagnificentXSortKey
+  direction?: MagnificentXSortDirection
   page?: number
   limit?: number
 }
@@ -360,29 +367,68 @@ export function buildMagnificentXFeed(
   const normalizedQuery = query.q?.trim().toLocaleLowerCase('en-US') ?? ''
   const domain = query.domain ?? 'all'
   const tier = query.tier ?? 'all'
+  const posture = query.posture ?? 'all'
+  const sort = query.sort ?? (domain === 'all' ? 'cohort_rank' : 'signal')
+  const direction = query.direction ??
+    (sort === 'cohort_rank' || sort === 'name' ? 'asc' : 'desc')
   const page = Math.max(1, Math.floor(query.page ?? 1))
   const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? 50)))
   const filtered = catalog.items.filter((item) => (
     (domain === 'all' || item.subject.domain === domain) &&
     (tier === 'all' || item.assessment.researchTier === tier) &&
     (
+      posture === 'all' ||
+      researchPostureForAssessment(item.assessment) === posture
+    ) &&
+    (
       normalizedQuery.length === 0 ||
       item.subject.name.toLocaleLowerCase('en-US').includes(normalizedQuery)
     )
-  )).toSorted((left, right) => (
-    domain === 'all'
-      ? (
-          left.withinCohortRank - right.withinCohortRank ||
-          left.subject.domain.localeCompare(right.subject.domain, 'en-US') ||
-          left.subject.name.localeCompare(right.subject.name, 'en-US')
-        )
-      : (
-          right.assessment.marketSignal.score - left.assessment.marketSignal.score ||
-          right.assessment.marketSignal.withinCohortPercentile -
-            left.assessment.marketSignal.withinCohortPercentile ||
-          left.subject.name.localeCompare(right.subject.name, 'en-US')
-        )
-  ))
+  )).toSorted((left, right) => {
+    const leftSignal = left.assessment.marketSignal
+    const rightSignal = right.assessment.marketSignal
+    let comparison = 0
+    switch (sort) {
+      case 'cohort_rank':
+        comparison = left.withinCohortRank - right.withinCohortRank
+        break
+      case 'signal':
+        comparison = leftSignal.score - rightSignal.score
+        break
+      case 'ttm_sales':
+        comparison =
+          leftSignal.latestTwelveMonthSalesUsd -
+          rightSignal.latestTwelveMonthSalesUsd
+        break
+      case 'trend':
+        comparison =
+          leftSignal.diagnostics.yearOverYearSixMonthLogGrowth -
+          rightSignal.diagnostics.yearOverYearSixMonthLogGrowth
+        break
+      case 'persistence':
+        comparison =
+          leftSignal.components.persistence - rightSignal.components.persistence
+        break
+      case 'shock_resistance':
+        comparison =
+          leftSignal.components.shockResistance -
+          rightSignal.components.shockResistance
+        break
+      case 'cohort_percentile':
+        comparison =
+          leftSignal.withinCohortPercentile -
+          rightSignal.withinCohortPercentile
+        break
+      case 'name':
+        comparison = left.subject.name.localeCompare(right.subject.name, 'en-US')
+        break
+    }
+    const directed = direction === 'asc' ? comparison : -comparison
+    return directed ||
+      left.withinCohortRank - right.withinCohortRank ||
+      left.subject.domain.localeCompare(right.subject.domain, 'en-US') ||
+      left.subject.name.localeCompare(right.subject.name, 'en-US')
+  })
   const total = filtered.length
   const totalPages = total === 0 ? 0 : Math.ceil(total / limit)
   const offset = (page - 1) * limit
@@ -443,4 +489,30 @@ export const magnificentXResearchTiers: readonly MagnificentXResearchTier[] = [
   'noise_risk',
   'long_tail',
   'evidence_needed',
+]
+
+export const magnificentXResearchPostures: readonly MagnificentXResearchPosture[] = [
+  'build_candidate',
+  'hold_candidate',
+  'watch',
+  'risk_review',
+  'pass',
+  'unrated',
+  'needs_refresh',
+]
+
+export const magnificentXSortKeys: readonly MagnificentXSortKey[] = [
+  'cohort_rank',
+  'signal',
+  'ttm_sales',
+  'trend',
+  'persistence',
+  'shock_resistance',
+  'cohort_percentile',
+  'name',
+]
+
+export const magnificentXSortDirections: readonly MagnificentXSortDirection[] = [
+  'asc',
+  'desc',
 ]

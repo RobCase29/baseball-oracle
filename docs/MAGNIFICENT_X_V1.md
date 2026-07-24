@@ -27,10 +27,12 @@ GET /api/v1/magnificent-x
 The machine-readable response contract is
 `/schemas/magnificent-x-feed.v1.schema.json`.
 
-It supports `q`, `domain`, `tier`, `page`, and `limit` filters. The shipped
-score measures relative subject-level demand durability within a provider
-cohort. It does not measure an exact card, price appreciation, liquidity,
-expected return, or investment merit.
+It supports `q`, `domain`, `tier`, `posture`, `sort`, `direction`, `page`, and
+`limit` controls. Sorting and pagination are applied across the complete
+filtered universe before rows are returned. The shipped score measures
+relative subject-level demand durability within a provider cohort. It does not
+measure an exact card, price appreciation, liquidity, expected return, or
+investment merit.
 
 Every shipped record therefore has:
 
@@ -42,6 +44,60 @@ flags.cardLevelActionable = false
 ```
 
 The feed and every cohort report `magnificentEligibleCount = 0`.
+
+## Investor workbench research postures
+
+The table-first investor workbench translates each existing research tier into
+a deterministic subject-level queue. This translation changes presentation,
+not the model, score, or designation:
+
+| Model research tier | Workbench posture | Intended use |
+| --- | --- | --- |
+| `market_leader` | Build candidate / core hold | Prioritize exact-card underwriting |
+| `durable_demand` | Hold candidate / selective add | Review existing exposure and selective additions |
+| `watch` | Watch | Monitor for stronger durability evidence |
+| `noise_risk` | Risk review / no new capital | Review concentrated or weakening demand before adding |
+| `long_tail` | Pass | Deprioritize at the subject-demand layer |
+| `evidence_needed` | Unrated | Resolve cohort or identity evidence first |
+
+Freshness failure overrides every tier to `needs_refresh`. Failed cohort quality
+or an ambiguous normalized identity overrides it to `unrated`. A
+`market_leader` that does not also have a passing market-strength gate is
+treated as contract drift and becomes `unrated`.
+
+The posture is not a card action. Exact-card buy, hold, trim, and sell actions
+remain withheld because the feed lacks card identity, price and cost basis,
+supply/population growth, dilution or reprint risk, liquidity, condition, and
+validated return outcomes. In particular, low subject-level sales volume is
+not evidence that a scarce card should be sold.
+
+Supported workbench posture values are:
+
+```text
+build_candidate
+hold_candidate
+watch
+risk_review
+pass
+unrated
+needs_refresh
+```
+
+Supported sort keys are:
+
+```text
+cohort_rank
+signal
+ttm_sales
+trend
+persistence
+shock_resistance
+cohort_percentile
+name
+```
+
+Cross-hobby sorting is a screen, not a validated global ranking. Cohort rank
+and percentile remain the authoritative relative-standing fields.
 
 ## Source snapshot
 

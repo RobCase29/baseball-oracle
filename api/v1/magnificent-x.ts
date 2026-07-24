@@ -4,7 +4,10 @@ import {
   buildMagnificentXCatalog,
   magnificentXCatalog,
   magnificentXDomains,
+  magnificentXResearchPostures,
   magnificentXResearchTiers,
+  magnificentXSortDirections,
+  magnificentXSortKeys,
   type MagnificentXQuery,
 } from '../_magnificent-x.js'
 
@@ -44,6 +47,9 @@ export default function magnificentXHandler(
     const url = new URL(request.url ?? '/', 'https://baseball-oracle.local')
     const domainValue = oneParameter(url.searchParams, 'domain') ?? 'all'
     const tierValue = oneParameter(url.searchParams, 'tier') ?? 'all'
+    const postureValue = oneParameter(url.searchParams, 'posture') ?? 'all'
+    const sortValue = oneParameter(url.searchParams, 'sort')
+    const directionValue = oneParameter(url.searchParams, 'direction')
     if (
       domainValue !== 'all' &&
       !magnificentXDomains.includes(
@@ -60,10 +66,37 @@ export default function magnificentXHandler(
     ) {
       throw new Error('tier is unsupported')
     }
+    if (
+      postureValue !== 'all' &&
+      !magnificentXResearchPostures.includes(
+        postureValue as (typeof magnificentXResearchPostures)[number],
+      )
+    ) {
+      throw new Error('posture is unsupported')
+    }
+    if (
+      sortValue !== undefined &&
+      !magnificentXSortKeys.includes(
+        sortValue as (typeof magnificentXSortKeys)[number],
+      )
+    ) {
+      throw new Error('sort is unsupported')
+    }
+    if (
+      directionValue !== undefined &&
+      !magnificentXSortDirections.includes(
+        directionValue as (typeof magnificentXSortDirections)[number],
+      )
+    ) {
+      throw new Error('direction is unsupported')
+    }
     const query: MagnificentXQuery = {
       q: oneParameter(url.searchParams, 'q'),
       domain: domainValue as MagnificentXQuery['domain'],
       tier: tierValue as MagnificentXQuery['tier'],
+      posture: postureValue as MagnificentXQuery['posture'],
+      sort: sortValue as MagnificentXQuery['sort'],
+      direction: directionValue as MagnificentXQuery['direction'],
       page: positiveInteger(oneParameter(url.searchParams, 'page'), 'page'),
       limit: positiveInteger(oneParameter(url.searchParams, 'limit'), 'limit'),
     }

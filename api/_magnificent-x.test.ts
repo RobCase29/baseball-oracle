@@ -74,6 +74,27 @@ describe('Magnificent X hobby catalog', () => {
     })
   })
 
+  it('screens build candidates and sorts the full filtered universe by demand', () => {
+    const response = buildMagnificentXFeed(magnificentXCatalog, {
+      domain: 'pokemon',
+      posture: 'build_candidate',
+      sort: 'ttm_sales',
+      direction: 'desc',
+      limit: 100,
+    })
+
+    expect(response.page.total).toBe(21)
+    expect(response.items[0]?.subject.name).toBe('Charizard')
+    expect(response.items.every(
+      (item) => item.assessment.researchTier === 'market_leader',
+    )).toBe(true)
+    expect(response.items.every(
+      (item, index, items) => index === 0 ||
+        items[index - 1]!.assessment.marketSignal.latestTwelveMonthSalesUsd >=
+          item.assessment.marketSignal.latestTwelveMonthSalesUsd,
+    )).toBe(true)
+  })
+
   it('uses a monthly deadline and becomes stale rather than silently aging', () => {
     expect(
       magnificentXFreshness(

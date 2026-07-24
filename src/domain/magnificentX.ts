@@ -52,6 +52,24 @@ export type MagnificentXResearchTier =
   | 'noise_risk'
   | 'long_tail'
   | 'evidence_needed'
+export type MagnificentXResearchPosture =
+  | 'build_candidate'
+  | 'hold_candidate'
+  | 'watch'
+  | 'risk_review'
+  | 'pass'
+  | 'unrated'
+  | 'needs_refresh'
+export type MagnificentXSortKey =
+  | 'cohort_rank'
+  | 'signal'
+  | 'ttm_sales'
+  | 'trend'
+  | 'persistence'
+  | 'shock_resistance'
+  | 'cohort_percentile'
+  | 'name'
+export type MagnificentXSortDirection = 'asc' | 'desc'
 export type MagnificentXIdentityStatus =
   | 'source_name_only'
   | 'ambiguous_normalized_name'
@@ -152,6 +170,34 @@ export interface MagnificentXAssessment {
     observedHistoryMonths: number
     requiredHistoryMonths: typeof MAGNIFICENT_X_REQUIRED_HISTORY_MONTHS
     cardLevelActionable: false
+  }
+}
+
+export function researchPostureForAssessment(
+  assessment: MagnificentXAssessment,
+): MagnificentXResearchPosture {
+  if (!assessment.magnificentX.gates.currentFreshness) return 'needs_refresh'
+  if (
+    !assessment.magnificentX.gates.cohortQuality ||
+    assessment.flags.identityStatus === 'ambiguous_normalized_name'
+  ) {
+    return 'unrated'
+  }
+  switch (assessment.researchTier) {
+    case 'market_leader':
+      return assessment.magnificentX.gates.marketStrength
+        ? 'build_candidate'
+        : 'unrated'
+    case 'durable_demand':
+      return 'hold_candidate'
+    case 'watch':
+      return 'watch'
+    case 'noise_risk':
+      return 'risk_review'
+    case 'long_tail':
+      return 'pass'
+    case 'evidence_needed':
+      return 'unrated'
   }
 }
 

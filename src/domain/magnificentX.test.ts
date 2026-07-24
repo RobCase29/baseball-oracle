@@ -3,6 +3,7 @@ import {
   buildMagnificentXAssessment,
   computeMagnificentXMarketSignal,
   midrankPercentiles,
+  researchPostureForAssessment,
   type MagnificentXMarketInput,
 } from './magnificentX'
 
@@ -119,5 +120,38 @@ describe('Magnificent X provisional market signal', () => {
     expect(result.researchTier).toBe('evidence_needed')
     expect(result.magnificentX.gates.cohortQuality).toBe(false)
     expect(result.magnificentX.reasonCodes).toContain('cohort_quality_gate_not_met')
+  })
+
+  it('maps market tiers into research postures while keeping card action withheld', () => {
+    const assessment = buildMagnificentXAssessment(input(Array(18).fill(1_000)))
+    const cases = [
+      ['market_leader', 'build_candidate'],
+      ['durable_demand', 'hold_candidate'],
+      ['watch', 'watch'],
+      ['noise_risk', 'risk_review'],
+      ['long_tail', 'pass'],
+      ['evidence_needed', 'unrated'],
+    ] as const
+
+    for (const [tier, posture] of cases) {
+      const candidate = structuredClone(assessment)
+      candidate.researchTier = tier
+      candidate.magnificentX.gates.marketStrength = tier === 'market_leader'
+      expect(researchPostureForAssessment(candidate)).toBe(posture)
+      expect(candidate.magnificentX.designation).toBe('withheld')
+    }
+  })
+
+  it('overrides posture when freshness or evidence quality fails', () => {
+    const assessment = buildMagnificentXAssessment(input(Array(18).fill(1_000)))
+    assessment.researchTier = 'market_leader'
+    assessment.magnificentX.gates.marketStrength = true
+
+    assessment.magnificentX.gates.currentFreshness = false
+    expect(researchPostureForAssessment(assessment)).toBe('needs_refresh')
+
+    assessment.magnificentX.gates.currentFreshness = true
+    assessment.magnificentX.gates.cohortQuality = false
+    expect(researchPostureForAssessment(assessment)).toBe('unrated')
   })
 })
