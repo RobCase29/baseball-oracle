@@ -283,6 +283,7 @@ export function FootballOracle() {
           <span className="fo-brand-copy"><small>BASEBALL ORACLE</small><strong>FOOTBALL LAB</strong></span>
         </a>
         <div className="fo-topbar-meta">
+          <a className="fo-topbar-link" href="/hobby">Magnificent X</a>
           <span>College + NFL</span>
           <span>QB · WR · RB · TE</span>
           <span className="fo-status-dot">Live market beta</span>

@@ -48,6 +48,7 @@ function serverReadPath(pathname: string): boolean {
     pathname === '/api/players' ||
     pathname === '/api/v1/binder-scores' ||
     pathname === '/api/v1/dynasty-scores' ||
+    pathname === '/api/v1/magnificent-x' ||
     pathname === '/api/v1/player-signals'
 }
 

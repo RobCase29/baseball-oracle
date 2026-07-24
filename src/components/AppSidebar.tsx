@@ -2,6 +2,7 @@ import {
   BarChart3,
   BookOpen,
   FlaskConical,
+  Gem,
   Goal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -63,6 +64,14 @@ export function AppSidebar({
         >
           <Goal size={18} aria-hidden="true" />
           <span>Football</span>
+        </a>
+        <a
+          className="sport-switch-link"
+          href="/hobby"
+          title="Magnificent X"
+        >
+          <Gem size={18} aria-hidden="true" />
+          <span>Magnificent X</span>
         </a>
       </nav>
 

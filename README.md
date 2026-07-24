@@ -263,6 +263,12 @@ Raw provider JSON and scouting prose are never returned by the public API.
   separate, accumulating MLB confirmation evidence.
 - **Player dossier:** index explanation, current strengths and risks, current
   stats, an MLB career arc where supported, and honest missing-evidence states.
+- **Build a Binder:** baseball career evidence plus a bounded, athlete-level
+  GemRate demand proxy for long-term collection research.
+- **Magnificent X (`/hobby`):** an all-sports and Pokémon research queue built
+  from 18 reconciled monthly GemRate observations. It exposes within-cohort
+  demand durability and ten fail-closed evidence gates; it currently emits zero
+  durable-investment or exact-card designations.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 
@@ -284,6 +290,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Player Signals API v1](docs/PLAYER_SIGNALS_API_V1.md)
+- [Magnificent X provisional market signal](docs/MAGNIFICENT_X_V1.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

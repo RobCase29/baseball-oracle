@@ -10,15 +10,22 @@ This file records that user-provided statement as the permission basis for the
 GemRate sales-trends snapshot used by Binder Score v1. It is a project
 attestation, not independent verification of the underlying permission.
 
+Later in the same project, on 2026-07-24, the user explicitly asked to expand
+that permitted use “across all GemRate sports” and to add Pokémon, linking
+<https://www.gemrate.com/sales-trends-pokemon>. The project treats that request
+as confirmation that the stated permission covers the athlete categories and
+Pokémon character data used by the Magnificent X research surface. This remains
+a user-provided permission statement, not independent verification.
+
 ## Boundaries
 
 This attestation applies only to the user's stated permission to use the
-referenced GemRate Sales Trends data for the requested Oracle feature. It does
-not establish or imply:
+referenced GemRate Athlete Sales Trends and Pokémon Sales Trends data for the
+requested Oracle features. It does not establish or imply:
 
 - ownership of GemRate data or intellectual property;
 - a partnership, endorsement, or direct license from GemRate;
-- permission for unrelated GemRate pages, products, or data;
+- permission for other GemRate pages, products, partner APIs, or data;
 - permission for unrestricted scraping or automated access;
 - permission to resell, sublicense, or redistribute the raw source dataset;
 - permission to bypass access controls or subscription requirements; or

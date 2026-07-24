@@ -11,6 +11,10 @@
     {
       "source": "/football",
       "destination": "/football/index.html"
+    },
+    {
+      "source": "/hobby",
+      "destination": "/hobby/index.html"
     }
   ],
   "functions": {

@@ -28,6 +28,7 @@
     "bootstrap:mlb-rosters:remote": "tsx scripts/bootstrap-current-milb-rosters.ts",
     "data:acquire": "tsx scripts/data/acquire-model-data.ts",
     "data:gemrate-sales:build": "node --import tsx scripts/data/build-gemrate-sales-snapshot.ts",
+    "data:gemrate-hobby:build": "node --import tsx scripts/data/build-gemrate-hobby-snapshot.ts",
     "data:fangraphs-identity:build": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts",
     "data:fangraphs-identity:check": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts --check",
     "audit:twtc": ".venv/bin/python scripts/audits/audit_trouble_with_curve.py",

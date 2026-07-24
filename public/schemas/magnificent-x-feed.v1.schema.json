@@ -1,0 +1,722 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/magnificent-x-feed.v1.schema.json",
+  "title": "Oracle Magnificent X Provisional Market Signal v1",
+  "description": "Research-only subject-level GemRate demand signals. This contract deliberately withholds durable-investment and exact-card designations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "snapshot",
+    "items",
+    "cohorts",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "magnificent-x-feed.v1"
+    },
+    "contractVersion": {
+      "const": "magnificent-x-contract/v1"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "cohorts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cohort"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "domain": {
+      "enum": [
+        "baseball",
+        "basketball",
+        "football",
+        "soccer",
+        "hockey",
+        "golf",
+        "combat",
+        "other_sport",
+        "mixed_sport",
+        "culture",
+        "pokemon"
+      ]
+    },
+    "taxonomyStatus": {
+      "enum": [
+        "coherent_provider_cohort",
+        "small_provider_cohort",
+        "mixed_provider_cohort",
+        "outside_sports_scope"
+      ]
+    },
+    "identityStatus": {
+      "enum": [
+        "source_name_only",
+        "ambiguous_normalized_name",
+        "canonical_identity_missing"
+      ]
+    },
+    "tier": {
+      "enum": [
+        "market_leader",
+        "durable_demand",
+        "watch",
+        "noise_risk",
+        "long_tail",
+        "evidence_needed"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "historyStart",
+        "historyMonths",
+        "dataThrough",
+        "publishedAt",
+        "acquiredAt",
+        "freshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^magnificent-x-snapshot/v1:[a-f0-9]{64}$"
+        },
+        "historyStart": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyMonths": {
+          "const": 18
+        },
+        "dataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "cadence",
+            "nextExpectedBy",
+            "reasonCodes"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "current",
+                "stale",
+                "unknown"
+              ]
+            },
+            "cadence": {
+              "const": "monthly"
+            },
+            "nextExpectedBy": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reasonCodes": {
+              "$ref": "#/$defs/reasonCodes"
+            }
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "subject",
+        "withinCohortRank",
+        "assessment"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "magnificent-x-feed-item/v1"
+        },
+        "subject": {
+          "$ref": "#/$defs/subject"
+        },
+        "withinCohortRank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "assessment": {
+          "$ref": "#/$defs/assessment"
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "domain",
+        "sourceCategory",
+        "name",
+        "identityStatus",
+        "firstGradedYear",
+        "mostGradedYear"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "athlete",
+            "pokemon_character"
+          ]
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "sourceCategory": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identityStatus": {
+          "$ref": "#/$defs/identityStatus"
+        },
+        "firstGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        },
+        "mostGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "modelVersion",
+        "semantics",
+        "marketSignal",
+        "researchTier",
+        "domainFundamentals",
+        "magnificentX",
+        "confidence",
+        "flags"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "magnificent-x-market-signal.v1"
+        },
+        "contractVersion": {
+          "const": "magnificent-x-contract/v1"
+        },
+        "modelVersion": {
+          "const": "magnificent-x-market-signal/18m-provisional-v1.0.0"
+        },
+        "semantics": {
+          "$ref": "#/$defs/semantics"
+        },
+        "marketSignal": {
+          "$ref": "#/$defs/marketSignal"
+        },
+        "researchTier": {
+          "$ref": "#/$defs/tier"
+        },
+        "domainFundamentals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "score",
+            "modelFamily",
+            "reasonCodes"
+          ],
+          "properties": {
+            "score": {
+              "type": "null"
+            },
+            "modelFamily": {
+              "const": "market_only_v1"
+            },
+            "reasonCodes": {
+              "$ref": "#/$defs/reasonCodes"
+            }
+          }
+        },
+        "magnificentX": {
+          "$ref": "#/$defs/magnificent"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "flags": {
+          "$ref": "#/$defs/flags"
+        }
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicationStatus",
+        "subjectMeaning",
+        "scoreMeaning",
+        "magnificentMeaning",
+        "comparisonPolicy",
+        "investmentAdvice"
+      ],
+      "properties": {
+        "publicationStatus": {
+          "const": "research_only_provisional_market_signal"
+        },
+        "subjectMeaning": {
+          "const": "subject_level_completed_ebay_singles_sales_volume_not_exact_card_performance"
+        },
+        "scoreMeaning": {
+          "const": "market_signal_prioritizes_durable_subject_demand_within_provider_cohort_not_expected_return"
+        },
+        "magnificentMeaning": {
+          "const": "magnificent_x_is_withheld_until_every_domain_identity_supply_history_and_card_gate_passes"
+        },
+        "comparisonPolicy": {
+          "const": "compare_market_signal_within_provider_cohort_global_cross_hobby_ranking_is_not_validated"
+        },
+        "investmentAdvice": {
+          "const": false
+        }
+      }
+    },
+    "marketSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "provisional",
+        "latestTwelveMonthSalesUsd",
+        "currentSixMonthSalesUsd",
+        "priorYearSixMonthSalesUsd",
+        "withinCohortPercentile",
+        "shrunkWithinCohortPercentile",
+        "globalScalePercentile",
+        "components",
+        "diagnostics"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "provisional": {
+          "const": true
+        },
+        "latestTwelveMonthSalesUsd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currentSixMonthSalesUsd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "priorYearSixMonthSalesUsd": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "withinCohortPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "shrunkWithinCohortPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "globalScalePercentile": {
+          "type": "null"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scale",
+            "persistence",
+            "shockResistance",
+            "trendContext"
+          ],
+          "properties": {
+            "scale": {
+              "$ref": "#/$defs/score"
+            },
+            "persistence": {
+              "$ref": "#/$defs/score"
+            },
+            "shockResistance": {
+              "$ref": "#/$defs/score"
+            },
+            "trendContext": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedMonths",
+            "positiveMonthRatio",
+            "lowerQuartileToMedianRatio",
+            "latestTwelveMonthHhi",
+            "yearOverYearSixMonthLogGrowth",
+            "recentThreeMonthYearOverYearLogGrowth",
+            "recentThreeMonthAccelerationContext"
+          ],
+          "properties": {
+            "observedMonths": {
+              "const": 18
+            },
+            "positiveMonthRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "lowerQuartileToMedianRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "latestTwelveMonthHhi": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "yearOverYearSixMonthLogGrowth": {
+              "type": "number"
+            },
+            "recentThreeMonthYearOverYearLogGrowth": {
+              "type": "number"
+            },
+            "recentThreeMonthAccelerationContext": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        }
+      }
+    },
+    "magnificent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "eligible",
+        "designation",
+        "passedGateCount",
+        "requiredGateCount",
+        "gates",
+        "reasonCodes"
+      ],
+      "properties": {
+        "score": {
+          "type": "null"
+        },
+        "eligible": {
+          "const": false
+        },
+        "designation": {
+          "const": "withheld"
+        },
+        "passedGateCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "requiredGateCount": {
+          "const": 10
+        },
+        "gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "marketStrength",
+            "cohortQuality",
+            "historyDepth",
+            "canonicalIdentity",
+            "domainFundamentals",
+            "globalScale",
+            "supplyDilution",
+            "exactCardEvidence",
+            "modelValidation",
+            "currentFreshness"
+          ],
+          "properties": {
+            "marketStrength": {
+              "type": "boolean"
+            },
+            "cohortQuality": {
+              "type": "boolean"
+            },
+            "historyDepth": {
+              "const": false
+            },
+            "canonicalIdentity": {
+              "const": false
+            },
+            "domainFundamentals": {
+              "const": false
+            },
+            "globalScale": {
+              "const": false
+            },
+            "supplyDilution": {
+              "const": false
+            },
+            "exactCardEvidence": {
+              "const": false
+            },
+            "modelValidation": {
+              "const": false
+            },
+            "currentFreshness": {
+              "type": "boolean"
+            }
+          }
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "band",
+        "meaning",
+        "reasonCodes"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "band": {
+          "enum": [
+            "provisional",
+            "low",
+            "withheld"
+          ]
+        },
+        "meaning": {
+          "const": "evidence_quality_not_statistical_confidence_interval"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identityStatus",
+        "taxonomyStatus",
+        "freshnessStatus",
+        "cohortSize",
+        "observedHistoryMonths",
+        "requiredHistoryMonths",
+        "cardLevelActionable"
+      ],
+      "properties": {
+        "identityStatus": {
+          "$ref": "#/$defs/identityStatus"
+        },
+        "taxonomyStatus": {
+          "$ref": "#/$defs/taxonomyStatus"
+        },
+        "freshnessStatus": {
+          "enum": [
+            "current",
+            "stale",
+            "unknown"
+          ]
+        },
+        "cohortSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observedHistoryMonths": {
+          "const": 18
+        },
+        "requiredHistoryMonths": {
+          "const": 36
+        },
+        "cardLevelActionable": {
+          "const": false
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "taxonomyStatus",
+        "subjectCount",
+        "marketLeaderCount",
+        "magnificentEligibleCount"
+      ],
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "taxonomyStatus": {
+          "$ref": "#/$defs/taxonomyStatus"
+        },
+        "subjectCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "marketLeaderCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "magnificentEligibleCount": {
+          "const": 0
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "magnificentEligibleCount",
+        "marketSource",
+        "marketMeasure",
+        "rawExportsPublished",
+        "globalRankingAvailable",
+        "globalRankingReason",
+        "exactCardRecommendationsAvailable",
+        "ageIncluded",
+        "agePolicy",
+        "permissionAttestation"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "magnificentEligibleCount": {
+          "const": 0
+        },
+        "marketSource": {
+          "const": "GemRate Athlete + Pokémon Sales Trends"
+        },
+        "marketMeasure": {
+          "const": "completed_ebay_singles_sales_volume_usd"
+        },
+        "rawExportsPublished": {
+          "const": false
+        },
+        "globalRankingAvailable": {
+          "const": false
+        },
+        "globalRankingReason": {
+          "const": "provider_export_cap_and_cross_subject_overlap_not_independently_verified"
+        },
+        "exactCardRecommendationsAvailable": {
+          "const": false
+        },
+        "ageIncluded": {
+          "const": false
+        },
+        "agePolicy": {
+          "const": "age_requires_canonical_sport_identity_and_validated_domain_adapter_not_inferred_from_name"
+        },
+        "permissionAttestation": {
+          "const": "docs/permissions/GEMRATE_ATTESTATION.md"
+        }
+      }
+    }
+  }
+}
