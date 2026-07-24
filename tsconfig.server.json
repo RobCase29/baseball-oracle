@@ -27,6 +27,7 @@
     "src/domain/cardMarket.ts",
     "src/domain/binderScore.ts",
     "src/domain/magnificentX.ts",
+    "src/domain/hobbyPlayerRanking.ts",
     "src/domain/playerHandling.ts",
     "src/football/marketFeedContract.ts"
   ],

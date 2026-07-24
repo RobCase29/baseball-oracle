@@ -26,6 +26,7 @@ export default defineConfig({
       '/api/football': publicApiTarget,
       '/api/v1/magnificent-x': publicApiTarget,
       '/api/v1/hobby-oracle': publicApiTarget,
+      '/api/v1/hobby-player-rankings': publicApiTarget,
     },
   },
 })

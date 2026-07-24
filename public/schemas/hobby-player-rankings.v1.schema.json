@@ -1,0 +1,1311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/hobby-player-rankings.v1.schema.json",
+  "title": "Hobby Oracle Cross-Sport Player Rankings v1",
+  "description": "Research-only, within-sport player signals combining forward-looking dynasty consensus with subject-level completed-sales durability. The contract does not publish expected returns, portfolio actions, or exact-card recommendations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "modelVersion",
+    "snapshot",
+    "items",
+    "cohorts",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hobby-player-rankings.v1"
+    },
+    "contractVersion": {
+      "const": "hobby-player-rankings-contract/v1"
+    },
+    "modelVersion": {
+      "const": "hobby-player-durable-signal/18m-rules-v1.0.0"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "cohorts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/cohort"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "sport": {
+      "enum": [
+        "football",
+        "basketball"
+      ]
+    },
+    "posture": {
+      "enum": [
+        "Build",
+        "Hold",
+        "Watch",
+        "Deprioritize"
+      ]
+    },
+    "confidenceBand": {
+      "enum": [
+        "high",
+        "moderate",
+        "low",
+        "withheld"
+      ]
+    },
+    "freshnessStatus": {
+      "enum": [
+        "current",
+        "stale",
+        "unknown"
+      ]
+    },
+    "sortKey": {
+      "enum": [
+        "rank",
+        "score",
+        "outlook",
+        "market_durability",
+        "ttm_sales",
+        "resilience",
+        "hype_penalty",
+        "attention_gap",
+        "age",
+        "name"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "nullableScore": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/score"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dateOrDateTime": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "generatedAt",
+        "historyStart",
+        "historyMonths",
+        "dataThrough",
+        "publishedAt",
+        "acquiredAt",
+        "freshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^hobby-player-rankings/v1:[a-f0-9]{64}$"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "historyStart": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyMonths": {
+          "const": 18
+        },
+        "dataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "$ref": "#/$defs/freshness"
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "marketStatus",
+        "fundamentalsStatus",
+        "nextExpectedBy",
+        "reasonCodes"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "marketStatus": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "fundamentalsStatus": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "nextExpectedBy": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "id",
+        "name",
+        "normalizedName",
+        "sport",
+        "age",
+        "positions",
+        "primaryPosition",
+        "team",
+        "sportRank",
+        "screenRank",
+        "sportPercentile",
+        "score",
+        "posture",
+        "confidence",
+        "components",
+        "diagnostics",
+        "identity",
+        "gates",
+        "sensitivity",
+        "evidence",
+        "sources",
+        "formulaVersion"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "hobby-player-ranking-item/v1"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normalizedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sport": {
+          "$ref": "#/$defs/sport"
+        },
+        "age": {
+          "type": "number",
+          "minimum": 15,
+          "maximum": 60
+        },
+        "positions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "primaryPosition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "team": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sportRank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "screenRank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sportPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "posture": {
+          "$ref": "#/$defs/posture"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "components": {
+          "$ref": "#/$defs/components"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/diagnostics"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "gates": {
+          "$ref": "#/$defs/gates"
+        },
+        "sensitivity": {
+          "$ref": "#/$defs/sensitivity"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/sourceEvidence"
+          },
+          "contains": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "gemrate"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "formulaVersion": {
+          "const": "hobby-player-durable-signal/18m-rules-v1.0.0"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "sport"
+            ],
+            "properties": {
+              "sport": {
+                "const": "football"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "const": "keeptradecut"
+                  }
+                }
+              },
+              "diagnostics": {
+                "type": "object",
+                "properties": {
+                  "providerPercentiles": {
+                    "$ref": "#/$defs/footballProviderPercentiles"
+                  }
+                }
+              },
+              "sources": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "const": "keeptradecut"
+                    }
+                  }
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "identity": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "const": "hashtag_basketball"
+                  }
+                }
+              },
+              "diagnostics": {
+                "type": "object",
+                "properties": {
+                  "providerPercentiles": {
+                    "$ref": "#/$defs/basketballProviderPercentiles"
+                  }
+                }
+              },
+              "sources": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "const": "hashtag_basketball"
+                    }
+                  }
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "band",
+        "meaning",
+        "reasonCodes"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "band": {
+          "$ref": "#/$defs/confidenceBand"
+        },
+        "meaning": {
+          "const": "evidence_quality_not_statistical_confidence_interval"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outlook",
+        "marketDurability",
+        "volumePercentile",
+        "resilience",
+        "trendContext",
+        "hypePenalty"
+      ],
+      "properties": {
+        "outlook": {
+          "$ref": "#/$defs/score"
+        },
+        "marketDurability": {
+          "$ref": "#/$defs/score"
+        },
+        "volumePercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "resilience": {
+          "$ref": "#/$defs/score"
+        },
+        "trendContext": {
+          "$ref": "#/$defs/score"
+        },
+        "hypePenalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 12
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monthlySalesUsd",
+        "trailingTwelveSalesUsd",
+        "currentSixMonthSalesUsd",
+        "priorSixMonthSalesUsd",
+        "recentThreeMonthSalesUsd",
+        "priorThreeMonthSalesUsd",
+        "positiveMonthRatio",
+        "observedHistoryRatio",
+        "lowerQuartileToMedianRatio",
+        "attentionGap",
+        "accelerationLog",
+        "accelerationContext",
+        "providerPercentiles"
+      ],
+      "properties": {
+        "monthlySalesUsd": {
+          "type": "array",
+          "minItems": 18,
+          "maxItems": 18,
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "trailingTwelveSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currentSixMonthSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "priorSixMonthSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recentThreeMonthSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "priorThreeMonthSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "positiveMonthRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "observedHistoryRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lowerQuartileToMedianRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "attentionGap": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100
+        },
+        "accelerationLog": {
+          "type": "number"
+        },
+        "accelerationContext": {
+          "$ref": "#/$defs/score"
+        },
+        "providerPercentiles": {
+          "$ref": "#/$defs/providerPercentiles"
+        }
+      }
+    },
+    "providerPercentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oneQb",
+        "superflex",
+        "fiveSeason",
+        "keeper"
+      ],
+      "properties": {
+        "oneQb": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "superflex": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "fiveSeason": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "keeper": {
+          "$ref": "#/$defs/nullableScore"
+        }
+      }
+    },
+    "footballProviderPercentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oneQb",
+        "superflex",
+        "fiveSeason",
+        "keeper"
+      ],
+      "properties": {
+        "oneQb": {
+          "$ref": "#/$defs/score"
+        },
+        "superflex": {
+          "$ref": "#/$defs/score"
+        },
+        "fiveSeason": {
+          "type": "null"
+        },
+        "keeper": {
+          "type": "null"
+        }
+      }
+    },
+    "basketballProviderPercentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oneQb",
+        "superflex",
+        "fiveSeason",
+        "keeper"
+      ],
+      "properties": {
+        "oneQb": {
+          "type": "null"
+        },
+        "superflex": {
+          "type": "null"
+        },
+        "fiveSeason": {
+          "$ref": "#/$defs/score"
+        },
+        "keeper": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "manualReviewStatus",
+        "provider",
+        "providerPlayerId",
+        "gemRateSourceKey"
+      ],
+      "properties": {
+        "status": {
+          "const": "unique_exact"
+        },
+        "manualReviewStatus": {
+          "enum": [
+            "approved",
+            "unreviewed"
+          ]
+        },
+        "provider": {
+          "enum": [
+            "keeptradecut",
+            "hashtag_basketball"
+          ]
+        },
+        "providerPlayerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gemRateSourceKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "buildEligible",
+        "passed",
+        "required",
+        "checks",
+        "reasonCodes"
+      ],
+      "properties": {
+        "buildEligible": {
+          "type": "boolean"
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "required": {
+          "const": 12
+        },
+        "checks": {
+          "$ref": "#/$defs/buildChecks"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "buildChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scoreAtLeast82",
+        "outlookAtLeast80",
+        "marketDurabilityAtLeast75",
+        "volumePercentileAtLeast65",
+        "resilienceAtLeast70",
+        "hypePenaltyBelow4",
+        "topFivePercent",
+        "sourcesCurrent",
+        "completeEighteenMonthHistory",
+        "uniqueExactIdentity",
+        "manualIdentityReviewed",
+        "sensitivityStableTopDecile"
+      ],
+      "properties": {
+        "scoreAtLeast82": {
+          "type": "boolean"
+        },
+        "outlookAtLeast80": {
+          "type": "boolean"
+        },
+        "marketDurabilityAtLeast75": {
+          "type": "boolean"
+        },
+        "volumePercentileAtLeast65": {
+          "type": "boolean"
+        },
+        "resilienceAtLeast70": {
+          "type": "boolean"
+        },
+        "hypePenaltyBelow4": {
+          "type": "boolean"
+        },
+        "topFivePercent": {
+          "type": "boolean"
+        },
+        "sourcesCurrent": {
+          "type": "boolean"
+        },
+        "completeEighteenMonthHistory": {
+          "type": "boolean"
+        },
+        "uniqueExactIdentity": {
+          "type": "boolean"
+        },
+        "manualIdentityReviewed": {
+          "type": "boolean"
+        },
+        "sensitivityStableTopDecile": {
+          "type": "boolean"
+        }
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stableTopDecile",
+        "ranks",
+        "scores",
+        "scoreSpread"
+      ],
+      "properties": {
+        "stableTopDecile": {
+          "type": "boolean"
+        },
+        "ranks": {
+          "$ref": "#/$defs/sensitivityRanks"
+        },
+        "scores": {
+          "$ref": "#/$defs/sensitivityScores"
+        },
+        "scoreSpread": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "sensitivityRanks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outlookHeavy",
+        "balanced",
+        "marketHeavy"
+      ],
+      "properties": {
+        "outlookHeavy": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "balanced": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "marketHeavy": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "sensitivityScores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outlookHeavy",
+        "balanced",
+        "marketHeavy"
+      ],
+      "properties": {
+        "outlookHeavy": {
+          "$ref": "#/$defs/score"
+        },
+        "balanced": {
+          "$ref": "#/$defs/score"
+        },
+        "marketHeavy": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "marketHistoryMonths",
+        "requiredMarketHistoryMonths",
+        "rankWithinSportOnly",
+        "ageIncludedInScore",
+        "momentumCanOnlyPenalize",
+        "exactCardPricingAvailable",
+        "populationDataAvailable",
+        "expectedReturnValidated"
+      ],
+      "properties": {
+        "marketHistoryMonths": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18
+        },
+        "requiredMarketHistoryMonths": {
+          "const": 18
+        },
+        "rankWithinSportOnly": {
+          "const": true
+        },
+        "ageIncludedInScore": {
+          "const": false
+        },
+        "momentumCanOnlyPenalize": {
+          "const": true
+        },
+        "exactCardPricingAvailable": {
+          "const": false
+        },
+        "populationDataAvailable": {
+          "const": false
+        },
+        "expectedReturnValidated": {
+          "const": false
+        }
+      }
+    },
+    "sourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "url",
+        "asOf",
+        "fetchedAt",
+        "freshness",
+        "permissionBasis",
+        "measure"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "gemrate",
+            "keeptradecut",
+            "hashtag_basketball"
+          ]
+        },
+        "label": {
+          "enum": [
+            "GemRate",
+            "KeepTradeCut",
+            "Hashtag Basketball"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "asOf": {
+          "$ref": "#/$defs/dateOrDateTime"
+        },
+        "fetchedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "permissionBasis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sport",
+        "rankedCount",
+        "buildCount",
+        "holdCount",
+        "watchCount",
+        "deprioritizeCount"
+      ],
+      "properties": {
+        "sport": {
+          "$ref": "#/$defs/sport"
+        },
+        "rankedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "buildCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "holdCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "watchCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deprioritizeCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "expectedReturnClaim",
+        "rankingPolicy",
+        "agePolicy",
+        "momentumPolicy",
+        "marketMeasure",
+        "exactCardRecommendationsAvailable",
+        "populationDataAvailable",
+        "outcomeValidationStatus",
+        "methodology",
+        "quarantine",
+        "availableFilters",
+        "provenance",
+        "permissionAttestation"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "expectedReturnClaim": {
+          "const": false
+        },
+        "rankingPolicy": {
+          "const": "within_sport_only"
+        },
+        "agePolicy": {
+          "const": "display_and_filter_only_not_scored"
+        },
+        "momentumPolicy": {
+          "const": "penalty_or_flag_only_never_positive_score_driver"
+        },
+        "marketMeasure": {
+          "const": "subject_level_completed_ebay_singles_sales_volume_usd"
+        },
+        "exactCardRecommendationsAvailable": {
+          "const": false
+        },
+        "populationDataAvailable": {
+          "const": false
+        },
+        "outcomeValidationStatus": {
+          "const": "not_yet_outcome_validated"
+        },
+        "methodology": {
+          "$ref": "#/$defs/methodology"
+        },
+        "quarantine": {
+          "$ref": "#/$defs/quarantine"
+        },
+        "availableFilters": {
+          "$ref": "#/$defs/availableFilters"
+        },
+        "provenance": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/provenance"
+          },
+          "contains": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "const": "gemrate"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "permissionAttestation": {
+          "const": "docs/permissions/GEMRATE_ATTESTATION.md"
+        }
+      }
+    },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formulas",
+        "buildGate"
+      ],
+      "properties": {
+        "formulas": {
+          "$ref": "#/$defs/formulas"
+        },
+        "buildGate": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "formulas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outlookFootball",
+        "outlookBasketball",
+        "resilience",
+        "marketDurability",
+        "attentionGap",
+        "hypePenalty",
+        "durableScore",
+        "sensitivity",
+        "age"
+      ],
+      "properties": {
+        "outlookFootball": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outlookBasketball": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resilience": {
+          "type": "string",
+          "minLength": 1
+        },
+        "marketDurability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attentionGap": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hypePenalty": {
+          "type": "string",
+          "minLength": 1
+        },
+        "durableScore": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sensitivity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "age": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "quarantine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "ambiguousProviderIdentity",
+        "ambiguousMarketIdentity",
+        "missingMarketMatch",
+        "incompleteProviderRanks",
+        "invalidAge"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguousProviderIdentity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguousMarketIdentity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missingMarketMatch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "incompleteProviderRanks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalidAge": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "availableFilters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sports",
+        "postures",
+        "sortKeys",
+        "positionsBySport",
+        "ageRange"
+      ],
+      "properties": {
+        "sports": {
+          "const": [
+            "football",
+            "basketball"
+          ]
+        },
+        "postures": {
+          "const": [
+            "Build",
+            "Hold",
+            "Watch",
+            "Deprioritize"
+          ]
+        },
+        "sortKeys": {
+          "const": [
+            "rank",
+            "score",
+            "outlook",
+            "market_durability",
+            "ttm_sales",
+            "resilience",
+            "hype_penalty",
+            "attention_gap",
+            "age",
+            "name"
+          ]
+        },
+        "positionsBySport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "football",
+            "basketball"
+          ],
+          "properties": {
+            "football": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "basketball": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "ageRange": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "properties": {
+            "minimum": {
+              "type": "number",
+              "minimum": 15,
+              "maximum": 60
+            },
+            "maximum": {
+              "type": "number",
+              "minimum": 15,
+              "maximum": 60
+            }
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "url",
+        "permissionBasis",
+        "asOf",
+        "fetchedAt",
+        "semantics"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "gemrate",
+            "keeptradecut",
+            "hashtag_basketball"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "permissionBasis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asOf": {
+          "$ref": "#/$defs/dateOrDateTime"
+        },
+        "fetchedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "semantics": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

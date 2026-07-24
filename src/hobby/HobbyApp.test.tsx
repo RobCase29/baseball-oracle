@@ -23,7 +23,10 @@ import {
   type BinderScoreFeedItem,
   type BinderScoresResponse,
 } from '../domain/binderScore'
-import type { FootballMarketFeedResponse } from '../football/marketFeedContract'
+import type {
+  HobbyPlayerRankingSport,
+  HobbyPlayerRankingsResponse,
+} from '../domain/hobbyPlayerRanking'
 import { HobbyApp } from './HobbyApp'
 
 beforeEach(() => {
@@ -293,60 +296,272 @@ function youngFixtureResponse(): BinderScoresResponse {
   }
 }
 
-function footballFixtureResponse(): FootballMarketFeedResponse {
+function playerRankingFixtureResponse(
+  sport: HobbyPlayerRankingSport,
+): HobbyPlayerRankingsResponse {
+  const football = sport === 'football'
+  const name = football ? 'C.J. Stroud' : 'Victor Wembanyama'
+  const provider = football ? 'keeptradecut' : 'hashtag_basketball'
+  const providerSource = football
+    ? {
+        id: 'keeptradecut' as const,
+        label: 'KeepTradeCut' as const,
+        url: 'https://keeptradecut.com/dynasty-rankings?format=2&page=0',
+      }
+    : {
+        id: 'hashtag_basketball' as const,
+        label: 'Hashtag Basketball' as const,
+        url: 'https://hashtagbasketball.com/fantasy-basketball-dynasty-rankings',
+      }
+  const monthlySalesUsd = [
+    120_000, 126_000, 124_000, 130_000, 132_000, 138_000,
+    140_000, 144_000, 148_000, 151_000, 155_000, 159_000,
+    163_000, 166_000, 169_000, 172_000, 176_000, 181_000,
+  ]
   return {
-    schemaVersion: 'football-market-feed.v1',
-    generatedAt: '2026-07-24T19:30:00.000Z',
-    request: {
-      universe: 'college',
-      formatId: 'sf_12t_half_ppr_no_tep',
+    schemaVersion: 'hobby-player-rankings.v1',
+    contractVersion: 'hobby-player-rankings-contract/v1',
+    modelVersion: 'hobby-player-durable-signal/18m-rules-v1.0.0',
+    snapshot: {
+      id: `hobby-player-rankings:${sport}:${'c'.repeat(64)}`,
+      generatedAt: '2026-07-24T19:30:00.000Z',
+      historyStart: '2025-01',
+      historyMonths: 18,
+      dataThrough: '2026-06',
+      publishedAt: '2026-07-12T00:00:00.000Z',
+      acquiredAt: '2026-07-24T18:00:00.000Z',
+      freshness: {
+        status: 'current',
+        marketStatus: 'current',
+        fundamentalsStatus: 'current',
+        nextExpectedBy: '2026-08-20T00:00:00.000Z',
+        reasonCodes: [],
+      },
     },
-    providers: [
+    items: [
       {
-        provider: 'keeptradecut',
-        label: 'KeepTradeCut Devy',
-        status: 'available',
-        sourceUrl: 'https://keeptradecut.com/devy-rankings',
-        fetchedAt: '2026-07-24T19:30:00.000Z',
-        rowCount: 120,
-        errorCode: null,
-        comparisonScope: 'exact_format',
-        formatId: 'sf_12t_half_ppr_no_tep',
-      },
-      {
-        provider: 'dynasty-daddy',
-        label: 'Dynasty Daddy',
-        status: 'unsupported',
-        sourceUrl: 'https://dynasty-daddy.com/fantasy-rankings',
-        fetchedAt: null,
-        rowCount: 0,
-        errorCode: 'unsupported_universe',
-        comparisonScope: 'provider_default_directional',
-        formatId: 'dd_sf_provider_default',
+        recordVersion: 'hobby-player-ranking-item/v1',
+        id: `${sport}:${name.toLocaleLowerCase().replaceAll(/[^a-z]/gu, '')}`,
+        name,
+        normalizedName: name.toLocaleLowerCase().replaceAll(/[^a-z]/gu, ''),
+        sport,
+        age: football ? 24 : 22,
+        positions: football ? ['QB'] : ['C', 'PF'],
+        primaryPosition: football ? 'QB' : 'C',
+        team: football ? 'HOU' : 'SAS',
+        sportRank: 4,
+        screenRank: 1,
+        sportPercentile: 99.1,
+        score: 88.4,
+        posture: 'Build',
+        confidence: {
+          score: 82,
+          band: 'moderate',
+          meaning: 'evidence_quality_not_statistical_confidence_interval',
+          reasonCodes: [],
+        },
+        components: {
+          outlook: 92,
+          marketDurability: 86,
+          volumePercentile: 91,
+          resilience: 79,
+          trendContext: 58,
+          hypePenalty: 1.8,
+        },
+        diagnostics: {
+          monthlySalesUsd,
+          trailingTwelveSalesUsd: 1_984_000,
+          currentSixMonthSalesUsd: 1_027_000,
+          priorSixMonthSalesUsd: 917_000,
+          recentThreeMonthSalesUsd: 529_000,
+          priorThreeMonthSalesUsd: 498_000,
+          positiveMonthRatio: 1,
+          observedHistoryRatio: 1,
+          lowerQuartileToMedianRatio: 0.83,
+          attentionGap: 0,
+          accelerationLog: 0.06,
+          accelerationContext: 56,
+          providerPercentiles: football
+            ? {
+                oneQb: 96,
+                superflex: 94,
+                fiveSeason: null,
+                keeper: null,
+              }
+            : {
+                oneQb: null,
+                superflex: null,
+                fiveSeason: 98,
+                keeper: 96,
+              },
+        },
+        identity: {
+          status: 'unique_exact',
+          manualReviewStatus: 'approved',
+          provider,
+          providerPlayerId: `${provider}:${name}`,
+          gemRateSourceKey: `gemrate:${name}`,
+        },
+        gates: {
+          buildEligible: true,
+          passed: 12,
+          required: 12,
+          checks: {
+            scoreAtLeast82: true,
+            outlookAtLeast80: true,
+            marketDurabilityAtLeast75: true,
+            volumePercentileAtLeast65: true,
+            resilienceAtLeast70: true,
+            hypePenaltyBelow4: true,
+            topFivePercent: true,
+            sourcesCurrent: true,
+            completeEighteenMonthHistory: true,
+            uniqueExactIdentity: true,
+            manualIdentityReviewed: true,
+            sensitivityStableTopDecile: true,
+          },
+          reasonCodes: [],
+        },
+        sensitivity: {
+          stableTopDecile: true,
+          ranks: {
+            outlookHeavy: 3,
+            balanced: 4,
+            marketHeavy: 5,
+          },
+          scores: {
+            outlookHeavy: 89,
+            balanced: 88.4,
+            marketHeavy: 87.5,
+          },
+          scoreSpread: 1.5,
+        },
+        evidence: {
+          marketHistoryMonths: 18,
+          requiredMarketHistoryMonths: 18,
+          rankWithinSportOnly: true,
+          ageIncludedInScore: false,
+          momentumCanOnlyPenalize: true,
+          exactCardPricingAvailable: false,
+          populationDataAvailable: false,
+          expectedReturnValidated: false,
+        },
+        sources: [
+          {
+            id: 'gemrate',
+            label: 'GemRate',
+            url: 'https://www.gemrate.com/sales-trends',
+            asOf: '2026-06-30T00:00:00.000Z',
+            fetchedAt: '2026-07-24T18:00:00.000Z',
+            freshness: 'current',
+            permissionBasis: 'documented permission',
+            measure: 'completed eBay singles sales volume',
+          },
+          {
+            ...providerSource,
+            asOf: '2026-07-23T00:00:00.000Z',
+            fetchedAt: '2026-07-24T18:00:00.000Z',
+            freshness: 'current',
+            permissionBasis: 'public research input',
+            measure: 'dynasty player outlook',
+          },
+        ],
+        formulaVersion: 'hobby-player-durable-signal/18m-rules-v1.0.0',
       },
     ],
-    rankings: [
+    cohorts: [
       {
-        provider: 'keeptradecut',
-        providerLabel: 'KeepTradeCut Devy',
-        providerPlayerId: 'ktc-jeremiah-smith',
-        name: 'Jeremiah Smith',
-        normalizedName: 'jeremiahsmith',
-        universe: 'college',
-        position: 'WR',
-        requestedFormatId: 'sf_12t_half_ppr_no_tep',
-        formatId: 'sf_12t_half_ppr_no_tep',
-        comparisonScope: 'exact_format',
-        positionRank: 1,
-        positionUniverseSize: 72,
-        positionPercentile: 100,
-        overallRank: 2,
-        value: 9_420,
-        tier: 1,
-        sourceUrl: 'https://keeptradecut.com/devy-rankings',
-        fetchedAt: '2026-07-24T19:30:00.000Z',
+        sport,
+        rankedCount: football ? 302 : 267,
+        buildCount: 7,
+        holdCount: 28,
+        watchCount: 96,
+        deprioritizeCount: football ? 171 : 136,
       },
     ],
+    page: {
+      page: 1,
+      limit: 50,
+      total: football ? 302 : 267,
+      totalPages: football ? 7 : 6,
+    },
+    meta: {
+      researchOnly: true,
+      investmentAdvice: false,
+      expectedReturnClaim: false,
+      rankingPolicy: 'within_sport_only',
+      agePolicy: 'display_and_filter_only_not_scored',
+      momentumPolicy: 'penalty_or_flag_only_never_positive_score_driver',
+      marketMeasure: 'subject_level_completed_ebay_singles_sales_volume_usd',
+      exactCardRecommendationsAvailable: false,
+      populationDataAvailable: false,
+      outcomeValidationStatus: 'not_yet_outcome_validated',
+      methodology: {
+        formulas: {
+          outlookFootball: 'Football outlook formula.',
+          outlookBasketball: 'Basketball outlook formula.',
+          resilience: 'Resilience formula.',
+          marketDurability: 'Market durability formula.',
+          attentionGap: 'Attention gap formula.',
+          hypePenalty: 'Hype penalty formula.',
+          durableScore: 'Durable Growth formula.',
+          sensitivity: 'Sensitivity formula.',
+          age: 'Age is excluded from the score.',
+        },
+        buildGate: 'All twelve evidence gates must pass.',
+      },
+      quarantine: {
+        total: 9,
+        ambiguousProviderIdentity: 1,
+        ambiguousMarketIdentity: 2,
+        missingMarketMatch: 3,
+        incompleteProviderRanks: 1,
+        invalidAge: 2,
+      },
+      availableFilters: {
+        sports: ['football', 'basketball'],
+        postures: ['Build', 'Hold', 'Watch', 'Deprioritize'],
+        sortKeys: [
+          'rank',
+          'score',
+          'outlook',
+          'market_durability',
+          'ttm_sales',
+          'resilience',
+          'hype_penalty',
+          'attention_gap',
+          'age',
+          'name',
+        ],
+        positionsBySport: {
+          football: ['QB', 'RB', 'WR', 'TE'],
+          basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
+        },
+        ageRange: {
+          minimum: 18,
+          maximum: 42,
+        },
+      },
+      provenance: [
+        {
+          id: 'gemrate',
+          label: 'GemRate',
+          url: 'https://www.gemrate.com/sales-trends',
+          permissionBasis: 'documented permission',
+          asOf: '2026-06-30T00:00:00.000Z',
+          fetchedAt: '2026-07-24T18:00:00.000Z',
+          semantics: 'subject-level completed sales volume',
+        },
+        {
+          ...providerSource,
+          permissionBasis: 'public research input',
+          asOf: '2026-07-23T00:00:00.000Z',
+          fetchedAt: '2026-07-24T18:00:00.000Z',
+          semantics: 'dynasty player outlook',
+        },
+      ],
+      permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
+    },
   }
 }
 
@@ -487,7 +702,7 @@ describe('Hobby Oracle investor workbench', () => {
     render(<HobbyApp />)
 
     await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Young Players' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Player Rankings' }))
 
     const player = await screen.findByText('Jackson Holliday')
     const row = player.closest('tr')
@@ -500,7 +715,7 @@ describe('Hobby Oracle investor workbench', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Young player rank' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Young Players' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Player Rankings' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -513,7 +728,8 @@ describe('Hobby Oracle investor workbench', () => {
       expect(latestUrl).toContain('rankedOnly=true')
       expect(latestUrl).toContain('sort=binderScore')
     })
-    expect(window.location.search).toContain('lens=young')
+    expect(window.location.search).toContain('lens=players')
+    expect(window.location.search).toContain('sport=baseball')
     expect(window.location.search).toContain('maxAge=25')
 
     fireEvent.change(screen.getByLabelText('Age ceiling'), {
@@ -544,57 +760,192 @@ describe('Hobby Oracle investor workbench', () => {
     expect(screen.queryByText('#2')).not.toBeInTheDocument()
   })
 
-  it('adds a live football Devy watchlist without inventing an Oracle rank', async () => {
+  it('ranks football players within sport and preserves the evidence boundary', async () => {
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = String(input)
-      return Promise.resolve(jsonResponse(
-        url.includes('/api/football/v1/market-rankings')
-          ? footballFixtureResponse()
-          : fixtureResponse(),
-      ))
+      if (url.includes('/api/v1/hobby-player-rankings')) {
+        const sport = new URL(url, 'https://oracle.test').searchParams.get('sport')
+        return Promise.resolve(jsonResponse(
+          playerRankingFixtureResponse(
+            sport === 'basketball' ? 'basketball' : 'football',
+          ),
+        ))
+      }
+      if (url.includes('/api/v1/binder-scores')) {
+        return Promise.resolve(jsonResponse(youngFixtureResponse()))
+      }
+      return Promise.resolve(jsonResponse(fixtureResponse()))
     })
     vi.stubGlobal('fetch', fetchMock)
 
     render(<HobbyApp />)
 
     await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Young Players' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Football Beta' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Player Rankings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Football' }))
 
-    const player = await screen.findByText('Jeremiah Smith')
+    const player = await screen.findByText('C.J. Stroud')
     const row = player.closest('tr')
     expect(row).not.toBeNull()
-    expect(within(row!).getByText('#1')).toBeInTheDocument()
-    expect(within(row!).getByText('of 72')).toBeInTheDocument()
+    expect(within(row!).getByText('#4')).toBeInTheDocument()
+    expect(within(row!).getByText('88.4')).toBeInTheDocument()
+    expect(within(row!).getByText('Build candidate')).toBeInTheDocument()
     expect(
-      screen.getByRole('columnheader', { name: 'Devy position rank' }),
+      screen.getByRole('columnheader', { name: 'Build Score' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Market watchlist—not a conviction rank.'),
+      screen.getByText('Build-candidate screen—not expected return.'),
     ).toBeInTheDocument()
-    expect(screen.getByText('NFL age screen withheld')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('columnheader', { name: 'Young player rank' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByText(/Build candidates 7/u)).toBeInTheDocument()
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/football/v1/market-rankings?')
-      expect(latestUrl).toContain('universe=college')
-      expect(latestUrl).toContain('format=sf_12t_half_ppr_no_tep')
+      expect(latestUrl).toContain('/api/v1/hobby-player-rankings?')
+      expect(latestUrl).toContain('sport=football')
+      expect(latestUrl).toContain('posture=all')
+      expect(latestUrl).toContain('sort=score')
     })
-    expect(window.location.search).toContain('lens=young')
+    expect(window.location.search).toContain('lens=players')
     expect(window.location.search).toContain('sport=football')
-    expect(window.location.search).toContain('position=WR')
 
     fireEvent.click(
       within(row!).getByRole('button', {
-        name: 'Show football prospect detail for Jeremiah Smith',
+        name: 'Show investor evidence for C.J. Stroud',
       }),
     )
     expect(
-      screen.getByText('Production conviction is not released'),
+      screen.getByText(/not expected return, ROI/u),
     ).toBeInTheDocument()
+    expect(screen.getByText('12 of 12 gates passed')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'KeepTradeCut' })).toHaveAttribute(
+      'href',
+      'https://keeptradecut.com/dynasty-rankings?format=2&page=0',
+    )
+
+    fireEvent.change(screen.getByLabelText('Age screen'), {
+      target: { value: '26' },
+    })
+    fireEvent.change(screen.getByLabelText('Position'), {
+      target: { value: 'QB' },
+    })
+    fireEvent.change(screen.getByLabelText('Action'), {
+      target: { value: 'Build' },
+    })
+    fireEvent.change(screen.getByLabelText('Sort'), {
+      target: { value: 'attention_gap' },
+    })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Player' }), {
+      target: { value: 'Stroud' },
+    })
+
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('maxAge=26')
+      expect(latestUrl).toContain('position=QB')
+      expect(latestUrl).toContain('posture=Build')
+      expect(latestUrl).toContain('sort=attention_gap')
+      expect(latestUrl).toContain('q=Stroud')
+    })
+    const filteredRow = (await screen.findByText('C.J. Stroud')).closest('tr')
+    expect(filteredRow).not.toBeNull()
+    expect(within(filteredRow!).getByText('#1')).toBeInTheDocument()
+    expect(within(filteredRow!).getByText('Sport #4')).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Screen rank' }),
+    ).toBeInTheDocument()
+    expect(window.location.search).toContain('maxAge=26')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Basketball' }))
+    expect(await screen.findByText('Victor Wembanyama')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain(
+        'sport=basketball',
+      )
+    })
+    expect(window.location.search).toContain('sport=basketball')
+    expect(screen.queryByText('Football Beta')).not.toBeInTheDocument()
+  })
+
+  it('opens direct and legacy player-ranking URLs without falling back to Positions', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/v1/hobby-player-rankings')) {
+        return Promise.resolve(jsonResponse(
+          playerRankingFixtureResponse('football'),
+        ))
+      }
+      return Promise.resolve(jsonResponse(fixtureResponse()))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=young&sport=football',
+    )
+
+    render(<HobbyApp />)
+
+    expect(await screen.findByText('C.J. Stroud')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Player Rankings' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(window.location.search).toContain('lens=players')
+    expect(window.location.search).not.toContain('lens=young')
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      '/api/v1/hobby-player-rankings?sport=football',
+    )
+  })
+
+  it('explains a fail-closed source suspension instead of suggesting filters', async () => {
+    const staleResponse = playerRankingFixtureResponse('football')
+    staleResponse.snapshot.freshness = {
+      status: 'stale',
+      marketStatus: 'current',
+      fundamentalsStatus: 'stale',
+      nextExpectedBy: '2026-07-23T00:00:00.000Z',
+      reasonCodes: [
+        'keeptradecut-dynasty-football_snapshot_overdue',
+        'football_ranking_publication_suspended',
+      ],
+    }
+    staleResponse.items = []
+    staleResponse.page = {
+      page: 1,
+      limit: 50,
+      total: 0,
+      totalPages: 0,
+    }
+    staleResponse.cohorts[0] = {
+      sport: 'football',
+      rankedCount: 0,
+      buildCount: 0,
+      holdCount: 0,
+      watchCount: 0,
+      deprioritizeCount: 0,
+    }
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      return Promise.resolve(jsonResponse(
+        url.includes('/api/v1/hobby-player-rankings')
+          ? staleResponse
+          : fixtureResponse(),
+      ))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=players&sport=football',
+    )
+
+    render(<HobbyApp />)
+
+    expect(
+      await screen.findByText('Rank publication is suspended.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/withheld every rank/u)).toBeInTheDocument()
+    expect(
+      screen.queryByText('Broaden the age, position, action, or search filters.'),
+    ).not.toBeInTheDocument()
   })
 
   it('does not leave stale rows visible after a failed screen request', async () => {

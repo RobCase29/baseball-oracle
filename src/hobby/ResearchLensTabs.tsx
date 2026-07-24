@@ -1,16 +1,16 @@
 import type { MagnificentXResearchPosture } from '../domain/magnificentX'
 
-export type HobbyResearchLens = 'market' | 'young'
-export type YoungPlayerSport = 'baseball' | 'football'
+export type HobbyResearchLens = 'market' | 'players'
+export type PlayerRankingSport = 'baseball' | 'football' | 'basketball'
 
 interface ResearchLensTabsProps {
   lens: HobbyResearchLens
   posture: MagnificentXResearchPosture | 'all'
-  youngSport: YoungPlayerSport
+  playerSport: PlayerRankingSport
   showRefresh: boolean
   onMarketSelect: () => void
-  onYoungSelect: () => void
-  onYoungSportSelect: (value: YoungPlayerSport) => void
+  onPlayerRankingsSelect: () => void
+  onPlayerSportSelect: (value: PlayerRankingSport) => void
   onPostureSelect: (value: MagnificentXResearchPosture | 'all') => void
 }
 
@@ -31,11 +31,11 @@ const postureOptions: ReadonlyArray<{
 export function ResearchLensTabs({
   lens,
   posture,
-  youngSport,
+  playerSport,
   showRefresh,
   onMarketSelect,
-  onYoungSelect,
-  onYoungSportSelect,
+  onPlayerRankingsSelect,
+  onPlayerSportSelect,
   onPostureSelect,
 }: ResearchLensTabsProps) {
   return (
@@ -50,10 +50,10 @@ export function ResearchLensTabs({
         </button>
         <button
           type="button"
-          aria-pressed={lens === 'young'}
-          onClick={onYoungSelect}
+          aria-pressed={lens === 'players'}
+          onClick={onPlayerRankingsSelect}
         >
-          Young Players
+          Player Rankings
         </button>
       </div>
 
@@ -84,21 +84,28 @@ export function ResearchLensTabs({
         <div
           className="iw-sport-tabs"
           role="group"
-          aria-label="Young player sport"
+          aria-label="Player ranking sport"
         >
           <button
             type="button"
-            aria-pressed={youngSport === 'baseball'}
-            onClick={() => onYoungSportSelect('baseball')}
+            aria-pressed={playerSport === 'baseball'}
+            onClick={() => onPlayerSportSelect('baseball')}
           >
             Baseball
           </button>
           <button
             type="button"
-            aria-pressed={youngSport === 'football'}
-            onClick={() => onYoungSportSelect('football')}
+            aria-pressed={playerSport === 'football'}
+            onClick={() => onPlayerSportSelect('football')}
           >
-            Football <span>Beta</span>
+            Football
+          </button>
+          <button
+            type="button"
+            aria-pressed={playerSport === 'basketball'}
+            onClick={() => onPlayerSportSelect('basketball')}
+          >
+            Basketball
           </button>
         </div>
       )}

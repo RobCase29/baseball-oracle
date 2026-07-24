@@ -16,17 +16,16 @@ import {
   isBinderScoresResponse,
   type BinderScoresResponse,
 } from '../domain/binderScore'
-import { InvestorWorkbench } from './InvestorWorkbench'
 import {
-  FOOTBALL_MARKET_FORMAT_IDS,
-  isFootballMarketFeedResponse,
-  type FootballMarketFeedResponse,
-  type FootballMarketFormatId,
-} from '../football/marketFeedContract'
+  isHobbyPlayerRankingsResponse,
+  type HobbyPlayerRankingsResponse,
+  type HobbyPlayerRankingSortKey,
+} from '../domain/hobbyPlayerRanking'
+import { InvestorWorkbench } from './InvestorWorkbench'
 import {
   ResearchLensTabs,
   type HobbyResearchLens,
-  type YoungPlayerSport,
+  type PlayerRankingSport,
 } from './ResearchLensTabs'
 import {
   YoungInvestorWorkbench,
@@ -34,9 +33,11 @@ import {
   type YoungPlayerStage,
 } from './YoungInvestorWorkbench'
 import {
-  FootballYoungInvestorWorkbench,
-  type FootballYoungPosition,
-} from './FootballYoungInvestorWorkbench'
+  CrossSportPlayerWorkbench,
+  type PlayerRankingAgeCeiling,
+  type PlayerRankingPosition,
+  type PlayerRankingPosture,
+} from './CrossSportPlayerWorkbench'
 
 const PAGE_SIZE = 50
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
@@ -44,10 +45,11 @@ const DEFAULT_SORT: MagnificentXSortKey = 'cohort_rank'
 const DEFAULT_DIRECTION: MagnificentXSortDirection = 'asc'
 const DEFAULT_YOUNG_AGE: YoungPlayerAgeCeiling = 25
 const DEFAULT_YOUNG_STAGE: YoungPlayerStage = 'All'
-const DEFAULT_YOUNG_SPORT: YoungPlayerSport = 'baseball'
-const DEFAULT_FOOTBALL_POSITION: FootballYoungPosition = 'WR'
-const DEFAULT_FOOTBALL_FORMAT: FootballMarketFormatId =
-  'sf_12t_half_ppr_no_tep'
+const DEFAULT_PLAYER_SPORT: PlayerRankingSport = 'baseball'
+const DEFAULT_PLAYER_AGE: PlayerRankingAgeCeiling = 'all'
+const DEFAULT_PLAYER_POSITION: PlayerRankingPosition = 'all'
+const DEFAULT_PLAYER_POSTURE: PlayerRankingPosture = 'all'
+const DEFAULT_PLAYER_SORT: HobbyPlayerRankingSortKey = 'score'
 
 const validDomains = new Set<MagnificentXDomain>([
   'baseball',
@@ -90,13 +92,15 @@ function initialParameters(): URLSearchParams {
 }
 
 function initialLens(): HobbyResearchLens {
-  return initialParameters().get('lens') === 'young' ? 'young' : 'market'
+  const value = initialParameters().get('lens')
+  return value === 'players' || value === 'young' ? 'players' : 'market'
 }
 
-function initialYoungSport(): YoungPlayerSport {
-  return initialParameters().get('sport') === 'football'
-    ? 'football'
-    : DEFAULT_YOUNG_SPORT
+function initialPlayerSport(): PlayerRankingSport {
+  const value = initialParameters().get('sport')
+  return value === 'football' || value === 'basketball'
+    ? value
+    : DEFAULT_PLAYER_SPORT
 }
 
 function initialDomain(): MagnificentXDomain | 'all' {
@@ -158,20 +162,36 @@ function initialYoungStage(): YoungPlayerStage {
     : DEFAULT_YOUNG_STAGE
 }
 
-function initialFootballPosition(): FootballYoungPosition {
-  const value = initialParameters().get('position')
-  return value === 'QB' || value === 'WR' || value === 'RB' || value === 'TE'
+function initialPlayerAge(): PlayerRankingAgeCeiling {
+  const value = Number.parseInt(initialParameters().get('maxAge') ?? '', 10)
+  return value === 23 || value === 26 || value === 30
     ? value
-    : DEFAULT_FOOTBALL_POSITION
+    : DEFAULT_PLAYER_AGE
 }
 
-function initialFootballFormat(): FootballMarketFormatId {
-  const value = initialParameters().get('format')
-  return value && FOOTBALL_MARKET_FORMAT_IDS.includes(
-    value as FootballMarketFormatId,
-  )
-    ? value as FootballMarketFormatId
-    : DEFAULT_FOOTBALL_FORMAT
+function initialPlayerPosition(): PlayerRankingPosition {
+  return initialParameters().get('position') ?? DEFAULT_PLAYER_POSITION
+}
+
+function initialPlayerPosture(): PlayerRankingPosture {
+  const value = initialParameters().get('posture')
+  return value === 'Build' ||
+      value === 'Hold' ||
+      value === 'Watch' ||
+      value === 'Deprioritize'
+    ? value
+    : DEFAULT_PLAYER_POSTURE
+}
+
+function initialPlayerSort(): HobbyPlayerRankingSortKey {
+  const value = initialParameters().get('sort')
+  return value === 'outlook' ||
+      value === 'market_durability' ||
+      value === 'attention_gap' ||
+      value === 'age' ||
+      value === 'name'
+    ? value
+    : DEFAULT_PLAYER_SORT
 }
 
 function formatDate(value: string | undefined): string {
@@ -203,14 +223,18 @@ export function HobbyApp() {
     useState<YoungPlayerAgeCeiling>(initialYoungAge)
   const [youngStage, setYoungStage] =
     useState<YoungPlayerStage>(initialYoungStage)
-  const [youngSport, setYoungSport] =
-    useState<YoungPlayerSport>(initialYoungSport)
-  const [footballPosition, setFootballPosition] =
-    useState<FootballYoungPosition>(initialFootballPosition)
-  const [footballFormat, setFootballFormat] =
-    useState<FootballMarketFormatId>(initialFootballFormat)
-  const [footballSearch, setFootballSearch] = useState(() => (
-    initialLens() === 'young' && initialYoungSport() === 'football'
+  const [playerSport, setPlayerSport] =
+    useState<PlayerRankingSport>(initialPlayerSport)
+  const [playerAgeMax, setPlayerAgeMax] =
+    useState<PlayerRankingAgeCeiling>(initialPlayerAge)
+  const [playerPosition, setPlayerPosition] =
+    useState<PlayerRankingPosition>(initialPlayerPosition)
+  const [playerPosture, setPlayerPosture] =
+    useState<PlayerRankingPosture>(initialPlayerPosture)
+  const [playerSort, setPlayerSort] =
+    useState<HobbyPlayerRankingSortKey>(initialPlayerSort)
+  const [playerSearch, setPlayerSearch] = useState(() => (
+    initialLens() === 'players' && initialPlayerSport() !== 'baseball'
       ? initialParameters().get('q') ?? ''
       : ''
   ))
@@ -220,15 +244,18 @@ export function HobbyApp() {
   const [youngResponse, setYoungResponse] =
     useState<BinderScoresResponse | null>(null)
   const [youngLoading, setYoungLoading] =
-    useState(() => initialLens() === 'young')
+    useState(() => (
+      initialLens() === 'players' && initialPlayerSport() === 'baseball'
+    ))
   const [youngError, setYoungError] = useState<string | null>(null)
-  const [footballResponse, setFootballResponse] =
-    useState<FootballMarketFeedResponse | null>(null)
-  const [footballLoading, setFootballLoading] = useState(() => (
-    initialLens() === 'young' && initialYoungSport() === 'football'
+  const [playerResponse, setPlayerResponse] =
+    useState<HobbyPlayerRankingsResponse | null>(null)
+  const [playerLoading, setPlayerLoading] = useState(() => (
+    initialLens() === 'players' && initialPlayerSport() !== 'baseball'
   ))
-  const [footballError, setFootballError] = useState<string | null>(null)
+  const [playerError, setPlayerError] = useState<string | null>(null)
   const deferredSearch = useDeferredValue(search)
+  const deferredPlayerSearch = useDeferredValue(playerSearch)
 
   useEffect(() => {
     if (lens !== 'market') return
@@ -283,7 +310,7 @@ export function HobbyApp() {
   }, [deferredSearch, direction, domain, lens, page, posture, sort])
 
   useEffect(() => {
-    if (lens !== 'young' || youngSport !== 'baseball') return
+    if (lens !== 'players' || playerSport !== 'baseball') return
     const controller = new AbortController()
     const parameters = new URLSearchParams({
       stage: youngStage,
@@ -330,39 +357,47 @@ export function HobbyApp() {
       })
 
     return () => controller.abort()
-  }, [lens, page, youngAgeMax, youngSport, youngStage])
+  }, [lens, page, playerSport, youngAgeMax, youngStage])
 
   useEffect(() => {
-    if (lens !== 'young' || youngSport !== 'football') return
+    if (lens !== 'players' || playerSport === 'baseball') return
     const controller = new AbortController()
     const parameters = new URLSearchParams({
-      universe: 'college',
-      format: footballFormat,
+      sport: playerSport,
+      posture: playerPosture,
+      sort: playerSort,
+      page: page.toString(),
+      limit: PAGE_SIZE.toString(),
     })
+    const normalizedSearch = deferredPlayerSearch.trim()
+    if (normalizedSearch) parameters.set('q', normalizedSearch)
+    if (playerAgeMax !== 'all') {
+      parameters.set('maxAge', playerAgeMax.toString())
+    }
+    if (playerPosition !== 'all') {
+      parameters.set('position', playerPosition)
+    }
 
-    setFootballLoading(true)
-    setFootballError(null)
-    setFootballResponse(null)
-    fetch(`/api/football/v1/market-rankings?${parameters.toString()}`, {
+    setPlayerLoading(true)
+    setPlayerError(null)
+    setPlayerResponse(null)
+    fetch(`/api/v1/hobby-player-rankings?${parameters.toString()}`, {
       cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: controller.signal,
     })
       .then(async (result) => {
         if (!result.ok) {
-          throw new Error(`Football market watchlist returned ${result.status}.`)
+          throw new Error(`Player rankings returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
         if (
-          !isFootballMarketFeedResponse(payload) ||
-          payload.request.universe !== 'college' ||
-          payload.request.formatId !== footballFormat
+          !isHobbyPlayerRankingsResponse(payload) ||
+          payload.items.some((item) => item.sport !== playerSport)
         ) {
-          throw new Error(
-            'Football market watchlist returned an unexpected response.',
-          )
+          throw new Error('Player rankings returned an unexpected response.')
         }
-        setFootballResponse(payload)
+        setPlayerResponse(payload)
       })
       .catch((requestError: unknown) => {
         if (
@@ -371,19 +406,28 @@ export function HobbyApp() {
         ) {
           return
         }
-        setFootballResponse(null)
-        setFootballError(
+        setPlayerResponse(null)
+        setPlayerError(
           requestError instanceof Error
             ? requestError.message
-            : 'Unable to load the football market watchlist.',
+            : 'Unable to load player rankings.',
         )
       })
       .finally(() => {
-        if (!controller.signal.aborted) setFootballLoading(false)
+        if (!controller.signal.aborted) setPlayerLoading(false)
       })
 
     return () => controller.abort()
-  }, [footballFormat, lens, youngSport])
+  }, [
+    deferredPlayerSearch,
+    lens,
+    page,
+    playerAgeMax,
+    playerPosition,
+    playerPosture,
+    playerSort,
+    playerSport,
+  ])
 
   useEffect(() => {
     if (
@@ -402,33 +446,49 @@ export function HobbyApp() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
-    if (lens === 'young') {
-      url.searchParams.set('lens', 'young')
+    if (lens === 'players') {
+      url.searchParams.set('lens', 'players')
       url.searchParams.delete('domain')
-      url.searchParams.delete('posture')
-      url.searchParams.delete('sort')
       url.searchParams.delete('direction')
-      if (youngSport === 'football') {
-        const normalizedFootballSearch = footballSearch.trim()
-        url.searchParams.set('sport', 'football')
-        url.searchParams.set('position', footballPosition)
-        url.searchParams.set('format', footballFormat)
-        if (normalizedFootballSearch) {
-          url.searchParams.set('q', normalizedFootballSearch)
+      url.searchParams.set('sport', playerSport)
+      if (playerSport !== 'baseball') {
+        const normalizedPlayerSearch = playerSearch.trim()
+        if (normalizedPlayerSearch) {
+          url.searchParams.set('q', normalizedPlayerSearch)
         } else {
           url.searchParams.delete('q')
         }
-        url.searchParams.delete('maxAge')
+        if (playerAgeMax === DEFAULT_PLAYER_AGE) {
+          url.searchParams.delete('maxAge')
+        } else {
+          url.searchParams.set('maxAge', playerAgeMax.toString())
+        }
+        if (playerPosition === DEFAULT_PLAYER_POSITION) {
+          url.searchParams.delete('position')
+        } else {
+          url.searchParams.set('position', playerPosition)
+        }
+        if (playerPosture === DEFAULT_PLAYER_POSTURE) {
+          url.searchParams.delete('posture')
+        } else {
+          url.searchParams.set('posture', playerPosture)
+        }
+        if (playerSort === DEFAULT_PLAYER_SORT) {
+          url.searchParams.delete('sort')
+        } else {
+          url.searchParams.set('sort', playerSort)
+        }
         url.searchParams.delete('stage')
       } else {
-        url.searchParams.delete('sport')
         url.searchParams.set('maxAge', youngAgeMax.toString())
         if (youngStage === DEFAULT_YOUNG_STAGE) url.searchParams.delete('stage')
         else url.searchParams.set('stage', youngStage)
         url.searchParams.delete('q')
         url.searchParams.delete('position')
-        url.searchParams.delete('format')
+        url.searchParams.delete('posture')
+        url.searchParams.delete('sort')
       }
+      url.searchParams.delete('format')
     } else {
       const normalizedSearch = search.trim()
       url.searchParams.delete('lens')
@@ -452,16 +512,18 @@ export function HobbyApp() {
   }, [
     direction,
     domain,
-    footballFormat,
-    footballPosition,
-    footballSearch,
     lens,
     page,
+    playerAgeMax,
+    playerPosition,
+    playerPosture,
+    playerSearch,
+    playerSort,
+    playerSport,
     posture,
     search,
     sort,
     youngAgeMax,
-    youngSport,
     youngStage,
   ])
 
@@ -490,13 +552,14 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  function selectYoungPlayers(): void {
-    setLens('young')
+  function selectPlayerRankings(): void {
+    setLens('players')
     setPage(1)
   }
 
-  function changeYoungSport(value: YoungPlayerSport): void {
-    setYoungSport(value)
+  function changePlayerSport(value: PlayerRankingSport): void {
+    setPlayerSport(value)
+    setPlayerPosition(DEFAULT_PLAYER_POSITION)
     setPage(1)
   }
 
@@ -535,25 +598,37 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  function changeFootballPosition(value: FootballYoungPosition): void {
-    setFootballPosition(value)
+  function changePlayerAge(value: PlayerRankingAgeCeiling): void {
+    setPlayerAgeMax(value)
     setPage(1)
   }
 
-  function changeFootballFormat(value: FootballMarketFormatId): void {
-    setFootballFormat(value)
+  function changePlayerPosition(value: PlayerRankingPosition): void {
+    setPlayerPosition(value)
     setPage(1)
   }
 
-  function changeFootballSearch(value: string): void {
-    setFootballSearch(value)
+  function changePlayerPosture(value: PlayerRankingPosture): void {
+    setPlayerPosture(value)
     setPage(1)
   }
 
-  function resetFootballFilters(): void {
-    setFootballPosition(DEFAULT_FOOTBALL_POSITION)
-    setFootballFormat(DEFAULT_FOOTBALL_FORMAT)
-    setFootballSearch('')
+  function changePlayerSort(value: HobbyPlayerRankingSortKey): void {
+    setPlayerSort(value)
+    setPage(1)
+  }
+
+  function changePlayerSearch(value: string): void {
+    setPlayerSearch(value)
+    setPage(1)
+  }
+
+  function resetPlayerFilters(): void {
+    setPlayerAgeMax(DEFAULT_PLAYER_AGE)
+    setPlayerPosition(DEFAULT_PLAYER_POSITION)
+    setPlayerPosture(DEFAULT_PLAYER_POSTURE)
+    setPlayerSort(DEFAULT_PLAYER_SORT)
+    setPlayerSearch('')
     setPage(1)
   }
 
@@ -567,41 +642,23 @@ export function HobbyApp() {
           youngResponse.snapshot.marketFreshness.status === 'stale'
         ? 'stale'
         : 'unknown'
-  const footballKtcStatus = footballResponse?.providers.find(
-    (provider) => provider.provider === 'keeptradecut',
-  )?.status
-  const footballYoungFreshness = footballResponse === null
-    ? 'unknown'
-    : footballKtcStatus === 'available'
-      ? 'current'
-      : 'stale'
+  const crossSportFreshness =
+    playerResponse?.snapshot.freshness.status ?? 'unknown'
   const freshness = lens === 'market'
     ? marketFreshness
-    : youngSport === 'football'
-      ? footballYoungFreshness
-      : baseballYoungFreshness
-  const normalizedFootballSearch = footballSearch.trim().toLocaleLowerCase(
-    'en-US',
-  )
-  const footballResultCount = footballResponse?.rankings.filter((row) => (
-    row.provider === 'keeptradecut' &&
-    row.universe === 'college' &&
-    row.position === footballPosition &&
-    (
-      !normalizedFootballSearch ||
-      row.name.toLocaleLowerCase('en-US').includes(normalizedFootballSearch)
-    )
-  )).length ?? 0
+    : playerSport === 'baseball'
+      ? baseballYoungFreshness
+      : crossSportFreshness
   const resultCount = lens === 'market'
     ? response?.page.total
-    : youngSport === 'football'
-      ? footballResultCount
-      : youngResponse?.page.total
+    : playerSport === 'baseball'
+      ? youngResponse?.page.total
+      : playerResponse?.page.total
   const dataThrough = lens === 'market'
     ? response?.snapshot.dataThrough
-    : youngSport === 'football'
-      ? footballResponse?.generatedAt
-      : youngResponse?.snapshot.marketDataThrough
+    : playerSport === 'baseball'
+      ? youngResponse?.snapshot.marketDataThrough
+      : playerResponse?.snapshot.dataThrough
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
@@ -633,9 +690,9 @@ export function HobbyApp() {
             <p>
               {lens === 'market'
                 ? 'Screen long-term collection positions across sports and Pokémon, then open only the evidence you need.'
-                : youngSport === 'football'
-                  ? 'Track live College / Devy market attention while production conviction and verified NFL age ranking remain gated.'
-                  : 'Find the strongest scored baseball prospects, recent callups, and young MLB players inside an Oracle age window.'}
+                : playerSport === 'baseball'
+                  ? 'Find the strongest scored baseball prospects, recent callups, and young MLB players inside an Oracle age window.'
+                  : `Rank ${playerSport} players by forward-looking dynasty consensus and recurring collector demand, with age as a transparent filter rather than a hidden boost.`}
             </p>
           </div>
 
@@ -663,16 +720,16 @@ export function HobbyApp() {
           <strong>
             {lens === 'market'
               ? 'Subject demand is the screen.'
-              : youngSport === 'football'
-                ? 'Market watchlist—not a conviction rank.'
-                : 'Age is a lens—not a shortcut.'}
+              : playerSport === 'baseball'
+                ? 'Age is a lens—not a shortcut.'
+                : 'Build-candidate screen—not expected return.'}
           </strong>
           <span>
             {lens === 'market'
               ? 'Exact-card valuation, supply, liquidity, and return evidence still decide whether a position is investable.'
-              : youngSport === 'football'
-                ? 'Verified age, production quality, card demand, and expected appreciation are not inferred from a Devy market rank.'
-                : 'The existing Binder Score is re-ordered inside the selected age and stage universe; the base posture does not change.'}
+              : playerSport === 'baseball'
+                ? 'The existing Binder Score is re-ordered inside the selected age and stage universe; the base posture does not change.'
+                : 'Build Score balances forward-looking dynasty consensus with 18-month subject-level demand; it prioritizes research and does not select a card, estimate ROI, or issue a sell instruction.'}
           </span>
         </aside>
 
@@ -683,11 +740,11 @@ export function HobbyApp() {
           <ResearchLensTabs
             lens={lens}
             posture={posture}
-            youngSport={youngSport}
+            playerSport={playerSport}
             showRefresh={showRefreshPosture}
             onMarketSelect={selectPositions}
-            onYoungSelect={selectYoungPlayers}
-            onYoungSportSelect={changeYoungSport}
+            onPlayerRankingsSelect={selectPlayerRankings}
+            onPlayerSportSelect={changePlayerSport}
             onPostureSelect={changePosture}
           />
           {lens === 'market' ? (
@@ -708,20 +765,25 @@ export function HobbyApp() {
               onPageChange={setPage}
               onReset={resetFilters}
             />
-          ) : youngSport === 'football' ? (
-            <FootballYoungInvestorWorkbench
-              response={footballResponse}
-              loading={footballLoading}
-              error={footballError}
-              position={footballPosition}
-              formatId={footballFormat}
-              search={footballSearch}
+          ) : playerSport !== 'baseball' ? (
+            <CrossSportPlayerWorkbench
+              response={playerResponse}
+              loading={playerLoading}
+              error={playerError}
+              sport={playerSport}
+              maxAge={playerAgeMax}
+              position={playerPosition}
+              posture={playerPosture}
+              sort={playerSort}
+              search={playerSearch}
               page={page}
-              onPositionChange={changeFootballPosition}
-              onFormatChange={changeFootballFormat}
-              onSearchChange={changeFootballSearch}
+              onMaxAgeChange={changePlayerAge}
+              onPositionChange={changePlayerPosition}
+              onPostureChange={changePlayerPosture}
+              onSortChange={changePlayerSort}
+              onSearchChange={changePlayerSearch}
               onPageChange={setPage}
-              onReset={resetFootballFilters}
+              onReset={resetPlayerFilters}
             />
           ) : (
             <YoungInvestorWorkbench
@@ -758,11 +820,18 @@ export function HobbyApp() {
             GemRate Pokémon
           </a>
           <a
-            href="https://keeptradecut.com/devy-rankings"
+            href="https://keeptradecut.com/dynasty-rankings?format=2&page=0"
             target="_blank"
             rel="noreferrer"
           >
-            KTC Devy
+            KTC Dynasty
+          </a>
+          <a
+            href="https://hashtagbasketball.com/fantasy-basketball-dynasty-rankings"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Hashtag Basketball
           </a>
         </nav>
       </footer>

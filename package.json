@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:vercel": "npx vercel dev",
-    "prebuild": "tsx scripts/migrate-production-build.ts && tsx scripts/refresh/export-artifact-status.ts",
+    "prebuild": "tsx scripts/migrate-production-build.ts && npm run data:hobby-player-signals:validate && tsx scripts/refresh/export-artifact-status.ts",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "lint": "oxlint",
@@ -29,6 +29,9 @@
     "data:acquire": "tsx scripts/data/acquire-model-data.ts",
     "data:gemrate-sales:build": "node --import tsx scripts/data/build-gemrate-sales-snapshot.ts",
     "data:gemrate-hobby:build": "node --import tsx scripts/data/build-gemrate-hobby-snapshot.ts",
+    "data:hobby-player-signals:import": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts",
+    "data:hobby-player-signals:check": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --check",
+    "data:hobby-player-signals:validate": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --source api/_data/checklist-hobby-player-signals.json --output api/_data/checklist-hobby-player-signals.json --check",
     "data:fangraphs-identity:build": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts",
     "data:fangraphs-identity:check": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts --check",
     "audit:twtc": ".venv/bin/python scripts/audits/audit_trouble_with_curve.py",
