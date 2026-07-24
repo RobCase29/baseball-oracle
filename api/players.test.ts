@@ -8,6 +8,7 @@ import {
   augmentMinorCandidatesWithCurrentProfiles,
   augmentMinorCandidatesWithCurrentRoster,
   assignStageRanks,
+  attachBinderScores,
   attachLiveProspectPriorRankings,
   authoritativeCurrentMinorIdentityRoles,
   buildPlayerFacets,
@@ -1350,6 +1351,40 @@ describe('FanGraphs exact-ID current prospect census', () => {
 })
 
 describe('unified player ordering', () => {
+  it('keeps volatile live-only prospect priors out of the completed-season Binder model', () => {
+    const scored = attachBinderScores([
+      candidate('mlbam:900001', {
+        mlbamId: '900001',
+        milbImpactRanking: null,
+        servedProspectRank: {
+          rank: 1,
+          rankPercentile: 100,
+          universeRows: 100,
+          asOf: '2026-07-24T00:00:00.000Z',
+          modelVersion: 'milb-impact-live-prior-v1',
+          evidenceTier: 'live_in_season_prior',
+          reasonCode: 'live_in_season_prior',
+          volatility: 'very_high',
+          target: {
+            id: 'mlb_war_next_5_ge_5',
+            label: 'At least 5 MLB WAR over the next five seasons',
+            scope: 'unconditional',
+            windowStartSeason: 2026,
+            windowEndSeason: 2030,
+          },
+        },
+      }),
+    ], {
+      minorUniverse: 100,
+      mlbUniverse: 0,
+    }, new Date('2026-07-24T00:00:00.000Z'))
+
+    expect(scored[0].binderScore?.components.baseballThesis.components
+      .routeOutcomePercentile.rawValue).toBeNull()
+    expect(scored[0].binderScore?.score).toBeNull()
+    expect(scored[0].binderScore?.action).toBe('insufficient_evidence')
+  })
+
   it('normalizes browser form-encoded spaces in player search text', () => {
     expect(normalizeQueryText('Nick+Kurtz')).toBe('Nick Kurtz')
     expect(normalizeQueryText('Peña')).toBe('Peña')
@@ -1369,6 +1404,12 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players?stage=All&sort=careerIndex'))?.sort).toBe('careerIndex')
     expect(parseQuery(request('/api/players?stage=All&sort=stageStanding'))).toBeNull()
     expect(parseQuery(request('/api/players?view=map'))?.view).toBe('map')
+    expect(parseQuery(request('/api/players?view=binder'))).toMatchObject({
+      view: 'binder',
+      sort: 'binderScore',
+    })
+    expect(parseQuery(request('/api/players?view=binder&sort=name'))).toBeNull()
+    expect(parseQuery(request('/api/players?sort=binderScore'))).toBeNull()
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
     expect(parseQuery(request('/api/players?stage=RC'))?.stage).toBe('RC')
 
@@ -1414,6 +1455,28 @@ describe('unified player ordering', () => {
           fieldExposed: true,
           direction: 'ascending',
         },
+      ],
+    })
+
+    const binder = parseQuery(request('/api/players?view=binder&stage=All'))
+    expect(binder && responseOrdering(binder)).toMatchObject({
+      requestedSort: 'binderScore',
+      appliedSort: 'binderScore',
+      metric: 'binder_score',
+      field: 'assessment.score',
+      fieldExposed: true,
+      direction: 'descending',
+      scope: 'cross_stage',
+      tieBreakers: [
+        expect.objectContaining({
+          metric: 'binder_confidence',
+          field: 'assessment.confidence.score',
+        }),
+        expect.objectContaining({ metric: 'player_id', field: 'player.id' }),
+        expect.objectContaining({
+          metric: 'player_map_route',
+          field: 'assessment.player.route',
+        }),
       ],
     })
 

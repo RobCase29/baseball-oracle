@@ -13,3 +13,6 @@ __pycache__/
 *.duckdb.wal
 *.log
 **/*.test.ts
+**/*.test.tsx
+**/* 2.*
+football-oracle/

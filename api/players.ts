@@ -65,6 +65,7 @@ import type {
   CurrentProspectScouting,
   PlayerMapFeedItem,
   PlayerRecord,
+  PlayersPage,
   ProspectCoverageSummary,
   RecentCallupContext,
   ServedProspectRank,
@@ -76,6 +77,22 @@ import {
   playerSignalsResponse,
   playerSignalsSnapshotId,
 } from './_player-signals.js'
+import {
+  binderBaseballModelFreshness,
+  binderMarketCatalog,
+  binderMarketFreshness,
+  binderScoreSnapshotId,
+  buildCandidateBinderScore,
+} from './_binder-scores.js'
+import {
+  BINDER_SCORE_CONTRACT_VERSION,
+  BINDER_SCORES_FEED_SCHEMA_VERSION,
+  normalizePlayerName,
+  percentileFromRank as binderPercentileFromRank,
+  type BinderScoreFeedItem,
+  type BinderScoreResult,
+  type BinderScoresResponse,
+} from '../src/domain/binderScore.js'
 
 const playerTypes = ['All', 'Hitter', 'Pitcher', 'Two-way'] as const
 const playerStages = ['All', 'Minors', 'RC', 'MLB'] as const
@@ -83,6 +100,7 @@ const playerLevels = ['All', 'Rk', 'A', 'A+', 'AA', 'AAA'] as const
 const playerSorts = [
   'prospectScore',
   'careerIndex',
+  'binderScore',
   'stageStanding',
   'alphaOpportunity',
   'hofProbability',
@@ -96,7 +114,7 @@ const playerSorts = [
   'age',
   'name',
 ] as const
-const playerViews = ['full', 'map', 'signals'] as const
+const playerViews = ['full', 'map', 'signals', 'binder'] as const
 const playerSignalFilters = ['All', 'dynastyAvailable', 'fastRisers', 'oracleAhead', 'crowdAhead', 'bothTop10'] as const
 const maximumPlayerIds = 50
 const playerMapFeedSchemaVersion = 'player-map-feed.v4' as const
@@ -586,15 +604,22 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
     if (!parsed.success) return null
 
     const sort = parsed.data.sort ?? defaultSortForStage(parsed.data.stage)
+    if (parsed.data.view === 'binder' && parsed.data.sort === undefined) {
+      return { ...parsed.data, signal: parsed.data.signal ?? 'All', sort: 'binderScore' }
+    }
+
     if (
       parsed.data.stage === 'All' &&
       sort !== 'name' &&
       sort !== 'age' &&
       sort !== 'careerIndex' &&
+      sort !== 'binderScore' &&
       sort !== 'dynastyScore' &&
       sort !== 'dynastyRiser'
     ) return null
+    if (sort === 'binderScore' && parsed.data.view !== 'binder') return null
     if (sort === 'prospectScore' && parsed.data.stage !== 'Minors') return null
+    if (parsed.data.view === 'binder' && sort !== 'binderScore') return null
 
     return { ...parsed.data, signal: parsed.data.signal ?? 'All', sort }
   } catch {
@@ -1588,6 +1613,28 @@ export function playerMapFeedItem(record: MappedPlayerRecord): PlayerMapFeedItem
   }
 }
 
+export function binderScoreFeedItem(
+  record: MappedPlayerRecord,
+  assessment: BinderScoreResult,
+): BinderScoreFeedItem {
+  return {
+    recordVersion: 'binder-score-item/v1',
+    player: {
+      id: record.id,
+      name: record.name,
+      mlbamId: canonicalExternalId(record.provenance.externalIds.mlbam),
+      age: record.age,
+      stage: record.stage,
+      playerType: record.playerType,
+      organization: record.organization,
+      organizationCode: record.organizationCode,
+      position: record.position,
+      level: record.level,
+    },
+    assessment,
+  }
+}
+
 function databaseIdentifier(value: DatabaseNumber): string | null {
   if (typeof value === 'bigint') return value >= 0n ? value.toString() : null
   if (typeof value === 'number') {
@@ -1755,6 +1802,7 @@ export interface UnifiedBoardCandidate {
   recentCallupPrior: RecentCallupContext['prospectPrior'] | null
   currentStats?: CurrentMlbValueRow | null
   dynastySignal?: DynastyComparisonRow | null
+  binderScore?: BinderScoreResult
 }
 
 function candidateKey(candidate: UnifiedBoardCandidate): string {
@@ -1782,6 +1830,92 @@ function candidateCareerIndex(candidate: UnifiedBoardCandidate): number | null {
   return careerIndexValue(
     careerIndexWarQuantiles(candidatePlayerMapRoute(candidate), forecast),
   )
+}
+
+function candidateBinderOutcomePercentile(
+  candidate: UnifiedBoardCandidate,
+  context: PlayerMapBuildContext,
+): number | null {
+  if (candidate.stage === 'recent_callup') {
+    const impact = candidate.recentCallupPrior?.impactRank ?? null
+    return impact
+      ? binderPercentileFromRank(impact.rank, impact.universe)
+      : null
+  }
+  if (candidate.source === 'minor' && candidate.stage === 'pre_debut') {
+    const impact = candidate.milbImpactRanking
+    if (impact === null) return null
+    const usesPrior = candidate.milbAlphaSignal?.gates.minimumRawWorkload === false
+    const percentile = usesPrior
+      ? impact.priorRankPercentile
+      : impact.rankPercentile
+    return supportedPercentile(percentile) ? percentile : null
+  }
+  const rank = candidateOutcomeRank(candidate)
+  return rank === null || context.mlbUniverse == null
+    ? null
+    : binderPercentileFromRank(rank, context.mlbUniverse)
+}
+
+function candidateBinderBaseballDataAsOf(
+  candidate: UnifiedBoardCandidate,
+): string | null {
+  const dates = [
+    candidateOutcomeForecast(candidate)?.asOf ?? null,
+    candidate.source === 'minor' && candidate.stage === 'pre_debut'
+      ? candidate.milbImpactRanking?.frozenAsOf ?? null
+      : null,
+  ].filter((value): value is string => value !== null)
+  return dates.toSorted()[0] ?? null
+}
+
+export function attachBinderScores(
+  candidates: UnifiedBoardCandidate[],
+  context: PlayerMapBuildContext,
+  now = new Date(),
+): UnifiedBoardCandidate[] {
+  const normalizedNameCounts = new Map<string, number>()
+  for (const candidate of candidates) {
+    const normalizedName = normalizePlayerName(candidate.name)
+    normalizedNameCounts.set(
+      normalizedName,
+      (normalizedNameCounts.get(normalizedName) ?? 0) + 1,
+    )
+  }
+
+  return candidates.map((candidate) => {
+    const baseballDataAsOf = candidateBinderBaseballDataAsOf(candidate)
+    const baseballFreshness = binderBaseballModelFreshness(baseballDataAsOf, now)
+    return {
+      ...candidate,
+      binderScore: buildCandidateBinderScore({
+        candidate: {
+          player: {
+            id: candidate.id,
+            name: candidate.name,
+            age: candidate.age,
+            route: candidate.stage,
+          },
+          baseball: {
+            careerIndex: candidateCareerIndex(candidate),
+            routeOutcomePercentile: candidateBinderOutcomePercentile(
+              candidate,
+              context,
+            ),
+            freshness: {
+              status: baseballFreshness.status,
+              dataAsOf: baseballFreshness.dataAsOf,
+              reasonCodes: baseballFreshness.reasonCodes,
+            },
+          },
+        },
+        mlbamId: candidate.mlbamId,
+        normalizedOracleNameCount:
+          normalizedNameCounts.get(normalizePlayerName(candidate.name)) ?? 0,
+        now,
+      }),
+    }
+  })
 }
 
 function dynastyRankContext(candidate: UnifiedBoardCandidate): {
@@ -2245,6 +2379,28 @@ export function sortUnifiedCandidates(
         idTie
       )
     }
+    if (sort === 'binderScore') {
+      const leftActionable =
+        left.binderScore?.action !== 'insufficient_evidence' &&
+        left.binderScore?.score !== null
+      const rightActionable =
+        right.binderScore?.action !== 'insufficient_evidence' &&
+        right.binderScore?.score !== null
+      return (
+        Number(rightActionable) - Number(leftActionable) ||
+        compareNullableNumber(
+          left.binderScore?.score ?? null,
+          right.binderScore?.score ?? null,
+          'descending',
+        ) ||
+        compareNullableNumber(
+          left.binderScore?.confidence.score ?? null,
+          right.binderScore?.confidence.score ?? null,
+          'descending',
+        ) ||
+        idTie
+      )
+    }
     if (sort === 'dynastyRiser') {
       return (
         compareNullableNumber(candidateDynastyMomentum(left), candidateDynastyMomentum(right), 'descending') ||
@@ -2375,7 +2531,10 @@ export function sortBoardCandidates(
   if (query.stage === 'All') {
     return sortUnifiedCandidates(
       items,
-      query.sort === 'age' || query.sort === 'dynastyScore' || query.sort === 'dynastyRiser'
+      query.sort === 'age' ||
+        query.sort === 'binderScore' ||
+        query.sort === 'dynastyScore' ||
+        query.sort === 'dynastyRiser'
         ? query.sort
         : 'name',
     )
@@ -2386,6 +2545,7 @@ export function sortBoardCandidates(
 export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'view'>) {
   const appliedSort = query.sort === 'alphaOpportunity' ? 'stageStanding' : query.sort
   const compact = query.view === 'map'
+  const binderView = query.view === 'binder'
   type Direction = 'ascending' | 'descending'
   type Metric = {
     metric: string
@@ -2410,9 +2570,13 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
   const prospectScoreRankField = compact
     ? 'assessment.scores.outcome.rank'
     : 'playerMap.scores.outcome.rank'
-  const playerIdField = compact ? 'playerId' : 'id'
-  const nameField = compact ? 'identity.name' : 'name'
-  const routeField = compact ? 'assessment.route' : 'playerMap.route'
+  const playerIdField = binderView ? 'player.id' : compact ? 'playerId' : 'id'
+  const nameField = binderView ? 'player.name' : compact ? 'identity.name' : 'name'
+  const routeField = binderView
+    ? 'assessment.player.route'
+    : compact
+      ? 'assessment.route'
+      : 'playerMap.route'
   const forecastField = (suffix: string): string | null => {
     if (compact) return null
     return query.stage === 'RC'
@@ -2428,6 +2592,11 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
   const primaryBySort: Record<typeof appliedSort, Metric> = {
     prospectScore: metric('prospect_score_rank', 'ascending', prospectScoreRankField),
     careerIndex: metric('career_index', 'descending', careerIndexField),
+    binderScore: metric(
+      'binder_score',
+      'descending',
+      binderView ? 'assessment.score' : null,
+    ),
     stageStanding: metric('stage_standing', 'ascending', stageStandingField),
     hofProbability: metric(
       'hof_caliber_probability',
@@ -2462,7 +2631,9 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
   }
   const primary = primaryBySort[appliedSort]
   const scope = query.stage === 'All'
-    ? appliedSort === 'careerIndex' ? 'cross_stage' as const : 'directory' as const
+    ? appliedSort === 'careerIndex' || appliedSort === 'binderScore'
+      ? 'cross_stage' as const
+      : 'directory' as const
     : 'stage' as const
   const stableIdentityTies = [
     metric('player_id', 'ascending', playerIdField),
@@ -2474,6 +2645,15 @@ export function responseOrdering(query: Pick<PlayerQuery, 'stage' | 'sort' | 'vi
     ? query.stage === 'All'
       ? [metric('display_name', 'ascending', nameField), ...stableIdentityTies]
       : [metric('stage_standing', 'ascending', stageStandingField), ...stableIdentityTies]
+    : appliedSort === 'binderScore'
+      ? [
+          metric(
+            'binder_confidence',
+            'descending',
+            binderView ? 'assessment.confidence.score' : null,
+          ),
+          ...stableIdentityTies,
+        ]
     : appliedSort === 'hofProbability'
       ? [metric('final_career_war_p50', 'descending', finalCareerWarP50Field), ...stableIdentityTies]
       : appliedSort === 'nearTermImpact'
@@ -4177,6 +4357,99 @@ function responseItems(
   return records
 }
 
+function binderScoresResponse(input: {
+  records: MappedPlayerRecord[]
+  pageCandidates: UnifiedBoardCandidate[]
+  universe: UnifiedBoardCandidate[]
+  page: PlayersPage
+  rankingSnapshotId: string
+  now?: Date
+}): BinderScoresResponse {
+  if (input.records.length !== input.pageCandidates.length) {
+    throw new Error('Binder score records and candidates are out of alignment')
+  }
+  const marketFreshness = binderMarketFreshness(input.now)
+  const scoreDigests = input.universe
+    .map((candidate) => {
+      const assessment = candidate.binderScore
+      return [
+        candidateKey(candidate),
+        assessment?.score ?? null,
+        assessment?.action ?? 'missing',
+        assessment?.confidence.score ?? null,
+      ].join(':')
+    })
+    .toSorted()
+  const snapshotId = binderScoreSnapshotId({
+    rankingSnapshotId: input.rankingSnapshotId,
+    scoreDigests,
+  })
+  const baseballDataAsOf = input.universe
+    .map(candidateBinderBaseballDataAsOf)
+    .filter((value): value is string => value !== null)
+    .toSorted()[0] ?? null
+  const baseballFreshness = binderBaseballModelFreshness(
+    baseballDataAsOf,
+    input.now,
+  )
+
+  return {
+    schemaVersion: BINDER_SCORES_FEED_SCHEMA_VERSION,
+    contractVersion: BINDER_SCORE_CONTRACT_VERSION,
+    snapshot: {
+      id: snapshotId,
+      baseballDataAsOf,
+      baseballFreshness: {
+        status: baseballFreshness.status,
+        reasonCodes: [...(baseballFreshness.reasonCodes ?? [])],
+        cadence: 'completed_season',
+      },
+      marketDataThrough: binderMarketCatalog.snapshot.dataThrough,
+      marketPublishedAt: binderMarketCatalog.snapshot.publishedAt,
+      marketAcquiredAt: binderMarketCatalog.snapshot.acquiredAt,
+      marketFreshness: {
+        status: marketFreshness.status,
+        reasonCodes: [...(marketFreshness.reasonCodes ?? [])],
+        nextExpectedBy: marketFreshness.nextExpectedBy,
+        cadence: 'monthly',
+      },
+    },
+    items: input.records.map((record, index) => {
+      const assessment = input.pageCandidates[index].binderScore
+      if (!assessment) throw new Error('Binder score assessment is unavailable')
+      return binderScoreFeedItem(record, assessment)
+    }),
+    page: input.page,
+    meta: {
+      researchOnly: true,
+      investmentAdvice: false,
+      marketSource: 'GemRate Athlete Sales Trends',
+      marketMeasure: 'completed_ebay_singles_sales_volume_usd',
+      marketMeaning:
+        'collector_demand_is_an_ebay_singles_sales_volume_proxy_not_price_appreciation',
+      careerMeaning:
+        'career_evidence_is_statistical_hall_caliber_trajectory_not_hof_election_odds',
+      identityPolicy:
+        'exact_oracle_identity_plus_unique_normalized_gemrate_name_no_fuzzy_matching',
+      nullPolicy: 'missing_evidence_shrinks_to_prior_and_withholds_action',
+      rankingScope: 'cross_stage_research_heuristic',
+      sourceRows: binderMarketCatalog.snapshot.metadata.baseballRowCount,
+      ambiguousSourceKeys:
+        binderMarketCatalog.ambiguousNormalizedNames.size,
+      matchedUniversePlayers: input.universe.filter(
+        (candidate) => candidate.binderScore?.flags.marketIdentityConfirmed === true,
+      ).length,
+      actionableUniversePlayers: input.universe.filter(
+        (candidate) => (
+          candidate.binderScore?.action !== undefined &&
+          candidate.binderScore.action !== 'insufficient_evidence'
+        ),
+      ).length,
+      permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
+    },
+  }
+}
+
 function degradedStaticResponse(
   request: IncomingMessage,
   response: ServerResponse,
@@ -4184,7 +4457,12 @@ function degradedStaticResponse(
   preview: CareerOraclePreview,
   reason: string,
 ): void {
-  const universe = assignStageRanks(mlbCandidates(preview))
+  const rankedUniverse = assignStageRanks(mlbCandidates(preview))
+  const context = {
+    mlbUniverse: scoredMlbUniverse(rankedUniverse),
+    minorUniverse: 0,
+  }
+  const universe = attachBinderScores(rankedUniverse, context)
   const recentCallups = universe.filter((candidate) => candidate.stage === 'recent_callup').length
   const candidates = sortBoardCandidates(
     universe.filter((candidate) => matchesQuery(candidate, query)),
@@ -4192,10 +4470,6 @@ function degradedStaticResponse(
   )
   const offset = (query.page - 1) * query.limit
   const page = candidates.slice(offset, offset + query.limit)
-  const context = {
-    mlbUniverse: scoredMlbUniverse(universe),
-    minorUniverse: 0,
-  }
   const records = page.map((candidate) => previewPlayerRecord(candidate, preview, context))
   const degradedRankingSnapshot = snapshotId({
     minorDataAsOf: null,
@@ -4228,6 +4502,16 @@ function degradedStaticResponse(
       page: pageDetails(candidates.length, query),
       prospectCoverage: null,
     }), publicCache)
+    return
+  }
+  if (query.view === 'binder') {
+    sendJson(request, response, 503, {
+      schemaVersion: 'binder-scores-error.v1',
+      error: 'binder_source_unavailable',
+      reasonCode: 'live_player_database_unavailable',
+      researchOnly: true,
+      retryable: true,
+    })
     return
   }
   sendJson(request, response, 200, {
@@ -4625,12 +4909,16 @@ export default async function handler(
     const recentCallupCount = mlb.filter((candidate) => candidate.stage === 'recent_callup').length
     const merged = mergeCurrentUniverse(mlb, servedMinorCandidates)
     const { canonicalMinors, crossStageDuplicatesRemoved } = merged
-    const currentUniverse = merged.items.map((candidate) => ({
+    const playerMapContext = {
+      mlbUniverse: scoredMlbUniverse(mlb),
+      minorUniverse: frozenProspectRankUniverse(careerPreview),
+    }
+    const currentUniverse = attachBinderScores(merged.items.map((candidate) => ({
       ...candidate,
       dynastySignal: candidate.mlbamId === null
         ? null
         : dynastyByMlbam.get(candidate.mlbamId) ?? null,
-    }))
+    })), playerMapContext)
     const servedProspectUniverse = canonicalMinors.filter(
       (candidate) => candidate.stage === 'pre_debut' && candidate.servedProspectRank != null,
     ).length
@@ -4642,10 +4930,6 @@ export default async function handler(
       query,
     )
     const pageCandidates = filtered.slice(offset, offset + query.limit)
-    const playerMapContext = {
-      mlbUniverse: scoredMlbUniverse(mlb),
-      minorUniverse: frozenProspectRankUniverse(careerPreview),
-    }
     const prospectSavantPageIds = prospectSavantCandidateProfileIds(pageCandidates)
     const minorPageMlbamIds = [...new Set(pageCandidates
       .filter((candidate) => candidate.source === 'minor')
@@ -5004,6 +5288,19 @@ export default async function handler(
         }),
         publicCache,
       )
+      return
+    }
+
+    if (query.view === 'binder') {
+      const binderBody = binderScoresResponse({
+        records: items,
+        pageCandidates,
+        universe: currentUniverse,
+        page: responsePage,
+        rankingSnapshotId: rankingSnapshot,
+      })
+      response.setHeader('X-Snapshot-Id', binderBody.snapshot.id)
+      sendJson(request, response, 200, binderBody, publicCache)
       return
     }
 

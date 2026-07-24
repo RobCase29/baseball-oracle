@@ -20,6 +20,7 @@ import {
 import type { CareerForecast, PlayerRecord } from '../domain/forecast'
 import type { CommunitySignalItem } from '../domain/communitySignals'
 import type { CardMarketResponse } from '../domain/cardMarket'
+import type { BinderScoreResult } from '../domain/binderScore'
 import {
   developmentChapterLabel,
   eligibleMilbCeilingAlpha,
@@ -36,6 +37,8 @@ import {
 } from '../lib/forecast'
 import { PlayerMapScorecard } from './PlayerMapScorecard'
 import { CardMarketPanel } from './CardMarketPanel'
+import { BinderScorePanel } from './BinderScorePanel'
+import { LazyChartBoundary } from './LazyChartBoundary'
 import {
   bestCurrentScoutingGrade,
   currentMinorSlashLine,
@@ -62,6 +65,8 @@ interface PlayerDossierProps {
   cardMarket?: CardMarketResponse | null
   cardMarketLoading?: boolean
   cardMarketError?: string | null
+  binderScore?: BinderScoreResult | null
+  returnLabel?: string
   onReturnToBoard: () => void
 }
 
@@ -362,9 +367,18 @@ function MilbAlphaRadarPanel({ player }: { player: PlayerRecord }) {
             ))}
           </div>
 
-          <Suspense fallback={<div className="evidence-profile evidence-profile-loading">Loading evidence profile</div>}>
-            <MilbEvidenceProfile player={player} />
-          </Suspense>
+          <LazyChartBoundary
+            fallback={(
+              <div className="evidence-profile evidence-profile-loading" role="status">
+                The interactive evidence profile is unavailable here. The ranked evidence
+                and release gates remain available above.
+              </div>
+            )}
+          >
+            <Suspense fallback={<div className="evidence-profile evidence-profile-loading">Loading evidence profile</div>}>
+              <MilbEvidenceProfile player={player} />
+            </Suspense>
+          </LazyChartBoundary>
         </>
       ) : (
         <div className="alpha-withheld-state">
@@ -921,9 +935,21 @@ function CareerForecastPanel({ player, forecast }: { player: PlayerRecord; forec
           </div>
         </div>
         {forecast.arc.length > 0 ? (
-          <Suspense fallback={<div className="career-chart chart-loading">Loading forecast...</div>}>
-            <CareerArcChart data={forecast.arc} currentAge={player.age} />
-          </Suspense>
+          <LazyChartBoundary
+            fallback={(
+              <div className="career-chart chart-empty" role="status">
+                <CircleDashed size={20} aria-hidden="true" />
+                <span>
+                  The interactive career chart is unavailable here. Recorded and projected values
+                  remain available in the summary above.
+                </span>
+              </div>
+            )}
+          >
+            <Suspense fallback={<div className="career-chart chart-loading">Loading forecast...</div>}>
+              <CareerArcChart data={forecast.arc} currentAge={player.age} />
+            </Suspense>
+          </LazyChartBoundary>
         ) : (
           <div className="chart-empty">
             <CircleDashed size={20} aria-hidden="true" />
@@ -1240,6 +1266,8 @@ export function PlayerDossier({
   cardMarket = null,
   cardMarketLoading = false,
   cardMarketError = null,
+  binderScore = null,
+  returnLabel = 'Return to Rankings',
   onReturnToBoard,
 }: PlayerDossierProps) {
   const forecast = player.careerForecast
@@ -1277,8 +1305,8 @@ export function PlayerDossier({
             className="icon-button dossier-back-button"
             type="button"
             onClick={onReturnToBoard}
-            aria-label="Return to Rankings"
-            title="Return to Rankings"
+            aria-label={returnLabel}
+            title={returnLabel}
           >
             <List size={16} aria-hidden="true" />
           </button>
@@ -1286,6 +1314,8 @@ export function PlayerDossier({
       </header>
 
       <PlayerMapScorecard player={player} />
+
+      <BinderScorePanel result={binderScore} />
 
       <DynastyScorePanel player={player} signal={communitySignal} />
 

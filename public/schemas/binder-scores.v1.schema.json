@@ -1,0 +1,992 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/binder-scores.v1.schema.json",
+  "title": "Baseball Oracle Binder Scores v1",
+  "description": "Research-only long-term collection thesis scores. Collector demand is an eBay singles sales-volume proxy, not price appreciation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "snapshot",
+    "items",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "binder-scores.v1"
+    },
+    "contractVersion": {
+      "const": "binder-score-contract/v1"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "nullableScore": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/score"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "freshnessStatus": {
+      "enum": [
+        "current",
+        "unknown",
+        "stale"
+      ]
+    },
+    "binderRoute": {
+      "enum": [
+        "pre_debut",
+        "post_debut_minors",
+        "recent_callup",
+        "early_mlb",
+        "established_mlb",
+        "inactive"
+      ]
+    },
+    "marketIdentityStatus": {
+      "enum": [
+        "verified_external_id",
+        "manual_verified",
+        "unique_normalized_name",
+        "ambiguous",
+        "unmatched"
+      ]
+    },
+    "action": {
+      "enum": [
+        "build",
+        "core_hold",
+        "watch",
+        "trim_hype",
+        "pass",
+        "insufficient_evidence"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "baseballDataAsOf",
+        "baseballFreshness",
+        "marketDataThrough",
+        "marketPublishedAt",
+        "marketAcquiredAt",
+        "marketFreshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^binder-score-snapshot/v1:[a-f0-9]{64}$"
+        },
+        "baseballDataAsOf": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "baseballFreshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reasonCodes",
+            "cadence"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "reasonCodes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "cadence": {
+              "const": "completed_season"
+            }
+          }
+        },
+        "marketDataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "marketPublishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "marketAcquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "marketFreshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reasonCodes",
+            "nextExpectedBy",
+            "cadence"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "reasonCodes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "nextExpectedBy": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "cadence": {
+              "const": "monthly"
+            }
+          }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "marketSource",
+        "marketMeasure",
+        "marketMeaning",
+        "careerMeaning",
+        "identityPolicy",
+        "nullPolicy",
+        "rankingScope",
+        "sourceRows",
+        "ambiguousSourceKeys",
+        "matchedUniversePlayers",
+        "actionableUniversePlayers",
+        "permissionAttestation"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "marketSource": {
+          "const": "GemRate Athlete Sales Trends"
+        },
+        "marketMeasure": {
+          "const": "completed_ebay_singles_sales_volume_usd"
+        },
+        "marketMeaning": {
+          "const": "collector_demand_is_an_ebay_singles_sales_volume_proxy_not_price_appreciation"
+        },
+        "careerMeaning": {
+          "const": "career_evidence_is_statistical_hall_caliber_trajectory_not_hof_election_odds"
+        },
+        "identityPolicy": {
+          "const": "exact_oracle_identity_plus_unique_normalized_gemrate_name_no_fuzzy_matching"
+        },
+        "nullPolicy": {
+          "const": "missing_evidence_shrinks_to_prior_and_withholds_action"
+        },
+        "rankingScope": {
+          "const": "cross_stage_research_heuristic"
+        },
+        "sourceRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ambiguousSourceKeys": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matchedUniversePlayers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actionableUniversePlayers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "permissionAttestation": {
+          "const": "docs/permissions/GEMRATE_ATTESTATION.md"
+        }
+      }
+    },
+    "feedPlayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "mlbamId",
+        "age",
+        "stage",
+        "playerType",
+        "organization",
+        "organizationCode",
+        "position",
+        "level"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mlbamId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "age": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stage": {
+          "$ref": "#/$defs/binderRoute"
+        },
+        "playerType": {
+          "enum": [
+            "Hitter",
+            "Pitcher",
+            "Two-way"
+          ]
+        },
+        "organization": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "organizationCode": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "position": {
+          "$ref": "#/$defs/nullableString"
+        },
+        "level": {
+          "$ref": "#/$defs/nullableString"
+        }
+      }
+    },
+    "scorePlayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "age",
+        "route"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "age": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "route": {
+          "$ref": "#/$defs/binderRoute"
+        }
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicationStatus",
+        "scoreRange",
+        "missingValuePolicy",
+        "marketMeaning",
+        "careerMeaning",
+        "actionMeaning",
+        "confidenceMeaning",
+        "comparability"
+      ],
+      "properties": {
+        "publicationStatus": {
+          "const": "research_only"
+        },
+        "scoreRange": {
+          "const": "0_to_100_higher_is_stronger_collection_thesis"
+        },
+        "missingValuePolicy": {
+          "const": "shrink_to_cohort_prior_50_without_dynamic_reweighting"
+        },
+        "marketMeaning": {
+          "const": "collector_demand_is_an_ebay_singles_sales_volume_proxy_not_price_appreciation"
+        },
+        "careerMeaning": {
+          "const": "career_evidence_is_statistical_hall_caliber_trajectory_not_hof_election_odds"
+        },
+        "actionMeaning": {
+          "const": "collection_research_signal_not_financial_advice"
+        },
+        "confidenceMeaning": {
+          "const": "confidence_is_evidence_completeness_capped_at_moderate_while_oracle_models_remain_research_only"
+        },
+        "comparability": {
+          "const": "compare_scores_only_within_the_same_model_version_and_declared_market_cohort"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawValue",
+        "effectiveValue",
+        "imputedToPrior",
+        "weight",
+        "weightedContribution"
+      ],
+      "properties": {
+        "rawValue": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "effectiveValue": {
+          "$ref": "#/$defs/score"
+        },
+        "imputedToPrior": {
+          "type": "boolean"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "weightedContribution": {
+          "$ref": "#/$defs/score"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "imputedToPrior": {
+                "const": true
+              }
+            },
+            "required": [
+              "imputedToPrior"
+            ]
+          },
+          "then": {
+            "properties": {
+              "rawValue": {
+                "type": "null"
+              },
+              "effectiveValue": {
+                "const": 50
+              }
+            }
+          }
+        }
+      ]
+    },
+    "marketSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trailingTwelveMonthSalesUsd",
+        "observedMonths",
+        "positiveSalesMonths",
+        "coverageRatio",
+        "activeMonthRatio",
+        "durabilityResilienceScore",
+        "recentMomentumRate",
+        "recentMomentumScore",
+        "momentumWindows"
+      ],
+      "properties": {
+        "trailingTwelveMonthSalesUsd": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedMonths": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "positiveSalesMonths": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "coverageRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "activeMonthRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "durabilityResilienceScore": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "recentMomentumRate": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": -1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recentMomentumScore": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 25,
+              "maximum": 75
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "momentumWindows": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "priorThreeMonthAverageUsd",
+            "recentThreeMonthAverageUsd"
+          ],
+          "properties": {
+            "priorThreeMonthAverageUsd": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "recentThreeMonthAverageUsd": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "baseballThesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "components"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "careerIndex",
+            "routeOutcomePercentile",
+            "ageRunway"
+          ],
+          "properties": {
+            "careerIndex": {
+              "$ref": "#/$defs/component"
+            },
+            "routeOutcomePercentile": {
+              "$ref": "#/$defs/component"
+            },
+            "ageRunway": {
+              "$ref": "#/$defs/component"
+            }
+          }
+        }
+      }
+    },
+    "collectorDemand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "components",
+        "marketSignal",
+        "cohortId"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trailingTwelveMonthDemandPercentile",
+            "durabilityResilience",
+            "recentMomentum"
+          ],
+          "properties": {
+            "trailingTwelveMonthDemandPercentile": {
+              "$ref": "#/$defs/component"
+            },
+            "durabilityResilience": {
+              "$ref": "#/$defs/component"
+            },
+            "recentMomentum": {
+              "$ref": "#/$defs/component"
+            }
+          }
+        },
+        "marketSignal": {
+          "$ref": "#/$defs/marketSignal"
+        },
+        "cohortId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "hypePenalty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "maximum",
+        "demandMinusBaseball",
+        "formula"
+      ],
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "maximum": {
+          "const": 10
+        },
+        "demandMinusBaseball": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "formula": {
+          "const": "max_0_demand_minus_baseball_minus_15_times_0_20_plus_momentum_above_70_times_0_10_capped_at_10"
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall",
+        "baseballThesis",
+        "collectorDemand"
+      ],
+      "properties": {
+        "overall": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseballThesis",
+            "collectorDemand"
+          ],
+          "properties": {
+            "baseballThesis": {
+              "const": 0.75
+            },
+            "collectorDemand": {
+              "const": 0.25
+            }
+          }
+        },
+        "baseballThesis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "careerIndex",
+            "routeOutcomePercentile",
+            "ageRunway"
+          ],
+          "properties": {
+            "careerIndex": {
+              "const": 0.6
+            },
+            "routeOutcomePercentile": {
+              "const": 0.25
+            },
+            "ageRunway": {
+              "const": 0.15
+            }
+          }
+        },
+        "collectorDemand": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trailingTwelveMonthDemandPercentile",
+            "durabilityResilience",
+            "recentMomentum"
+          ],
+          "properties": {
+            "trailingTwelveMonthDemandPercentile": {
+              "const": 0.6
+            },
+            "durabilityResilience": {
+              "const": 0.25
+            },
+            "recentMomentum": {
+              "const": 0.15
+            }
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "band",
+        "reasonCodes"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 75
+        },
+        "band": {
+          "enum": [
+            "high",
+            "moderate",
+            "low",
+            "withheld"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coreBaseballEvidenceComplete",
+        "marketEvidenceComplete",
+        "marketIdentityStatus",
+        "marketIdentityConfirmed",
+        "baseballFreshness",
+        "marketFreshness",
+        "overallWithheld"
+      ],
+      "properties": {
+        "coreBaseballEvidenceComplete": {
+          "type": "boolean"
+        },
+        "marketEvidenceComplete": {
+          "type": "boolean"
+        },
+        "marketIdentityStatus": {
+          "$ref": "#/$defs/marketIdentityStatus"
+        },
+        "marketIdentityConfirmed": {
+          "type": "boolean"
+        },
+        "baseballFreshness": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "marketFreshness": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "overallWithheld": {
+          "type": "boolean"
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "semantics",
+        "player",
+        "score",
+        "action",
+        "actionReasonCodes",
+        "components",
+        "weights",
+        "confidence",
+        "flags"
+      ],
+      "properties": {
+        "version": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "contractVersion",
+            "modelVersion"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "binder-score.v1"
+            },
+            "contractVersion": {
+              "const": "binder-score-contract/v1"
+            },
+            "modelVersion": {
+              "const": "binder-score-heuristic/v1.0.0"
+            }
+          }
+        },
+        "semantics": {
+          "$ref": "#/$defs/semantics"
+        },
+        "player": {
+          "$ref": "#/$defs/scorePlayer"
+        },
+        "score": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "action": {
+          "$ref": "#/$defs/action"
+        },
+        "actionReasonCodes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseballThesis",
+            "collectorDemand",
+            "hypePenalty"
+          ],
+          "properties": {
+            "baseballThesis": {
+              "$ref": "#/$defs/baseballThesis"
+            },
+            "collectorDemand": {
+              "$ref": "#/$defs/collectorDemand"
+            },
+            "hypePenalty": {
+              "$ref": "#/$defs/hypePenalty"
+            }
+          }
+        },
+        "weights": {
+          "$ref": "#/$defs/weights"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "flags": {
+          "$ref": "#/$defs/flags"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "score": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "score"
+            ]
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "const": "insufficient_evidence"
+              },
+              "confidence": {
+                "properties": {
+                  "band": {
+                    "const": "withheld"
+                  }
+                }
+              },
+              "flags": {
+                "properties": {
+                  "overallWithheld": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "flags": {
+                "properties": {
+                  "overallWithheld": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "player",
+        "assessment"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "binder-score-item/v1"
+        },
+        "player": {
+          "$ref": "#/$defs/feedPlayer"
+        },
+        "assessment": {
+          "$ref": "#/$defs/assessment"
+        }
+      }
+    }
+  }
+}

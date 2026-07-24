@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  BookOpen,
   FlaskConical,
   Goal,
   PanelLeftClose,
@@ -8,7 +9,7 @@ import {
 } from 'lucide-react'
 import './AppSidebarFootballLink.css'
 
-export type WorkspaceView = 'Board' | 'Model lab'
+export type WorkspaceView = 'Board' | 'Binder' | 'Model lab'
 
 interface AppSidebarProps {
   activeView: WorkspaceView
@@ -19,6 +20,7 @@ interface AppSidebarProps {
 
 const navigation = [
   { label: 'Board' as const, displayLabel: 'Rankings', icon: BarChart3 },
+  { label: 'Binder' as const, displayLabel: 'Build a Binder', icon: BookOpen },
   { label: 'Model lab' as const, displayLabel: 'Model review', icon: FlaskConical },
 ]
 

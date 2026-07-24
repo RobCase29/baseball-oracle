@@ -21,10 +21,14 @@ describe('AppSidebar sport navigation', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Build a Binder' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Model review' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Football' })).toHaveAttribute('href', '/football')
 
     fireEvent.click(screen.getByRole('button', { name: 'Model review' }))
     expect(onChangeView).toHaveBeenCalledWith('Model lab')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Build a Binder' }))
+    expect(onChangeView).toHaveBeenCalledWith('Binder')
   })
 })

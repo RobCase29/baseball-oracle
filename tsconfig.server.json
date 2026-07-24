@@ -25,7 +25,9 @@
     "src/domain/playerSignals.ts",
     "src/domain/communitySignals.ts",
     "src/domain/cardMarket.ts",
+    "src/domain/binderScore.ts",
     "src/domain/playerHandling.ts",
     "src/football/marketFeedContract.ts"
-  ]
+  ],
+  "exclude": ["**/* 2.ts", "**/* 2.tsx"]
 }

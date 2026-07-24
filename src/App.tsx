@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { AppSidebar, type WorkspaceView } from './components/AppSidebar'
+import { BinderBoard, type BinderStageFilter } from './components/BinderBoard'
 import { ModelLab } from './components/ModelLab'
 import { PlayerDossier } from './components/PlayerDossier'
 import { ProspectBoard, type BoardDisplayMode } from './components/ProspectBoard'
@@ -31,6 +32,10 @@ import {
   isCardMarketResponse,
   type CardMarketResponse,
 } from './domain/cardMarket'
+import {
+  isBinderScoresResponse,
+  type BinderScoresResponse,
+} from './domain/binderScore'
 
 const PAGE_SIZE = 50
 const LANDSCAPE_SIZE = 100
@@ -42,6 +47,13 @@ function pageFromUrl(): number {
 }
 
 const emptyPage: PlayersPage = {
+  page: 1,
+  limit: PAGE_SIZE,
+  total: 0,
+  totalPages: 0,
+}
+
+const emptyBinderPage: BinderScoresResponse['page'] = {
   page: 1,
   limit: PAGE_SIZE,
   total: 0,
@@ -146,8 +158,15 @@ function App() {
   const [cardMarket, setCardMarket] = useState<CardMarketResponse | null>(null)
   const [cardMarketLoading, setCardMarketLoading] = useState(false)
   const [cardMarketError, setCardMarketError] = useState<string | null>(null)
+  const [binderQuery, setBinderQuery] = useState('')
+  const [binderStage, setBinderStage] = useState<BinderStageFilter>('All')
+  const [binderPage, setBinderPage] = useState(1)
+  const [binderResponse, setBinderResponse] = useState<BinderScoresResponse | null>(null)
+  const [binderLoading, setBinderLoading] = useState(false)
+  const [binderError, setBinderError] = useState<string | null>(null)
   const selectionRequest = useRef(0)
   const deferredQuery = useDeferredValue(filters.query)
+  const deferredBinderQuery = useDeferredValue(binderQuery)
 
   useEffect(() => {
     const refresh = () => setRefreshTick((current) => current + 1)
@@ -282,6 +301,56 @@ function App() {
   ])
 
   useEffect(() => {
+    if (activeView !== 'Binder') {
+      setBinderLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const parameters = new URLSearchParams({
+      page: binderPage.toString(),
+      limit: PAGE_SIZE.toString(),
+      sort: 'binderScore',
+    })
+    const query = deferredBinderQuery.trim()
+    if (query) parameters.set('q', query)
+    if (binderStage !== 'All') parameters.set('stage', binderStage)
+
+    setBinderLoading(true)
+    setBinderError(null)
+
+    fetch(`/api/v1/binder-scores?${parameters.toString()}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Binder endpoint returned ${response.status}.`)
+        const result = (await response.json()) as unknown
+        if (!isBinderScoresResponse(result)) {
+          throw new Error('Binder endpoint returned an unexpected response.')
+        }
+        setBinderResponse(result)
+      })
+      .catch((requestError: unknown) => {
+        if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+        setBinderError(requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load Binder rankings.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setBinderLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [
+    activeView,
+    binderPage,
+    binderStage,
+    deferredBinderQuery,
+    refreshTick,
+  ])
+
+  useEffect(() => {
     const parameters = new URLSearchParams()
     if (filters.query.trim()) parameters.set('q', filters.query.trim())
     if (filters.stage !== defaultBoardFilters.stage) parameters.set('stage', filters.stage)
@@ -298,6 +367,9 @@ function App() {
 
   const selectedPlayer = selectedId
     ? players.find((player) => player.id === selectedId) ?? selectedPlayerRecord
+    : null
+  const selectedBinderScore = selectedId
+    ? binderResponse?.items.find((item) => item.player.id === selectedId)?.assessment ?? null
     : null
 
   const communityIds = Array.from(new Set(
@@ -397,6 +469,26 @@ function App() {
     setSelectionError(null)
   }
 
+  function changeBinderQuery(query: string) {
+    selectionRequest.current += 1
+    setBinderQuery(query)
+    setBinderPage(1)
+    setSelectedId(null)
+    setSelectedPlayerRecord(null)
+    setOpeningPlayerId(null)
+    setSelectionError(null)
+  }
+
+  function changeBinderStage(stage: BinderStageFilter) {
+    selectionRequest.current += 1
+    setBinderStage(stage)
+    setBinderPage(1)
+    setSelectedId(null)
+    setSelectedPlayerRecord(null)
+    setOpeningPlayerId(null)
+    setSelectionError(null)
+  }
+
   function selectPlayer(playerId: string) {
     const localPlayer = players.find((player) => player.id === playerId)
     selectionRequest.current += 1
@@ -443,7 +535,9 @@ function App() {
     setOpeningPlayerId(null)
     setSelectionError(null)
     window.requestAnimationFrame(() => {
-      document.getElementById('prospect-board')?.scrollIntoView({
+      document.getElementById(
+        activeView === 'Binder' ? 'binder-board' : 'prospect-board',
+      )?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       })
@@ -454,13 +548,27 @@ function App() {
     meta.identity?.identityCrosswalkStatus !== undefined &&
     meta.identity.identityCrosswalkStatus !== 'current'
   ) || (meta.identity?.unmatchedCurrentBbrefIds ?? 0) > 0
-  const topbarStatus = loading && players.length === 0
+  const baseballTopbarStatus = loading && players.length === 0
     ? 'loading'
     : error
       ? 'error'
       : meta.degraded || identityNeedsRefresh || meta.currentDataFreshness?.status !== 'ok'
         ? 'degraded'
         : 'live'
+  const binderMarketFreshness = binderResponse?.snapshot.marketFreshness.status ?? 'unknown'
+  const binderBaseballFreshness =
+    binderResponse?.snapshot.baseballFreshness.status ?? 'unknown'
+  const topbarStatus = activeView === 'Binder'
+    ? binderLoading && !binderResponse
+      ? 'loading'
+      : binderError && !binderResponse
+        ? 'error'
+        : binderError !== null ||
+            binderMarketFreshness !== 'current' ||
+            binderBaseballFreshness !== 'current'
+          ? 'degraded'
+          : 'live'
+    : baseballTopbarStatus
   const modelVintage = selectedPlayer
     ? selectedPlayer.stage === 'pre_debut'
       ? selectedPlayer.milbImpactRanking?.frozenAsOf ?? selectedPlayer.milbAlphaSignal?.asOf ?? null
@@ -471,28 +579,44 @@ function App() {
         : meta.researchAsOf ?? null
     : meta.researchAsOf ?? null
   const statsClockLabel = filters.stage === 'Minors'
-    ? 'Minor-league stats checked'
-    : filters.stage === 'MLB' || filters.stage === 'RC'
-      ? 'MLB stats checked'
-      : 'All stats checked'
+      ? 'Minor-league stats checked'
+      : filters.stage === 'MLB' || filters.stage === 'RC'
+        ? 'MLB stats checked'
+        : 'All stats checked'
   const statsCheckedAt = meta.currentDataFreshness?.lastCheckedAt ?? meta.dataAsOf
-  const sourceStatusLabel = topbarStatus === 'loading'
-    ? 'Connecting'
-    : topbarStatus === 'error'
-      ? 'Source unavailable'
-      : identityNeedsRefresh
-        ? 'Identity refresh needed'
-        : meta.degraded
-          ? 'Partial source data'
-          : meta.currentDataFreshness?.reasonCodes.some((reason) => (
-              reason === 'cron_not_configured' || reason === 'scheduled_run_not_observed'
-            ))
-            ? 'Refresh verification pending'
-            : meta.currentDataFreshness?.status === 'stale'
-              ? 'Stats refresh overdue'
-              : meta.currentDataFreshness?.status === 'degraded'
-                ? 'Refresh verification pending'
-                : 'Updated twice daily'
+  const sourceStatusLabel = activeView === 'Binder'
+    ? topbarStatus === 'loading'
+      ? 'Loading Binder evidence'
+      : topbarStatus === 'error'
+        ? 'Binder source unavailable'
+        : binderError
+          ? 'Binder refresh failed'
+          : binderBaseballFreshness === 'stale'
+            ? 'Baseball model overdue'
+            : binderBaseballFreshness === 'unknown'
+              ? 'Baseball freshness unverified'
+          : binderMarketFreshness === 'stale'
+            ? 'Market snapshot overdue'
+            : binderMarketFreshness === 'unknown'
+              ? 'Market freshness unverified'
+              : 'Binder evidence current'
+    : topbarStatus === 'loading'
+      ? 'Connecting'
+      : topbarStatus === 'error'
+        ? 'Source unavailable'
+        : identityNeedsRefresh
+          ? 'Identity refresh needed'
+          : meta.degraded
+            ? 'Partial source data'
+            : meta.currentDataFreshness?.reasonCodes.some((reason) => (
+                reason === 'cron_not_configured' || reason === 'scheduled_run_not_observed'
+              ))
+              ? 'Refresh verification pending'
+              : meta.currentDataFreshness?.status === 'stale'
+                ? 'Stats refresh overdue'
+                : meta.currentDataFreshness?.status === 'degraded'
+                  ? 'Refresh verification pending'
+                  : 'Updated twice daily'
   const rankingIntro = filters.stage === 'Minors'
     ? 'Prospect Rank sets five-year impact priority. Career Outlook adds long-term context. Current Results show what is happening now.'
     : filters.stage === 'RC'
@@ -512,11 +636,36 @@ function App() {
         <div className="topbar">
           <div className="topbar-context">
             <CircleDot size={14} aria-hidden="true" />
-            <span>Professional baseball · projected career upside</span>
+            <span>
+              {activeView === 'Binder'
+                ? 'Long-term collection thesis · baseball trajectory + collector demand'
+                : 'Professional baseball · projected career upside'}
+            </span>
           </div>
           <div className="topbar-meta">
-            <span><CalendarDays size={14} aria-hidden="true" /> {statsClockLabel} {formatDataTimestamp(statsCheckedAt)}</span>
-            <span><History size={14} aria-hidden="true" /> Career model through {formatDataDate(modelVintage)}</span>
+            {activeView === 'Binder' ? (
+              <span>
+                <CalendarDays size={14} aria-hidden="true" /> Baseball model through{' '}
+                {formatDataDate(binderResponse?.snapshot.baseballDataAsOf ?? null)}
+              </span>
+            ) : (
+              <span>
+                <CalendarDays size={14} aria-hidden="true" /> {statsClockLabel}{' '}
+                {formatDataTimestamp(statsCheckedAt)}
+              </span>
+            )}
+            {activeView === 'Binder' && binderResponse ? (
+              <span>
+                <DatabaseZap size={14} aria-hidden="true" /> Market through{' '}
+                {formatDataDate(binderResponse.snapshot.marketDataThrough)}
+              </span>
+            ) : null}
+            {activeView !== 'Binder' ? (
+              <span>
+                <History size={14} aria-hidden="true" /> Career model through{' '}
+                {formatDataDate(modelVintage)}
+              </span>
+            ) : null}
             <span className={`source-pill source-pill--${topbarStatus}`} aria-live="polite">
               {topbarStatus === 'loading' ? <LoaderCircle className="spin" size={13} aria-hidden="true" /> : null}
               {topbarStatus === 'error' || topbarStatus === 'degraded' ? <AlertTriangle size={13} aria-hidden="true" /> : null}
@@ -586,6 +735,64 @@ function App() {
                 onChangeFilters={changeFilters}
                 onChangePage={setPage}
               />
+            )}
+          </main>
+        ) : null}
+
+        {activeView === 'Binder' ? (
+          <main className="research-workspace binder-workspace">
+            {selectedPlayer ? (
+              <PlayerDossier
+                player={selectedPlayer}
+                communitySignal={selectedCommunitySignal}
+                cardMarket={cardMarket}
+                cardMarketLoading={cardMarketLoading}
+                cardMarketError={cardMarketError}
+                binderScore={selectedBinderScore}
+                returnLabel="Return to Build a Binder"
+                onReturnToBoard={returnToBoard}
+              />
+            ) : (
+              <>
+                <header className="workspace-header binder-workspace-header">
+                  <div>
+                    <span className="eyebrow">COLLECTION THESIS · RESEARCH ONLY</span>
+                    <h1>Build a Binder</h1>
+                    <p>
+                      Rank long-term collection candidates using career trajectory,
+                      age-adjusted runway, and measured collector demand. Demand volume
+                      is not a forecast of card appreciation.
+                    </p>
+                  </div>
+                  <div className="snapshot-id">
+                    <span>MARKET SNAPSHOT</span>
+                    <strong>
+                      {binderResponse
+                        ? `Through ${formatDataDate(binderResponse.snapshot.marketDataThrough)}`
+                        : 'Loading monthly evidence'}
+                    </strong>
+                  </div>
+                </header>
+                <BinderBoard
+                  items={binderResponse?.items ?? []}
+                  response={binderResponse}
+                  page={binderResponse?.page ?? {
+                    ...emptyBinderPage,
+                    page: binderPage,
+                  }}
+                  loading={binderLoading}
+                  error={binderError}
+                  query={binderQuery}
+                  stage={binderStage}
+                  selectedId={selectedId}
+                  openingPlayerId={openingPlayerId}
+                  selectionError={selectionError}
+                  onQueryChange={changeBinderQuery}
+                  onStageChange={changeBinderStage}
+                  onPageChange={setBinderPage}
+                  onSelect={selectPlayer}
+                />
+              </>
             )}
           </main>
         ) : null}
