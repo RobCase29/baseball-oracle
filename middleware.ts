@@ -7,6 +7,7 @@ function publicPath(pathname: string): boolean {
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     pathname === '/favicon.svg' ||
+    pathname === '/hobby/og.png' ||
     pathname.startsWith('/assets/') ||
     pathname.startsWith('/src/') ||
     pathname.startsWith('/@vite/') ||

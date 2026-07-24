@@ -52,10 +52,14 @@ describe('Oracle routing authentication', () => {
     }))
     const login = await oracleAccess(new Request('https://oracle.example/login'))
     const asset = await oracleAccess(new Request('https://oracle.example/assets/app.js'))
+    const hobbyPreview = await oracleAccess(new Request(
+      'https://oracle.example/hobby/og.png',
+    ))
 
     expect(authenticated.headers.get('x-middleware-next')).toBe('1')
     expect(login.headers.get('x-middleware-next')).toBe('1')
     expect(asset.headers.get('x-middleware-next')).toBe('1')
+    expect(hobbyPreview.headers.get('x-middleware-next')).toBe('1')
   })
 
   it('continues for bearer-authenticated cron and admin ingestion requests', async () => {
