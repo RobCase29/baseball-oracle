@@ -32,7 +32,6 @@ export interface InvestorWorkbenchProps {
   page: number
   onSearchChange: (value: string) => void
   onDomainChange: (value: MagnificentXDomain | 'all') => void
-  onPostureChange: (value: MagnificentXResearchPosture | 'all') => void
   onSortChange: (value: MagnificentXSortKey) => void
   onDirectionChange: (value: MagnificentXSortDirection) => void
   onPageChange: (value: number) => void
@@ -69,21 +68,6 @@ const domainOptions: ReadonlyArray<{
   { value: 'other_sport', label: 'Other sports' },
   { value: 'mixed_sport', label: 'Mixed sports' },
   { value: 'culture', label: 'Culture · outside scope' },
-]
-
-const postureOptions: ReadonlyArray<{
-  value: MagnificentXResearchPosture | 'all'
-  shortLabel: string
-  label: string
-}> = [
-  { value: 'build_candidate', shortLabel: 'Build', label: 'Build candidates' },
-  { value: 'hold_candidate', shortLabel: 'Hold', label: 'Hold candidates' },
-  { value: 'watch', shortLabel: 'Watch', label: 'Watch' },
-  { value: 'risk_review', shortLabel: 'Risk', label: 'Risk review' },
-  { value: 'pass', shortLabel: 'Pass', label: 'Pass' },
-  { value: 'unrated', shortLabel: 'Unrated', label: 'Unrated' },
-  { value: 'needs_refresh', shortLabel: 'Refresh', label: 'Needs refresh' },
-  { value: 'all', shortLabel: 'All', label: 'All evidence' },
 ]
 
 const postureMeta: Record<MagnificentXResearchPosture, {
@@ -134,7 +118,7 @@ const selectedPostureDescriptions: Record<
   pass: 'Low-priority subject demand. Pass is not an instruction to sell a scarce card.',
   unrated: 'Rows withheld because cohort or identity evidence is insufficient.',
   needs_refresh: 'Rows suspended because the monthly market snapshot is overdue.',
-  all: 'All evidence lanes. Cohort rank—not cross-hobby order—is the validated comparison.',
+  all: 'All evidence lanes. Ordinal conviction is reserved for Build candidates.',
 }
 
 const sortOptions: ReadonlyArray<{
@@ -225,7 +209,6 @@ export function InvestorWorkbench({
   page,
   onSearchChange,
   onDomainChange,
-  onPostureChange,
   onSortChange,
   onDirectionChange,
   onPageChange,
@@ -247,14 +230,9 @@ export function InvestorWorkbench({
     search.length > 0 ||
     domain !== 'all' ||
     posture !== 'build_candidate' ||
-    sort !== 'cohort_rank' ||
+    sort !== (posture === 'build_candidate' ? 'cohort_rank' : 'name') ||
     direction !== 'asc'
-  const showRefreshPosture =
-    posture === 'needs_refresh' ||
-    (
-      response !== null &&
-      response.snapshot.freshness.status !== 'current'
-    )
+  const showBuildRank = posture === 'build_candidate'
 
   function changeSort(nextSort: MagnificentXSortKey): void {
     if (nextSort === sort) {
@@ -268,9 +246,8 @@ export function InvestorWorkbench({
   }
 
   return (
-    <section
-      className="iw-shell"
-      aria-label="Investor research workbench"
+    <div
+      className="iw-workbench-body"
       aria-busy={loading}
     >
       <div className="iw-sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -280,28 +257,6 @@ export function InvestorWorkbench({
             ? ''
             : `${pagination.total.toLocaleString()} matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
       </div>
-      <div
-        className="iw-posture-tabs"
-        role="group"
-        aria-label="Research posture"
-      >
-        {postureOptions
-          .filter((option) => (
-            option.value !== 'needs_refresh' || showRefreshPosture
-          ))
-          .map((option) => (
-          <button
-            type="button"
-            key={option.value}
-            aria-pressed={posture === option.value}
-            title={option.label}
-            onClick={() => onPostureChange(option.value)}
-          >
-            {option.shortLabel}
-          </button>
-          ))}
-      </div>
-
       <div className="iw-controls" role="group" aria-label="Investor board filters">
         <label className="iw-search">
           <span className="iw-control-label">Subject</span>
@@ -350,7 +305,11 @@ export function InvestorWorkbench({
               }
             }}
           >
-            {sortOptions.map((option) => (
+            {sortOptions
+              .filter((option) => (
+                option.value !== 'cohort_rank' || showBuildRank
+              ))
+              .map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -453,19 +412,21 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th
-                  scope="col"
-                  aria-sort={sortAriaValue(sort === 'cohort_rank', direction)}
-                >
-                  <button type="button" onClick={() => changeSort('cohort_rank')}>
-                    Cohort rank
-                    <span aria-hidden="true">
-                      {sort === 'cohort_rank'
-                        ? (direction === 'asc' ? '↑' : '↓')
-                        : '↕'}
-                    </span>
-                  </button>
-                </th>
+                {showBuildRank ? (
+                  <th
+                    scope="col"
+                    aria-sort={sortAriaValue(sort === 'cohort_rank', direction)}
+                  >
+                    <button type="button" onClick={() => changeSort('cohort_rank')}>
+                      Build rank
+                      <span aria-hidden="true">
+                        {sort === 'cohort_rank'
+                          ? (direction === 'asc' ? '↑' : '↓')
+                          : '↕'}
+                      </span>
+                    </button>
+                  </th>
+                ) : null}
                 <th
                   scope="col"
                   aria-sort={sortAriaValue(sort === 'ttm_sales', direction)}
@@ -566,10 +527,12 @@ export function InvestorWorkbench({
                         <strong>{signal.score.toFixed(1)}</strong>
                         <span>/100</span>
                       </td>
-                      <td className="iw-number iw-rank">
-                        <strong>#{item.withinCohortRank}</strong>
-                        <span>{signal.withinCohortPercentile.toFixed(1)} pct</span>
-                      </td>
+                      {showBuildRank ? (
+                        <td className="iw-number iw-rank">
+                          <strong>#{item.withinCohortRank}</strong>
+                          <span>{signal.withinCohortPercentile.toFixed(1)} pct</span>
+                        </td>
+                      ) : null}
                       <td className="iw-number">
                         <strong>{formatMoney(signal.latestTwelveMonthSalesUsd)}</strong>
                       </td>
@@ -589,7 +552,7 @@ export function InvestorWorkbench({
                     </tr>
                     {expanded ? (
                       <tr className="iw-detail-row">
-                        <td colSpan={11}>
+                        <td colSpan={showBuildRank ? 11 : 10}>
                           <div className="iw-detail">
                             <section>
                               <span className="iw-detail-label">Research read</span>
@@ -697,6 +660,6 @@ export function InvestorWorkbench({
           </button>
         </nav>
       ) : null}
-    </section>
+    </div>
   )
 }

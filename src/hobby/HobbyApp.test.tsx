@@ -17,6 +17,12 @@ import {
   type MagnificentXFeedResponse,
   type MagnificentXSubjectType,
 } from '../domain/magnificentX'
+import {
+  buildBinderScore,
+  type BinderRoute,
+  type BinderScoreFeedItem,
+  type BinderScoresResponse,
+} from '../domain/binderScore'
 import { HobbyApp } from './HobbyApp'
 
 beforeEach(() => {
@@ -165,6 +171,127 @@ function fixtureResponse(
   }
 }
 
+function youngPlayer(input: {
+  id: string
+  name: string
+  age: number
+  stage: BinderRoute
+  careerIndex: number
+  demandPercentile: number
+}): BinderScoreFeedItem {
+  const assessment = buildBinderScore({
+    player: {
+      id: input.id,
+      name: input.name,
+      age: input.age,
+      route: input.stage,
+    },
+    baseball: {
+      careerIndex: input.careerIndex,
+      routeOutcomePercentile: input.careerIndex - 3,
+      freshness: {
+        status: 'current',
+        dataAsOf: '2025-12-31T00:00:00.000Z',
+      },
+    },
+    market: {
+      sourcePlayerName: input.name,
+      identityStatus: 'unique_normalized_name',
+      trailingTwelveMonthDemandPercentile: input.demandPercentile,
+      monthlySalesUsd: months.slice(-12),
+      freshness: {
+        status: 'current',
+        dataAsOf: '2026-06-30T23:59:59.999Z',
+      },
+      cohortId: 'gemrate-baseball',
+    },
+  })
+  return {
+    recordVersion: 'binder-score-item/v1',
+    player: {
+      id: input.id,
+      name: input.name,
+      mlbamId: input.id,
+      age: input.age,
+      stage: input.stage,
+      playerType: 'Hitter',
+      organization: 'Example Club',
+      organizationCode: 'EX',
+      position: 'SS',
+      level: input.stage === 'pre_debut' ? 'AAA' : 'MLB',
+    },
+    assessment,
+  }
+}
+
+function youngFixtureResponse(): BinderScoresResponse {
+  return {
+    schemaVersion: 'binder-scores.v1',
+    contractVersion: 'binder-score-contract/v1',
+    snapshot: {
+      id: `binder-score-snapshot/v1:${'b'.repeat(64)}`,
+      baseballDataAsOf: '2025-12-31T00:00:00.000Z',
+      baseballFreshness: {
+        status: 'current',
+        reasonCodes: [],
+        cadence: 'completed_season',
+      },
+      marketDataThrough: '2026-06-30',
+      marketPublishedAt: '2026-07-12T00:00:00.000Z',
+      marketAcquiredAt: '2026-07-24T18:00:00.000Z',
+      marketFreshness: {
+        status: 'current',
+        reasonCodes: [],
+        nextExpectedBy: '2026-08-20T00:00:00.000Z',
+        cadence: 'monthly',
+      },
+    },
+    items: [
+      youngPlayer({
+        id: '805790',
+        name: 'Jackson Holliday',
+        age: 22,
+        stage: 'pre_debut',
+        careerIndex: 92,
+        demandPercentile: 95,
+      }),
+      youngPlayer({
+        id: '694973',
+        name: 'Paul Skenes',
+        age: 24,
+        stage: 'early_mlb',
+        careerIndex: 88,
+        demandPercentile: 97,
+      }),
+    ],
+    page: {
+      page: 1,
+      limit: 50,
+      total: 42,
+      totalPages: 1,
+    },
+    meta: {
+      researchOnly: true,
+      investmentAdvice: false,
+      marketSource: 'GemRate Athlete Sales Trends',
+      marketMeasure: 'completed_ebay_singles_sales_volume_usd',
+      marketMeaning:
+        'collector_demand_is_an_ebay_singles_sales_volume_proxy_not_price_appreciation',
+      careerMeaning:
+        'career_evidence_is_statistical_hall_caliber_trajectory_not_hof_election_odds',
+      identityPolicy:
+        'exact_oracle_identity_plus_unique_normalized_gemrate_name_no_fuzzy_matching',
+      nullPolicy: 'missing_evidence_shrinks_to_prior_and_withholds_action',
+      rankingScope: 'cross_stage_research_heuristic',
+      sourceRows: 2_060,
+      ambiguousSourceKeys: 4,
+      matchedUniversePlayers: 517,
+      actionableUniversePlayers: 6,
+      permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
+    },
+  }
+}
+
 function jsonResponse(payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     status: 200,
@@ -286,6 +413,78 @@ describe('Magnificent X investor board', () => {
       'true',
     )
     expect(screen.getAllByText('Needs refresh')).toHaveLength(2)
+  })
+
+  it('re-ranks the verified young-player slice without promoting its Binder call', async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      return Promise.resolve(
+        jsonResponse(
+          url.includes('/api/v1/binder-scores')
+            ? youngFixtureResponse()
+            : fixtureResponse(),
+        ),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<HobbyApp />)
+
+    await screen.findByText('Pikachu')
+    fireEvent.click(screen.getByRole('button', { name: 'Young players' }))
+
+    const player = await screen.findByText('Jackson Holliday')
+    const row = player.closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row!).getByText('#1')).toBeInTheDocument()
+    expect(within(row!).getByText('of 42')).toBeInTheDocument()
+    expect(within(row!).getByText('Action withheld')).toBeInTheDocument()
+    expect(within(row!).getByText('Provisional')).toBeInTheDocument()
+    expect(screen.getByText('Age is a lens—not a shortcut.')).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Young player rank' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Young players' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('/api/v1/binder-scores?')
+      expect(latestUrl).toContain('maxAge=25')
+      expect(latestUrl).toContain('stage=All')
+      expect(latestUrl).toContain('rankedOnly=true')
+      expect(latestUrl).toContain('sort=binderScore')
+    })
+    expect(window.location.search).toContain('lens=young')
+    expect(window.location.search).toContain('maxAge=25')
+
+    fireEvent.change(screen.getByLabelText('Age ceiling'), {
+      target: { value: '23' },
+    })
+    fireEvent.change(screen.getByLabelText('Career stage'), {
+      target: { value: 'Minors' },
+    })
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('maxAge=23')
+      expect(latestUrl).toContain('stage=Minors')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hold' }))
+    await screen.findByText('Pikachu')
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('/api/v1/magnificent-x?')
+      expect(latestUrl).toContain('posture=hold_candidate')
+      expect(latestUrl).toContain('sort=name')
+      expect(latestUrl).toContain('direction=asc')
+    })
+    expect(
+      screen.queryByRole('columnheader', { name: 'Build rank' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('#2')).not.toBeInTheDocument()
   })
 
   it('does not leave stale rows visible after a failed screen request', async () => {

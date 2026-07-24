@@ -60,6 +60,18 @@
   background: var(--mx-lime);
 }
 
+.iw-posture-tabs .iw-young-tab {
+  min-width: 112px;
+  margin-right: 7px;
+  color: var(--mx-mint);
+  box-shadow: 8px 0 0 -7px var(--mx-line-strong);
+}
+
+.iw-posture-tabs .iw-young-tab[aria-pressed="true"] {
+  color: #08100d;
+  background: var(--mx-mint);
+}
+
 .iw-controls {
   display: grid;
   grid-template-columns: minmax(250px, 1fr) 190px 190px 130px auto;

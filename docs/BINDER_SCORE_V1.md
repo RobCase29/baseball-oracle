@@ -18,9 +18,29 @@ The machine-readable response contract is
 `/schemas/binder-scores.v1.schema.json`.
 
 The endpoint accepts the player-list filters `q`, `ids`, `stage`, `playerType`,
-`level`, `team`, `position`, `page`, and `limit`. Binder results are always
-ordered by `binderScore`; the endpoint rejects other sort modes. Scores should
-only be compared within the same `modelVersion` and declared market cohort.
+`level`, `team`, `position`, `minAge`, `maxAge`, `rankedOnly`, `page`, and
+`limit`. `minAge` and `maxAge` are inclusive integers from 15 through 60;
+players with unknown age are excluded whenever either bound is present.
+`rankedOnly=true` keeps every player with a numeric Binder Score, regardless of
+its action label, and excludes rows whose score is withheld. These three
+controls are restricted to the Binder view.
+
+Binder results are always ordered first by numeric `binderScore`, with nulls
+last, then by confidence and stable identity. An `insufficient_evidence` action
+does not move a higher provisional numeric score below a lower reviewed score;
+the evidence and action fields remain visible so consumers cannot mistake
+ordering for actionability. The endpoint rejects other sort modes. Scores
+should only be compared within the same `modelVersion` and declared market
+cohort.
+
+The `/hobby` Young Players lens requests `maxAge=25&rankedOnly=true` by default
+and offers age ceilings of 21, 23, 25, and 27 plus the existing `All`,
+`Minors`, `RC`, and `MLB` stage scopes. It computes no new score or percentile.
+It filters the current canonical player universe before sorting and pagination,
+then presents the resulting order as a scoped ordinal. Search, ownership, and
+action labels do not redefine that ordinal. The UI suppresses the ordinal when
+fewer than 20 scored rows match or when either the baseball or market snapshot
+is not current.
 
 ## Formula
 

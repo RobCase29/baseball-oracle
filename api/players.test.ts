@@ -479,6 +479,9 @@ function query(patch: Partial<PlayerQuery> = {}): PlayerQuery {
     team: null,
     position: null,
     signal: 'All',
+    minAge: null,
+    maxAge: null,
+    rankedOnly: false,
     sort: 'alphaOpportunity',
     page: 1,
     limit: 50,
@@ -1407,7 +1410,27 @@ describe('unified player ordering', () => {
     expect(parseQuery(request('/api/players?view=binder'))).toMatchObject({
       view: 'binder',
       sort: 'binderScore',
+      minAge: null,
+      maxAge: null,
+      rankedOnly: false,
     })
+    expect(
+      parseQuery(
+        request('/api/players?view=binder&minAge=18&maxAge=25&rankedOnly=true'),
+      ),
+    ).toMatchObject({
+      view: 'binder',
+      minAge: 18,
+      maxAge: 25,
+      rankedOnly: true,
+      sort: 'binderScore',
+    })
+    expect(parseQuery(request('/api/players?maxAge=25'))).toBeNull()
+    expect(parseQuery(request('/api/players?view=binder&minAge=26&maxAge=25')))
+      .toBeNull()
+    expect(parseQuery(request('/api/players?view=binder&maxAge=14'))).toBeNull()
+    expect(parseQuery(request('/api/players?view=binder&maxAge=25&maxAge=26')))
+      .toBeNull()
     expect(parseQuery(request('/api/players?view=binder&sort=name'))).toBeNull()
     expect(parseQuery(request('/api/players?sort=binderScore'))).toBeNull()
     expect(parseQuery(request('/api/players?view=prices'))).toBeNull()
@@ -1521,6 +1544,82 @@ describe('unified player ordering', () => {
       fieldExposed: false,
       direction: 'descending',
     })
+  })
+
+  it('applies inclusive Binder age filters and keeps every numerically scored posture', () => {
+    const ranked = candidate('ranked', {
+      age: 25,
+      binderScore: {
+        score: 72,
+        action: 'insufficient_evidence',
+      } as UnifiedBoardCandidate['binderScore'],
+    })
+    const unranked = candidate('unranked', {
+      age: 22,
+      binderScore: {
+        score: null,
+        action: 'insufficient_evidence',
+      } as UnifiedBoardCandidate['binderScore'],
+    })
+
+    expect(matchesQuery(
+      ranked,
+      query({
+        view: 'binder',
+        minAge: 20,
+        maxAge: 25,
+        rankedOnly: true,
+        sort: 'binderScore',
+      }),
+    )).toBe(true)
+    expect(matchesQuery(
+      candidate('older', { age: 26 }),
+      query({ view: 'binder', maxAge: 25, sort: 'binderScore' }),
+    )).toBe(false)
+    expect(matchesQuery(
+      candidate('unknown-age', { age: null }),
+      query({ view: 'binder', maxAge: 25, sort: 'binderScore' }),
+    )).toBe(false)
+    expect(matchesQuery(
+      unranked,
+      query({
+        view: 'binder',
+        maxAge: 25,
+        rankedOnly: true,
+        sort: 'binderScore',
+      }),
+    )).toBe(false)
+    expect(matchesQuery(
+      candidate('score-missing', { age: 22 }),
+      query({
+        view: 'binder',
+        maxAge: 25,
+        rankedOnly: true,
+        sort: 'binderScore',
+      }),
+    )).toBe(false)
+  })
+
+  it('orders Binder results by score even when the higher score has no action label', () => {
+    const provisionalLeader = candidate('provisional-leader', {
+      binderScore: {
+        score: 88,
+        action: 'insufficient_evidence',
+        confidence: { score: 40 },
+      } as UnifiedBoardCandidate['binderScore'],
+    })
+    const reviewedHold = candidate('reviewed-hold', {
+      binderScore: {
+        score: 70,
+        action: 'core_hold',
+        confidence: { score: 75 },
+      } as UnifiedBoardCandidate['binderScore'],
+    })
+
+    expect(
+      sortUnifiedCandidates([reviewedHold, provisionalLeader], 'binderScore')
+        .map((item) => item.id),
+    ).toEqual(['provisional-leader', 'reviewed-hold'])
   })
 
   it('publishes a deterministic ETag and honors conditional GET requests', () => {

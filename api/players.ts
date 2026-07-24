@@ -131,6 +131,9 @@ const queryParameterNames = new Set([
   'team',
   'position',
   'signal',
+  'minAge',
+  'maxAge',
+  'rankedOnly',
   'sort',
   'page',
   'limit',
@@ -182,6 +185,12 @@ const querySchema = z.object({
     .nullable()
     .default(null),
   signal: z.enum(playerSignalFilters).default('All'),
+  minAge: z.coerce.number().int().min(15).max(60).nullable().default(null),
+  maxAge: z.coerce.number().int().min(15).max(60).nullable().default(null),
+  rankedOnly: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .default(false),
   sort: z.enum(playerSorts).optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -204,6 +213,9 @@ export interface PlayerQuery {
   team: string | null
   position: string | null
   signal: PlayerSignalFilter
+  minAge: number | null
+  maxAge: number | null
+  rankedOnly: boolean
   sort: PlayerSort
   page: number
   limit: number
@@ -592,6 +604,9 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
       team: readSingleParameter(url.searchParams, 'team'),
       position: readSingleParameter(url.searchParams, 'position'),
       signal: readSingleParameter(url.searchParams, 'signal'),
+      minAge: readSingleParameter(url.searchParams, 'minAge'),
+      maxAge: readSingleParameter(url.searchParams, 'maxAge'),
+      rankedOnly: readSingleParameter(url.searchParams, 'rankedOnly'),
       sort: readSingleParameter(url.searchParams, 'sort'),
       page: readSingleParameter(url.searchParams, 'page'),
       limit: readSingleParameter(url.searchParams, 'limit'),
@@ -602,6 +617,18 @@ export function parseQuery(request: IncomingMessage): PlayerQuery | null {
       Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)),
     )
     if (!parsed.success) return null
+
+    const binderOnlyParameterPresent = [
+      'minAge',
+      'maxAge',
+      'rankedOnly',
+    ].some((name) => url.searchParams.has(name))
+    if (binderOnlyParameterPresent && parsed.data.view !== 'binder') return null
+    if (
+      parsed.data.minAge !== null &&
+      parsed.data.maxAge !== null &&
+      parsed.data.minAge > parsed.data.maxAge
+    ) return null
 
     const sort = parsed.data.sort ?? defaultSortForStage(parsed.data.stage)
     if (parsed.data.view === 'binder' && parsed.data.sort === undefined) {
@@ -2380,14 +2407,7 @@ export function sortUnifiedCandidates(
       )
     }
     if (sort === 'binderScore') {
-      const leftActionable =
-        left.binderScore?.action !== 'insufficient_evidence' &&
-        left.binderScore?.score !== null
-      const rightActionable =
-        right.binderScore?.action !== 'insufficient_evidence' &&
-        right.binderScore?.score !== null
       return (
-        Number(rightActionable) - Number(leftActionable) ||
         compareNullableNumber(
           left.binderScore?.score ?? null,
           right.binderScore?.score ?? null,
@@ -3904,7 +3924,25 @@ export function matchesQuery(
   ].some((value) => value?.trim().toLocaleLowerCase('en-US') === teamNeedle)
   const positionMatches = omittedFacet === 'position' || query.position === null ||
     playerPositionTokens(candidate.position).includes(query.position)
-  return identityMatches && stageMatches && typeMatches && levelMatches && teamMatches && positionMatches
+  const ageMatches =
+    query.minAge === null && query.maxAge === null
+      ? true
+      : candidate.age !== null &&
+        (query.minAge === null || candidate.age >= query.minAge) &&
+        (query.maxAge === null || candidate.age <= query.maxAge)
+  const binderScore = candidate.binderScore?.score
+  const rankingMatches =
+    !query.rankedOnly || (binderScore !== null && binderScore !== undefined)
+  return (
+    identityMatches &&
+    stageMatches &&
+    typeMatches &&
+    levelMatches &&
+    teamMatches &&
+    positionMatches &&
+    ageMatches &&
+    rankingMatches
+  )
 }
 
 export function matchesIdentityQuery(

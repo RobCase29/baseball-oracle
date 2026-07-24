@@ -99,6 +99,37 @@ name
 Cross-hobby sorting is a screen, not a validated global ranking. Cohort rank
 and percentile remain the authoritative relative-standing fields.
 
+The workbench presents an ordinal only in the `build_candidate` lane, where it
+is labeled Build rank and remains scoped to the subject's provider cohort.
+Hold, Watch, Risk Review, Pass, Unrated, and All lanes default to alphabetical
+order and do not display an ordinal. Users may still sort those lanes by an
+individual metric, but that navigation is not presented as a conviction rank.
+
+## Young Players lens
+
+The adjacent Young Players lens is baseball-only. It does not infer age,
+prospect status, or rookie status from GemRate names or grading years. Instead,
+it uses the canonical age and career-stage fields already served by Baseball
+Oracle and orders the filtered universe with the existing Binder Score v1
+endpoint:
+
+```http
+GET /api/v1/binder-scores?stage=All&maxAge=25&rankedOnly=true&sort=binderScore
+```
+
+The default screen is age 25 or younger, with presets for 21, 23, 25, and 27
+and structural stage filters for prospects, recent callups, and the MLB track.
+Changing age or stage filters before sorting and pagination, so the displayed
+ordinal is scoped to the complete filtered universe. It does not recompute the
+underlying Binder Score, change a player's Binder action, or promote a
+provisional identity into an actionable one. The table keeps the Binder call
+and evidence state next to the scoped ordinal.
+
+`RC` means Baseball Oracle's recent-callup track. It is not a claim of official
+MLB rookie eligibility. Pokémon and sports without a vetted canonical
+identity/age adapter are excluded. Ordinals are suspended for stale inputs or
+screens smaller than 20 scored players.
+
 ## Source snapshot
 
 The committed snapshot combines four permissioned GemRate CSV editions:
