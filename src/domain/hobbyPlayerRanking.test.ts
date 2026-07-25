@@ -24,6 +24,7 @@ function candidate(
     provider: sport === 'football' ? 'keeptradecut' : 'hashtag_basketball',
     providerPlayerId: id,
     gemRateSourceKey: `athlete|${sport}|${id}`,
+    identityStatus: 'reviewed_exact',
     providerPercentiles: sport === 'football'
       ? {
           oneQb: 90,
@@ -39,6 +40,15 @@ function candidate(
         },
     monthlySalesUsd: Array(18).fill(1_000),
     volumePercentile: 90,
+    recentSixMonthVolumePercentile: 90,
+    fullHistoryVolumePercentile: 90,
+    evidenceYears: 3,
+    evidenceStage: 'established',
+    evidenceBasis:
+      sport === 'football' ? 'nfl_draft_year' : 'basketball_age_proxy',
+    careerStartYear: sport === 'football' ? 2023 : null,
+    firstGradedYear: 2023,
+    mostGradedYear: 2025,
     marketFreshness: 'current',
     fundamentalsFreshness: 'current',
     manualReviewStatus: 'approved',
@@ -134,7 +144,7 @@ describe('Hobby player durable ranking', () => {
     expect(basketballRanks(expanded)).toEqual(basketballRanks(initial))
   })
 
-  it('withholds Build when freshness, history, review, or sensitivity fails', () => {
+  it('withholds Build when freshness, history, or review fails', () => {
     const [row] = rankHobbyPlayerCandidates([
       candidate('stale', 'football', {
         monthlySalesUsd: [null, ...Array(17).fill(100_000)],
@@ -172,5 +182,131 @@ describe('Hobby player durable ranking', () => {
       candidate('old', 'basketball', { age: 38 }),
     ])
     expect(rows[0]!.score).toBe(rows[1]!.score)
+  })
+
+  it('keeps evidence stage out of the score peer baseline', () => {
+    const stagePeers = [
+      ...Array.from({ length: 8 }, (_, index) => candidate(
+        `emerging-peer-${index}`,
+        'basketball',
+        {
+          evidenceYears: 2,
+          evidenceStage: 'emerging',
+          providerPercentiles: {
+            oneQb: null,
+            superflex: null,
+            fiveSeason: 55,
+            keeper: 55,
+          },
+          volumePercentile: 95,
+        },
+      )),
+      ...Array.from({ length: 8 }, (_, index) => candidate(
+        `established-peer-${index}`,
+        'basketball',
+        {
+          evidenceYears: 8,
+          evidenceStage: 'established',
+          providerPercentiles: {
+            oneQb: null,
+            superflex: null,
+            fiveSeason: 95,
+            keeper: 95,
+          },
+          volumePercentile: 55,
+        },
+      )),
+    ]
+    const rows = rankHobbyPlayerCandidates([
+      ...stagePeers,
+      candidate('same-signal-emerging', 'basketball', {
+        evidenceYears: 2,
+        evidenceStage: 'emerging',
+        providerPercentiles: {
+          oneQb: null,
+          superflex: null,
+          fiveSeason: 80,
+          keeper: 80,
+        },
+        volumePercentile: 80,
+      }),
+      candidate('same-signal-established', 'basketball', {
+        evidenceYears: 8,
+        evidenceStage: 'established',
+        providerPercentiles: {
+          oneQb: null,
+          superflex: null,
+          fiveSeason: 80,
+          keeper: 80,
+        },
+        volumePercentile: 80,
+      }),
+    ])
+    const emerging = rows.find(
+      (row) => row.input.id === 'same-signal-emerging',
+    )!
+    const established = rows.find(
+      (row) => row.input.id === 'same-signal-established',
+    )!
+
+    expect(emerging.diagnostics.attentionGapBaseline).toBe(
+      established.diagnostics.attentionGapBaseline,
+    )
+    expect(emerging.score).toBe(established.score)
+  })
+
+  it('uses career depth as a Build gate without adding rookie bonus points', () => {
+    const rows = rankHobbyPlayerCandidates([
+      candidate('a-rookie', 'football', {
+        age: null,
+        evidenceYears: 0,
+        evidenceStage: 'new',
+        careerStartYear: 2026,
+      }),
+      candidate('b-established', 'football'),
+    ])
+    const rookie = rows.find((row) => row.input.id === 'a-rookie')!
+    const established = rows.find((row) => row.input.id === 'b-established')!
+
+    expect(rookie.score).toBe(established.score)
+    expect(rookie.gates.checks.minimumEvidenceDepth).toBe(false)
+    expect(rookie.gates.reasonCodes).toContain(
+      'minimum_career_evidence_depth_not_reached',
+    )
+    expect(rookie.posture).toBe('Watch')
+  })
+
+  it('accepts unknown football rookie age but not unknown basketball age', () => {
+    expect(() => rankHobbyPlayerCandidates([
+      candidate('football-rookie', 'football', {
+        age: null,
+        evidenceYears: 0,
+        evidenceStage: 'new',
+        careerStartYear: 2026,
+      }),
+    ])).not.toThrow()
+    expect(() => rankHobbyPlayerCandidates([
+      candidate('basketball-unknown', 'basketball', { age: null }),
+    ])).toThrow(/plausible age/u)
+  })
+
+  it('flags sport-relative sales concentration instead of rewarding one spike', () => {
+    const rows = rankHobbyPlayerCandidates([
+      candidate('steady', 'basketball'),
+      candidate('spike', 'basketball', {
+        monthlySalesUsd: [
+          ...Array(17).fill(1),
+          17_983,
+        ],
+      }),
+    ])
+    const steady = rows.find((row) => row.input.id === 'steady')!
+    const spike = rows.find((row) => row.input.id === 'spike')!
+
+    expect(spike.diagnostics.salesConcentrationHhi).toBeGreaterThan(
+      steady.diagnostics.salesConcentrationHhi,
+    )
+    expect(spike.gates.checks.concentrationBelowSportP90).toBe(false)
+    expect(spike.posture).not.toBe('Build')
   })
 })

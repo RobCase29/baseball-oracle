@@ -9,9 +9,10 @@ import {
 import { dirname, resolve } from 'node:path'
 import { normalizeHobbyPlayerName } from '../../src/domain/hobbyPlayerRanking.js'
 
-const schemaVersion = 'backstop-hobby-player-signals.v1'
+const schemaVersion = 'backstop-hobby-player-signals.v2'
+const contractVersion = '2.0.0'
 const defaultSource = resolve(
-  '../Checklist.BackstopCards.com/data/oracle/hobby-player-signals.v1.json',
+  '../Checklist.BackstopCards.com/data/oracle/hobby-player-signals.v2.json',
 )
 const defaultOutput = resolve(
   'api/_data/checklist-hobby-player-signals.json',
@@ -36,11 +37,12 @@ interface ExchangeRow {
   providerPlayerId: string
   sourceDisplayName: string
   normalizedName: string
+  careerStartYear: number | null
 }
 
 interface ExchangeArtifact {
   schemaVersion: typeof schemaVersion
-  contractVersion: string
+  contractVersion: typeof contractVersion
   generatedAt: string
   counts: {
     publishedRows: number
@@ -82,6 +84,14 @@ function contentHash(value: ExchangeArtifact): string {
   return createHash('sha256').update(stableJson(body)).digest('hex')
 }
 
+function validCareerStartYear(value: unknown): value is number | null {
+  return value === null || (
+    Number.isSafeInteger(value) &&
+    (value as number) >= 1900 &&
+    (value as number) <= 2200
+  )
+}
+
 function parseArtifact(source: string): ExchangeArtifact {
   const value = JSON.parse(source) as unknown
   if (!isRecord(value)) {
@@ -90,7 +100,7 @@ function parseArtifact(source: string): ExchangeArtifact {
   const artifact = value as unknown as ExchangeArtifact
   if (
     artifact.schemaVersion !== schemaVersion ||
-    typeof artifact.contractVersion !== 'string' ||
+    artifact.contractVersion !== contractVersion ||
     !Number.isFinite(Date.parse(artifact.generatedAt)) ||
     !isRecord(artifact.counts) ||
     !isRecord(artifact.counts.bySport) ||
@@ -132,10 +142,13 @@ function parseArtifact(source: string): ExchangeArtifact {
       !row.providerPlayerId ||
       !row.sourceDisplayName ||
       row.normalizedName !== normalizeHobbyPlayerName(row.sourceDisplayName) ||
+      !Object.prototype.hasOwnProperty.call(row, 'careerStartYear') ||
+      !validCareerStartYear(row.careerStartYear) ||
+      (row.sport === 'basketball' && row.careerStartYear !== null) ||
       identities.has(identity)
     ) {
       throw new Error(
-        `Checklist player-signal row failed identity validation: ${identity}`,
+        `Checklist player-signal row failed contract validation: ${identity}`,
       )
     }
     identities.add(identity)
@@ -180,6 +193,7 @@ process.stdout.write(`${JSON.stringify({
   ok: true,
   mode: process.argv.includes('--check') ? 'check' : 'import',
   schemaVersion: artifact.schemaVersion,
+  contractVersion: artifact.contractVersion,
   contentSha256: artifact.contentSha256,
   rows: artifact.rows.length,
   football: artifact.counts.bySport.football,

@@ -32,6 +32,7 @@
     "data:hobby-player-signals:import": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts",
     "data:hobby-player-signals:check": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --check",
     "data:hobby-player-signals:validate": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --source api/_data/checklist-hobby-player-signals.json --output api/_data/checklist-hobby-player-signals.json --check",
+    "data:hobby-player-signals:test": "vitest run scripts/ingest/checklist-hobby-player-signals.test.ts",
     "data:fangraphs-identity:build": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts",
     "data:fangraphs-identity:check": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts --check",
     "audit:twtc": ".venv/bin/python scripts/audits/audit_trouble_with_curve.py",

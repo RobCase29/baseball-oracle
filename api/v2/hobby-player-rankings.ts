@@ -6,7 +6,7 @@ import {
   hobbyPlayerRankingSortKeys,
   hobbyPlayerRankingSports,
   type HobbyPlayerRankingsQuery,
-} from '../_hobby-player-rankings-v1.js'
+} from '../_hobby-player-rankings.js'
 
 const allowedParameters = new Set([
   'sport',
@@ -79,7 +79,7 @@ export function handleHobbyPlayerRankings(
   }
   try {
     const url = new URL(
-      request.url ?? '/api/v1/hobby-player-rankings',
+      request.url ?? '/api/v2/hobby-player-rankings',
       'https://baseball-oracle.local',
     )
     for (const key of url.searchParams.keys()) {

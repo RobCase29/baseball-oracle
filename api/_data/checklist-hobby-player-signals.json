@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "backstop-hobby-player-signals.v1",
-  "contractVersion": "1.0.0",
+  "schemaVersion": "backstop-hobby-player-signals.v2",
+  "contractVersion": "2.0.0",
   "generatedAt": "2026-07-24T00:18:36.908Z",
-  "semantics": "Attributed normalized provider facts for identity-safe derived comparison. This exchange contains no GemRate rows, raw provider payloads, card prices, or Hobby Oracle investment scores.",
+  "semantics": "Attributed normalized provider facts for identity-safe derived comparison. careerStartYear is the validated KeepTradeCut draft year for football and null for basketball because its source does not provide one. This exchange contains no GemRate rows, raw provider payloads, card prices, or Hobby Oracle investment scores.",
   "counts": {
     "sourceRows": 864,
     "publishedRows": 864,
@@ -92,6 +92,7 @@
         "C"
       ],
       "age": 30.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 167,
@@ -116,6 +117,7 @@
         "SF"
       ],
       "age": 26.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 156,
@@ -137,6 +139,7 @@
       "team": "DEN",
       "positions": [],
       "age": 24.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 360,
@@ -161,6 +164,7 @@
         "SF"
       ],
       "age": 27.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 291,
@@ -186,6 +190,7 @@
         "PF"
       ],
       "age": 19.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 103,
@@ -207,6 +212,7 @@
       "team": "OKC",
       "positions": [],
       "age": 21.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 173,
@@ -230,6 +236,7 @@
         "C"
       ],
       "age": 23.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 301,
@@ -251,6 +258,7 @@
       "team": "WAS",
       "positions": [],
       "age": 19.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 29,
@@ -276,6 +284,7 @@
         "SF"
       ],
       "age": 26.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 367,
@@ -300,6 +309,7 @@
         "SG"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 86,
@@ -324,6 +334,7 @@
         "SF"
       ],
       "age": 32.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 323,
@@ -345,6 +356,7 @@
       "team": "SAC",
       "positions": [],
       "age": 23.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 239,
@@ -368,6 +380,7 @@
         "C"
       ],
       "age": 21.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 32,
@@ -389,6 +402,7 @@
       "team": "TOR",
       "positions": [],
       "age": 20,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 137,
@@ -413,6 +427,7 @@
         "C"
       ],
       "age": 24,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 15,
@@ -438,6 +453,7 @@
         "SF"
       ],
       "age": 23.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 24,
@@ -461,6 +477,7 @@
         "C"
       ],
       "age": 33,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 309,
@@ -485,6 +502,7 @@
         "SG"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 143,
@@ -510,6 +528,7 @@
         "PF"
       ],
       "age": 31.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 242,
@@ -534,6 +553,7 @@
         "SG"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 155,
@@ -559,6 +579,7 @@
         "SF"
       ],
       "age": 22.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 88,
@@ -583,6 +604,7 @@
         "C"
       ],
       "age": 33.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 48,
@@ -607,6 +629,7 @@
         "SG"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 8,
@@ -630,6 +653,7 @@
         "PF"
       ],
       "age": 20.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 390,
@@ -655,6 +679,7 @@
         "PF"
       ],
       "age": 23.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 121,
@@ -680,6 +705,7 @@
         "SF"
       ],
       "age": 28.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 25,
@@ -705,6 +731,7 @@
         "SF"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 151,
@@ -726,6 +753,7 @@
       "team": "LAC",
       "positions": [],
       "age": 22.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 246,
@@ -750,6 +778,7 @@
         "C"
       ],
       "age": 29,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 45,
@@ -773,6 +802,7 @@
         "SG"
       ],
       "age": 20.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 378,
@@ -797,6 +827,7 @@
         "SF"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 337,
@@ -821,6 +852,7 @@
         "SF"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 161,
@@ -842,6 +874,7 @@
       "team": "OKC",
       "positions": [],
       "age": 22.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 282,
@@ -866,6 +899,7 @@
         "SF"
       ],
       "age": 22,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 138,
@@ -890,6 +924,7 @@
         "C"
       ],
       "age": 31.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 300,
@@ -914,6 +949,7 @@
         "SG"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 307,
@@ -938,6 +974,7 @@
         "SF"
       ],
       "age": 33.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 274,
@@ -962,6 +999,7 @@
         "SG"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 113,
@@ -987,6 +1025,7 @@
         "PF"
       ],
       "age": 28.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 75,
@@ -1011,6 +1050,7 @@
         "PF"
       ],
       "age": 23.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 57,
@@ -1034,6 +1074,7 @@
         "PG"
       ],
       "age": 26.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 281,
@@ -1055,6 +1096,7 @@
       "team": "MIL",
       "positions": [],
       "age": 20.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 79,
@@ -1080,6 +1122,7 @@
         "PF"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 228,
@@ -1104,6 +1147,7 @@
         "SG"
       ],
       "age": 21.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 352,
@@ -1127,6 +1171,7 @@
         "C"
       ],
       "age": 38.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 339,
@@ -1151,6 +1196,7 @@
         "SG"
       ],
       "age": 29.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 363,
@@ -1172,6 +1218,7 @@
       "team": "HOU",
       "positions": [],
       "age": 22.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 272,
@@ -1196,6 +1243,7 @@
         "SF"
       ],
       "age": 33.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 380,
@@ -1220,6 +1268,7 @@
         "SG"
       ],
       "age": 24.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 5,
@@ -1244,6 +1293,7 @@
         "SG"
       ],
       "age": 24.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 329,
@@ -1265,6 +1315,7 @@
       "team": "CHI",
       "positions": [],
       "age": 20,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 41,
@@ -1289,6 +1340,7 @@
         "SG"
       ],
       "age": 26.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 199,
@@ -1313,6 +1365,7 @@
         "SF"
       ],
       "age": 24.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 313,
@@ -1337,6 +1390,7 @@
         "PF"
       ],
       "age": 22,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 209,
@@ -1358,6 +1412,7 @@
       "team": "MEM",
       "positions": [],
       "age": 19,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 10,
@@ -1379,6 +1434,7 @@
       "team": "LAL",
       "positions": [],
       "age": 21.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 216,
@@ -1404,6 +1460,7 @@
         "PF"
       ],
       "age": 30.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 148,
@@ -1428,6 +1485,7 @@
         "SG"
       ],
       "age": 32,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 325,
@@ -1452,6 +1510,7 @@
         "SF"
       ],
       "age": 31.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 314,
@@ -1476,6 +1535,7 @@
         "SG"
       ],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 194,
@@ -1499,6 +1559,7 @@
         "SF"
       ],
       "age": 20.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 203,
@@ -1524,6 +1585,7 @@
         "SF"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 132,
@@ -1548,6 +1610,7 @@
         "SF"
       ],
       "age": 22.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 114,
@@ -1572,6 +1635,7 @@
         "C"
       ],
       "age": 24.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 14,
@@ -1593,6 +1657,7 @@
       "team": "BOS",
       "positions": [],
       "age": 19.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 283,
@@ -1614,6 +1679,7 @@
       "team": "CHA",
       "positions": [],
       "age": 20.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 176,
@@ -1639,6 +1705,7 @@
         "PF"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 126,
@@ -1663,6 +1730,7 @@
         "SG"
       ],
       "age": 34.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 152,
@@ -1687,6 +1755,7 @@
         "SG"
       ],
       "age": 26.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 111,
@@ -1711,6 +1780,7 @@
         "SF"
       ],
       "age": 21.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 253,
@@ -1734,6 +1804,7 @@
         "PG"
       ],
       "age": 26.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 303,
@@ -1758,6 +1829,7 @@
         "SG"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 146,
@@ -1782,6 +1854,7 @@
         "C"
       ],
       "age": 21.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 81,
@@ -1806,6 +1879,7 @@
         "SG"
       ],
       "age": 27.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 202,
@@ -1831,6 +1905,7 @@
         "SF"
       ],
       "age": 19.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 6,
@@ -1855,6 +1930,7 @@
         "PF"
       ],
       "age": 27.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 376,
@@ -1876,6 +1952,7 @@
       "team": "CHI",
       "positions": [],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 136,
@@ -1900,6 +1977,7 @@
         "SF"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 385,
@@ -1923,6 +2001,7 @@
         "PG"
       ],
       "age": 36,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 170,
@@ -1946,6 +2025,7 @@
         "PG"
       ],
       "age": 30.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 273,
@@ -1969,6 +2049,7 @@
         "C"
       ],
       "age": 27.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 172,
@@ -1993,6 +2074,7 @@
         "SG"
       ],
       "age": 24.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 168,
@@ -2017,6 +2099,7 @@
         "C"
       ],
       "age": 22.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 252,
@@ -2041,6 +2124,7 @@
         "SF"
       ],
       "age": 22,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 392,
@@ -2062,6 +2146,7 @@
       "team": "SAC",
       "positions": [],
       "age": 19.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 55,
@@ -2085,6 +2170,7 @@
         "PG"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 39,
@@ -2109,6 +2195,7 @@
         "C"
       ],
       "age": 23.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 332,
@@ -2130,6 +2217,7 @@
       "team": "UTA",
       "positions": [],
       "age": 19.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 18,
@@ -2153,6 +2241,7 @@
         "PG"
       ],
       "age": 27.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 169,
@@ -2176,6 +2265,7 @@
         "C"
       ],
       "age": 24.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 141,
@@ -2200,6 +2290,7 @@
         "SG"
       ],
       "age": 28.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 50,
@@ -2224,6 +2315,7 @@
         "PF"
       ],
       "age": 29.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 347,
@@ -2247,6 +2339,7 @@
         "C"
       ],
       "age": 28,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 100,
@@ -2271,6 +2364,7 @@
         "PF"
       ],
       "age": 28.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 295,
@@ -2295,6 +2389,7 @@
         "SG"
       ],
       "age": 28.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 230,
@@ -2319,6 +2414,7 @@
         "SG"
       ],
       "age": 29.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 94,
@@ -2343,6 +2439,7 @@
         "PF"
       ],
       "age": 37,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 149,
@@ -2368,6 +2465,7 @@
         "PF"
       ],
       "age": 25.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 31,
@@ -2392,6 +2490,7 @@
         "SG"
       ],
       "age": 32.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 310,
@@ -2415,6 +2514,7 @@
         "C"
       ],
       "age": 22.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 142,
@@ -2439,6 +2539,7 @@
         "C"
       ],
       "age": 21.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 76,
@@ -2463,6 +2564,7 @@
         "PF"
       ],
       "age": 29.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 306,
@@ -2487,6 +2589,7 @@
         "SG"
       ],
       "age": 32.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 69,
@@ -2511,6 +2614,7 @@
         "SF"
       ],
       "age": 28.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 64,
@@ -2535,6 +2639,7 @@
         "SG"
       ],
       "age": 29.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 26,
@@ -2559,6 +2664,7 @@
         "SG"
       ],
       "age": 24.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 268,
@@ -2583,6 +2689,7 @@
         "SF"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 119,
@@ -2607,6 +2714,7 @@
         "PF"
       ],
       "age": 30.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 171,
@@ -2628,6 +2736,7 @@
       "team": "BOS",
       "positions": [],
       "age": 22.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 356,
@@ -2652,6 +2761,7 @@
         "C"
       ],
       "age": 30.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 61,
@@ -2676,6 +2786,7 @@
         "C"
       ],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 372,
@@ -2699,6 +2810,7 @@
         "C"
       ],
       "age": 22.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 46,
@@ -2723,6 +2835,7 @@
         "SG"
       ],
       "age": 29.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 19,
@@ -2747,6 +2860,7 @@
         "SG"
       ],
       "age": 29.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 206,
@@ -2770,6 +2884,7 @@
         "SG"
       ],
       "age": 20.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 226,
@@ -2794,6 +2909,7 @@
         "C"
       ],
       "age": 36.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 243,
@@ -2818,6 +2934,7 @@
         "SG"
       ],
       "age": 28.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 224,
@@ -2842,6 +2959,7 @@
         "SF"
       ],
       "age": 32.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 311,
@@ -2866,6 +2984,7 @@
         "C"
       ],
       "age": 24.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 217,
@@ -2890,6 +3009,7 @@
         "SG"
       ],
       "age": 20.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 17,
@@ -2915,6 +3035,7 @@
         "SF"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 98,
@@ -2936,6 +3057,7 @@
       "team": "DET",
       "positions": [],
       "age": 19.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 175,
@@ -2960,6 +3082,7 @@
         "SG"
       ],
       "age": 20.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 162,
@@ -2981,6 +3104,7 @@
       "team": "SAC",
       "positions": [],
       "age": 22.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 264,
@@ -3005,6 +3129,7 @@
         "C"
       ],
       "age": 25.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 16,
@@ -3026,6 +3151,7 @@
       "team": "WAS",
       "positions": [],
       "age": 22.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 285,
@@ -3050,6 +3176,7 @@
         "PF"
       ],
       "age": 24.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 30,
@@ -3073,6 +3200,7 @@
         "PG"
       ],
       "age": 32.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 102,
@@ -3097,6 +3225,7 @@
         "SF"
       ],
       "age": 27.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 297,
@@ -3122,6 +3251,7 @@
         "C"
       ],
       "age": 21.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 210,
@@ -3146,6 +3276,7 @@
         "C"
       ],
       "age": 31.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 21,
@@ -3169,6 +3300,7 @@
         "C"
       ],
       "age": 27,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 275,
@@ -3193,6 +3325,7 @@
         "SF"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 276,
@@ -3217,6 +3350,7 @@
         "C"
       ],
       "age": 27.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 308,
@@ -3242,6 +3376,7 @@
         "SF"
       ],
       "age": 30.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 174,
@@ -3266,6 +3401,7 @@
         "C"
       ],
       "age": 30.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 369,
@@ -3290,6 +3426,7 @@
         "PF"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 189,
@@ -3311,6 +3448,7 @@
       "team": "CHA",
       "positions": [],
       "age": 20.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 116,
@@ -3335,6 +3473,7 @@
         "PF"
       ],
       "age": 29.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 384,
@@ -3356,6 +3495,7 @@
       "team": "ATL",
       "positions": [],
       "age": 22.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 245,
@@ -3381,6 +3521,7 @@
         "PF"
       ],
       "age": 27.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 159,
@@ -3404,6 +3545,7 @@
         "SF"
       ],
       "age": 20.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 327,
@@ -3428,6 +3570,7 @@
         "SG"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 83,
@@ -3452,6 +3595,7 @@
         "PF"
       ],
       "age": 25.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 351,
@@ -3476,6 +3620,7 @@
         "SG"
       ],
       "age": 21.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 190,
@@ -3497,6 +3642,7 @@
       "team": "MIN",
       "positions": [],
       "age": 20.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 266,
@@ -3520,6 +3666,7 @@
         "C"
       ],
       "age": 28.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 85,
@@ -3543,6 +3690,7 @@
         "C"
       ],
       "age": 24.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 225,
@@ -3567,6 +3715,7 @@
         "SF"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 326,
@@ -3591,6 +3740,7 @@
         "C"
       ],
       "age": 25.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 157,
@@ -3614,6 +3764,7 @@
         "C"
       ],
       "age": 29.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 60,
@@ -3635,6 +3786,7 @@
       "team": "ORL",
       "positions": [],
       "age": 22.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 270,
@@ -3658,6 +3810,7 @@
         "PG"
       ],
       "age": 27,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 80,
@@ -3683,6 +3836,7 @@
         "C"
       ],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 91,
@@ -3704,6 +3858,7 @@
       "team": "NY",
       "positions": [],
       "age": 20.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 359,
@@ -3728,6 +3883,7 @@
         "SG"
       ],
       "age": 24,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 377,
@@ -3752,6 +3908,7 @@
         "PF"
       ],
       "age": 25.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 74,
@@ -3777,6 +3934,7 @@
         "PF"
       ],
       "age": 25.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 115,
@@ -3801,6 +3959,7 @@
         "PF"
       ],
       "age": 24.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 289,
@@ -3824,6 +3983,7 @@
         "C"
       ],
       "age": 30.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 135,
@@ -3847,6 +4007,7 @@
         "PG"
       ],
       "age": 29.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 37,
@@ -3870,6 +4031,7 @@
         "C"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 35,
@@ -3895,6 +4057,7 @@
         "SF"
       ],
       "age": 24.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 95,
@@ -3919,6 +4082,7 @@
         "PF"
       ],
       "age": 24.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 9,
@@ -3943,6 +4107,7 @@
         "C"
       ],
       "age": 26.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 201,
@@ -3967,6 +4132,7 @@
         "SG"
       ],
       "age": 25.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 87,
@@ -3991,6 +4157,7 @@
         "PF"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 20,
@@ -4015,6 +4182,7 @@
         "SG"
       ],
       "age": 29.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 33,
@@ -4038,6 +4206,7 @@
         "PG"
       ],
       "age": 24,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 223,
@@ -4062,6 +4231,7 @@
         "SG"
       ],
       "age": 36.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 62,
@@ -4086,6 +4256,7 @@
         "PF"
       ],
       "age": 22.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 184,
@@ -4110,6 +4281,7 @@
         "SG"
       ],
       "age": 22.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 193,
@@ -4134,6 +4306,7 @@
         "C"
       ],
       "age": 26.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 36,
@@ -4155,6 +4328,7 @@
       "team": "NO",
       "positions": [],
       "age": 24,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 248,
@@ -4178,6 +4352,7 @@
         "C"
       ],
       "age": 28.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 107,
@@ -4201,6 +4376,7 @@
         "SG"
       ],
       "age": 20.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 343,
@@ -4225,6 +4401,7 @@
         "SG"
       ],
       "age": 23.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 374,
@@ -4248,6 +4425,7 @@
         "C"
       ],
       "age": 26.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 342,
@@ -4271,6 +4449,7 @@
         "C"
       ],
       "age": 28.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 222,
@@ -4292,6 +4471,7 @@
       "team": "SA",
       "positions": [],
       "age": 19,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 221,
@@ -4316,6 +4496,7 @@
         "SF"
       ],
       "age": 29.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 42,
@@ -4340,6 +4521,7 @@
         "SF"
       ],
       "age": 22.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 150,
@@ -4364,6 +4546,7 @@
         "C"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 244,
@@ -4388,6 +4571,7 @@
         "SF"
       ],
       "age": 23.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 165,
@@ -4412,6 +4596,7 @@
         "PF"
       ],
       "age": 28.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 11,
@@ -4436,6 +4621,7 @@
         "PF"
       ],
       "age": 32.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 214,
@@ -4460,6 +4646,7 @@
         "SG"
       ],
       "age": 19.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 104,
@@ -4484,6 +4671,7 @@
         "C"
       ],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 331,
@@ -4509,6 +4697,7 @@
         "PF"
       ],
       "age": 36.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 153,
@@ -4532,6 +4721,7 @@
         "C"
       ],
       "age": 19.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 205,
@@ -4555,6 +4745,7 @@
         "C"
       ],
       "age": 30.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 394,
@@ -4578,6 +4769,7 @@
         "C"
       ],
       "age": 32.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 97,
@@ -4602,6 +4794,7 @@
         "C"
       ],
       "age": 28.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 185,
@@ -4626,6 +4819,7 @@
         "SF"
       ],
       "age": 21.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 320,
@@ -4650,6 +4844,7 @@
         "PF"
       ],
       "age": 28.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 388,
@@ -4674,6 +4869,7 @@
         "PF"
       ],
       "age": 23.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 182,
@@ -4698,6 +4894,7 @@
         "SG"
       ],
       "age": 34.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 391,
@@ -4723,6 +4920,7 @@
         "SF"
       ],
       "age": 27.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 350,
@@ -4747,6 +4945,7 @@
         "SF"
       ],
       "age": 24.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 389,
@@ -4771,6 +4970,7 @@
         "SF"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 280,
@@ -4795,6 +4995,7 @@
         "SG"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 186,
@@ -4820,6 +5021,7 @@
         "PF"
       ],
       "age": 22.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 277,
@@ -4843,6 +5045,7 @@
         "PG"
       ],
       "age": 28.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 335,
@@ -4867,6 +5070,7 @@
         "SG"
       ],
       "age": 23.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 34,
@@ -4891,6 +5095,7 @@
         "SF"
       ],
       "age": 25.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 400,
@@ -4916,6 +5121,7 @@
         "PF"
       ],
       "age": 31.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 129,
@@ -4940,6 +5146,7 @@
         "PF"
       ],
       "age": 23.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 254,
@@ -4961,6 +5168,7 @@
       "team": "BKN",
       "positions": [],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 177,
@@ -4985,6 +5193,7 @@
         "SG"
       ],
       "age": 36.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 231,
@@ -5009,6 +5218,7 @@
         "SF"
       ],
       "age": 25.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 261,
@@ -5033,6 +5243,7 @@
         "SF"
       ],
       "age": 24.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 317,
@@ -5057,6 +5268,7 @@
         "C"
       ],
       "age": 31.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 96,
@@ -5081,6 +5293,7 @@
         "PF"
       ],
       "age": 25.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 255,
@@ -5104,6 +5317,7 @@
         "C"
       ],
       "age": 31.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 236,
@@ -5125,6 +5339,7 @@
       "team": "MEM",
       "positions": [],
       "age": 19.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 220,
@@ -5149,6 +5364,7 @@
         "C"
       ],
       "age": 30.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 27,
@@ -5173,6 +5389,7 @@
         "C"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 341,
@@ -5196,6 +5413,7 @@
         "PG"
       ],
       "age": 20.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 211,
@@ -5220,6 +5438,7 @@
         "PF"
       ],
       "age": 35.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 105,
@@ -5241,6 +5460,7 @@
       "team": "LAC",
       "positions": [],
       "age": 19.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 58,
@@ -5265,6 +5485,7 @@
         "PF"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 68,
@@ -5289,6 +5510,7 @@
         "PF"
       ],
       "age": 26.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 262,
@@ -5313,6 +5535,7 @@
         "C"
       ],
       "age": 22.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 65,
@@ -5337,6 +5560,7 @@
         "PF"
       ],
       "age": 30.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 237,
@@ -5361,6 +5585,7 @@
         "SG"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 213,
@@ -5386,6 +5611,7 @@
         "PF"
       ],
       "age": 37.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 73,
@@ -5410,6 +5636,7 @@
         "SF"
       ],
       "age": 27.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 345,
@@ -5434,6 +5661,7 @@
         "SG"
       ],
       "age": 26.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 164,
@@ -5458,6 +5686,7 @@
         "SG"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 44,
@@ -5481,6 +5710,7 @@
         "C"
       ],
       "age": 19.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 154,
@@ -5505,6 +5735,7 @@
         "PF"
       ],
       "age": 34.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 330,
@@ -5528,6 +5759,7 @@
         "PG"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 328,
@@ -5549,6 +5781,7 @@
       "team": "ATL",
       "positions": [],
       "age": 19.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 77,
@@ -5573,6 +5806,7 @@
         "SF"
       ],
       "age": 36.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 344,
@@ -5594,6 +5828,7 @@
       "team": "PHO",
       "positions": [],
       "age": 19.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 271,
@@ -5618,6 +5853,7 @@
         "SF"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 267,
@@ -5642,6 +5878,7 @@
         "SF"
       ],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 28,
@@ -5666,6 +5903,7 @@
         "SG"
       ],
       "age": 32.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 354,
@@ -5690,6 +5928,7 @@
         "PF"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 396,
@@ -5714,6 +5953,7 @@
         "C"
       ],
       "age": 31,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 108,
@@ -5738,6 +5978,7 @@
         "C"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 187,
@@ -5762,6 +6003,7 @@
         "PF"
       ],
       "age": 31,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 296,
@@ -5785,6 +6027,7 @@
         "PG"
       ],
       "age": 34.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 90,
@@ -5810,6 +6053,7 @@
         "PF"
       ],
       "age": 22.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 89,
@@ -5831,6 +6075,7 @@
       "team": "PHI",
       "positions": [],
       "age": 20.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 178,
@@ -5855,6 +6100,7 @@
         "SG"
       ],
       "age": 24.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 38,
@@ -5879,6 +6125,7 @@
         "SF"
       ],
       "age": 29.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 349,
@@ -5903,6 +6150,7 @@
         "PF"
       ],
       "age": 29.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 51,
@@ -5927,6 +6175,7 @@
         "PF"
       ],
       "age": 41.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 131,
@@ -5951,6 +6200,7 @@
         "PF"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 183,
@@ -5975,6 +6225,7 @@
         "SG"
       ],
       "age": 28.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 364,
@@ -5999,6 +6250,7 @@
         "SF"
       ],
       "age": 27.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 298,
@@ -6023,6 +6275,7 @@
         "SG"
       ],
       "age": 27.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 3,
@@ -6046,6 +6299,7 @@
         "C"
       ],
       "age": 27.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 398,
@@ -6070,6 +6324,7 @@
         "SG"
       ],
       "age": 30.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 278,
@@ -6093,6 +6348,7 @@
         "C"
       ],
       "age": 31,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 256,
@@ -6117,6 +6373,7 @@
         "SG"
       ],
       "age": 28.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 181,
@@ -6138,6 +6395,7 @@
       "team": "MIL",
       "positions": [],
       "age": 21.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 284,
@@ -6161,6 +6419,7 @@
         "PG"
       ],
       "age": 25.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 322,
@@ -6185,6 +6444,7 @@
         "SG"
       ],
       "age": 32.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 315,
@@ -6208,6 +6468,7 @@
         "C"
       ],
       "age": 24.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 92,
@@ -6232,6 +6493,7 @@
         "PF"
       ],
       "age": 21.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 52,
@@ -6256,6 +6518,7 @@
         "SF"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 196,
@@ -6280,6 +6543,7 @@
         "SF"
       ],
       "age": 30.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 198,
@@ -6303,6 +6567,7 @@
         "C"
       ],
       "age": 23.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 130,
@@ -6324,6 +6589,7 @@
       "team": "CLE",
       "positions": [],
       "age": 20,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 355,
@@ -6348,6 +6614,7 @@
         "SF"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 366,
@@ -6369,6 +6636,7 @@
       "team": "CHA",
       "positions": [],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 288,
@@ -6393,6 +6661,7 @@
         "PF"
       ],
       "age": 28.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 67,
@@ -6418,6 +6687,7 @@
         "PF"
       ],
       "age": 29.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 84,
@@ -6439,6 +6709,7 @@
       "team": "BKN",
       "positions": [],
       "age": 20.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 54,
@@ -6463,6 +6734,7 @@
         "PF"
       ],
       "age": 28.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 124,
@@ -6487,6 +6759,7 @@
         "SG"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 251,
@@ -6510,6 +6783,7 @@
         "C"
       ],
       "age": 28.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 212,
@@ -6531,6 +6805,7 @@
       "team": "DAL",
       "positions": [],
       "age": 20.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 106,
@@ -6554,6 +6829,7 @@
         "C"
       ],
       "age": 29.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 353,
@@ -6579,6 +6855,7 @@
         "PF"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 302,
@@ -6603,6 +6880,7 @@
         "C"
       ],
       "age": 23.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 386,
@@ -6626,6 +6904,7 @@
         "C"
       ],
       "age": null,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 290,
@@ -6649,6 +6928,7 @@
         "C"
       ],
       "age": 24.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 140,
@@ -6672,6 +6952,7 @@
         "C"
       ],
       "age": 30.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 101,
@@ -6695,6 +6976,7 @@
         "PF"
       ],
       "age": 25.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 336,
@@ -6720,6 +7002,7 @@
         "PF"
       ],
       "age": 28.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 233,
@@ -6741,6 +7024,7 @@
       "team": "MIL",
       "positions": [],
       "age": 19.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 139,
@@ -6765,6 +7049,7 @@
         "C"
       ],
       "age": 26.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 70,
@@ -6789,6 +7074,7 @@
         "C"
       ],
       "age": 27,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 218,
@@ -6810,6 +7096,7 @@
       "team": "GS",
       "positions": [],
       "age": 25.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 357,
@@ -6835,6 +7122,7 @@
         "SF"
       ],
       "age": 27.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 72,
@@ -6858,6 +7146,7 @@
         "C"
       ],
       "age": 27.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 93,
@@ -6881,6 +7170,7 @@
         "C"
       ],
       "age": 31.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 4,
@@ -6905,6 +7195,7 @@
         "C"
       ],
       "age": 23.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 207,
@@ -6928,6 +7219,7 @@
         "PG"
       ],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 333,
@@ -6951,6 +7243,7 @@
         "C"
       ],
       "age": 35.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 197,
@@ -6975,6 +7268,7 @@
         "SF"
       ],
       "age": 24.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 200,
@@ -6998,6 +7292,7 @@
         "PF"
       ],
       "age": 19.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 258,
@@ -7022,6 +7317,7 @@
         "C"
       ],
       "age": 22,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 179,
@@ -7045,6 +7341,7 @@
         "PG"
       ],
       "age": 20.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 257,
@@ -7069,6 +7366,7 @@
         "SF"
       ],
       "age": 33.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 99,
@@ -7092,6 +7390,7 @@
         "PF"
       ],
       "age": 28.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 215,
@@ -7116,6 +7415,7 @@
         "PF"
       ],
       "age": 29,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 66,
@@ -7140,6 +7440,7 @@
         "C"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 393,
@@ -7164,6 +7465,7 @@
         "C"
       ],
       "age": 25.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 56,
@@ -7187,6 +7489,7 @@
         "C"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 188,
@@ -7212,6 +7515,7 @@
         "C"
       ],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 195,
@@ -7237,6 +7541,7 @@
         "C"
       ],
       "age": 27.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 160,
@@ -7261,6 +7566,7 @@
         "C"
       ],
       "age": 23.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 47,
@@ -7286,6 +7592,7 @@
         "C"
       ],
       "age": 32.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 59,
@@ -7310,6 +7617,7 @@
         "SG"
       ],
       "age": 30.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 304,
@@ -7333,6 +7641,7 @@
         "PF"
       ],
       "age": 24.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 371,
@@ -7358,6 +7667,7 @@
         "PF"
       ],
       "age": 36.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 123,
@@ -7382,6 +7692,7 @@
         "C"
       ],
       "age": 27.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 316,
@@ -7405,6 +7716,7 @@
         "PG"
       ],
       "age": 28.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 128,
@@ -7429,6 +7741,7 @@
         "SF"
       ],
       "age": 25.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 260,
@@ -7453,6 +7766,7 @@
         "PF"
       ],
       "age": 23.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 112,
@@ -7477,6 +7791,7 @@
         "C"
       ],
       "age": 26.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 324,
@@ -7501,6 +7816,7 @@
         "SF"
       ],
       "age": 26.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 238,
@@ -7524,6 +7840,7 @@
         "C"
       ],
       "age": 26.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 321,
@@ -7547,6 +7864,7 @@
         "PF"
       ],
       "age": 22,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 204,
@@ -7570,6 +7888,7 @@
         "PG"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 368,
@@ -7594,6 +7913,7 @@
         "SG"
       ],
       "age": 22.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 82,
@@ -7615,6 +7935,7 @@
       "team": "MEM",
       "positions": [],
       "age": 24.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 247,
@@ -7640,6 +7961,7 @@
         "PF"
       ],
       "age": 26.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 127,
@@ -7663,6 +7985,7 @@
         "PG"
       ],
       "age": 21.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 318,
@@ -7686,6 +8009,7 @@
         "C"
       ],
       "age": 28.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 163,
@@ -7710,6 +8034,7 @@
         "PF"
       ],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 208,
@@ -7734,6 +8059,7 @@
         "PF"
       ],
       "age": 33.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 348,
@@ -7757,6 +8083,7 @@
         "C"
       ],
       "age": 34.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 109,
@@ -7781,6 +8108,7 @@
         "PF"
       ],
       "age": 28.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 192,
@@ -7805,6 +8133,7 @@
         "SG"
       ],
       "age": 37.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 397,
@@ -7826,6 +8155,7 @@
       "team": "MIA",
       "positions": [],
       "age": 22.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 240,
@@ -7850,6 +8180,7 @@
         "PF"
       ],
       "age": 23.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 250,
@@ -7873,6 +8204,7 @@
         "C"
       ],
       "age": 24.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 117,
@@ -7896,6 +8228,7 @@
         "PG"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 292,
@@ -7920,6 +8253,7 @@
         "SG"
       ],
       "age": 24.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 120,
@@ -7944,6 +8278,7 @@
         "PF"
       ],
       "age": 27.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 229,
@@ -7968,6 +8303,7 @@
         "PF"
       ],
       "age": 28.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 379,
@@ -7992,6 +8328,7 @@
         "SF"
       ],
       "age": 30.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 338,
@@ -8016,6 +8353,7 @@
         "C"
       ],
       "age": 27.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 263,
@@ -8040,6 +8378,7 @@
         "C"
       ],
       "age": 25.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 144,
@@ -8063,6 +8402,7 @@
         "PG"
       ],
       "age": 22.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 133,
@@ -8089,6 +8429,7 @@
         "C"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 12,
@@ -8113,6 +8454,7 @@
         "SG"
       ],
       "age": 25.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 299,
@@ -8134,6 +8476,7 @@
       "team": "DAL",
       "positions": [],
       "age": 20.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 241,
@@ -8159,6 +8502,7 @@
         "SF"
       ],
       "age": 23.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 118,
@@ -8182,6 +8526,7 @@
         "PG"
       ],
       "age": 28,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 2,
@@ -8206,6 +8551,7 @@
         "SF"
       ],
       "age": 23.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 293,
@@ -8230,6 +8576,7 @@
         "SF"
       ],
       "age": 25.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 312,
@@ -8253,6 +8600,7 @@
         "PG"
       ],
       "age": 38.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 63,
@@ -8277,6 +8625,7 @@
         "SG"
       ],
       "age": 21.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 40,
@@ -8300,6 +8649,7 @@
         "C"
       ],
       "age": 33,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 340,
@@ -8323,6 +8673,7 @@
         "PG"
       ],
       "age": 34.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 370,
@@ -8348,6 +8699,7 @@
         "PF"
       ],
       "age": 25.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 147,
@@ -8369,6 +8721,7 @@
       "team": "SA",
       "positions": [],
       "age": 23,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 265,
@@ -8394,6 +8747,7 @@
         "C"
       ],
       "age": 22.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 232,
@@ -8418,6 +8772,7 @@
         "PF"
       ],
       "age": 26,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 180,
@@ -8441,6 +8796,7 @@
         "C"
       ],
       "age": 20.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 227,
@@ -8465,6 +8821,7 @@
         "SF"
       ],
       "age": 34.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 383,
@@ -8486,6 +8843,7 @@
       "team": "DAL",
       "positions": [],
       "age": 23.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 286,
@@ -8509,6 +8867,7 @@
         "PF"
       ],
       "age": 34,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 234,
@@ -8534,6 +8893,7 @@
         "C"
       ],
       "age": 26.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 122,
@@ -8557,6 +8917,7 @@
         "PG"
       ],
       "age": 27.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 22,
@@ -8580,6 +8941,7 @@
         "C"
       ],
       "age": 26.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 399,
@@ -8605,6 +8967,7 @@
         "SF"
       ],
       "age": 20.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 134,
@@ -8629,6 +8992,7 @@
         "SG"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 365,
@@ -8653,6 +9017,7 @@
         "SG"
       ],
       "age": 25.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 381,
@@ -8677,6 +9042,7 @@
         "C"
       ],
       "age": 25.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 387,
@@ -8698,6 +9064,7 @@
       "team": "DEN",
       "positions": [],
       "age": 23.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 269,
@@ -8723,6 +9090,7 @@
         "PF"
       ],
       "age": 26.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 23,
@@ -8747,6 +9115,7 @@
         "PF"
       ],
       "age": 25.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 305,
@@ -8771,6 +9140,7 @@
         "C"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 395,
@@ -8795,6 +9165,7 @@
         "SG"
       ],
       "age": 29,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 279,
@@ -8816,6 +9187,7 @@
       "team": "BKN",
       "positions": [],
       "age": 22.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 249,
@@ -8840,6 +9212,7 @@
         "SG"
       ],
       "age": 26.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 49,
@@ -8863,6 +9236,7 @@
         "PG"
       ],
       "age": 25.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 361,
@@ -8884,6 +9258,7 @@
       "team": "NY",
       "positions": [],
       "age": 22.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 358,
@@ -8908,6 +9283,7 @@
         "SG"
       ],
       "age": 26.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 13,
@@ -8933,6 +9309,7 @@
         "SF"
       ],
       "age": 27.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 373,
@@ -8956,6 +9333,7 @@
         "PG"
       ],
       "age": 25.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 7,
@@ -8979,6 +9357,7 @@
         "PG"
       ],
       "age": 30.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 362,
@@ -9003,6 +9382,7 @@
         "C"
       ],
       "age": 22.5,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 1,
@@ -9028,6 +9408,7 @@
         "SF"
       ],
       "age": 25.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 334,
@@ -9052,6 +9433,7 @@
         "SF"
       ],
       "age": 26.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 382,
@@ -9076,6 +9458,7 @@
         "SG"
       ],
       "age": 21,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 43,
@@ -9097,6 +9480,7 @@
       "team": "DAL",
       "positions": [],
       "age": 21.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 287,
@@ -9120,6 +9504,7 @@
         "C"
       ],
       "age": 25,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 71,
@@ -9144,6 +9529,7 @@
         "SG"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 294,
@@ -9167,6 +9553,7 @@
         "C"
       ],
       "age": 27.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 145,
@@ -9191,6 +9578,7 @@
         "SF"
       ],
       "age": 23.6,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 375,
@@ -9215,6 +9603,7 @@
         "PF"
       ],
       "age": 20.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 191,
@@ -9238,6 +9627,7 @@
         "C"
       ],
       "age": 21.1,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 235,
@@ -9261,6 +9651,7 @@
         "C"
       ],
       "age": 23.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 158,
@@ -9282,6 +9673,7 @@
       "team": "GS",
       "positions": [],
       "age": 23.8,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 125,
@@ -9305,6 +9697,7 @@
         "C"
       ],
       "age": 22.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 259,
@@ -9329,6 +9722,7 @@
         "PF"
       ],
       "age": 21.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 166,
@@ -9352,6 +9746,7 @@
         "C"
       ],
       "age": 28.7,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 319,
@@ -9375,6 +9770,7 @@
         "C"
       ],
       "age": 24.2,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 53,
@@ -9400,6 +9796,7 @@
         "SF"
       ],
       "age": 31.4,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 110,
@@ -9424,6 +9821,7 @@
         "SF"
       ],
       "age": 24.9,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 346,
@@ -9449,6 +9847,7 @@
         "C"
       ],
       "age": 26,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 78,
@@ -9470,6 +9869,7 @@
       "team": "ATL",
       "positions": [],
       "age": 22.3,
+      "careerStartYear": null,
       "facts": {
         "overall": {
           "rank": 219,
@@ -9493,6 +9893,7 @@
         "WR"
       ],
       "age": 29.1,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 4992,
@@ -9526,6 +9927,7 @@
         "RB"
       ],
       "age": 31.6,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 2318,
@@ -9559,6 +9961,7 @@
         "QB"
       ],
       "age": 42.6,
+      "careerStartYear": 2005,
       "facts": {
         "superflex": {
           "value": 1976,
@@ -9592,6 +9995,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1443,
@@ -9625,6 +10029,7 @@
         "WR"
       ],
       "age": 23.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2698,
@@ -9658,6 +10063,7 @@
         "QB"
       ],
       "age": 27.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 505,
@@ -9691,6 +10097,7 @@
         "WR"
       ],
       "age": 25.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 615,
@@ -9724,6 +10131,7 @@
         "TE"
       ],
       "age": 24.2,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2804,
@@ -9757,6 +10165,7 @@
         "RB"
       ],
       "age": 28.2,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 546,
@@ -9790,6 +10199,7 @@
         "WR"
       ],
       "age": 26.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3878,
@@ -9823,6 +10233,7 @@
         "RB"
       ],
       "age": 28.1,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 759,
@@ -9856,6 +10267,7 @@
         "RB"
       ],
       "age": 31,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1983,
@@ -9889,6 +10301,7 @@
         "WR"
       ],
       "age": 26.7,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 7887,
@@ -9922,6 +10335,7 @@
         "WR"
       ],
       "age": 26.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1588,
@@ -9955,6 +10369,7 @@
         "QB"
       ],
       "age": 24.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2138,
@@ -9988,6 +10403,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3113,
@@ -10021,6 +10437,7 @@
         "WR"
       ],
       "age": 24.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 947,
@@ -10054,6 +10471,7 @@
         "RB"
       ],
       "age": 22.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 7682,
@@ -10087,6 +10505,7 @@
         "RB"
       ],
       "age": 22.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1536,
@@ -10120,6 +10539,7 @@
         "QB"
       ],
       "age": 31.3,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 4707,
@@ -10153,6 +10573,7 @@
         "RB"
       ],
       "age": 25.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1032,
@@ -10186,6 +10607,7 @@
         "WR"
       ],
       "age": 22.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 809,
@@ -10219,6 +10641,7 @@
         "TE"
       ],
       "age": 24.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1789,
@@ -10252,6 +10675,7 @@
         "RB"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 4122,
@@ -10285,6 +10709,7 @@
         "RB"
       ],
       "age": 24.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 9999,
@@ -10318,6 +10743,7 @@
         "RB"
       ],
       "age": 25.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3363,
@@ -10351,6 +10777,7 @@
         "WR"
       ],
       "age": 27.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 939,
@@ -10384,6 +10811,7 @@
         "QB"
       ],
       "age": 26.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 5983,
@@ -10417,6 +10845,7 @@
         "RB"
       ],
       "age": 22.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2675,
@@ -10450,6 +10879,7 @@
         "WR"
       ],
       "age": 28.4,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1686,
@@ -10483,6 +10913,7 @@
         "RB"
       ],
       "age": 23.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1738,
@@ -10516,6 +10947,7 @@
         "RB"
       ],
       "age": 25.1,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 5326,
@@ -10549,6 +10981,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 817,
@@ -10582,6 +11015,7 @@
         "WR"
       ],
       "age": 23,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1599,
@@ -10615,6 +11049,7 @@
         "TE"
       ],
       "age": 25.6,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3074,
@@ -10648,6 +11083,7 @@
         "TE"
       ],
       "age": 26,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 946,
@@ -10681,6 +11117,7 @@
         "RB"
       ],
       "age": 27.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2352,
@@ -10714,6 +11151,7 @@
         "WR"
       ],
       "age": 23.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 4876,
@@ -10747,6 +11185,7 @@
         "TE"
       ],
       "age": 23.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 8154,
@@ -10780,6 +11219,7 @@
         "QB"
       ],
       "age": 26.6,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 5847,
@@ -10813,6 +11253,7 @@
         "TE"
       ],
       "age": 27.6,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 934,
@@ -10846,6 +11287,7 @@
         "WR"
       ],
       "age": 23.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1754,
@@ -10879,6 +11321,7 @@
         "QB"
       ],
       "age": 25,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4002,
@@ -10912,6 +11355,7 @@
         "WR"
       ],
       "age": 25.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 749,
@@ -10945,6 +11389,7 @@
         "RB"
       ],
       "age": 23.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 4654,
@@ -10978,6 +11423,7 @@
         "QB"
       ],
       "age": 24.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4752,
@@ -11011,6 +11457,7 @@
         "QB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1875,
@@ -11044,6 +11491,7 @@
         "TE"
       ],
       "age": 27.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2317,
@@ -11077,6 +11525,7 @@
         "TE"
       ],
       "age": 26.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1370,
@@ -11110,6 +11559,7 @@
         "WR"
       ],
       "age": 22.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1898,
@@ -11143,6 +11593,7 @@
         "QB"
       ],
       "age": 24.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 7911,
@@ -11176,6 +11627,7 @@
         "WR"
       ],
       "age": 27.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1396,
@@ -11209,6 +11661,7 @@
         "WR"
       ],
       "age": 31.6,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 1801,
@@ -11242,6 +11695,7 @@
         "RB"
       ],
       "age": 24.5,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 4752,
@@ -11275,6 +11729,7 @@
         "QB"
       ],
       "age": 24.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 5310,
@@ -11308,6 +11763,7 @@
         "WR"
       ],
       "age": 21.5,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 5923,
@@ -11341,6 +11797,7 @@
         "QB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2580,
@@ -11374,6 +11831,7 @@
         "QB"
       ],
       "age": 33.6,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 504,
@@ -11407,6 +11865,7 @@
         "WR"
       ],
       "age": 26.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1723,
@@ -11440,6 +11899,7 @@
         "WR"
       ],
       "age": 27.3,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 7121,
@@ -11473,6 +11933,7 @@
         "TE"
       ],
       "age": 27.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1058,
@@ -11506,6 +11967,7 @@
         "RB"
       ],
       "age": 26.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 5202,
@@ -11539,6 +12001,7 @@
         "TE"
       ],
       "age": 26.9,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2828,
@@ -11572,6 +12035,7 @@
         "WR"
       ],
       "age": 24.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2339,
@@ -11605,6 +12069,7 @@
         "WR"
       ],
       "age": 22.1,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2994,
@@ -11638,6 +12103,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2479,
@@ -11671,6 +12137,7 @@
         "RB"
       ],
       "age": 26.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1466,
@@ -11704,6 +12171,7 @@
         "WR"
       ],
       "age": 30.4,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 2952,
@@ -11737,6 +12205,7 @@
         "WR"
       ],
       "age": 26.1,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 5494,
@@ -11770,6 +12239,7 @@
         "RB"
       ],
       "age": 25.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2654,
@@ -11803,6 +12273,7 @@
         "WR"
       ],
       "age": 29.7,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 1923,
@@ -11836,6 +12307,7 @@
         "RB"
       ],
       "age": 30.1,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 5174,
@@ -11869,6 +12341,7 @@
         "WR"
       ],
       "age": 27.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3991,
@@ -11902,6 +12375,7 @@
         "RB"
       ],
       "age": 27.1,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 3210,
@@ -11935,6 +12409,7 @@
         "WR"
       ],
       "age": 24.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1049,
@@ -11968,6 +12443,7 @@
         "TE"
       ],
       "age": 27.5,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1909,
@@ -12001,6 +12477,7 @@
         "TE"
       ],
       "age": 27.4,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1976,
@@ -12034,6 +12511,7 @@
         "QB"
       ],
       "age": 23.7,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 873,
@@ -12067,6 +12545,7 @@
         "TE"
       ],
       "age": 22.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 6358,
@@ -12100,6 +12579,7 @@
         "WR"
       ],
       "age": 33.1,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1702,
@@ -12133,6 +12613,7 @@
         "WR"
       ],
       "age": 30.8,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 3051,
@@ -12166,6 +12647,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1068,
@@ -12199,6 +12681,7 @@
         "WR"
       ],
       "age": 29.3,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 3576,
@@ -12232,6 +12715,7 @@
         "QB"
       ],
       "age": 33,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 4988,
@@ -12265,6 +12749,7 @@
         "TE"
       ],
       "age": 31.6,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 2607,
@@ -12298,6 +12783,7 @@
         "TE"
       ],
       "age": 26.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3186,
@@ -12331,6 +12817,7 @@
         "TE"
       ],
       "age": 30,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 2215,
@@ -12364,6 +12851,7 @@
         "RB"
       ],
       "age": 26.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1033,
@@ -12397,6 +12885,7 @@
         "RB"
       ],
       "age": 22.5,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1353,
@@ -12430,6 +12919,7 @@
         "RB"
       ],
       "age": 27.5,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 3696,
@@ -12463,6 +12953,7 @@
         "TE"
       ],
       "age": 25.8,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1341,
@@ -12496,6 +12987,7 @@
         "QB"
       ],
       "age": 29.2,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 3835,
@@ -12529,6 +13021,7 @@
         "WR"
       ],
       "age": 29.5,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1509,
@@ -12562,6 +13055,7 @@
         "WR"
       ],
       "age": 28.7,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1999,
@@ -12595,6 +13089,7 @@
         "TE"
       ],
       "age": 24.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1967,
@@ -12628,6 +13123,7 @@
         "WR"
       ],
       "age": 33.6,
+      "careerStartYear": 2014,
       "facts": {
         "superflex": {
           "value": 3497,
@@ -12661,6 +13157,7 @@
         "WR"
       ],
       "age": 25.6,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 984,
@@ -12694,6 +13191,7 @@
         "RB"
       ],
       "age": 29.1,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 3438,
@@ -12727,6 +13225,7 @@
         "TE"
       ],
       "age": 30,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 2257,
@@ -12760,6 +13259,7 @@
         "TE"
       ],
       "age": 25.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 898,
@@ -12793,6 +13293,7 @@
         "QB"
       ],
       "age": 27.8,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1235,
@@ -12826,6 +13327,7 @@
         "TE"
       ],
       "age": 29.7,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1686,
@@ -12859,6 +13361,7 @@
         "WR"
       ],
       "age": 30.5,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1864,
@@ -12892,6 +13395,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1163,
@@ -12925,6 +13429,7 @@
         "WR"
       ],
       "age": 31.8,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 869,
@@ -12958,6 +13463,7 @@
         "WR"
       ],
       "age": 25.6,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1872,
@@ -12991,6 +13497,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2143,
@@ -13024,6 +13531,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3481,
@@ -13057,6 +13565,7 @@
         "WR"
       ],
       "age": 25.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 544,
@@ -13090,6 +13599,7 @@
         "RB"
       ],
       "age": 32.6,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 4045,
@@ -13123,6 +13633,7 @@
         "QB"
       ],
       "age": 30.8,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 2019,
@@ -13156,6 +13667,7 @@
         "WR"
       ],
       "age": 28.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1392,
@@ -13189,6 +13701,7 @@
         "WR"
       ],
       "age": 28.9,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 483,
@@ -13222,6 +13735,7 @@
         "RB"
       ],
       "age": 22.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1977,
@@ -13255,6 +13769,7 @@
         "RB"
       ],
       "age": 28.9,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1200,
@@ -13288,6 +13803,7 @@
         "RB"
       ],
       "age": 24.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 6849,
@@ -13321,6 +13837,7 @@
         "WR"
       ],
       "age": 27.7,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 5497,
@@ -13354,6 +13871,7 @@
         "WR"
       ],
       "age": 25.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1418,
@@ -13387,6 +13905,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2812,
@@ -13420,6 +13939,7 @@
         "QB"
       ],
       "age": 25.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1238,
@@ -13453,6 +13973,7 @@
         "RB"
       ],
       "age": 22.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2020,
@@ -13486,6 +14007,7 @@
         "WR"
       ],
       "age": 28.6,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 3421,
@@ -13519,6 +14041,7 @@
         "RB"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1142,
@@ -13552,6 +14075,7 @@
         "WR"
       ],
       "age": 25.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2367,
@@ -13585,6 +14109,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1898,
@@ -13618,6 +14143,7 @@
         "WR"
       ],
       "age": 25,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 7120,
@@ -13651,6 +14177,7 @@
         "QB"
       ],
       "age": 23.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 9245,
@@ -13684,6 +14211,7 @@
         "QB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1955,
@@ -13717,6 +14245,7 @@
         "QB"
       ],
       "age": 29.7,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 910,
@@ -13750,6 +14279,7 @@
         "WR"
       ],
       "age": 26.7,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1333,
@@ -13783,6 +14313,7 @@
         "RB"
       ],
       "age": 26.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 531,
@@ -13816,6 +14347,7 @@
         "RB"
       ],
       "age": 21.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2767,
@@ -13849,6 +14381,7 @@
         "WR"
       ],
       "age": 24.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1201,
@@ -13882,6 +14415,7 @@
         "RB"
       ],
       "age": 23.1,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1630,
@@ -13915,6 +14449,7 @@
         "TE"
       ],
       "age": 22.4,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2070,
@@ -13948,6 +14483,7 @@
         "TE"
       ],
       "age": 23.3,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3441,
@@ -13981,6 +14517,7 @@
         "WR"
       ],
       "age": 23.1,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2505,
@@ -14014,6 +14551,7 @@
         "TE"
       ],
       "age": 23.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2497,
@@ -14047,6 +14585,7 @@
         "TE"
       ],
       "age": 25.7,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1174,
@@ -14080,6 +14619,7 @@
         "RB"
       ],
       "age": 28.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 558,
@@ -14113,6 +14653,7 @@
         "WR"
       ],
       "age": 26.3,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1166,
@@ -14146,6 +14687,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2662,
@@ -14179,6 +14721,7 @@
         "RB"
       ],
       "age": 27.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1916,
@@ -14212,6 +14755,7 @@
         "RB"
       ],
       "age": 27.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1211,
@@ -14245,6 +14789,7 @@
         "WR"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 6224,
@@ -14278,6 +14823,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2522,
@@ -14311,6 +14857,7 @@
         "TE"
       ],
       "age": 25.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1390,
@@ -14344,6 +14891,7 @@
         "TE"
       ],
       "age": 31.9,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1801,
@@ -14377,6 +14925,7 @@
         "QB"
       ],
       "age": 22.8,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 5481,
@@ -14410,6 +14959,7 @@
         "RB"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 900,
@@ -14443,6 +14993,7 @@
         "WR"
       ],
       "age": 27.3,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1074,
@@ -14476,6 +15027,7 @@
         "QB"
       ],
       "age": 30.2,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1217,
@@ -14509,6 +15061,7 @@
         "QB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1491,
@@ -14542,6 +15095,7 @@
         "WR"
       ],
       "age": 26,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 5605,
@@ -14575,6 +15129,7 @@
         "QB"
       ],
       "age": 35.8,
+      "careerStartYear": 2013,
       "facts": {
         "superflex": {
           "value": 2194,
@@ -14608,6 +15163,7 @@
         "RB"
       ],
       "age": 26.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1544,
@@ -14641,6 +15197,7 @@
         "TE"
       ],
       "age": 32.8,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 3368,
@@ -14674,6 +15231,7 @@
         "WR"
       ],
       "age": 25.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 6014,
@@ -14707,6 +15265,7 @@
         "WR"
       ],
       "age": 22.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2980,
@@ -14740,6 +15299,7 @@
         "WR"
       ],
       "age": 28.2,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1182,
@@ -14773,6 +15333,7 @@
         "TE"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2257,
@@ -14806,6 +15367,7 @@
         "TE"
       ],
       "age": 23.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2718,
@@ -14839,6 +15401,7 @@
         "TE"
       ],
       "age": 22,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 4826,
@@ -14872,6 +15435,7 @@
         "TE"
       ],
       "age": 28.2,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 485,
@@ -14905,6 +15469,7 @@
         "RB"
       ],
       "age": 26.6,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 931,
@@ -14938,6 +15503,7 @@
         "TE"
       ],
       "age": 31.6,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 2326,
@@ -14971,6 +15537,7 @@
         "RB"
       ],
       "age": 26.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1439,
@@ -15004,6 +15571,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2783,
@@ -15037,6 +15605,7 @@
         "WR"
       ],
       "age": 22.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2025,
@@ -15070,6 +15639,7 @@
         "RB"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1763,
@@ -15103,6 +15673,7 @@
         "WR"
       ],
       "age": 27.8,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1030,
@@ -15136,6 +15707,7 @@
         "TE"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3461,
@@ -15169,6 +15741,7 @@
         "RB"
       ],
       "age": 27.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2270,
@@ -15202,6 +15775,7 @@
         "RB"
       ],
       "age": 23.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1043,
@@ -15235,6 +15809,7 @@
         "QB"
       ],
       "age": 23.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2582,
@@ -15268,6 +15843,7 @@
         "RB"
       ],
       "age": 27.6,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 3051,
@@ -15301,6 +15877,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2481,
@@ -15334,6 +15911,7 @@
         "TE"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 691,
@@ -15367,6 +15945,7 @@
         "WR"
       ],
       "age": 25.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1109,
@@ -15400,6 +15979,7 @@
         "QB"
       ],
       "age": 33.6,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 2537,
@@ -15433,6 +16013,7 @@
         "RB"
       ],
       "age": 25.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2941,
@@ -15466,6 +16047,7 @@
         "RB"
       ],
       "age": 22.8,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 4783,
@@ -15499,6 +16081,7 @@
         "WR"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1620,
@@ -15532,6 +16115,7 @@
         "RB"
       ],
       "age": 24.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 9990,
@@ -15565,6 +16149,7 @@
         "WR"
       ],
       "age": 28,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 999,
@@ -15598,6 +16183,7 @@
         "TE"
       ],
       "age": 27.5,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3178,
@@ -15631,6 +16217,7 @@
         "TE"
       ],
       "age": 27,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2103,
@@ -15664,6 +16251,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2413,
@@ -15697,6 +16285,7 @@
         "WR"
       ],
       "age": 29.7,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 2973,
@@ -15730,6 +16319,7 @@
         "RB"
       ],
       "age": 25.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1318,
@@ -15763,6 +16353,7 @@
         "WR"
       ],
       "age": 24.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3164,
@@ -15796,6 +16387,7 @@
         "QB"
       ],
       "age": 28,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 6084,
@@ -15829,6 +16421,7 @@
         "WR"
       ],
       "age": 24.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3032,
@@ -15862,6 +16455,7 @@
         "QB"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2215,
@@ -15895,6 +16489,7 @@
         "WR"
       ],
       "age": 27.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2582,
@@ -15928,6 +16523,7 @@
         "WR"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1771,
@@ -15961,6 +16557,7 @@
         "WR"
       ],
       "age": 27.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1850,
@@ -15994,6 +16591,7 @@
         "WR"
       ],
       "age": 24.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1255,
@@ -16027,6 +16625,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1381,
@@ -16060,6 +16659,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 795,
@@ -16093,6 +16693,7 @@
         "WR"
       ],
       "age": 25.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 854,
@@ -16126,6 +16727,7 @@
         "WR"
       ],
       "age": 26.4,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 9999,
@@ -16159,6 +16761,7 @@
         "QB"
       ],
       "age": 32.5,
+      "careerStartYear": 2015,
       "facts": {
         "superflex": {
           "value": 1244,
@@ -16192,6 +16795,7 @@
         "RB"
       ],
       "age": 31.2,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1678,
@@ -16225,6 +16829,7 @@
         "RB"
       ],
       "age": 26.8,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 6139,
@@ -16258,6 +16863,7 @@
         "WR"
       ],
       "age": 25.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 4705,
@@ -16291,6 +16897,7 @@
         "QB"
       ],
       "age": 31.8,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 4738,
@@ -16324,6 +16931,7 @@
         "TE"
       ],
       "age": 25.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 993,
@@ -16357,6 +16965,7 @@
         "RB"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1616,
@@ -16390,6 +16999,7 @@
         "TE"
       ],
       "age": 23.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1991,
@@ -16423,6 +17033,7 @@
         "WR"
       ],
       "age": 29,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 2432,
@@ -16456,6 +17067,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1056,
@@ -16489,6 +17101,7 @@
         "RB"
       ],
       "age": 26.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 4558,
@@ -16522,6 +17135,7 @@
         "RB"
       ],
       "age": 26.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 799,
@@ -16555,6 +17169,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 9353,
@@ -16588,6 +17203,7 @@
         "QB"
       ],
       "age": 23.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 6375,
@@ -16621,6 +17237,7 @@
         "QB"
       ],
       "age": 25.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 7667,
@@ -16654,6 +17271,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3382,
@@ -16687,6 +17305,7 @@
         "WR"
       ],
       "age": 26.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3382,
@@ -16720,6 +17339,7 @@
         "RB"
       ],
       "age": 22.5,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2115,
@@ -16753,6 +17373,7 @@
         "WR"
       ],
       "age": 27.6,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 4890,
@@ -16786,6 +17407,7 @@
         "RB"
       ],
       "age": 27.7,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3287,
@@ -16819,6 +17441,7 @@
         "RB"
       ],
       "age": 23.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2235,
@@ -16852,6 +17475,7 @@
         "WR"
       ],
       "age": 24.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1984,
@@ -16885,6 +17509,7 @@
         "WR"
       ],
       "age": 23.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2709,
@@ -16918,6 +17543,7 @@
         "RB"
       ],
       "age": 21.1,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 7533,
@@ -16951,6 +17577,7 @@
         "RB"
       ],
       "age": 30.6,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 516,
@@ -16984,6 +17611,7 @@
         "TE"
       ],
       "age": 26,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 570,
@@ -17017,6 +17645,7 @@
         "RB"
       ],
       "age": 26.9,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1430,
@@ -17050,6 +17679,7 @@
         "WR"
       ],
       "age": 27.2,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 2466,
@@ -17083,6 +17713,7 @@
         "WR"
       ],
       "age": 23.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1485,
@@ -17116,6 +17747,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 956,
@@ -17149,6 +17781,7 @@
         "QB"
       ],
       "age": 29.6,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 7366,
@@ -17182,6 +17815,7 @@
         "QB"
       ],
       "age": 41.5,
+      "careerStartYear": 2008,
       "facts": {
         "superflex": {
           "value": 1032,
@@ -17215,6 +17849,7 @@
         "QB"
       ],
       "age": 26.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1592,
@@ -17248,6 +17883,7 @@
         "RB"
       ],
       "age": 30,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 793,
@@ -17281,6 +17917,7 @@
         "WR"
       ],
       "age": 26,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1413,
@@ -17314,6 +17951,7 @@
         "WR"
       ],
       "age": 25.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 632,
@@ -17347,6 +17985,7 @@
         "RB"
       ],
       "age": 22.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3168,
@@ -17380,6 +18019,7 @@
         "WR"
       ],
       "age": 25.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1044,
@@ -17413,6 +18053,7 @@
         "RB"
       ],
       "age": 27.5,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 6088,
@@ -17446,6 +18087,7 @@
         "RB"
       ],
       "age": 23,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3397,
@@ -17479,6 +18121,7 @@
         "TE"
       ],
       "age": 30.9,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 907,
@@ -17512,6 +18155,7 @@
         "WR"
       ],
       "age": 24.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3855,
@@ -17545,6 +18189,7 @@
         "RB"
       ],
       "age": 22.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2145,
@@ -17578,6 +18223,7 @@
         "QB"
       ],
       "age": 27.7,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 5534,
@@ -17611,6 +18257,7 @@
         "RB"
       ],
       "age": 27.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2669,
@@ -17644,6 +18291,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1172,
@@ -17677,6 +18325,7 @@
         "WR"
       ],
       "age": 25.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1469,
@@ -17710,6 +18359,7 @@
         "WR"
       ],
       "age": 21.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 5311,
@@ -17743,6 +18393,7 @@
         "QB"
       ],
       "age": 30.2,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 9996,
@@ -17776,6 +18427,7 @@
         "WR"
       ],
       "age": 24.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3585,
@@ -17809,6 +18461,7 @@
         "RB"
       ],
       "age": 28.4,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 4143,
@@ -17842,6 +18495,7 @@
         "TE"
       ],
       "age": 29.3,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 522,
@@ -17875,6 +18529,7 @@
         "WR"
       ],
       "age": 26.8,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1510,
@@ -17908,6 +18563,7 @@
         "RB"
       ],
       "age": 28.7,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1412,
@@ -17941,6 +18597,7 @@
         "QB"
       ],
       "age": 27.4,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1992,
@@ -17974,6 +18631,7 @@
         "QB"
       ],
       "age": 28.4,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 7111,
@@ -18007,6 +18665,7 @@
         "WR"
       ],
       "age": 27.1,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 7668,
@@ -18040,6 +18699,7 @@
         "TE"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1872,
@@ -18073,6 +18733,7 @@
         "TE"
       ],
       "age": 29.8,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 2310,
@@ -18106,6 +18767,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2055,
@@ -18139,6 +18801,7 @@
         "RB"
       ],
       "age": 22.9,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2333,
@@ -18172,6 +18835,7 @@
         "RB"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1119,
@@ -18205,6 +18869,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1198,
@@ -18238,6 +18903,7 @@
         "WR"
       ],
       "age": 30,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1131,
@@ -18271,6 +18937,7 @@
         "WR"
       ],
       "age": 24.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2507,
@@ -18304,6 +18971,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2510,
@@ -18337,6 +19005,7 @@
         "WR"
       ],
       "age": 21.8,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 4344,
@@ -18370,6 +19039,7 @@
         "WR"
       ],
       "age": 24.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1447,
@@ -18403,6 +19073,7 @@
         "RB"
       ],
       "age": 24.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2578,
@@ -18436,6 +19107,7 @@
         "WR"
       ],
       "age": 34.2,
+      "careerStartYear": 2013,
       "facts": {
         "superflex": {
           "value": 1198,
@@ -18469,6 +19141,7 @@
         "RB"
       ],
       "age": 24.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 913,
@@ -18502,6 +19175,7 @@
         "RB"
       ],
       "age": 24.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1748,
@@ -18535,6 +19209,7 @@
         "WR"
       ],
       "age": 31,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1235,
@@ -18568,6 +19243,7 @@
         "RB"
       ],
       "age": 27.4,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 2969,
@@ -18601,6 +19277,7 @@
         "RB"
       ],
       "age": 25.8,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 5548,
@@ -18634,6 +19311,7 @@
         "RB"
       ],
       "age": 26.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1005,
@@ -18667,6 +19345,7 @@
         "QB"
       ],
       "age": 28.1,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1018,
@@ -18700,6 +19379,7 @@
         "TE"
       ],
       "age": 21.4,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3983,
@@ -18733,6 +19413,7 @@
         "WR"
       ],
       "age": 23.2,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2429,
@@ -18766,6 +19447,7 @@
         "WR"
       ],
       "age": 22.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2051,
@@ -18799,6 +19481,7 @@
         "RB"
       ],
       "age": 28.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 489,
@@ -18832,6 +19515,7 @@
         "WR"
       ],
       "age": 26.5,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2869,
@@ -18865,6 +19549,7 @@
         "RB"
       ],
       "age": 24.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2184,
@@ -18898,6 +19583,7 @@
         "QB"
       ],
       "age": 37.9,
+      "careerStartYear": 2012,
       "facts": {
         "superflex": {
           "value": 1851,
@@ -18931,6 +19617,7 @@
         "WR"
       ],
       "age": 23.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1288,
@@ -18964,6 +19651,7 @@
         "QB"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 581,
@@ -18997,6 +19685,7 @@
         "RB"
       ],
       "age": 24.1,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3451,
@@ -19030,6 +19719,7 @@
         "TE"
       ],
       "age": 25.8,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 4487,
@@ -19063,6 +19753,7 @@
         "WR"
       ],
       "age": 23.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2276,
@@ -19096,6 +19787,7 @@
         "QB"
       ],
       "age": 29,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 4001,
@@ -19129,6 +19821,7 @@
         "RB"
       ],
       "age": 25.9,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 4956,
@@ -19162,6 +19855,7 @@
         "WR"
       ],
       "age": 24.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 5565,
@@ -19195,6 +19889,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 550,
@@ -19228,6 +19923,7 @@
         "QB"
       ],
       "age": 29.5,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 7654,
@@ -19261,6 +19957,7 @@
         "RB"
       ],
       "age": 22,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2065,
@@ -19294,6 +19991,7 @@
         "RB"
       ],
       "age": 23.7,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 934,
@@ -19327,6 +20025,7 @@
         "WR"
       ],
       "age": 28.3,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 894,
@@ -19360,6 +20059,7 @@
         "WR"
       ],
       "age": 25.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1591,
@@ -19393,6 +20093,7 @@
         "TE"
       ],
       "age": 25.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1776,
@@ -19426,6 +20127,7 @@
         "TE"
       ],
       "age": 27.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1136,
@@ -19459,6 +20161,7 @@
         "WR"
       ],
       "age": 22.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 5471,
@@ -19492,6 +20195,7 @@
         "QB"
       ],
       "age": 27.9,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 2673,
@@ -19525,6 +20229,7 @@
         "WR"
       ],
       "age": 32.8,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 1090,
@@ -19558,6 +20263,7 @@
         "WR"
       ],
       "age": 22.1,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 4941,
@@ -19591,6 +20297,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1249,
@@ -19624,6 +20331,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2645,
@@ -19657,6 +20365,7 @@
         "RB"
       ],
       "age": 27.6,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1514,
@@ -19690,6 +20399,7 @@
         "WR"
       ],
       "age": 26.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 509,
@@ -19723,6 +20433,7 @@
         "WR"
       ],
       "age": 23,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 7249,
@@ -19756,6 +20467,7 @@
         "WR"
       ],
       "age": 25.6,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2578,
@@ -19789,6 +20501,7 @@
         "QB"
       ],
       "age": 27.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3866,
@@ -19822,6 +20535,7 @@
         "QB"
       ],
       "age": 32.7,
+      "careerStartYear": 2015,
       "facts": {
         "superflex": {
           "value": 1145,
@@ -19855,6 +20569,7 @@
         "TE"
       ],
       "age": 30.9,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 2766,
@@ -19888,6 +20603,7 @@
         "WR"
       ],
       "age": 29.1,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1445,
@@ -19921,6 +20637,7 @@
         "RB"
       ],
       "age": 25.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2115,
@@ -19954,6 +20671,7 @@
         "WR"
       ],
       "age": 24,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 4887,
@@ -19987,6 +20705,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2061,
@@ -20020,6 +20739,7 @@
         "QB"
       ],
       "age": 31,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 510,
@@ -20053,6 +20773,7 @@
         "TE"
       ],
       "age": 22.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2369,
@@ -20086,6 +20807,7 @@
         "WR"
       ],
       "age": 25.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 906,
@@ -20119,6 +20841,7 @@
         "WR"
       ],
       "age": 23,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3512,
@@ -20152,6 +20875,7 @@
         "TE"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 863,
@@ -20185,6 +20909,7 @@
         "QB"
       ],
       "age": 38.4,
+      "careerStartYear": 2009,
       "facts": {
         "superflex": {
           "value": 3844,
@@ -20218,6 +20943,7 @@
         "TE"
       ],
       "age": 23,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2342,
@@ -20251,6 +20977,7 @@
         "RB"
       ],
       "age": 27.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 967,
@@ -20284,6 +21011,7 @@
         "TE"
       ],
       "age": 25,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2158,
@@ -20317,6 +21045,7 @@
         "QB"
       ],
       "age": 26.2,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2843,
@@ -20350,6 +21079,7 @@
         "WR"
       ],
       "age": 28.8,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 3423,
@@ -20383,6 +21113,7 @@
         "TE"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1189,
@@ -20416,6 +21147,7 @@
         "WR"
       ],
       "age": 26.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3556,
@@ -20449,6 +21181,7 @@
         "WR"
       ],
       "age": 32.9,
+      "careerStartYear": 2014,
       "facts": {
         "superflex": {
           "value": 3358,
@@ -20482,6 +21215,7 @@
         "TE"
       ],
       "age": 30.8,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 1442,
@@ -20515,6 +21249,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2276,
@@ -20548,6 +21283,7 @@
         "TE"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1155,
@@ -20581,6 +21317,7 @@
         "RB"
       ],
       "age": 28.4,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1269,
@@ -20614,6 +21351,7 @@
         "RB"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2816,
@@ -20647,6 +21385,7 @@
         "WR"
       ],
       "age": 29.3,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 981,
@@ -20680,6 +21419,7 @@
         "WR"
       ],
       "age": 27.3,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 5576,
@@ -20713,6 +21453,7 @@
         "TE"
       ],
       "age": 28.7,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1412,
@@ -20746,6 +21487,7 @@
         "TE"
       ],
       "age": 27.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1526,
@@ -20779,6 +21521,7 @@
         "WR"
       ],
       "age": 29,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1205,
@@ -20812,6 +21555,7 @@
         "RB"
       ],
       "age": 22.5,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2290,
@@ -20845,6 +21589,7 @@
         "WR"
       ],
       "age": 22.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3581,
@@ -20878,6 +21623,7 @@
         "RB"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 7010,
@@ -20911,6 +21657,7 @@
         "TE"
       ],
       "age": 23.1,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3520,
@@ -20944,6 +21691,7 @@
         "TE"
       ],
       "age": 23,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2073,
@@ -20977,6 +21725,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3694,
@@ -21010,6 +21759,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2474,
@@ -21043,6 +21793,7 @@
         "TE"
       ],
       "age": 27.7,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 2261,
@@ -21076,6 +21827,7 @@
         "QB"
       ],
       "age": 30.8,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 6411,
@@ -21109,6 +21861,7 @@
         "RB"
       ],
       "age": 23.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1270,
@@ -21142,6 +21895,7 @@
         "WR"
       ],
       "age": 25.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 8793,
@@ -21175,6 +21929,7 @@
         "WR"
       ],
       "age": 24.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3596,
@@ -21208,6 +21963,7 @@
         "QB"
       ],
       "age": 23.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1781,
@@ -21241,6 +21997,7 @@
         "RB"
       ],
       "age": 22.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 5540,
@@ -21274,6 +22031,7 @@
         "RB"
       ],
       "age": 27.5,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2840,
@@ -21307,6 +22065,7 @@
         "RB"
       ],
       "age": 24.1,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1247,
@@ -21340,6 +22099,7 @@
         "WR"
       ],
       "age": 26.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4873,
@@ -21373,6 +22133,7 @@
         "RB"
       ],
       "age": 25.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1269,
@@ -21406,6 +22167,7 @@
         "WR"
       ],
       "age": 27.9,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2804,
@@ -21439,6 +22201,7 @@
         "WR"
       ],
       "age": 26.6,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 2028,
@@ -21472,6 +22235,7 @@
         "RB"
       ],
       "age": 26.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1924,
@@ -21505,6 +22269,7 @@
         "RB"
       ],
       "age": 28.4,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 3039,
@@ -21538,6 +22303,7 @@
         "WR"
       ],
       "age": 25.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3456,
@@ -21571,6 +22337,7 @@
         "RB"
       ],
       "age": 28.1,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 3113,
@@ -21604,6 +22371,7 @@
         "QB"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1648,
@@ -21637,6 +22405,7 @@
         "RB"
       ],
       "age": 25.5,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3383,
@@ -21670,6 +22439,7 @@
         "WR"
       ],
       "age": 25.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1478,
@@ -21703,6 +22473,7 @@
         "WR"
       ],
       "age": 24.1,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 5259,
@@ -21736,6 +22507,7 @@
         "WR"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3059,
@@ -21769,6 +22541,7 @@
         "RB"
       ],
       "age": 25.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1373,
@@ -21802,6 +22575,7 @@
         "WR"
       ],
       "age": 26.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1968,
@@ -21835,6 +22609,7 @@
         "QB"
       ],
       "age": 29.1,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 4494,
@@ -21868,6 +22643,7 @@
         "QB"
       ],
       "age": 25.8,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1008,
@@ -21901,6 +22677,7 @@
         "TE"
       ],
       "age": 25.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4542,
@@ -21934,6 +22711,7 @@
         "TE"
       ],
       "age": 22.9,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 877,
@@ -21967,6 +22745,7 @@
         "RB"
       ],
       "age": 30.8,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 709,
@@ -22000,6 +22779,7 @@
         "RB"
       ],
       "age": 29.4,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 5005,
@@ -22033,6 +22813,7 @@
         "WR"
       ],
       "age": 24.7,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1623,
@@ -22066,6 +22847,7 @@
         "RB"
       ],
       "age": 24.7,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2266,
@@ -22099,6 +22881,7 @@
         "RB"
       ],
       "age": 24.8,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1232,
@@ -22132,6 +22915,7 @@
         "QB"
       ],
       "age": 24.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2706,
@@ -22165,6 +22949,7 @@
         "RB"
       ],
       "age": 25,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 928,
@@ -22198,6 +22983,7 @@
         "WR"
       ],
       "age": 24,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2460,
@@ -22231,6 +23017,7 @@
         "WR"
       ],
       "age": 25.9,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 940,
@@ -22264,6 +23051,7 @@
         "QB"
       ],
       "age": 25.8,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1546,
@@ -22297,6 +23085,7 @@
         "WR"
       ],
       "age": 32.6,
+      "careerStartYear": 2015,
       "facts": {
         "superflex": {
           "value": 2111,
@@ -22330,6 +23119,7 @@
         "TE"
       ],
       "age": 29,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 2714,
@@ -22363,6 +23153,7 @@
         "RB"
       ],
       "age": 24.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1695,
@@ -22396,6 +23187,7 @@
         "WR"
       ],
       "age": 25.2,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1331,
@@ -22429,6 +23221,7 @@
         "WR"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1265,
@@ -22462,6 +23255,7 @@
         "RB"
       ],
       "age": 24.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2571,
@@ -22495,6 +23289,7 @@
         "WR"
       ],
       "age": 26.7,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2468,
@@ -22528,6 +23323,7 @@
         "QB"
       ],
       "age": 26.2,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1205,
@@ -22561,6 +23357,7 @@
         "QB"
       ],
       "age": 23.8,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1170,
@@ -22594,6 +23391,7 @@
         "WR"
       ],
       "age": 22,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2626,
@@ -22627,6 +23425,7 @@
         "WR"
       ],
       "age": 27.5,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 4894,
@@ -22660,6 +23459,7 @@
         "TE"
       ],
       "age": 23.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2745,
@@ -22693,6 +23493,7 @@
         "RB"
       ],
       "age": 25.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 541,
@@ -22726,6 +23527,7 @@
         "WR"
       ],
       "age": 30.8,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 3561,
@@ -22759,6 +23561,7 @@
         "WR"
       ],
       "age": 23.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 6409,
@@ -22792,6 +23595,7 @@
         "WR"
       ],
       "age": 24.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2069,
@@ -22825,6 +23629,7 @@
         "TE"
       ],
       "age": 25.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2144,
@@ -22858,6 +23663,7 @@
         "TE"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 487,
@@ -22891,6 +23697,7 @@
         "TE"
       ],
       "age": 26.1,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1282,
@@ -22924,6 +23731,7 @@
         "RB"
       ],
       "age": 29.2,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 2839,
@@ -22957,6 +23765,7 @@
         "WR"
       ],
       "age": 23.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2637,
@@ -22990,6 +23799,7 @@
         "RB"
       ],
       "age": 27.5,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 4417,
@@ -23023,6 +23833,7 @@
         "WR"
       ],
       "age": 23.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 3359,
@@ -23056,6 +23867,7 @@
         "TE"
       ],
       "age": 36.8,
+      "careerStartYear": 2013,
       "facts": {
         "superflex": {
           "value": 2599,
@@ -23089,6 +23901,7 @@
         "WR"
       ],
       "age": 24.4,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2717,
@@ -23122,6 +23935,7 @@
         "WR"
       ],
       "age": 25.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2538,
@@ -23155,6 +23969,7 @@
         "RB"
       ],
       "age": 23.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 5332,
@@ -23188,6 +24003,7 @@
         "RB"
       ],
       "age": 22,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1977,
@@ -23221,6 +24037,7 @@
         "QB"
       ],
       "age": 26.8,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 6364,
@@ -23254,6 +24071,7 @@
         "RB"
       ],
       "age": 24,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2201,
@@ -23287,6 +24105,7 @@
         "QB"
       ],
       "age": 26.2,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1068,
@@ -23320,6 +24139,7 @@
         "TE"
       ],
       "age": 26.7,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 7379,
@@ -23353,6 +24173,7 @@
         "WR"
       ],
       "age": 25.3,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1153,
@@ -23386,6 +24207,7 @@
         "WR"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1639,
@@ -23419,6 +24241,7 @@
         "WR"
       ],
       "age": 23.4,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2551,
@@ -23452,6 +24275,7 @@
         "QB"
       ],
       "age": 28.4,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 2667,
@@ -23485,6 +24309,7 @@
         "TE"
       ],
       "age": 25.7,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4939,
@@ -23518,6 +24343,7 @@
         "WR"
       ],
       "age": 26.8,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 1531,
@@ -23551,6 +24377,7 @@
         "RB"
       ],
       "age": 28.2,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 709,
@@ -23584,6 +24411,7 @@
         "RB"
       ],
       "age": 28.8,
+      "careerStartYear": 2019,
       "facts": {
         "superflex": {
           "value": 1244,
@@ -23617,6 +24445,7 @@
         "QB"
       ],
       "age": 23.6,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 3494,
@@ -23650,6 +24479,7 @@
         "RB"
       ],
       "age": 25.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 2553,
@@ -23683,6 +24513,7 @@
         "RB"
       ],
       "age": 26.3,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 2649,
@@ -23716,6 +24547,7 @@
         "RB"
       ],
       "age": 26.4,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 961,
@@ -23749,6 +24581,7 @@
         "RB"
       ],
       "age": 25.7,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1017,
@@ -23782,6 +24615,7 @@
         "TE"
       ],
       "age": 33.6,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 1292,
@@ -23815,6 +24649,7 @@
         "QB"
       ],
       "age": 28.5,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 1192,
@@ -23848,6 +24683,7 @@
         "WR"
       ],
       "age": 27.9,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 571,
@@ -23881,6 +24717,7 @@
         "WR"
       ],
       "age": 24.8,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 953,
@@ -23914,6 +24751,7 @@
         "QB"
       ],
       "age": 26.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 4866,
@@ -23947,6 +24785,7 @@
         "TE"
       ],
       "age": 24.2,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 5913,
@@ -23980,6 +24819,7 @@
         "WR"
       ],
       "age": 26,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 1762,
@@ -24013,6 +24853,7 @@
         "WR"
       ],
       "age": 32.4,
+      "careerStartYear": 2016,
       "facts": {
         "superflex": {
           "value": 1759,
@@ -24046,6 +24887,7 @@
         "WR"
       ],
       "age": 26.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 985,
@@ -24079,6 +24921,7 @@
         "RB"
       ],
       "age": 26.7,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 2631,
@@ -24112,6 +24955,7 @@
         "QB"
       ],
       "age": 26.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1368,
@@ -24145,6 +24989,7 @@
         "WR"
       ],
       "age": 30,
+      "careerStartYear": 2020,
       "facts": {
         "superflex": {
           "value": 515,
@@ -24178,6 +25023,7 @@
         "WR"
       ],
       "age": 25.5,
+      "careerStartYear": 2022,
       "facts": {
         "superflex": {
           "value": 3433,
@@ -24211,6 +25057,7 @@
         "TE"
       ],
       "age": 30,
+      "careerStartYear": 2018,
       "facts": {
         "superflex": {
           "value": 492,
@@ -24244,6 +25091,7 @@
         "QB"
       ],
       "age": 24.8,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1825,
@@ -24277,6 +25125,7 @@
         "QB"
       ],
       "age": 27.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1128,
@@ -24310,6 +25159,7 @@
         "RB"
       ],
       "age": 23.9,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1571,
@@ -24343,6 +25193,7 @@
         "RB"
       ],
       "age": 25.6,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 2635,
@@ -24376,6 +25227,7 @@
         "WR"
       ],
       "age": 25.4,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 915,
@@ -24409,6 +25261,7 @@
         "WR"
       ],
       "age": 26.1,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 1570,
@@ -24442,6 +25295,7 @@
         "WR"
       ],
       "age": 25.5,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 1863,
@@ -24475,6 +25329,7 @@
         "WR"
       ],
       "age": 24.3,
+      "careerStartYear": 2025,
       "facts": {
         "superflex": {
           "value": 1186,
@@ -24508,6 +25363,7 @@
         "WR"
       ],
       "age": 23.2,
+      "careerStartYear": 2024,
       "facts": {
         "superflex": {
           "value": 3307,
@@ -24541,6 +25397,7 @@
         "RB"
       ],
       "age": 25.5,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 3348,
@@ -24574,6 +25431,7 @@
         "TE"
       ],
       "age": 35.7,
+      "careerStartYear": 2013,
       "facts": {
         "superflex": {
           "value": 677,
@@ -24607,6 +25465,7 @@
         "QB"
       ],
       "age": 27,
+      "careerStartYear": 2021,
       "facts": {
         "superflex": {
           "value": 939,
@@ -24640,6 +25499,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 2741,
@@ -24673,6 +25533,7 @@
         "RB"
       ],
       "age": 27,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 701,
@@ -24706,6 +25567,7 @@
         "WR"
       ],
       "age": null,
+      "careerStartYear": 2026,
       "facts": {
         "superflex": {
           "value": 1624,
@@ -24739,6 +25601,7 @@
         "WR"
       ],
       "age": 25.9,
+      "careerStartYear": 2023,
       "facts": {
         "superflex": {
           "value": 4955,
@@ -24772,6 +25635,7 @@
         "WR"
       ],
       "age": 31.3,
+      "careerStartYear": 2017,
       "facts": {
         "superflex": {
           "value": 554,
@@ -24795,5 +25659,5 @@
     }
   ],
   "quarantine": [],
-  "contentSha256": "d5cee232bf503bfb7f75f2b938583608c0df12b74861d0efe18c7b92704a0a9b"
+  "contentSha256": "503b01fab2d6a7a2f2994ec5865105905af33426f5e559e7ece28ccc6abb5acb"
 }

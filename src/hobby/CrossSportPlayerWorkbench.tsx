@@ -9,12 +9,13 @@ import {
   RotateCcw,
   Search,
 } from 'lucide-react'
-import type {
-  HobbyPlayerRankingItem,
-  HobbyPlayerRankingPosture,
-  HobbyPlayerRankingsResponse,
-  HobbyPlayerRankingSortKey,
-  HobbyPlayerRankingSport,
+import {
+  HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY,
+  type HobbyPlayerRankingItem,
+  type HobbyPlayerRankingPosture,
+  type HobbyPlayerRankingsResponse,
+  type HobbyPlayerRankingSortKey,
+  type HobbyPlayerRankingSport,
 } from '../domain/hobbyPlayerRanking'
 import './cross-sport-player-workbench.css'
 
@@ -58,7 +59,7 @@ const postureOptions: ReadonlyArray<{
 }> = [
   { value: 'all', label: 'All actions' },
   { value: 'Build', label: 'Build candidates' },
-  { value: 'Hold', label: 'Hold' },
+  { value: 'Research', label: 'Qualified research' },
   { value: 'Watch', label: 'Watch' },
   { value: 'Deprioritize', label: 'Deprioritize' },
 ]
@@ -68,9 +69,14 @@ const sortOptions: ReadonlyArray<{
   label: string
 }> = [
   { value: 'score', label: 'Build Score' },
-  { value: 'outlook', label: 'Long-horizon outlook' },
+  { value: 'outlook', label: 'Dynasty outlook' },
   { value: 'market_durability', label: 'Demand durability' },
-  { value: 'attention_gap', label: 'Attention gap' },
+  {
+    value: 'divergence_penalty',
+    label: 'Adjusted demand/outlook divergence',
+  },
+  { value: 'concentration', label: 'Sales concentration' },
+  { value: 'attention_gap', label: 'Adjusted gap' },
   { value: 'age', label: 'Age' },
   { value: 'name', label: 'Player name' },
 ]
@@ -122,14 +128,19 @@ function attentionTone(value: number): 'opportunity' | 'risk' | 'neutral' {
   return 'neutral'
 }
 
-function sentenceLabel(value: string): string {
+function codeLabel(value: string): string {
   const words = value.replaceAll('_', ' ')
-  return `${words.charAt(0).toLocaleUpperCase()}${words.slice(1)}.`
+  const label = `${words.charAt(0).toLocaleUpperCase()}${words.slice(1)}`
+  return label.replace(/^Nfl\b/u, 'NFL')
+}
+
+function sentenceLabel(value: string): string {
+  return `${codeLabel(value)}.`
 }
 
 function postureClass(posture: HobbyPlayerRankingPosture): string {
   if (posture === 'Build') return 'build_candidate'
-  if (posture === 'Hold') return 'hold_candidate'
+  if (posture === 'Research') return 'hold_candidate'
   if (posture === 'Deprioritize') return 'pass'
   return 'watch'
 }
@@ -142,7 +153,9 @@ function postureLabel(item: HobbyPlayerRankingItem): string {
   ) {
     return 'Review pending'
   }
-  return item.posture === 'Build' ? 'Build candidate' : item.posture
+  if (item.posture === 'Build') return 'Build candidate'
+  if (item.posture === 'Research') return 'Qualified research'
+  return item.posture
 }
 
 function sourceDate(value: string): string {
@@ -231,7 +244,7 @@ export function CrossSportPlayerWorkbench({
   }
   const positions = response?.meta.availableFilters.positionsBySport[sport] ??
     defaultPositions[sport]
-  const cohort = response?.cohorts.find((item) => item.sport === sport)
+  const screenSummary = response?.screenSummary
   const publicationSuspended =
     response?.snapshot.freshness.status !== undefined &&
     response.snapshot.freshness.status !== 'current'
@@ -361,15 +374,22 @@ export function CrossSportPlayerWorkbench({
 
       <div className="iw-result-bar csw-result-bar">
         <div>
-          <strong>{pagination.total.toLocaleString()}</strong>
+          <strong>
+            {(screenSummary?.rankedCount ?? pagination.total).toLocaleString()}
+          </strong>
           <span>
             ranked · {sport} · {maxAge === 'all' ? 'all ages' : `age ≤${maxAge}`}
-            {cohort ? ` · Build candidates ${cohort.buildCount}` : ''}
+            {screenSummary
+              ? ` · Build candidates ${screenSummary.buildCount} · Qualified research ${screenSummary.researchCount}`
+              : ''}
           </span>
         </div>
         <p>
-          Build Score is a consensus-and-demand research screen calculated
-          within {sport}; age filters the view and never adds points.
+          Build Score combines dynasty outlook and durable demand within{' '}
+          {sport}; age never adds points.{' '}
+          {sport === 'basketball'
+            ? 'Basketball age only supplies a conservative evidence-depth proxy.'
+            : 'NFL draft year supplies the evidence-depth gate.'}
         </p>
         <span className="iw-withheld-status">
           <LockKeyhole size={13} aria-hidden="true" />
@@ -409,10 +429,10 @@ export function CrossSportPlayerWorkbench({
                 <th className="iw-subject-column" scope="col">Player</th>
                 <th scope="col">Age</th>
                 <th scope="col">Build Score</th>
-                <th scope="col">Long-horizon outlook</th>
+                <th scope="col">Dynasty outlook</th>
                 <th scope="col">Demand durability</th>
-                <th scope="col">Attention gap</th>
-                <th scope="col">Confidence / research</th>
+                <th scope="col">Adjusted gap</th>
+                <th scope="col">Input integrity</th>
               </tr>
             </thead>
             <tbody>
@@ -428,7 +448,7 @@ export function CrossSportPlayerWorkbench({
                   item.diagnostics.priorThreeMonthSalesUsd,
                 )
                 const gapTone = attentionTone(
-                  item.diagnostics.attentionGap,
+                  item.diagnostics.adjustedAttentionGap,
                 )
                 const primaryRank = scopedRankActive
                   ? item.screenRank
@@ -469,11 +489,17 @@ export function CrossSportPlayerWorkbench({
                       </th>
                       <td className="iw-number csw-age">
                         <strong>{ageLabel(item.age)}</strong>
-                        <span>filter only</span>
+                        <span>
+                          {item.age === null
+                            ? 'unknown'
+                            : sport === 'basketball'
+                              ? 'evidence proxy'
+                              : 'filter only'}
+                        </span>
                       </td>
                       <td className="iw-number iw-score csw-build-score">
                         <strong>{scoreLabel(item.score)}</strong>
-                        <span>Consensus + Demand</span>
+                        <span>Dynasty + Demand</span>
                       </td>
                       <td className="iw-number">
                         <strong>{scoreLabel(item.components.outlook)}</strong>
@@ -487,9 +513,11 @@ export function CrossSportPlayerWorkbench({
                       </td>
                       <td className={`iw-number csw-gap is-${gapTone}`}>
                         <strong>
-                          {attentionGapLabel(item.diagnostics.attentionGap)}
+                          {attentionGapLabel(
+                            item.diagnostics.adjustedAttentionGap,
+                          )}
                         </strong>
-                        <span>volume − outlook</span>
+                        <span>vs position peers</span>
                       </td>
                       <td className="csw-decision">
                         <span className={`iw-posture iw-posture--${postureTone}`}>
@@ -497,7 +525,8 @@ export function CrossSportPlayerWorkbench({
                         </span>
                         <span>
                           {item.confidence.band} ·{' '}
-                          {item.confidence.score.toFixed(0)}/100 evidence
+                          {item.confidence.score.toFixed(0)}/
+                          {HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY} inputs
                         </span>
                       </td>
                     </tr>
@@ -515,7 +544,7 @@ export function CrossSportPlayerWorkbench({
                               </h3>
                               <dl className="iw-signal-grid">
                                 <div>
-                                  <dt>Outlook</dt>
+                                  <dt>Dynasty outlook</dt>
                                   <dd>{scoreLabel(item.components.outlook)}</dd>
                                 </div>
                                 <div>
@@ -535,12 +564,22 @@ export function CrossSportPlayerWorkbench({
                                   <dd>{scoreLabel(item.components.resilience)}</dd>
                                 </div>
                                 <div>
+                                  <dt>Shock resistance</dt>
+                                  <dd>
+                                    {scoreLabel(item.components.shockResistance)}
+                                  </dd>
+                                </div>
+                                <div>
                                   <dt>Trend context</dt>
                                   <dd>{scoreLabel(item.components.trendContext)}</dd>
                                 </div>
                                 <div>
-                                  <dt>Hype penalty</dt>
-                                  <dd>{item.components.hypePenalty.toFixed(1)}</dd>
+                                  <dt>
+                                    Adjusted demand/outlook divergence
+                                  </dt>
+                                  <dd>
+                                    {item.components.divergencePenalty.toFixed(1)}
+                                  </dd>
                                 </div>
                               </dl>
                               <p className="csw-formula">
@@ -548,12 +587,14 @@ export function CrossSportPlayerWorkbench({
                                 {response?.meta.methodology.formulas.durableScore}
                               </p>
                               <p className="csw-formula">
-                                Outlook formula:{' '}
+                                Dynasty outlook formula:{' '}
                                 {sport === 'football'
                                   ? response?.meta.methodology.formulas.outlookFootball
                                   : response?.meta.methodology.formulas.outlookBasketball}
-                                {' '}Age is display and filter context only; it is
-                                not a score input.
+                                {' '}Age never adds score points.{' '}
+                                {sport === 'basketball'
+                                  ? 'Basketball age only supplies a conservative evidence-depth proxy.'
+                                  : 'NFL draft year, not age, supplies the evidence-depth gate.'}
                               </p>
                               <div className="iw-detail-scope">
                                 This prioritizes player-level consensus and
@@ -609,6 +650,50 @@ export function CrossSportPlayerWorkbench({
                                       .toFixed(0)}%
                                   </dd>
                                 </div>
+                                <div>
+                                  <dt>Raw attention gap</dt>
+                                  <dd>
+                                    {attentionGapLabel(
+                                      item.diagnostics.attentionGap,
+                                    )}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Cohort gap baseline</dt>
+                                  <dd>
+                                    {attentionGapLabel(
+                                      item.diagnostics.attentionGapBaseline,
+                                    )}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Concentration pct</dt>
+                                  <dd>
+                                    {item.diagnostics.concentrationPercentile
+                                      .toFixed(0)}th
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Effective sales months</dt>
+                                  <dd>
+                                    {item.diagnostics.effectiveSalesMonths
+                                      .toFixed(1)} / 12
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Largest month share</dt>
+                                  <dd>
+                                    {(item.diagnostics.largestMonthShare * 100)
+                                      .toFixed(0)}%
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Top 3 month share</dt>
+                                  <dd>
+                                    {(item.diagnostics.topThreeMonthShare * 100)
+                                      .toFixed(0)}%
+                                  </dd>
+                                </div>
                               </dl>
                             </section>
 
@@ -623,6 +708,16 @@ export function CrossSportPlayerWorkbench({
                               <p className="csw-gate-rule">
                                 {response?.meta.methodology.buildGate}
                               </p>
+                              <p className="csw-sensitivity">
+                                Evidence: {codeLabel(
+                                  item.evidence.evidenceStage,
+                                )}
+                                {' '}· {item.evidence.evidenceYears}{' '}
+                                {item.evidence.evidenceYears === 1
+                                  ? 'year'
+                                  : 'years'}
+                                {' '}· {codeLabel(item.evidence.evidenceBasis)}
+                              </p>
                               <ul>
                                 {item.gates.reasonCodes.length > 0 ? (
                                   item.gates.reasonCodes.slice(0, 6).map((reason) => (
@@ -633,10 +728,22 @@ export function CrossSportPlayerWorkbench({
                                 )}
                               </ul>
                               <p className="csw-sensitivity">
-                                Sensitivity: {item.sensitivity.stableTopDecile
-                                  ? 'stable in the top decile'
-                                  : 'ranking changes under alternate weights'}
-                                {' '}· spread {item.sensitivity.scoreSpread.toFixed(1)}
+                                Robustness:{' '}
+                                {(item.sensitivity.topFiveInclusionRate * 100)
+                                  .toFixed(0)}% top-5% inclusion
+                                {' '}· rank range #
+                                {item.sensitivity.rankRange.best}–#
+                                {item.sensitivity.rankRange.worst}
+                                {' '}· score spread{' '}
+                                {item.sensitivity.scoreSpread.toFixed(1)}
+                              </p>
+                              <p className="csw-sensitivity">
+                                Input integrity: {item.confidence.score.toFixed(0)}
+                                /{HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY}{' '}
+                                ({item.confidence.band}). This grades source,
+                                identity, completeness, and robustness—not
+                                investment confidence. Investment confidence is{' '}
+                                {item.confidence.investmentConfidence}.
                               </p>
                             </section>
 
@@ -667,7 +774,8 @@ export function CrossSportPlayerWorkbench({
                                 ))}
                               </ul>
                               <p className="csw-identity">
-                                Identity: unique exact join · manual review{' '}
+                                Identity: {codeLabel(item.identity.status)}
+                                {' '}· manual review{' '}
                                 {item.identity.manualReviewStatus}.
                               </p>
                             </section>

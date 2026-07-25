@@ -176,7 +176,7 @@ function initialPlayerPosition(): PlayerRankingPosition {
 function initialPlayerPosture(): PlayerRankingPosture {
   const value = initialParameters().get('posture')
   return value === 'Build' ||
-      value === 'Hold' ||
+      value === 'Research' ||
       value === 'Watch' ||
       value === 'Deprioritize'
     ? value
@@ -187,6 +187,8 @@ function initialPlayerSort(): HobbyPlayerRankingSortKey {
   const value = initialParameters().get('sort')
   return value === 'outlook' ||
       value === 'market_durability' ||
+      value === 'divergence_penalty' ||
+      value === 'concentration' ||
       value === 'attention_gap' ||
       value === 'age' ||
       value === 'name'
@@ -381,7 +383,7 @@ export function HobbyApp() {
     setPlayerLoading(true)
     setPlayerError(null)
     setPlayerResponse(null)
-    fetch(`/api/v1/hobby-player-rankings?${parameters.toString()}`, {
+    fetch(`/api/v2/hobby-player-rankings?${parameters.toString()}`, {
       cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: controller.signal,

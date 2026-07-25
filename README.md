@@ -269,6 +269,12 @@ Raw provider JSON and scouting prose are never returned by the public API.
   from 18 reconciled monthly GemRate observations. It exposes within-cohort
   demand durability and ten fail-closed evidence gates; it currently emits zero
   durable-investment or exact-card designations.
+- **Hobby Oracle Player Rankings (`/hobby?lens=players`):** scoped football and
+  basketball active-player research using the strict
+  [Player Rankings v2 methodology](docs/HOBBY_PLAYER_RANKINGS_V2.md). Build is
+  a player-level candidate for further card research, never an expected-return
+  claim or buy call. The UI reads `/api/v2/hobby-player-rankings`; v1 remains
+  frozen on its original public contract.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 
@@ -291,6 +297,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Player Signals API v1](docs/PLAYER_SIGNALS_API_V1.md)
 - [Magnificent X provisional market signal](docs/MAGNIFICENT_X_V1.md)
+- [Hobby Oracle Player Rankings v2](docs/HOBBY_PLAYER_RANKINGS_V2.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

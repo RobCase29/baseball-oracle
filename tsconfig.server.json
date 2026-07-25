@@ -28,6 +28,7 @@
     "src/domain/binderScore.ts",
     "src/domain/magnificentX.ts",
     "src/domain/hobbyPlayerRanking.ts",
+    "src/domain/hobbyPlayerRankingV1.ts",
     "src/domain/playerHandling.ts",
     "src/football/marketFeedContract.ts"
   ],

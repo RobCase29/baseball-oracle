@@ -28,12 +28,12 @@ function responseRecorder() {
   }
 }
 
-describe('/api/v1/hobby-player-rankings', () => {
+describe('/api/v2/hobby-player-rankings', () => {
   it('serves a current, bounded within-sport investor screen', () => {
     const recorder = responseRecorder()
     handleHobbyPlayerRankings(
       request(
-        '/api/v1/hobby-player-rankings?sport=football' +
+        '/api/v2/hobby-player-rankings?sport=football' +
         '&maxAge=26&position=WR&sort=score&limit=10',
       ),
       recorder.response,
@@ -44,7 +44,7 @@ describe('/api/v1/hobby-player-rankings', () => {
       snapshot: { freshness: { status: string } }
       items: Array<{
         sport: string
-        age: number
+        age: number | null
         positions: string[]
         screenRank: number
       }>
@@ -56,12 +56,13 @@ describe('/api/v1/hobby-player-rankings', () => {
 
     expect(recorder.response.statusCode).toBe(200)
     expect(recorder.headers.get('cache-control')).toContain('s-maxage=300')
-    expect(payload.schemaVersion).toBe('hobby-player-rankings.v1')
+    expect(payload.schemaVersion).toBe('hobby-player-rankings.v2')
     expect(payload.snapshot.freshness.status).toBe('current')
     expect(payload.items).toHaveLength(10)
     expect(payload.items.every(
       (item) =>
         item.sport === 'football' &&
+        item.age !== null &&
         item.age <= 26 &&
         item.positions.includes('WR'),
     )).toBe(true)
@@ -75,7 +76,7 @@ describe('/api/v1/hobby-player-rankings', () => {
     const getRecorder = responseRecorder()
     handleHobbyPlayerRankings(
       request(
-        '/api/v1/hobby-player-rankings?sport=basketball' +
+        '/api/v2/hobby-player-rankings?sport=basketball' +
         '&posture=Build&limit=100',
       ),
       getRecorder.response,
@@ -97,7 +98,7 @@ describe('/api/v1/hobby-player-rankings', () => {
     const headRecorder = responseRecorder()
     handleHobbyPlayerRankings(
       request(
-        '/api/v1/hobby-player-rankings?sport=basketball',
+        '/api/v2/hobby-player-rankings?sport=basketball',
         'HEAD',
       ),
       headRecorder.response,
@@ -109,14 +110,14 @@ describe('/api/v1/hobby-player-rankings', () => {
 
   it('rejects duplicate, unsupported, and oversized parameters', () => {
     for (const url of [
-      '/api/v1/hobby-player-rankings?sport=football&sport=basketball',
-      '/api/v1/hobby-player-rankings?sport=baseball',
-      '/api/v1/hobby-player-rankings?posture=Buy',
-      '/api/v1/hobby-player-rankings?sort=expected_return',
-      '/api/v1/hobby-player-rankings?maxAge=14',
-      '/api/v1/hobby-player-rankings?sport=football&position=C',
-      '/api/v1/hobby-player-rankings?limit=101',
-      '/api/v1/hobby-player-rankings?direction=desc',
+      '/api/v2/hobby-player-rankings?sport=football&sport=basketball',
+      '/api/v2/hobby-player-rankings?sport=baseball',
+      '/api/v2/hobby-player-rankings?posture=Buy',
+      '/api/v2/hobby-player-rankings?sort=expected_return',
+      '/api/v2/hobby-player-rankings?maxAge=14',
+      '/api/v2/hobby-player-rankings?sport=football&position=C',
+      '/api/v2/hobby-player-rankings?limit=101',
+      '/api/v2/hobby-player-rankings?direction=desc',
     ]) {
       const recorder = responseRecorder()
       handleHobbyPlayerRankings(
@@ -132,7 +133,7 @@ describe('/api/v1/hobby-player-rankings', () => {
   it('permits only GET and HEAD', () => {
     const recorder = responseRecorder()
     handleHobbyPlayerRankings(
-      request('/api/v1/hobby-player-rankings', 'POST'),
+      request('/api/v2/hobby-player-rankings', 'POST'),
       recorder.response,
       currentAt,
     )

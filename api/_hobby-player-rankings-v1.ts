@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import checklistSignalsJson from './_data/checklist-hobby-player-signals.json' with { type: 'json' }
-import identityControlsJson from './_data/hobby-player-identity-controls.json' with { type: 'json' }
+// Frozen v1 compatibility implementation. New ranking work belongs in v2.
+import checklistSignalsV2Json from './_data/checklist-hobby-player-signals.json' with { type: 'json' }
 import identityReviewJson from './_data/hobby-player-identity-review.json' with { type: 'json' }
 import {
   magnificentXCatalog,
@@ -27,14 +27,11 @@ import {
   type HobbyPlayerRankingSortKey,
   type HobbyPlayerRankingSourceEvidence,
   type HobbyPlayerRankingSport,
-} from '../src/domain/hobbyPlayerRanking.js'
+} from '../src/domain/hobbyPlayerRankingV1.js'
 
-const EXCHANGE_SCHEMA_VERSION = 'backstop-hobby-player-signals.v2' as const
-const EXCHANGE_CONTRACT_VERSION = '2.0.0' as const
+const EXCHANGE_SCHEMA_VERSION = 'backstop-hobby-player-signals.v1' as const
 const IDENTITY_REVIEW_SCHEMA_VERSION =
   'hobby-player-identity-review.v1' as const
-const IDENTITY_CONTROLS_SCHEMA_VERSION =
-  'hobby-player-identity-controls.v1' as const
 const FUNDAMENTALS_MAX_AGE_DAYS = {
   football: 14,
   basketball: 45,
@@ -112,7 +109,6 @@ interface ExchangeRow {
   team: string | null
   positions: string[]
   age: number | null
-  careerStartYear: number | null
   facts: FootballFacts | BasketballFacts
 }
 
@@ -153,41 +149,6 @@ interface IdentityReview {
   entries: IdentityReviewEntry[]
 }
 
-interface IdentityControlAlias {
-  sport: HobbyPlayerRankingSport
-  providerPlayerId: string
-  providerDisplayName: string
-  providerNormalizedName: string
-  gemRateSourceKey: string
-  gemRateDisplayName: string
-  gemRateNormalizedName: string
-  status: 'approved'
-  reviewedAt: string
-  note: string
-}
-
-interface IdentityControlBlock {
-  sport: HobbyPlayerRankingSport
-  providerPlayerId: string
-  providerDisplayName: string
-  providerNormalizedName: string
-  gemRateSourceKey: string
-  gemRateDisplayName: string
-  gemRateNormalizedName: string
-  status: 'blocked'
-  reasonCode: string
-  reviewedAt: string
-  note: string
-}
-
-interface IdentityControls {
-  schemaVersion: typeof IDENTITY_CONTROLS_SCHEMA_VERSION
-  reviewedAt: string
-  reviewerScope: string
-  aliases: IdentityControlAlias[]
-  blocks: IdentityControlBlock[]
-}
-
 interface QuarantineSummary {
   total: number
   ambiguousProviderIdentity: number
@@ -195,14 +156,6 @@ interface QuarantineSummary {
   missingMarketMatch: number
   incompleteProviderRanks: number
   invalidAge: number
-  identityControlBlocked: number
-  impossibleGradedChronology: number
-}
-
-interface CoverageSummary {
-  sourceRows: number
-  rankedRows: number
-  coveragePercent: number
 }
 
 interface SportFreshness {
@@ -213,12 +166,6 @@ interface SportFreshness {
   reasonCodes: string[]
 }
 
-interface FreshnessIntegrityTimestamps {
-  exchangeGeneratedAt: string
-  identityReviewReviewedAt: string
-  identityControlsReviewedAt: string
-}
-
 export interface HobbyPlayerRankingCatalog {
   exchange: ExchangeArtifact
   items: HobbyPlayerRankingItem[]
@@ -226,15 +173,11 @@ export interface HobbyPlayerRankingCatalog {
   snapshotIdBySport: Record<HobbyPlayerRankingSport, string>
   cohorts: HobbyPlayerRankingsResponse['cohorts']
   quarantine: QuarantineSummary
-  quarantineBySport: Record<HobbyPlayerRankingSport, QuarantineSummary>
-  coverageBySport: Record<HobbyPlayerRankingSport, CoverageSummary>
   positionsBySport: Record<HobbyPlayerRankingSport, string[]>
-  ageRangeBySport: Record<HobbyPlayerRankingSport, {
+  ageRange: {
     minimum: number
     maximum: number
-  }>
-  snapshotGeneratedAt: string
-  snapshotAcquiredAt: string
+  }
 }
 
 export interface HobbyPlayerRankingsQuery {
@@ -287,6 +230,41 @@ function exchangeContentHash(exchange: ExchangeArtifact): string {
   return createHash('sha256').update(stableJson(body)).digest('hex')
 }
 
+function legacyChecklistSignals(): ExchangeArtifact {
+  const source = checklistSignalsV2Json as unknown as Record<string, unknown>
+  const rows = source.rows
+  if (!Array.isArray(rows)) {
+    throw new Error('Checklist v2 player-signal rows are unavailable')
+  }
+  const legacyRows = rows.map((row) => {
+    if (!isRecord(row)) return row
+    const {
+      careerStartYear: _careerStartYear,
+      ...legacyRow
+    } = row
+    return legacyRow
+  })
+  const {
+    contentSha256: _contentSha256,
+    ...sourceWithoutHash
+  } = source
+  const body = {
+    ...sourceWithoutHash,
+    schemaVersion: EXCHANGE_SCHEMA_VERSION,
+    contractVersion: '1.0.0',
+    semantics:
+      'Attributed normalized provider facts for identity-safe derived comparison. This exchange contains no GemRate rows, raw provider payloads, card prices, or Hobby Oracle investment scores.',
+    rows: legacyRows,
+  }
+  return {
+    ...body,
+    contentSha256:
+      createHash('sha256').update(stableJson(body)).digest('hex'),
+  } as unknown as ExchangeArtifact
+}
+
+const checklistSignalsJson = legacyChecklistSignals()
+
 function validRank(value: unknown, universe: number): value is number {
   return (
     Number.isSafeInteger(value) &&
@@ -331,16 +309,6 @@ function validExchangeRow(
       (position) => typeof position === 'string' && position.length > 0,
     ) ||
     (value.age !== null && !Number.isFinite(value.age)) ||
-    !Object.hasOwn(value, 'careerStartYear') ||
-    (
-      value.careerStartYear !== null &&
-      (
-        !Number.isSafeInteger(value.careerStartYear) ||
-        (value.careerStartYear as number) < 1900 ||
-        (value.careerStartYear as number) > 2200
-      )
-    ) ||
-    (sport === 'basketball' && value.careerStartYear !== null) ||
     !isRecord(value.facts)
   ) {
     return false
@@ -379,7 +347,7 @@ export function parseHobbyPlayerSignalExchange(
   const exchange = value as unknown as ExchangeArtifact
   if (
     exchange.schemaVersion !== EXCHANGE_SCHEMA_VERSION ||
-    exchange.contractVersion !== EXCHANGE_CONTRACT_VERSION ||
+    typeof exchange.contractVersion !== 'string' ||
     !validIso(exchange.generatedAt) ||
     typeof exchange.semantics !== 'string' ||
     exchange.semantics.length < 40 ||
@@ -485,89 +453,11 @@ export function parseHobbyPlayerIdentityReview(value: unknown): IdentityReview {
   return review
 }
 
-export function parseHobbyPlayerIdentityControls(
-  value: unknown,
-): IdentityControls {
-  if (!isRecord(value)) {
-    throw new Error('Hobby player identity controls must be an object')
-  }
-  const controls = value as unknown as IdentityControls
-  if (
-    controls.schemaVersion !== IDENTITY_CONTROLS_SCHEMA_VERSION ||
-    !validIso(controls.reviewedAt) ||
-    typeof controls.reviewerScope !== 'string' ||
-    controls.reviewerScope.length < 40 ||
-    !Array.isArray(controls.aliases) ||
-    !Array.isArray(controls.blocks)
-  ) {
-    throw new Error('Hobby player identity controls failed their contract')
-  }
-  const identities = new Set<string>()
-  for (const entry of [...controls.aliases, ...controls.blocks]) {
-    const identity = `${entry.sport}|${entry.providerPlayerId}`
-    const commonValid =
-      (entry.sport === 'football' || entry.sport === 'basketball') &&
-      typeof entry.providerPlayerId === 'string' &&
-      entry.providerPlayerId.length > 0 &&
-      typeof entry.providerDisplayName === 'string' &&
-      entry.providerNormalizedName ===
-        normalizeHobbyPlayerName(entry.providerDisplayName) &&
-      typeof entry.gemRateSourceKey === 'string' &&
-      entry.gemRateSourceKey.length > 0 &&
-      typeof entry.gemRateDisplayName === 'string' &&
-      entry.gemRateNormalizedName ===
-        normalizeHobbyPlayerName(entry.gemRateDisplayName) &&
-      validIso(entry.reviewedAt) &&
-      typeof entry.note === 'string' &&
-      entry.note.length >= 8 &&
-      !identities.has(identity)
-    if (!commonValid) {
-      throw new Error(
-        `Hobby player identity control is invalid: ${identity}`,
-      )
-    }
-    identities.add(identity)
-  }
-  for (const alias of controls.aliases) {
-    if (alias.status !== 'approved') {
-      throw new Error(
-        `Hobby player identity alias is invalid: ` +
-          `${alias.sport}|${alias.providerPlayerId}`,
-      )
-    }
-  }
-  for (const block of controls.blocks) {
-    if (
-      block.status !== 'blocked' ||
-      typeof block.reasonCode !== 'string' ||
-      block.reasonCode.length < 8
-    ) {
-      throw new Error(
-        `Hobby player identity block is invalid: ` +
-          `${block.sport}|${block.providerPlayerId}`,
-      )
-    }
-  }
-  return controls
-}
-
 function addDays(value: string, days: number): string {
   const parsed = new Date(value)
   return new Date(
     parsed.valueOf() + days * 24 * 60 * 60 * 1_000,
   ).toISOString()
-}
-
-function gemRateAthleteAcquiredAt(): string {
-  const acquiredAt = magnificentXCatalog.snapshot.sources
-    .filter((source) => source.subjectType === 'athlete')
-    .map((source) => source.acquiredAt)
-    .toSorted()
-    .at(-1)
-  if (!acquiredAt) {
-    throw new Error('GemRate athlete acquisition evidence is missing')
-  }
-  return acquiredAt
 }
 
 function fundamentalsFreshness(
@@ -607,71 +497,12 @@ function combinedFreshness(
   sport: HobbyPlayerRankingSport,
   source: ExchangeSource,
   now: Date,
-  integrityTimestamps: FreshnessIntegrityTimestamps,
 ): SportFreshness {
-  const nowTime = now.valueOf()
-  const futureTimestampReasons = (
-    entries: ReadonlyArray<{ id: string; value: string }>,
-  ): string[] => (
-    Number.isFinite(nowTime)
-      ? entries
-          .filter((entry) => Date.parse(entry.value) > nowTime)
-          .map((entry) => `${entry.id}_timestamp_in_future`)
-      : []
-  )
-  const marketBase = magnificentXFreshness(
+  const market = magnificentXFreshness(
     magnificentXCatalog.snapshot.dataThrough,
     now,
   )
-  const marketFutureReasons = futureTimestampReasons([
-    {
-      id: 'gemrate_snapshot_published',
-      value: magnificentXCatalog.snapshot.publishedAt,
-    },
-    {
-      id: 'gemrate_snapshot_acquired',
-      value: gemRateAthleteAcquiredAt(),
-    },
-  ])
-  const market = marketFutureReasons.length === 0
-    ? marketBase
-    : {
-        ...marketBase,
-        status: 'unknown' as const,
-        reasonCodes: [
-          ...marketBase.reasonCodes,
-          ...marketFutureReasons,
-        ],
-      }
-  const fundamentalsBase = fundamentalsFreshness(source, now)
-  const fundamentalsFutureReasons = futureTimestampReasons([
-    {
-      id: 'checklist_exchange_generated',
-      value: integrityTimestamps.exchangeGeneratedAt,
-    },
-    {
-      id: `${source.sourceId}_fetched`,
-      value: source.fetchedAt,
-    },
-    {
-      id: 'identity_review_reviewed',
-      value: integrityTimestamps.identityReviewReviewedAt,
-    },
-    {
-      id: 'identity_controls_reviewed',
-      value: integrityTimestamps.identityControlsReviewedAt,
-    },
-  ])
-  const fundamentals = fundamentalsFutureReasons.length === 0
-    ? fundamentalsBase
-    : {
-        ...fundamentalsBase,
-        status: 'unknown' as const,
-        reasonCodes: [
-          ...fundamentalsBase.reasonCodes,
-          ...fundamentalsFutureReasons,
-        ],
-      }
+  const fundamentals = fundamentalsFreshness(source, now)
   const statuses = [market.status, fundamentals.status]
   const status: HobbyPlayerRankingFreshnessStatus =
     statuses.includes('unknown')
@@ -706,93 +537,6 @@ function trailingTwelveSales(row: MagnificentXSourceRow): number {
     .reduce((total, amount) => total + amount, 0)
 }
 
-function recentSixMonthSales(row: MagnificentXSourceRow): number {
-  return row.monthlySalesUsd
-    .slice(-6)
-    .reduce((total, amount) => total + amount, 0)
-}
-
-function fullHistorySales(row: MagnificentXSourceRow): number {
-  return row.monthlySalesUsd.reduce(
-    (total, amount) => total + amount,
-    0,
-  )
-}
-
-function round(value: number, digits = 2): number {
-  const factor = 10 ** digits
-  return Math.round((value + Number.EPSILON) * factor) / factor
-}
-
-function fractionalUtcYear(value: string): number {
-  const date = new Date(value)
-  const year = date.getUTCFullYear()
-  const start = Date.UTC(year, 0, 1)
-  const next = Date.UTC(year + 1, 0, 1)
-  return year + (date.valueOf() - start) / (next - start)
-}
-
-function impossibleGradedChronology(
-  provider: ExchangeRow,
-  market: MagnificentXSourceRow,
-  source: ExchangeSource,
-): boolean {
-  const first = market.firstGradedYear
-  const most = market.mostGradedYear
-  const dataThroughYear = Number(
-    magnificentXCatalog.snapshot.dataThrough.slice(0, 4),
-  )
-  if (
-    (first !== null && (first < 1800 || first > dataThroughYear)) ||
-    (most !== null && (most < 1800 || most > dataThroughYear)) ||
-    (first !== null && most !== null && first > most)
-  ) {
-    return true
-  }
-  if (provider.age === null) return false
-  const estimatedBirthYear =
-    fractionalUtcYear(source.fetchedAt) - provider.age
-  return [first, most].some(
-    (year) =>
-      year !== null &&
-      year < estimatedBirthYear,
-  )
-}
-
-function evidenceFor(
-  provider: ExchangeRow,
-): Pick<
-  HobbyPlayerRankingCandidateInput,
-  'evidenceYears' | 'evidenceStage' | 'evidenceBasis'
-> {
-  const dataThroughYear = Number(
-    magnificentXCatalog.snapshot.dataThrough.slice(0, 4),
-  )
-  const evidenceYears = provider.sport === 'football'
-    ? (
-        provider.careerStartYear === null
-          ? 0
-          : Math.max(0, dataThroughYear - provider.careerStartYear)
-      )
-    : Math.max(0, Math.floor((provider.age ?? 19) - 19))
-  const evidenceStage =
-    evidenceYears === 0
-      ? 'new'
-      : evidenceYears === 1
-        ? 'developing'
-        : evidenceYears <= 3
-          ? 'emerging'
-          : 'established'
-  return {
-    evidenceYears,
-    evidenceStage,
-    evidenceBasis:
-      provider.sport === 'football'
-        ? 'nfl_draft_year'
-        : 'basketball_age_proxy',
-  }
-}
-
 function sourceForSport(
   exchange: ExchangeArtifact,
   sport: HobbyPlayerRankingSport,
@@ -807,13 +551,18 @@ function sourceEvidence(
   source: ExchangeSource,
   freshness: SportFreshness,
 ): HobbyPlayerRankingSourceEvidence[] {
+  const gemRateSource = magnificentXCatalog.snapshot.sources.find(
+    (entry) =>
+      entry.subjectType === 'athlete' && entry.editionYear === 2026,
+  )
+  if (!gemRateSource) throw new Error('GemRate athlete source is missing')
   return [
     {
       id: 'gemrate',
       label: 'GemRate',
       url: 'https://www.gemrate.com/sales-trends',
       asOf: magnificentXCatalog.snapshot.dataThrough,
-      fetchedAt: gemRateAthleteAcquiredAt(),
+      fetchedAt: gemRateSource.acquiredAt,
       freshness: freshness.marketStatus,
       permissionBasis: 'licensed_user_provided_permission',
       measure: 'completed eBay singles sales volume in USD',
@@ -962,69 +711,6 @@ function uniqueGroups<T>(
   return result
 }
 
-function assertIdentityControlsResolve(
-  controls: IdentityControls,
-  exchange: ExchangeArtifact,
-  marketRows: readonly MagnificentXSourceRow[],
-  marketGroups: ReadonlyMap<string, MagnificentXSourceRow[]>,
-  declaredAmbiguousMarket: ReadonlySet<string>,
-): void {
-  const providerByKey = new Map(
-    exchange.rows.map((row) => [
-      identityReviewKey(row.sport, row.providerPlayerId),
-      row,
-    ]),
-  )
-  const marketBySourceKey = new Map(
-    marketRows.map((row) => [row.sourceKey, row]),
-  )
-  for (const control of [...controls.aliases, ...controls.blocks]) {
-    const key = identityReviewKey(
-      control.sport,
-      control.providerPlayerId,
-    )
-    const provider = providerByKey.get(key)
-    const market = marketBySourceKey.get(control.gemRateSourceKey)
-    if (
-      !provider ||
-      provider.sourceDisplayName !== control.providerDisplayName ||
-      provider.normalizedName !== control.providerNormalizedName ||
-      !market ||
-      market.domain !== control.sport ||
-      market.subjectName !== control.gemRateDisplayName ||
-      market.normalizedName !== control.gemRateNormalizedName
-    ) {
-      throw new Error(
-        `Hobby player identity control does not resolve exactly: ${key}`,
-      )
-    }
-    if (control.status === 'approved') {
-      const marketKey = `${control.sport}|${control.gemRateNormalizedName}`
-      if (
-        declaredAmbiguousMarket.has(marketKey) ||
-        marketGroups.get(marketKey)?.length !== 1
-      ) {
-        throw new Error(
-          `Hobby player identity alias targets ambiguous market data: ${key}`,
-        )
-      }
-    }
-  }
-}
-
-function emptyQuarantine(): QuarantineSummary {
-  return {
-    total: 0,
-    ambiguousProviderIdentity: 0,
-    ambiguousMarketIdentity: 0,
-    missingMarketMatch: 0,
-    incompleteProviderRanks: 0,
-    invalidAge: 0,
-    identityControlBlocked: 0,
-    impossibleGradedChronology: 0,
-  }
-}
-
 function confidenceSources(
   sport: HobbyPlayerRankingSport,
   source: ExchangeSource,
@@ -1039,7 +725,7 @@ function candidateToItem(
   freshness: SportFreshness,
 ): HobbyPlayerRankingItem {
   return {
-    recordVersion: 'hobby-player-ranking-item/v2',
+    recordVersion: 'hobby-player-ranking-item/v1',
     id: candidate.input.id,
     name: candidate.input.name,
     normalizedName: candidate.input.normalizedName,
@@ -1057,7 +743,7 @@ function candidateToItem(
     components: candidate.components,
     diagnostics: candidate.diagnostics,
     identity: {
-      status: candidate.input.identityStatus,
+      status: 'unique_exact',
       manualReviewStatus: candidate.input.manualReviewStatus,
       provider: candidate.input.provider,
       providerPlayerId: candidate.input.providerPlayerId,
@@ -1077,17 +763,6 @@ function candidateToItem(
       exactCardPricingAvailable: false,
       populationDataAvailable: false,
       expectedReturnValidated: false,
-      evidenceYears: candidate.input.evidenceYears,
-      evidenceStage: candidate.input.evidenceStage,
-      evidenceBasis: candidate.input.evidenceBasis,
-      careerStartYear: candidate.input.careerStartYear,
-      firstGradedYear: candidate.input.firstGradedYear,
-      mostGradedYear: candidate.input.mostGradedYear,
-      jointHeat:
-        candidate.components.outlook >= 80 &&
-        candidate.components.volumePercentile >= 80,
-      concentrationReview:
-        candidate.diagnostics.concentrationPercentile > 90,
     },
     sources: confidenceSources(candidate.input.sport, source, freshness),
     formulaVersion: HOBBY_PLAYER_RANKINGS_MODEL_VERSION,
@@ -1098,11 +773,9 @@ export function buildHobbyPlayerRankingCatalog(
   exchangeValue: unknown = checklistSignalsJson,
   identityReviewValue: unknown = identityReviewJson,
   now = new Date(),
-  identityControlsValue: unknown = identityControlsJson,
 ): HobbyPlayerRankingCatalog {
   const exchange = parseHobbyPlayerSignalExchange(exchangeValue)
   const review = parseHobbyPlayerIdentityReview(identityReviewValue)
-  const controls = parseHobbyPlayerIdentityControls(identityControlsValue)
   const reviewByKey = new Map(
     review.entries.map((entry) => [
       identityReviewKey(entry.sport, entry.providerPlayerId),
@@ -1114,9 +787,6 @@ export function buildHobbyPlayerRankingCatalog(
       row.subjectType === 'athlete' &&
       (row.domain === 'football' || row.domain === 'basketball'),
   )
-  const marketRowsSha256 = createHash('sha256')
-    .update(stableJson(marketRows))
-    .digest('hex')
   const providerGroups = uniqueGroups(
     exchange.rows,
     (row) => `${row.sport}|${row.normalizedName}`,
@@ -1130,33 +800,7 @@ export function buildHobbyPlayerRankingCatalog(
       (entry) => `${entry.domain}|${entry.normalizedName}`,
     ),
   )
-  assertIdentityControlsResolve(
-    controls,
-    exchange,
-    marketRows,
-    marketGroups,
-    declaredAmbiguousMarket,
-  )
-  const marketBySourceKey = new Map(
-    marketRows.map((row) => [row.sourceKey, row]),
-  )
-  const aliasesByKey = new Map(
-    controls.aliases.map((entry) => [
-      identityReviewKey(entry.sport, entry.providerPlayerId),
-      entry,
-    ]),
-  )
-  const blocksByKey = new Map(
-    controls.blocks.map((entry) => [
-      identityReviewKey(entry.sport, entry.providerPlayerId),
-      entry,
-    ]),
-  )
-  const volumePercentiles = {
-    trailingTwelve: new Map<string, number>(),
-    recentSix: new Map<string, number>(),
-    fullHistory: new Map<string, number>(),
-  }
+  const volumePercentiles = new Map<string, number>()
   for (const sport of ['football', 'basketball'] as const) {
     const cohort = marketRows.filter(
       (row) =>
@@ -1164,75 +808,45 @@ export function buildHobbyPlayerRankingCatalog(
         !declaredAmbiguousMarket.has(`${sport}|${row.normalizedName}`) &&
         marketGroups.get(`${sport}|${row.normalizedName}`)?.length === 1,
     )
-    for (const [map, metric] of [
-      [volumePercentiles.trailingTwelve, trailingTwelveSales],
-      [volumePercentiles.recentSix, recentSixMonthSales],
-      [volumePercentiles.fullHistory, fullHistorySales],
-    ] as const) {
-      for (const [sourceKey, percentile] of midrankPercentiles(
-        cohort,
-        metric,
-        (row) => row.sourceKey,
-      )) {
-        map.set(sourceKey, percentile)
-      }
+    for (const [sourceKey, percentile] of midrankPercentiles(
+      cohort,
+      trailingTwelveSales,
+      (row) => row.sourceKey,
+    )) {
+      volumePercentiles.set(sourceKey, percentile)
     }
   }
 
   const freshnessBySport = Object.fromEntries(
     (['football', 'basketball'] as const).map((sport) => {
       const source = sourceForSport(exchange, sport)
-      return [
-        sport,
-        combinedFreshness(sport, source, now, {
-          exchangeGeneratedAt: exchange.generatedAt,
-          identityReviewReviewedAt: review.reviewedAt,
-          identityControlsReviewedAt: controls.reviewedAt,
-        }),
-      ]
+      return [sport, combinedFreshness(sport, source, now)]
     }),
   ) as Record<HobbyPlayerRankingSport, SportFreshness>
   const percentileMapsBySport = providerPercentileMaps(exchange)
   const candidates: HobbyPlayerRankingCandidateInput[] = []
-  const quarantineBySport: Record<
-    HobbyPlayerRankingSport,
-    QuarantineSummary
-  > = {
-    football: emptyQuarantine(),
-    basketball: emptyQuarantine(),
+  const quarantine: QuarantineSummary = {
+    total: 0,
+    ambiguousProviderIdentity: 0,
+    ambiguousMarketIdentity: 0,
+    missingMarketMatch: 0,
+    incompleteProviderRanks: 0,
+    invalidAge: 0,
   }
 
   for (const provider of exchange.rows) {
     const freshness = freshnessBySport[provider.sport]
     const joinKey = `${provider.sport}|${provider.normalizedName}`
-    const controlKey = identityReviewKey(
-      provider.sport,
-      provider.providerPlayerId,
-    )
-    const quarantine = quarantineBySport[provider.sport]
-    const alias = aliasesByKey.get(controlKey)
-    if (blocksByKey.has(controlKey)) {
-      quarantine.identityControlBlocked += 1
-      continue
-    }
-    if (!alias && providerGroups.get(joinKey)?.length !== 1) {
+    if (providerGroups.get(joinKey)?.length !== 1) {
       quarantine.ambiguousProviderIdentity += 1
       continue
     }
-    const ageIsPlausible =
-      provider.age !== null &&
-      Number.isFinite(provider.age) &&
-      provider.age >= 15 &&
-      provider.age <= 60
-    const invalidAge =
-      provider.sport === 'basketball'
-        ? !ageIsPlausible
-        : (
-            provider.age === null
-              ? provider.careerStartYear === null
-              : !ageIsPlausible
-          )
-    if (invalidAge) {
+    if (
+      provider.age === null ||
+      !Number.isFinite(provider.age) ||
+      provider.age < 15 ||
+      provider.age > 60
+    ) {
       quarantine.invalidAge += 1
       continue
     }
@@ -1244,49 +858,24 @@ export function buildHobbyPlayerRankingCatalog(
       quarantine.incompleteProviderRanks += 1
       continue
     }
-    let market: MagnificentXSourceRow | undefined
-    if (alias) {
-      market = marketBySourceKey.get(alias.gemRateSourceKey)
-    } else {
-      const marketMatches = marketGroups.get(joinKey) ?? []
-      if (
-        declaredAmbiguousMarket.has(joinKey) ||
-        marketMatches.length > 1
-      ) {
-        quarantine.ambiguousMarketIdentity += 1
-        continue
-      }
-      market = marketMatches[0]
-    }
-    if (!market) {
-      quarantine.missingMarketMatch += 1
-      continue
-    }
-    if (impossibleGradedChronology(
-      provider,
-      market,
-      sourceForSport(exchange, provider.sport),
-    )) {
-      quarantine.impossibleGradedChronology += 1
-      continue
-    }
-    const volumePercentile =
-      volumePercentiles.trailingTwelve.get(market.sourceKey)
-    const recentSixMonthVolumePercentile =
-      volumePercentiles.recentSix.get(market.sourceKey)
-    const fullHistoryVolumePercentile =
-      volumePercentiles.fullHistory.get(market.sourceKey)
+    const marketMatches = marketGroups.get(joinKey) ?? []
     if (
-      volumePercentile === undefined ||
-      recentSixMonthVolumePercentile === undefined ||
-      fullHistoryVolumePercentile === undefined
+      declaredAmbiguousMarket.has(joinKey) ||
+      marketMatches.length > 1
     ) {
       quarantine.ambiguousMarketIdentity += 1
       continue
     }
-    const manuallyReviewed =
-      Boolean(alias) ||
-      approvedIdentity(reviewByKey, provider, market)
+    const market = marketMatches[0]
+    if (!market) {
+      quarantine.missingMarketMatch += 1
+      continue
+    }
+    const volumePercentile = volumePercentiles.get(market.sourceKey)
+    if (volumePercentile === undefined) {
+      quarantine.ambiguousMarketIdentity += 1
+      continue
+    }
     candidates.push({
       id: `${provider.sport}:${provider.providerPlayerId}`,
       name: provider.sourceDisplayName,
@@ -1302,52 +891,26 @@ export function buildHobbyPlayerRankingCatalog(
           : 'hashtag_basketball',
       providerPlayerId: provider.providerPlayerId,
       gemRateSourceKey: market.sourceKey,
-      identityStatus: alias
-        ? 'reviewed_alias'
-        : manuallyReviewed
-          ? 'reviewed_exact'
-          : 'unique_normalized_name',
       providerPercentiles: percentiles,
       monthlySalesUsd: [...market.monthlySalesUsd],
       volumePercentile,
-      recentSixMonthVolumePercentile,
-      fullHistoryVolumePercentile,
-      ...evidenceFor(provider),
-      careerStartYear: provider.careerStartYear,
-      firstGradedYear: market.firstGradedYear,
-      mostGradedYear: market.mostGradedYear,
       marketFreshness: freshness.marketStatus,
       fundamentalsFreshness: freshness.fundamentalsStatus,
-      manualReviewStatus: manuallyReviewed ? 'approved' : 'unreviewed',
+      manualReviewStatus: approvedIdentity(
+        reviewByKey,
+        provider,
+        market,
+      )
+        ? 'approved'
+        : 'unreviewed',
     })
   }
-  for (const quarantine of Object.values(quarantineBySport)) {
-    quarantine.total =
-      quarantine.ambiguousProviderIdentity +
-      quarantine.ambiguousMarketIdentity +
-      quarantine.missingMarketMatch +
-      quarantine.incompleteProviderRanks +
-      quarantine.invalidAge +
-      quarantine.identityControlBlocked +
-      quarantine.impossibleGradedChronology
-  }
-  const quarantine = emptyQuarantine()
-  for (const key of [
-    'ambiguousProviderIdentity',
-    'ambiguousMarketIdentity',
-    'missingMarketMatch',
-    'incompleteProviderRanks',
-    'invalidAge',
-    'identityControlBlocked',
-    'impossibleGradedChronology',
-  ] as const) {
-    quarantine[key] =
-      quarantineBySport.football[key] +
-      quarantineBySport.basketball[key]
-  }
   quarantine.total =
-    quarantineBySport.football.total +
-    quarantineBySport.basketball.total
+    quarantine.ambiguousProviderIdentity +
+    quarantine.ambiguousMarketIdentity +
+    quarantine.missingMarketMatch +
+    quarantine.incompleteProviderRanks +
+    quarantine.invalidAge
 
   const ranked = rankHobbyPlayerCandidates(candidates)
   const items = ranked.map((candidate) => candidateToItem(
@@ -1363,8 +926,7 @@ export function buildHobbyPlayerRankingCatalog(
       sport,
       rankedCount: cohort.length,
       buildCount: cohort.filter((item) => item.posture === 'Build').length,
-      researchCount:
-        cohort.filter((item) => item.posture === 'Research').length,
+      holdCount: cohort.filter((item) => item.posture === 'Hold').length,
       watchCount: cohort.filter((item) => item.posture === 'Watch').length,
       deprioritizeCount: cohort.filter(
         (item) => item.posture === 'Deprioritize',
@@ -1381,55 +943,18 @@ export function buildHobbyPlayerRankingCatalog(
       )].toSorted((left, right) => left.localeCompare(right, 'en-US')),
     ]),
   ) as Record<HobbyPlayerRankingSport, string[]>
-  const ageRangeBySport = Object.fromEntries(
-    (['football', 'basketball'] as const).map((sport) => {
-      const ages = items
-        .filter(
-          (item) => item.sport === sport && item.age !== null,
-        )
-        .map((item) => item.age as number)
-      return [
-        sport,
-        {
-          minimum: Math.min(...ages),
-          maximum: Math.max(...ages),
-        },
-      ]
-    }),
-  ) as HobbyPlayerRankingCatalog['ageRangeBySport']
-  const coverageBySport = Object.fromEntries(
-    (['football', 'basketball'] as const).map((sport) => {
-      const sourceRows = exchange.rows.filter(
-        (row) => row.sport === sport,
-      ).length
-      const rankedRows = items.filter((item) => item.sport === sport).length
-      return [
-        sport,
-        {
-          sourceRows,
-          rankedRows,
-          coveragePercent: round((rankedRows / sourceRows) * 100),
-        },
-      ]
-    }),
-  ) as Record<HobbyPlayerRankingSport, CoverageSummary>
-  const controlsHash = createHash('sha256')
-    .update(stableJson(controls))
-    .digest('hex')
+  const ages = items.map((item) => item.age)
   const snapshotIdBySport = Object.fromEntries(
     (['football', 'basketball'] as const).map((sport) => [
       sport,
-      `hobby-player-rankings/v2:${createHash('sha256')
+      `hobby-player-rankings/v1:${createHash('sha256')
         .update(JSON.stringify({
           sport,
           exchange: exchange.contentSha256,
-          market: marketRowsSha256,
+          market: magnificentXCatalog.snapshot.rowsSha256,
           model: HOBBY_PLAYER_RANKINGS_MODEL_VERSION,
           review: review.reviewedAt,
-          identityControls: controlsHash,
           freshness: freshnessBySport[sport],
-          quarantine: quarantineBySport[sport],
-          coverage: coverageBySport[sport],
           ranked: items
             .filter((item) => item.sport === sport)
             .map((item) => [
@@ -1437,23 +962,12 @@ export function buildHobbyPlayerRankingCatalog(
               item.sportRank,
               item.score,
               item.posture,
-              item.identity.status,
               item.identity.manualReviewStatus,
-              item.evidence.evidenceYears,
             ]),
         }))
         .digest('hex')}`,
     ]),
   ) as Record<HobbyPlayerRankingSport, string>
-  const snapshotGeneratedAt = [
-    exchange.generatedAt,
-    review.reviewedAt,
-    controls.reviewedAt,
-  ].toSorted().at(-1)!
-  const snapshotAcquiredAt = [
-    gemRateAthleteAcquiredAt(),
-    ...exchange.sources.map((source) => source.fetchedAt),
-  ].toSorted().at(-1)!
   return {
     exchange,
     items,
@@ -1461,12 +975,11 @@ export function buildHobbyPlayerRankingCatalog(
     snapshotIdBySport,
     cohorts,
     quarantine,
-    quarantineBySport,
-    coverageBySport,
     positionsBySport,
-    ageRangeBySport,
-    snapshotGeneratedAt,
-    snapshotAcquiredAt,
+    ageRange: {
+      minimum: Math.min(...ages),
+      maximum: Math.max(...ages),
+    },
   }
 }
 
@@ -1509,28 +1022,16 @@ function displayComparator(
         comparison =
           right.components.resilience - left.components.resilience
         break
-      case 'divergence_penalty':
+      case 'hype_penalty':
         comparison =
-          left.components.divergencePenalty -
-          right.components.divergencePenalty
-        break
-      case 'concentration':
-        comparison =
-          left.diagnostics.concentrationPercentile -
-          right.diagnostics.concentrationPercentile
+          left.components.hypePenalty - right.components.hypePenalty
         break
       case 'attention_gap':
         comparison =
-          left.diagnostics.adjustedAttentionGap -
-          right.diagnostics.adjustedAttentionGap
+          left.diagnostics.attentionGap - right.diagnostics.attentionGap
         break
       case 'age':
-        comparison =
-          left.age === null
-            ? right.age === null ? 0 : 1
-            : right.age === null
-              ? -1
-              : left.age - right.age
+        comparison = left.age - right.age
         break
       case 'name':
         comparison = left.name.localeCompare(right.name, 'en-US')
@@ -1560,10 +1061,7 @@ export function buildHobbyPlayerRankingsFeed(
     : []
   const screened = publishable
     .filter((item) => (
-      (
-        maxAge === undefined ||
-        (item.age !== null && item.age <= maxAge)
-      ) &&
+      (maxAge === undefined || item.age <= maxAge) &&
       (!position || item.positions.includes(position)) &&
       (posture === 'all' || item.posture === posture)
     ))
@@ -1579,41 +1077,24 @@ export function buildHobbyPlayerRankingsFeed(
   const totalPages = total === 0 ? 0 : Math.ceil(total / limit)
   const offset = (page - 1) * limit
   const source = sourceForSport(catalog.exchange, sport)
-  const screenSummary = {
-    rankedCount: filtered.length,
-    buildCount:
-      filtered.filter((item) => item.posture === 'Build').length,
-    researchCount:
-      filtered.filter((item) => item.posture === 'Research').length,
-    watchCount:
-      filtered.filter((item) => item.posture === 'Watch').length,
-    deprioritizeCount:
-      filtered.filter((item) => item.posture === 'Deprioritize').length,
-  }
   return {
     schemaVersion: HOBBY_PLAYER_RANKINGS_FEED_SCHEMA_VERSION,
     contractVersion: HOBBY_PLAYER_RANKINGS_CONTRACT_VERSION,
     modelVersion: HOBBY_PLAYER_RANKINGS_MODEL_VERSION,
     snapshot: {
       id: catalog.snapshotIdBySport[sport],
-      generatedAt: catalog.snapshotGeneratedAt,
+      generatedAt: catalog.exchange.generatedAt,
       historyStart: `${magnificentXCatalog.snapshot.historyMonths[0]}-01`,
       historyMonths: HOBBY_PLAYER_RANKING_HISTORY_MONTHS,
       dataThrough: magnificentXCatalog.snapshot.dataThrough,
       publishedAt: magnificentXCatalog.snapshot.publishedAt,
-      acquiredAt: catalog.snapshotAcquiredAt,
+      acquiredAt: [
+        magnificentXCatalog.snapshot.acquiredAt,
+        source.fetchedAt,
+      ].toSorted().at(-1)!,
       freshness,
     },
     items: filtered.slice(offset, offset + limit),
-    scope: {
-      sport,
-      screen: {
-        maxAge: maxAge ?? null,
-        position: position ?? null,
-        posture,
-      },
-    },
-    screenSummary,
     cohorts: catalog.cohorts,
     page: { page, limit, total, totalPages },
     meta: {
@@ -1621,8 +1102,7 @@ export function buildHobbyPlayerRankingsFeed(
       investmentAdvice: false,
       expectedReturnClaim: false,
       rankingPolicy: 'within_sport_only',
-      agePolicy:
-        'not_a_positive_score_input_basketball_age_supplies_evidence_depth_gate',
+      agePolicy: 'display_and_filter_only_not_scored',
       momentumPolicy: 'penalty_or_flag_only_never_positive_score_driver',
       marketMeasure: 'subject_level_completed_ebay_singles_sales_volume_usd',
       exactCardRecommendationsAvailable: false,
@@ -1637,34 +1117,27 @@ export function buildHobbyPlayerRankingsFeed(
           resilience:
             '100 × (0.50 positive-month ratio + 0.30 observed-history ratio + 0.20 lower-quartile / median)',
           marketDurability:
-            '0.70 × TTM sport-volume percentile + 0.15 × resilience + 0.10 × shock resistance + 0.05 × downside-only trend context',
-          attentionGap:
-            'TTM sport-volume percentile − player outlook, adjusted against the position median when that cohort is sufficiently populated',
-          divergencePenalty:
-            'min(12, 0.25 × max(0, adjusted attention gap − 15) + 0.10 × max(0, acceleration context − 80))',
+            '0.70 × TTM sport-volume percentile + 0.25 × resilience + 0.05 × downside-only trend context',
+          attentionGap: 'TTM sport-volume percentile − player outlook',
+          hypePenalty:
+            'min(12, 0.25 × max(0, attention gap − 15) + 0.10 × max(0, acceleration context − 80))',
           durableScore:
-            '0.60 × weak link + 0.40 × geometric mean − divergence penalty',
+            '0.60 × weak link + 0.40 × geometric mean − hype penalty',
           sensitivity:
-            'seven within-sport variants: balanced, outlook-heavy, market-heavy, recent-six-month market, full-18-month market, primary format, and secondary format; Build must remain top 5% in all seven',
+            'balanced plus outlook-heavy and market-heavy weak-link variants; Build must remain top decile in all three',
           age:
-            'never a positive score input; football may publish null age when a valid draft year exists, while basketball age supplies only a conservative evidence-depth proxy',
-          evidenceDepth:
-            'football completed evidence years = max(0, data-through year − NFL draft year); basketball proxy = max(0, floor(age − 19)); Build requires at least two',
-          concentration:
-            'TTM monthly sales HHI is converted to a within-sport concentration percentile; Build requires percentile ≤90',
+            'required display/filter field; excluded from score to avoid double-counting dynasty runway',
         },
         buildGate:
-          'Build requires Score ≥82, Outlook ≥80, Durability ≥75, TTM volume percentile ≥65, divergence penalty <4, sport top 5%, current sources, all 18 months, a valid and manually reviewed identity bridge, top-5% placement in all seven sensitivity scenarios, at least two evidence years, and concentration at or below sport P90.',
+          'Build requires Score ≥82, Outlook ≥80, Durability ≥75, Volume pct ≥65, Resilience ≥70, Hype <4, sport top 5%, current sources, all 18 months, unique reviewed identity, and sensitivity-stable top decile.',
       },
-      quarantine: catalog.quarantineBySport[sport],
-      globalQuarantine: catalog.quarantine,
-      coverage: catalog.coverageBySport[sport],
+      quarantine: catalog.quarantine,
       availableFilters: {
         sports: ['football', 'basketball'],
         postures: [...HOBBY_PLAYER_RANKING_POSTURES],
         sortKeys: [...HOBBY_PLAYER_RANKING_SORT_KEYS],
         positionsBySport: catalog.positionsBySport,
-        ageRange: catalog.ageRangeBySport[sport],
+        ageRange: catalog.ageRange,
       },
       provenance: [
         {
@@ -1673,7 +1146,7 @@ export function buildHobbyPlayerRankingsFeed(
           url: 'https://www.gemrate.com/sales-trends',
           permissionBasis: 'licensed_user_provided_permission',
           asOf: magnificentXCatalog.snapshot.dataThrough,
-          fetchedAt: gemRateAthleteAcquiredAt(),
+          fetchedAt: magnificentXCatalog.snapshot.acquiredAt,
           semantics: 'completed eBay singles sales dollars by subject',
         },
         sport === 'football'
