@@ -273,14 +273,18 @@ Raw provider JSON and scouting prose are never returned by the public API.
   Exact-card action and expected return remain withheld. The UI reads
   `/api/v2/hobby-oracle`; the original Magnificent X v1 contract remains frozen.
 - **Backstop Binder Index Graduation Board
-  (`/hobby?lens=players&sport=all`):** one global football-and-basketball
-  readiness order for active players who have not yet earned Master Build.
+  (`/hobby?lens=players&sport=all`):** one global baseball, football, and
+  basketball readiness order for active players who have not yet earned Master
+  Build. Baseball contributes Career Index, route-outcome, and development
+  runway evidence; football and basketball retain their dynasty-market
+  outlooks. Every sport then faces the same absolute Master Build market gates.
   The deterministic 0–100 Graduation Index combines current player outlook with
   distance to the exact Master Build gates. Age and sport are filters and never
   recalculate rank. It is explicitly not a probability: the API publishes
   `probability: null` until prospective transition history earns calibration.
-  The UI reads `/api/v1/backstop-binder-index`; the older within-sport
-  `/api/v2/hobby-player-rankings` contract remains frozen.
+  The UI reads `/api/v2/backstop-binder-index`; the football-and-basketball v1
+  Graduation contract and older within-sport player-ranking contract remain
+  frozen.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 
@@ -306,6 +310,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Hobby Oracle Master Ranking v2](docs/HOBBY_ORACLE_MASTER_RANKING_V2.md)
 - [Hobby Oracle Player Rankings v2](docs/HOBBY_PLAYER_RANKINGS_V2.md)
 - [Backstop Binder Index v1](docs/BACKSTOP_BINDER_INDEX_V1.md)
+- [Backstop Binder Index v2](docs/BACKSTOP_BINDER_INDEX_V2.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

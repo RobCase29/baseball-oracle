@@ -1,11 +1,8 @@
 import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
+import type { BinderGraduationSport } from '../domain/binderGraduationIndexV2'
 
 export type HobbyResearchLens = 'market' | 'players'
-export type PlayerRankingSport =
-  | 'all'
-  | 'baseball'
-  | 'football'
-  | 'basketball'
+export type PlayerRankingSport = BinderGraduationSport | 'all'
 
 interface ResearchLensTabsProps {
   lens: HobbyResearchLens
@@ -119,15 +116,15 @@ export function ResearchLensTabs({
           <button
             type="button"
             aria-pressed={playerSport === 'all'}
-            aria-label="Show the global football and basketball graduation ranking"
+            aria-label="Show the global baseball, football, and basketball graduation ranking"
             onClick={() => onPlayerSportSelect('all')}
           >
-            Football + basketball
+            All sports
           </button>
           <button
             type="button"
             aria-pressed={playerSport === 'baseball'}
-            aria-label="Show the baseball development ranking"
+            aria-label="Show baseball graduation candidates"
             onClick={() => onPlayerSportSelect('baseball')}
           >
             Baseball

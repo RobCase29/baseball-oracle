@@ -7,6 +7,20 @@ import type {
   HobbyPlayerRankingSport,
 } from './hobbyPlayerRanking.js'
 
+/**
+ * Sport-model input used by newer Binder Index contracts. Football and
+ * basketball can continue to pass their complete HobbyPlayerRankingItem,
+ * while baseball supplies Career Index / route-outcome evidence without
+ * pretending that it came from a dynasty-market provider.
+ */
+export interface BinderGraduationPlayerModelInput {
+  outlook: number
+  sourceCurrent: boolean
+  completeHistory: boolean
+  identityBridgeValid: boolean
+  manualIdentityReviewed: boolean
+}
+
 export const BINDER_GRADUATION_SCHEMA_VERSION =
   'backstop-binder-index.v1' as const
 export const BINDER_GRADUATION_CONTRACT_VERSION =
@@ -220,7 +234,7 @@ export interface BinderGraduationResponse {
 }
 
 export interface BinderGraduationInput {
-  player: HobbyPlayerRankingItem
+  player: HobbyPlayerRankingItem | BinderGraduationPlayerModelInput
   master: HobbyMasterFeedItem
   globalTopOneTtmFloorUsd: number
 }
@@ -283,18 +297,28 @@ function distanceToTarget(value: number, target: number): number {
 }
 
 function evidenceFor(
-  player: HobbyPlayerRankingItem,
+  player: HobbyPlayerRankingItem | BinderGraduationPlayerModelInput,
   master: HobbyMasterFeedItem,
 ): BinderGraduationAssessment['evidence'] {
-  const sourceCurrent =
-    master.assessment.flags.freshnessStatus === 'current' &&
-    player.sources.every((source) => source.freshness === 'current')
+  const sourceCurrent = master.assessment.flags.freshnessStatus === 'current' &&
+    (
+      'components' in player
+        ? player.sources.every((source) => source.freshness === 'current')
+        : player.sourceCurrent
+    )
   const completeHistory =
     master.assessment.marketSignal.diagnostics.observedMonths === 18 &&
-    player.diagnostics.observedHistoryRatio === 1
-  const identityBridgeValid = player.gates.checks.identityBridgeValid
-  const manualIdentityReviewed =
-    player.identity.manualReviewStatus === 'approved'
+    (
+      'components' in player
+        ? player.diagnostics.observedHistoryRatio === 1
+        : player.completeHistory
+    )
+  const identityBridgeValid = 'components' in player
+    ? player.gates.checks.identityBridgeValid
+    : player.identityBridgeValid
+  const manualIdentityReviewed = 'components' in player
+    ? player.identity.manualReviewStatus === 'approved'
+    : player.manualIdentityReviewed
   return {
     grade:
       !sourceCurrent || !completeHistory || !identityBridgeValid
@@ -327,6 +351,9 @@ export function buildBinderGraduationAssessment(
   input: BinderGraduationInput,
 ): BinderGraduationAssessment {
   const { player, master } = input
+  const playerOutlook = 'components' in player
+    ? player.components.outlook
+    : player.outlook
   const signal = master.assessment.marketSignal
   const evidence = evidenceFor(player, master)
   const sixMonthGrowth = Math.exp(
@@ -396,7 +423,7 @@ export function buildBinderGraduationAssessment(
       projectedRoute: 'graduated',
       primaryBlocker: 'already_on_build_board',
       marketPathReadiness: 100,
-      trajectorySupport: player.components.outlook,
+      trajectorySupport: playerOutlook,
       trajectory,
       routeReadiness: {
         established: 100,
@@ -478,7 +505,7 @@ export function buildBinderGraduationAssessment(
       [0.65, 0.35],
     ),
   )
-  const trajectorySupport = round(player.components.outlook)
+  const trajectorySupport = round(playerOutlook)
   const index = round(clamp(
     0.6 * Math.min(trajectorySupport, marketPathReadiness) +
       0.4 * Math.sqrt(trajectorySupport * marketPathReadiness),

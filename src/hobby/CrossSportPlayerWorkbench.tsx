@@ -14,11 +14,13 @@ import {
 import {
   type BinderGraduationBand,
   type BinderGraduationBlocker,
-  type BinderGraduationItem,
-  type BinderGraduationResponse,
   type BinderGraduationSortKey,
 } from '../domain/binderGraduationIndex'
-import type { HobbyPlayerRankingSport } from '../domain/hobbyPlayerRanking'
+import type {
+  BinderGraduationSport,
+  BinderGraduationV2Item,
+  BinderGraduationV2Response,
+} from '../domain/binderGraduationIndexV2'
 import './cross-sport-player-workbench.css'
 
 export type PlayerRankingAgeCeiling = 'all' | 23 | 26 | 30
@@ -26,10 +28,10 @@ export type PlayerRankingBand = BinderGraduationBand | 'all'
 export type PlayerRankingPosition = string | 'all'
 
 interface CrossSportPlayerWorkbenchProps {
-  response: BinderGraduationResponse | null
+  response: BinderGraduationV2Response | null
   loading: boolean
   error: string | null
-  sport: HobbyPlayerRankingSport | 'all'
+  sport: BinderGraduationSport | 'all'
   search: string
   maxAge: PlayerRankingAgeCeiling
   position: PlayerRankingPosition
@@ -83,10 +85,14 @@ const sortOptions: ReadonlyArray<{
 ]
 
 const defaultPositions: Record<
-  HobbyPlayerRankingSport | 'all',
+  BinderGraduationSport | 'all',
   readonly string[]
 > = {
-  all: ['QB', 'RB', 'WR', 'TE', 'PG', 'SG', 'SF', 'PF', 'C'],
+  all: [
+    'P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH',
+    'QB', 'RB', 'WR', 'TE', 'PG', 'SG', 'SF', 'PF',
+  ],
+  baseball: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'],
   football: ['QB', 'RB', 'WR', 'TE'],
   basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
 }
@@ -140,7 +146,7 @@ function titleLabel(value: string): string {
     .replace(/\b\w/gu, (character) => character.toLocaleUpperCase('en-US'))
 }
 
-function nextGateLabel(item: BinderGraduationItem): string {
+function nextGateLabel(item: BinderGraduationV2Item): string {
   const { graduation } = item
   if (graduation.status === 'graduated') {
     return `Build Board #${item.market.masterRank ?? '—'}`
@@ -173,13 +179,13 @@ function nextGateLabel(item: BinderGraduationItem): string {
   }
 }
 
-function pathRank(item: BinderGraduationItem): string {
+function pathRank(item: BinderGraduationV2Item): string {
   if (item.graduation.status === 'graduated') return 'BOARD'
   if (item.graduation.globalRank === null) return '—'
   return `#${item.graduation.globalRank}`
 }
 
-function GraduationDetail({ item }: { item: BinderGraduationItem }) {
+function GraduationDetail({ item }: { item: BinderGraduationV2Item }) {
   const { graduation } = item
   return (
     <div className="bbi-graduation-detail">
@@ -191,10 +197,11 @@ function GraduationDetail({ item }: { item: BinderGraduationItem }) {
             : `${scoreLabel(graduation.index)} Graduation Index`}
         </h3>
         <p>
-          Player outlook {item.playerSignal.outlook.toFixed(1)} meets market-path
-          readiness {scoreLabel(graduation.marketPathReadiness)} through a
-          weak-link formula. A strong career signal cannot carry a small or
-          fragile collector market.
+          {item.playerSignal.modelLabel} produces a player outlook of{' '}
+          {item.playerSignal.outlook.toFixed(1)}. It meets market-path readiness{' '}
+          {scoreLabel(graduation.marketPathReadiness)} through a weak-link
+          formula, so a strong career signal cannot carry a small or fragile
+          collector market.
         </p>
         <dl className="bbi-detail-metrics">
           <div>
@@ -303,7 +310,7 @@ export function CrossSportPlayerWorkbench({
   }
   const positions = defaultPositions[sport]
   const sportLabel = sport === 'all'
-    ? 'football and basketball'
+    ? 'baseball, football, and basketball'
     : sport
   const summary = response?.summary
   const publicationSuspended =
@@ -443,8 +450,8 @@ export function CrossSportPlayerWorkbench({
           <strong>{summary?.approachingCount ?? '—'}</strong>
         </div>
         <p>
-          One global graduation rank across football and basketball. Sport and
-          age filters never manufacture a new #1.
+          One global graduation rank across baseball, football, and basketball.
+          Sport and age filters never manufacture a new #1.
         </p>
         <span className="iw-withheld-status">
           <LockKeyhole size={13} aria-hidden="true" />
@@ -520,6 +527,7 @@ export function CrossSportPlayerWorkbench({
                           <strong>{item.player.name}</strong>
                           <span>
                             {[
+                              titleLabel(item.player.sport),
                               item.player.primaryPosition,
                               item.player.team,
                             ].filter(Boolean).join(' · ')}
@@ -527,7 +535,12 @@ export function CrossSportPlayerWorkbench({
                         </th>
                         <td className="iw-number csw-age">
                           <strong>{ageLabel(item.player.age)}</strong>
-                          <span>filter only</span>
+                          <span>
+                            {item.playerSignal.ageTreatment ===
+                            'development_runway_embedded_in_outlook'
+                              ? 'runway modeled'
+                              : 'filter only'}
+                          </span>
                         </td>
                         <td className="bbi-index-cell">
                           <div>

@@ -14,25 +14,18 @@ import {
   type MagnificentXResearchPosture,
 } from '../domain/hobbyMasterRanking'
 import {
-  isBinderScoresResponse,
-  type BinderScoresResponse,
-} from '../domain/binderScore'
-import {
-  isBinderGraduationResponse,
-  type BinderGraduationResponse,
   type BinderGraduationSortKey,
 } from '../domain/binderGraduationIndex'
+import {
+  isBinderGraduationV2Response,
+  type BinderGraduationV2Response,
+} from '../domain/binderGraduationIndexV2'
 import { InvestorWorkbench } from './InvestorWorkbench'
 import {
   ResearchLensTabs,
   type HobbyResearchLens,
   type PlayerRankingSport,
 } from './ResearchLensTabs'
-import {
-  YoungInvestorWorkbench,
-  type YoungPlayerAgeCeiling,
-  type YoungPlayerStage,
-} from './YoungInvestorWorkbench'
 import {
   CrossSportPlayerWorkbench,
   type PlayerRankingAgeCeiling,
@@ -44,8 +37,6 @@ const PAGE_SIZE = 50
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
 const DEFAULT_SORT: HobbyMasterSortKey = 'master_rank'
 const DEFAULT_DIRECTION: HobbyMasterSortDirection = 'asc'
-const DEFAULT_YOUNG_AGE: YoungPlayerAgeCeiling = 25
-const DEFAULT_YOUNG_STAGE: YoungPlayerStage = 'All'
 const DEFAULT_PLAYER_SPORT: PlayerRankingSport = 'all'
 const DEFAULT_PLAYER_AGE: PlayerRankingAgeCeiling = 26
 const DEFAULT_PLAYER_POSITION: PlayerRankingPosition = 'all'
@@ -147,20 +138,6 @@ function initialPage(): number {
   return Number.isSafeInteger(value) && value > 0 ? value : 1
 }
 
-function initialYoungAge(): YoungPlayerAgeCeiling {
-  const value = Number.parseInt(initialParameters().get('maxAge') ?? '', 10)
-  return value === 21 || value === 23 || value === 25 || value === 27
-    ? value
-    : DEFAULT_YOUNG_AGE
-}
-
-function initialYoungStage(): YoungPlayerStage {
-  const value = initialParameters().get('stage')
-  return value === 'Minors' || value === 'RC' || value === 'MLB'
-    ? value
-    : DEFAULT_YOUNG_STAGE
-}
-
 function initialPlayerAge(): PlayerRankingAgeCeiling {
   const value = Number.parseInt(initialParameters().get('maxAge') ?? '', 10)
   return value === 23 || value === 26 || value === 30
@@ -230,10 +207,6 @@ export function HobbyApp() {
   const [direction, setDirection] =
     useState<HobbyMasterSortDirection>(initialDirection)
   const [page, setPage] = useState(initialPage)
-  const [youngAgeMax, setYoungAgeMax] =
-    useState<YoungPlayerAgeCeiling>(initialYoungAge)
-  const [youngStage, setYoungStage] =
-    useState<YoungPlayerStage>(initialYoungStage)
   const [playerSport, setPlayerSport] =
     useState<PlayerRankingSport>(initialPlayerSport)
   const [playerAgeMax, setPlayerAgeMax] =
@@ -245,7 +218,7 @@ export function HobbyApp() {
   const [playerSort, setPlayerSort] =
     useState<BinderGraduationSortKey>(initialPlayerSort)
   const [playerSearch, setPlayerSearch] = useState(() => (
-    initialLens() === 'players' && initialPlayerSport() !== 'baseball'
+    initialLens() === 'players'
       ? initialParameters().get('q') ?? ''
       : ''
   ))
@@ -253,17 +226,10 @@ export function HobbyApp() {
     useState<HobbyMasterFeedResponse | null>(null)
   const [loading, setLoading] = useState(() => initialLens() === 'market')
   const [error, setError] = useState<string | null>(null)
-  const [youngResponse, setYoungResponse] =
-    useState<BinderScoresResponse | null>(null)
-  const [youngLoading, setYoungLoading] =
-    useState(() => (
-      initialLens() === 'players' && initialPlayerSport() === 'baseball'
-    ))
-  const [youngError, setYoungError] = useState<string | null>(null)
   const [playerResponse, setPlayerResponse] =
-    useState<BinderGraduationResponse | null>(null)
+    useState<BinderGraduationV2Response | null>(null)
   const [playerLoading, setPlayerLoading] = useState(() => (
-    initialLens() === 'players' && initialPlayerSport() !== 'baseball'
+    initialLens() === 'players'
   ))
   const [playerError, setPlayerError] = useState<string | null>(null)
   const deferredSearch = useDeferredValue(search)
@@ -322,57 +288,7 @@ export function HobbyApp() {
   }, [deferredSearch, direction, domain, lens, page, posture, sort])
 
   useEffect(() => {
-    if (lens !== 'players' || playerSport !== 'baseball') return
-    const controller = new AbortController()
-    const parameters = new URLSearchParams({
-      stage: youngStage,
-      maxAge: youngAgeMax.toString(),
-      rankedOnly: 'true',
-      sort: 'binderScore',
-      page: page.toString(),
-      limit: PAGE_SIZE.toString(),
-    })
-
-    setYoungLoading(true)
-    setYoungError(null)
-    setYoungResponse(null)
-    fetch(`/api/v1/binder-scores?${parameters.toString()}`, {
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-      .then(async (result) => {
-        if (!result.ok) {
-          throw new Error(`Young-player screen returned ${result.status}.`)
-        }
-        const payload = (await result.json()) as unknown
-        if (!isBinderScoresResponse(payload)) {
-          throw new Error('Young-player screen returned an unexpected response.')
-        }
-        setYoungResponse(payload)
-      })
-      .catch((requestError: unknown) => {
-        if (
-          requestError instanceof DOMException &&
-          requestError.name === 'AbortError'
-        ) {
-          return
-        }
-        setYoungResponse(null)
-        setYoungError(
-          requestError instanceof Error
-            ? requestError.message
-            : 'Unable to load the young-player screen.',
-        )
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setYoungLoading(false)
-      })
-
-    return () => controller.abort()
-  }, [lens, page, playerSport, youngAgeMax, youngStage])
-
-  useEffect(() => {
-    if (lens !== 'players' || playerSport === 'baseball') return
+    if (lens !== 'players') return
     const controller = new AbortController()
     const parameters = new URLSearchParams({
       sport: playerSport,
@@ -393,7 +309,7 @@ export function HobbyApp() {
     setPlayerLoading(true)
     setPlayerError(null)
     setPlayerResponse(null)
-    fetch(`/api/v1/backstop-binder-index?${parameters.toString()}`, {
+    fetch(`/api/v2/backstop-binder-index?${parameters.toString()}`, {
       cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: controller.signal,
@@ -404,7 +320,7 @@ export function HobbyApp() {
         }
         const payload = (await result.json()) as unknown
         if (
-          !isBinderGraduationResponse(payload) ||
+          !isBinderGraduationV2Response(payload) ||
           (
             playerSport !== 'all' &&
             payload.items.some(
@@ -468,45 +384,34 @@ export function HobbyApp() {
       url.searchParams.delete('domain')
       url.searchParams.delete('direction')
       url.searchParams.set('sport', playerSport)
-      if (playerSport !== 'baseball') {
-        const normalizedPlayerSearch = playerSearch.trim()
-        if (normalizedPlayerSearch) {
-          url.searchParams.set('q', normalizedPlayerSearch)
-        } else {
-          url.searchParams.delete('q')
-        }
-        if (playerAgeMax === DEFAULT_PLAYER_AGE) {
-          url.searchParams.delete('maxAge')
-        } else {
-          url.searchParams.set('maxAge', playerAgeMax.toString())
-        }
-        if (playerPosition === DEFAULT_PLAYER_POSITION) {
-          url.searchParams.delete('position')
-        } else {
-          url.searchParams.set('position', playerPosition)
-        }
-        if (playerBand === DEFAULT_PLAYER_BAND) {
-          url.searchParams.delete('band')
-        } else {
-          url.searchParams.set('band', playerBand)
-        }
-        url.searchParams.delete('posture')
-        if (playerSort === DEFAULT_PLAYER_SORT) {
-          url.searchParams.delete('sort')
-        } else {
-          url.searchParams.set('sort', playerSort)
-        }
-        url.searchParams.delete('stage')
+      const normalizedPlayerSearch = playerSearch.trim()
+      if (normalizedPlayerSearch) {
+        url.searchParams.set('q', normalizedPlayerSearch)
       } else {
-        url.searchParams.set('maxAge', youngAgeMax.toString())
-        if (youngStage === DEFAULT_YOUNG_STAGE) url.searchParams.delete('stage')
-        else url.searchParams.set('stage', youngStage)
         url.searchParams.delete('q')
-        url.searchParams.delete('position')
-        url.searchParams.delete('band')
-        url.searchParams.delete('posture')
-        url.searchParams.delete('sort')
       }
+      if (playerAgeMax === DEFAULT_PLAYER_AGE) {
+        url.searchParams.delete('maxAge')
+      } else {
+        url.searchParams.set('maxAge', playerAgeMax.toString())
+      }
+      if (playerPosition === DEFAULT_PLAYER_POSITION) {
+        url.searchParams.delete('position')
+      } else {
+        url.searchParams.set('position', playerPosition)
+      }
+      if (playerBand === DEFAULT_PLAYER_BAND) {
+        url.searchParams.delete('band')
+      } else {
+        url.searchParams.set('band', playerBand)
+      }
+      url.searchParams.delete('posture')
+      if (playerSort === DEFAULT_PLAYER_SORT) {
+        url.searchParams.delete('sort')
+      } else {
+        url.searchParams.set('sort', playerSort)
+      }
+      url.searchParams.delete('stage')
       url.searchParams.delete('format')
     } else {
       const normalizedSearch = search.trim()
@@ -543,8 +448,6 @@ export function HobbyApp() {
     posture,
     search,
     sort,
-    youngAgeMax,
-    youngStage,
   ])
 
   function changeSearch(value: string): void {
@@ -604,22 +507,6 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  function changeYoungAge(value: YoungPlayerAgeCeiling): void {
-    setYoungAgeMax(value)
-    setPage(1)
-  }
-
-  function changeYoungStage(value: YoungPlayerStage): void {
-    setYoungStage(value)
-    setPage(1)
-  }
-
-  function resetYoungFilters(): void {
-    setYoungAgeMax(DEFAULT_YOUNG_AGE)
-    setYoungStage(DEFAULT_YOUNG_STAGE)
-    setPage(1)
-  }
-
   function changePlayerAge(value: PlayerRankingAgeCeiling): void {
     setPlayerAgeMax(value)
     setPage(1)
@@ -655,42 +542,20 @@ export function HobbyApp() {
   }
 
   const marketFreshness = response?.snapshot.freshness.status ?? 'unknown'
-  const baseballYoungFreshness = youngResponse === null
-    ? 'unknown'
-    : youngResponse.snapshot.baseballFreshness.status === 'current' &&
-        youngResponse.snapshot.marketFreshness.status === 'current'
-      ? 'current'
-      : youngResponse.snapshot.baseballFreshness.status === 'stale' ||
-          youngResponse.snapshot.marketFreshness.status === 'stale'
-        ? 'stale'
-        : 'unknown'
-  const crossSportFreshness =
+  const graduationFreshness =
     playerResponse?.snapshot.freshness.status ?? 'unknown'
   const freshness = lens === 'market'
     ? marketFreshness
-    : playerSport === 'baseball'
-      ? baseballYoungFreshness
-      : crossSportFreshness
-  const resultCount = lens === 'market'
-    ? response?.page.total
-    : playerSport === 'baseball'
-      ? youngResponse?.page.total
-      : playerResponse?.page.total
+    : graduationFreshness
   const dataThrough = lens === 'market'
     ? response?.snapshot.dataThrough
-    : playerSport === 'baseball'
-      ? youngResponse?.snapshot.marketDataThrough
-      : playerResponse?.snapshot.dataThrough
+    : playerResponse?.snapshot.dataThrough
   const headlineMetricLabel = lens === 'market'
     ? 'On Build Board'
-    : playerSport === 'baseball'
-      ? 'Ranked players'
-      : 'On Deck'
+    : 'On Deck'
   const headlineMetricValue = lens === 'market'
     ? response?.meta.buildCount
-    : playerSport === 'baseball'
-      ? resultCount
-      : playerResponse?.summary.onDeckCount
+    : playerResponse?.summary.onDeckCount
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
@@ -730,9 +595,7 @@ export function HobbyApp() {
             <p>
               {lens === 'market'
                 ? 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
-                : playerSport === 'baseball'
-                  ? 'A baseball development screen for prospects, recent callups, and young MLB players while Build-transition history accumulates.'
-                  : 'One global football and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'}
+                : 'One global baseball, football, and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'}
             </p>
           </div>
 
@@ -796,7 +659,7 @@ export function HobbyApp() {
               onPageChange={setPage}
               onReset={resetFilters}
             />
-          ) : playerSport !== 'baseball' ? (
+          ) : (
             <CrossSportPlayerWorkbench
               response={playerResponse}
               loading={playerLoading}
@@ -816,19 +679,6 @@ export function HobbyApp() {
               onPageChange={setPage}
               onReset={resetPlayerFilters}
             />
-          ) : (
-            <YoungInvestorWorkbench
-              response={youngResponse}
-              loading={youngLoading}
-              error={youngError}
-              ageMax={youngAgeMax}
-              stage={youngStage}
-              page={page}
-              onAgeMaxChange={changeYoungAge}
-              onStageChange={changeYoungStage}
-              onPageChange={setPage}
-              onReset={resetYoungFilters}
-            />
           )}
         </section>
       </main>
@@ -842,6 +692,9 @@ export function HobbyApp() {
             rel="noreferrer"
           >
             GemRate Athlete
+          </a>
+          <a href="/api/players?view=map">
+            Career Oracle
           </a>
           <a
             href="https://www.gemrate.com/sales-trends-pokemon"
