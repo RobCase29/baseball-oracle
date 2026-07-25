@@ -25,6 +25,7 @@
     "src/domain/playerSignals.ts",
     "src/domain/communitySignals.ts",
     "src/domain/cardMarket.ts",
+    "src/domain/binderGraduationIndex.ts",
     "src/domain/binderScore.ts",
     "src/domain/magnificentX.ts",
     "src/domain/hobbyMasterRanking.ts",

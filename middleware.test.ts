@@ -81,6 +81,7 @@ describe('Oracle routing authentication', () => {
       '/api/health',
       '/api/model-status',
       '/api/players?view=map',
+      '/api/v1/backstop-binder-index?maxAge=26',
       '/api/v1/dynasty-scores?ids=1',
       '/api/v1/hobby-oracle?domain=football',
       '/api/v1/hobby-player-rankings?sport=football',

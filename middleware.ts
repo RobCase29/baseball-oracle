@@ -47,6 +47,7 @@ function serverReadPath(pathname: string): boolean {
   return pathname === '/api/health' ||
     pathname === '/api/model-status' ||
     pathname === '/api/players' ||
+    pathname === '/api/v1/backstop-binder-index' ||
     pathname === '/api/v1/binder-scores' ||
     pathname === '/api/v1/dynasty-scores' ||
     pathname === '/api/v1/hobby-oracle' ||

@@ -74,7 +74,7 @@ const postureMeta: Record<MagnificentXResearchPosture, {
   description: string
 }> = {
   build_candidate: {
-    label: 'Build candidate',
+    label: 'Build',
     description:
       'Cleared an absolute cross-hobby durability or escape-velocity route. Underwrite the exact card before committing capital.',
   },
@@ -126,8 +126,8 @@ const sortOptions: ReadonlyArray<{
   value: HobbyMasterSortKey
   label: string
 }> = [
-  { value: 'master_rank', label: 'Master rank' },
-  { value: 'master_score', label: 'Master score' },
+  { value: 'master_rank', label: 'Build Board rank' },
+  { value: 'master_score', label: 'Binder Index' },
   { value: 'ttm_sales', label: 'TTM demand' },
   { value: 'current_run_rate', label: 'Current run rate' },
   { value: 'durability', label: 'Durability' },
@@ -172,12 +172,6 @@ function formatPercent(value: number): string {
 
 function growthPercent(logGrowth: number): number {
   return 100 * Math.expm1(logGrowth)
-}
-
-function growthClass(value: number): string {
-  if (value >= 5) return 'is-positive'
-  if (value <= -5) return 'is-negative'
-  return 'is-neutral'
 }
 
 function formatReason(value: string): string {
@@ -258,12 +252,12 @@ export function InvestorWorkbench({
     >
       <div className="iw-sr-only" role="status" aria-live="polite" aria-atomic="true">
         {loading
-          ? 'Updating Hobby Oracle results.'
+          ? 'Updating the Build Board.'
           : error
             ? ''
             : `${pagination.total.toLocaleString()} matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
       </div>
-      <div className="iw-controls" role="group" aria-label="Position filters">
+      <div className="iw-controls" role="group" aria-label="Build Board filters">
         <label className="iw-search">
           <span className="iw-control-label">Subject</span>
           <span className="iw-input-shell">
@@ -376,16 +370,17 @@ export function InvestorWorkbench({
 
       {loading && items.length === 0 ? (
         <div className="iw-message" role="status">
-          Loading current investor screen…
+          Loading the current Build Board…
         </div>
       ) : null}
 
       {items.length > 0 ? (
-        <div
-          className={`iw-table-frame${loading ? ' is-loading' : ''}`}
-          aria-busy={loading}
-        >
-          <table aria-label="Long-term collection research table">
+        <>
+          <div
+            className={`iw-table-frame${loading ? ' is-loading' : ''}`}
+            aria-busy={loading}
+          >
+            <table aria-label="Long-term collection research table">
             <thead>
               <tr>
                 <th className="iw-expand-column" aria-label="Row details" />
@@ -401,16 +396,15 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th scope="col">Cohort</th>
-                <th scope="col">Research posture</th>
+                <th scope="col">Board status</th>
                 <th
                   scope="col"
-                  aria-sort={sortAriaValue(sort === 'master_score', direction)}
+                  aria-sort={sortAriaValue(sort === 'master_rank', direction)}
                 >
-                  <button type="button" onClick={() => changeSort('master_score')}>
-                    Master score
+                  <button type="button" onClick={() => changeSort('master_rank')}>
+                    Board rank
                     <span aria-hidden="true">
-                      {sort === 'master_score'
+                      {sort === 'master_rank'
                         ? (direction === 'asc' ? '↑' : '↓')
                         : '↕'}
                     </span>
@@ -418,12 +412,12 @@ export function InvestorWorkbench({
                 </th>
                 <th
                   scope="col"
-                  aria-sort={sortAriaValue(sort === 'master_rank', direction)}
+                  aria-sort={sortAriaValue(sort === 'master_score', direction)}
                 >
-                  <button type="button" onClick={() => changeSort('master_rank')}>
-                    Master rank
+                  <button type="button" onClick={() => changeSort('master_score')}>
+                    Binder Index
                     <span aria-hidden="true">
-                      {sort === 'master_rank'
+                      {sort === 'master_score'
                         ? (direction === 'asc' ? '↑' : '↓')
                         : '↕'}
                     </span>
@@ -472,17 +466,6 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th
-                  scope="col"
-                  aria-sort={sortAriaValue(sort === 'trend', direction)}
-                >
-                  <button type="button" onClick={() => changeSort('trend')}>
-                    6M YoY
-                    <span aria-hidden="true">
-                      {sort === 'trend' ? (direction === 'asc' ? '↑' : '↓') : '↕'}
-                    </span>
-                  </button>
-                </th>
                 <th scope="col">Qualification</th>
               </tr>
             </thead>
@@ -492,9 +475,6 @@ export function InvestorWorkbench({
                 const signal = assessment.marketSignal
                 const rowPosture = assessment.posture
                 const meta = postureMeta[rowPosture]
-                const sixMonthGrowth = growthPercent(
-                  signal.diagnostics.yearOverYearSixMonthLogGrowth,
-                )
                 const expanded = expandedId === subject.id
                 return (
                   <Fragment key={subject.id}>
@@ -515,19 +495,17 @@ export function InvestorWorkbench({
                       </td>
                       <th className="iw-subject-column" scope="row">
                         <strong>{subject.name}</strong>
-                        <span>{subject.type === 'pokemon_character' ? 'Character' : 'Athlete'}</span>
+                        <span>
+                          {domainLabels[subject.domain]} ·{' '}
+                          {subject.type === 'pokemon_character'
+                            ? 'Character'
+                            : 'Athlete'}
+                        </span>
                       </th>
-                      <td>
-                        <span className="iw-domain">{domainLabels[subject.domain]}</span>
-                      </td>
                       <td>
                         <span className={`iw-posture iw-posture--${rowPosture}`}>
                           {meta.label}
                         </span>
-                      </td>
-                      <td className="iw-number iw-score">
-                        <strong>{signal.score.toFixed(1)}</strong>
-                        <span>/100</span>
                       </td>
                       <td className="iw-number iw-rank">
                         <strong>
@@ -536,6 +514,10 @@ export function InvestorWorkbench({
                         <span>
                           Cohort #{item.withinCohortRank}
                         </span>
+                      </td>
+                      <td className="iw-number iw-score">
+                        <strong>{signal.score.toFixed(1)}</strong>
+                        <span>/100</span>
                       </td>
                       <td className="iw-number">
                         <strong>{formatMoney(signal.latestTwelveMonthSalesUsd)}</strong>
@@ -547,9 +529,6 @@ export function InvestorWorkbench({
                       </td>
                       <td className="iw-number">
                         <strong>{signal.durabilityScore.toFixed(0)}</strong>
-                      </td>
-                      <td className={`iw-number ${growthClass(sixMonthGrowth)}`}>
-                        <strong>{formatPercent(sixMonthGrowth)}</strong>
                       </td>
                       <td className="iw-evidence">
                         <strong>
@@ -566,7 +545,7 @@ export function InvestorWorkbench({
                     </tr>
                     {expanded ? (
                       <tr className="iw-detail-row">
-                        <td colSpan={11}>
+                        <td colSpan={9}>
                           <div className="iw-detail">
                             <section>
                               <span className="iw-detail-label">Research read</span>
@@ -670,20 +649,104 @@ export function InvestorWorkbench({
                 )
               })}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
+
+          <div
+            className="bbi-build-mobile-list"
+            aria-label="Mobile Build Board"
+          >
+            {items.map((item) => {
+              const { subject, assessment } = item
+              const signal = assessment.marketSignal
+              const meta = postureMeta[assessment.posture]
+              const expanded = expandedId === subject.id
+              return (
+                <article
+                  className={`bbi-build-card iw-posture--${assessment.posture}`}
+                  key={subject.id}
+                >
+                  <button
+                    type="button"
+                    className="bbi-build-card__toggle"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedId(
+                      expanded ? null : subject.id,
+                    )}
+                  >
+                    <span className="bbi-build-card__rank">
+                      {item.masterRank === null ? '—' : `#${item.masterRank}`}
+                    </span>
+                    <span className="bbi-build-card__subject">
+                      <strong>{subject.name}</strong>
+                      <small>
+                        {domainLabels[subject.domain]} · {meta.label}
+                      </small>
+                    </span>
+                    <span className="bbi-build-card__index">
+                      <strong>{signal.score.toFixed(1)}</strong>
+                      <small>INDEX</small>
+                    </span>
+                    {expanded ? (
+                      <ChevronUp size={17} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={17} aria-hidden="true" />
+                    )}
+                  </button>
+                  <div className="bbi-build-card__signal">
+                    <span>{formatMoney(signal.latestTwelveMonthSalesUsd)} TTM</span>
+                    <span>
+                      {formatMoney(
+                        signal.annualizedCurrentSixMonthSalesUsd,
+                      )}{' '}
+                      run rate
+                    </span>
+                    <span>{signal.durabilityScore.toFixed(0)} durability</span>
+                  </div>
+                  {expanded ? (
+                    <div className="bbi-build-card__detail">
+                      <p>{meta.description}</p>
+                      <dl className="iw-signal-grid">
+                        <div>
+                          <dt>Absolute demand</dt>
+                          <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
+                        </div>
+                        <div>
+                          <dt>Persistence</dt>
+                          <dd>{signal.components.persistence.toFixed(0)}</dd>
+                        </div>
+                        <div>
+                          <dt>Shock resistance</dt>
+                          <dd>{signal.components.shockResistance.toFixed(0)}</dd>
+                        </div>
+                      </dl>
+                      <p className="iw-detail-scope">
+                        {assessment.buildQualification.reasonCodes.length === 0
+                          ? 'All current Build gates are cleared.'
+                          : assessment.buildQualification.reasonCodes
+                            .slice(0, 2)
+                            .map(formatReason)
+                            .join(' ')}
+                      </p>
+                    </div>
+                  ) : null}
+                </article>
+              )
+            })}
+          </div>
+        </>
       ) : null}
 
       {!loading && !error && items.length === 0 ? (
         <div className="iw-empty" role="status">
           <strong>No subjects match this screen.</strong>
           <span>Broaden the posture, cohort, or search.</span>
-          <button type="button" onClick={onReset}>Reset position filters</button>
+          <button type="button" onClick={onReset}>Reset Build Board filters</button>
         </div>
       ) : null}
 
       {!error && pagination.totalPages > 1 ? (
-        <nav className="iw-pagination" aria-label="Position result pages">
+        <nav className="iw-pagination" aria-label="Build Board result pages">
           <button
             type="button"
             disabled={loading || pagination.page <= 1}

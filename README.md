@@ -265,19 +265,22 @@ Raw provider JSON and scouting prose are never returned by the public API.
   stats, an MLB career arc where supported, and honest missing-evidence states.
 - **Build a Binder:** baseball career evidence plus a bounded, athlete-level
   GemRate demand proxy for long-term collection research.
-- **Hobby Oracle Master Ranking (`/hobby`):** one observed-universe order across
+- **Backstop Binder Index Build Board (`/hobby`):** one observed-universe order across
   sports and Pokémon using absolute dollar magnitude plus durable 18-month
   demand. Build has no sport quota and requires either a strict durable-scale
   or escape-velocity path under the
   [Master Ranking v2 methodology](docs/HOBBY_ORACLE_MASTER_RANKING_V2.md).
   Exact-card action and expected return remain withheld. The UI reads
   `/api/v2/hobby-oracle`; the original Magnificent X v1 contract remains frozen.
-- **Hobby Oracle Player Rankings (`/hobby?lens=players`):** scoped football and
-  basketball active-player research using the strict
-  [Player Rankings v2 methodology](docs/HOBBY_PLAYER_RANKINGS_V2.md). Build is
-  a player-level candidate for further card research, never an expected-return
-  claim or buy call. The UI reads `/api/v2/hobby-player-rankings`; v1 remains
-  frozen on its original public contract.
+- **Backstop Binder Index Graduation Board
+  (`/hobby?lens=players&sport=all`):** one global football-and-basketball
+  readiness order for active players who have not yet earned Master Build.
+  The deterministic 0–100 Graduation Index combines current player outlook with
+  distance to the exact Master Build gates. Age and sport are filters and never
+  recalculate rank. It is explicitly not a probability: the API publishes
+  `probability: null` until prospective transition history earns calibration.
+  The UI reads `/api/v1/backstop-binder-index`; the older within-sport
+  `/api/v2/hobby-player-rankings` contract remains frozen.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 
@@ -302,6 +305,7 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Magnificent X provisional market signal](docs/MAGNIFICENT_X_V1.md)
 - [Hobby Oracle Master Ranking v2](docs/HOBBY_ORACLE_MASTER_RANKING_V2.md)
 - [Hobby Oracle Player Rankings v2](docs/HOBBY_PLAYER_RANKINGS_V2.md)
+- [Backstop Binder Index v1](docs/BACKSTOP_BINDER_INDEX_V1.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

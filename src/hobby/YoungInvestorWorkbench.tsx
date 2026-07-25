@@ -54,8 +54,8 @@ const routeLabels: Record<BinderRoute, string> = {
 }
 
 const actionLabels: Record<BinderAction, string> = {
-  build: 'Build',
-  core_hold: 'Core hold',
+  build: 'Top signal',
+  core_hold: 'Core signal',
   watch: 'Watch',
   trim_hype: 'Hype review',
   pass: 'Pass',
@@ -155,7 +155,7 @@ export function YoungInvestorWorkbench({
     <div className="yw-body" aria-busy={loading}>
       <div className="iw-sr-only" role="status" aria-live="polite" aria-atomic="true">
         {loading
-          ? 'Updating young-player results.'
+          ? 'Updating the baseball development board.'
           : error
             ? ''
             : `${pagination.total.toLocaleString()} young-player matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
@@ -167,9 +167,11 @@ export function YoungInvestorWorkbench({
         aria-label="Young player filters"
       >
         <div className="yw-control-context">
-          <span className="iw-control-label">Young player lens</span>
-          <strong>Re-rank the full scored slice</strong>
-          <small>Age and stage change the universe—not the underlying score.</small>
+          <span className="iw-control-label">Baseball development board</span>
+          <strong>Career trajectory + collector demand</strong>
+          <small>
+            Age and stage change the screen—not the underlying score.
+          </small>
         </div>
 
         <label>
@@ -224,7 +226,7 @@ export function YoungInvestorWorkbench({
         </div>
         <p>
           {orderingStatus === 'ranked'
-            ? `${scopeLabel} are ordered by the existing Binder Score, regardless of their Binder call.`
+            ? `${scopeLabel} are ordered by the baseball Binder Score; no cross-sport graduation probability is implied.`
             : orderingStatus === 'small_screen'
               ? `Sorted by Binder Score; ordinal hidden for this small screen (n=${pagination.total}).`
               : 'Scores remain visible, but the ordinal is suspended until both inputs are current.'}
@@ -244,7 +246,7 @@ export function YoungInvestorWorkbench({
 
       {loading && items.length === 0 ? (
         <div className="iw-message" role="status">
-          Loading the current young-player screen…
+          Loading the baseball development board…
         </div>
       ) : null}
 
@@ -262,14 +264,14 @@ export function YoungInvestorWorkbench({
               <tr>
                 <th className="iw-expand-column" aria-label="Row details" />
                 <th className="iw-subject-column" scope="col">Player</th>
-                <th scope="col">Young player rank</th>
+                <th scope="col">Development rank</th>
                 <th scope="col">Age</th>
                 <th scope="col">Stage</th>
-                <th scope="col">Binder Score</th>
+                <th scope="col">Baseball Binder Score</th>
                 <th scope="col">Baseball thesis</th>
                 <th scope="col">Collector demand</th>
                 <th scope="col">TTM demand</th>
-                <th scope="col">Binder call</th>
+                <th scope="col">Baseball signal</th>
                 <th scope="col">Evidence</th>
               </tr>
             </thead>
@@ -379,14 +381,16 @@ export function YoungInvestorWorkbench({
                                   : 'Sorted without an ordinal'}
                               </h3>
                               <p>
-                                This is the player&apos;s unchanged Binder Score
+                                This is the player&apos;s unchanged baseball
+                                Binder Score
                                 ordered only against {scopeLabel.toLocaleLowerCase()}
-                                {' '}age {ageMax} or younger. The lens does not promote
-                                the Binder call.
+                                {' '}age {ageMax} or younger. The lens does not
+                                promote the baseball signal into Master Build.
                               </p>
                               <div className="iw-detail-scope">
-                                Cross-stage research heuristic. It does not predict
-                                appreciation or identify an exact card.
+                                Baseball does not yet publish the cross-sport
+                                Graduation Index. This development heuristic does
+                                not predict appreciation or identify an exact card.
                               </div>
                             </section>
 
@@ -472,7 +476,7 @@ export function YoungInvestorWorkbench({
 
       {!loading && !error && items.length === 0 ? (
         <div className="iw-empty" role="status">
-          <strong>No scored players match this young-player screen.</strong>
+          <strong>No players match this baseball development screen.</strong>
           <span>Broaden the age ceiling or career-stage filter.</span>
           <button type="button" onClick={onReset}>Reset young-player lens</button>
         </div>

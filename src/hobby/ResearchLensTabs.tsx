@@ -1,7 +1,11 @@
 import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
 
 export type HobbyResearchLens = 'market' | 'players'
-export type PlayerRankingSport = 'baseball' | 'football' | 'basketball'
+export type PlayerRankingSport =
+  | 'all'
+  | 'baseball'
+  | 'football'
+  | 'basketball'
 
 interface ResearchLensTabsProps {
   lens: HobbyResearchLens
@@ -19,10 +23,18 @@ const postureOptions: ReadonlyArray<{
   shortLabel: string
   label: string
 }> = [
-  { value: 'build_candidate', shortLabel: 'Build', label: 'Build candidates' },
-  { value: 'hold_candidate', shortLabel: 'Near Build', label: 'Near-Build candidates' },
+  {
+    value: 'build_candidate',
+    shortLabel: 'Build',
+    label: 'Build Board qualifiers',
+  },
+  {
+    value: 'hold_candidate',
+    shortLabel: 'Near Build',
+    label: 'Near-Build candidates',
+  },
   { value: 'watch', shortLabel: 'Watch', label: 'Watch' },
-  { value: 'risk_review', shortLabel: 'Risk Review', label: 'Risk review' },
+  { value: 'risk_review', shortLabel: 'Risk', label: 'Risk review' },
   { value: 'pass', shortLabel: 'Pass', label: 'Pass' },
   { value: 'unrated', shortLabel: 'Unrated', label: 'Unrated' },
   { value: 'all', shortLabel: 'All', label: 'All evidence' },
@@ -39,21 +51,38 @@ export function ResearchLensTabs({
   onPostureSelect,
 }: ResearchLensTabsProps) {
   return (
-    <div className="iw-research-nav" aria-label="Investor workbench views">
-      <div className="iw-mode-tabs" role="group" aria-label="Research mode">
+    <div
+      className="iw-research-nav"
+      aria-label="Backstop Binder Index views"
+    >
+      <div
+        className="iw-mode-tabs"
+        role="group"
+        aria-label="Binder Index board"
+      >
         <button
           type="button"
           aria-pressed={lens === 'market'}
+          aria-label="Build Board. Subjects that cleared the standard."
           onClick={onMarketSelect}
         >
-          Master Ranking
+          <span className="iw-mode-title">Build Board</span>
+          <br />
+          <small className="iw-mode-description">
+            Cleared the standard
+          </small>
         </button>
         <button
           type="button"
           aria-pressed={lens === 'players'}
+          aria-label="Graduation Board. Players projected to earn Build."
           onClick={onPlayerRankingsSelect}
         >
-          Player Rankings
+          <span className="iw-mode-title">Graduation Board</span>
+          <br />
+          <small className="iw-mode-description">
+            Projected path to Build
+          </small>
         </button>
       </div>
 
@@ -61,13 +90,14 @@ export function ResearchLensTabs({
         <div
           className="iw-posture-tabs"
           role="group"
-          aria-label="Research posture"
+          aria-label="Build Board status"
         >
           {postureOptions.map((option) => (
             <button
               type="button"
               key={option.value}
               aria-pressed={posture === option.value}
+              aria-label={option.label}
               title={option.label}
               onClick={() => onPostureSelect(option.value)}
             >
@@ -76,7 +106,7 @@ export function ResearchLensTabs({
           ))}
           {showRefresh ? (
             <span className="iw-tab-status" role="status">
-              Master rank suspended · refresh queue shown
+              Build Board suspended · refresh queue shown
             </span>
           ) : null}
         </div>
@@ -84,11 +114,20 @@ export function ResearchLensTabs({
         <div
           className="iw-sport-tabs"
           role="group"
-          aria-label="Player ranking sport"
+          aria-label="Graduation Board sport"
         >
           <button
             type="button"
+            aria-pressed={playerSport === 'all'}
+            aria-label="Show the global football and basketball graduation ranking"
+            onClick={() => onPlayerSportSelect('all')}
+          >
+            Football + basketball
+          </button>
+          <button
+            type="button"
             aria-pressed={playerSport === 'baseball'}
+            aria-label="Show the baseball development ranking"
             onClick={() => onPlayerSportSelect('baseball')}
           >
             Baseball
@@ -96,6 +135,7 @@ export function ResearchLensTabs({
           <button
             type="button"
             aria-pressed={playerSport === 'football'}
+            aria-label="Show football graduation candidates"
             onClick={() => onPlayerSportSelect('football')}
           >
             Football
@@ -103,6 +143,7 @@ export function ResearchLensTabs({
           <button
             type="button"
             aria-pressed={playerSport === 'basketball'}
+            aria-label="Show basketball graduation candidates"
             onClick={() => onPlayerSportSelect('basketball')}
           >
             Basketball

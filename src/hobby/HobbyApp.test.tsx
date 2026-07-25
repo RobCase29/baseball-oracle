@@ -24,9 +24,11 @@ import {
   type BinderScoresResponse,
 } from '../domain/binderScore'
 import type {
-  HobbyPlayerRankingSport,
-  HobbyPlayerRankingsResponse,
-} from '../domain/hobbyPlayerRanking'
+  BinderGraduationBand,
+  BinderGraduationItem,
+  BinderGraduationResponse,
+} from '../domain/binderGraduationIndex'
+import type { HobbyPlayerRankingSport } from '../domain/hobbyPlayerRanking'
 import { HobbyApp } from './HobbyApp'
 
 beforeEach(() => {
@@ -309,351 +311,263 @@ function youngFixtureResponse(): BinderScoresResponse {
   }
 }
 
-function playerRankingFixtureResponse(
-  sport: HobbyPlayerRankingSport,
-): HobbyPlayerRankingsResponse {
-  const football = sport === 'football'
-  const name = football ? 'C.J. Stroud' : 'Victor Wembanyama'
+function graduationItem(input: {
+  id: string
+  name: string
+  sport: HobbyPlayerRankingSport
+  age: number
+  position: string
+  team: string
+  globalRank: number
+  index: number
+  band: Exclude<BinderGraduationBand, 'graduated' | 'withheld'>
+  outlook: number
+  marketReadiness: number
+  ttmSalesUsd: number
+  currentRunRateUsd: number
+}): BinderGraduationItem {
+  const football = input.sport === 'football'
   const provider = football ? 'keeptradecut' : 'hashtag_basketball'
-  const providerSource = football
-    ? {
-        id: 'keeptradecut' as const,
-        label: 'KeepTradeCut' as const,
-        url: 'https://keeptradecut.com/dynasty-rankings?format=2&page=0',
-      }
-    : {
-        id: 'hashtag_basketball' as const,
-        label: 'Hashtag Basketball' as const,
-        url: 'https://hashtagbasketball.com/fantasy-basketball-dynasty-rankings',
-      }
-  const monthlySalesUsd = [
-    120_000, 126_000, 124_000, 130_000, 132_000, 138_000,
-    140_000, 144_000, 148_000, 151_000, 155_000, 159_000,
-    163_000, 166_000, 169_000, 172_000, 176_000, 181_000,
-  ]
   return {
-    schemaVersion: 'hobby-player-rankings.v2',
-    contractVersion: 'hobby-player-rankings-contract/v2',
-    modelVersion: 'hobby-player-durable-signal/18m-robust-core-v2.0.0',
-    snapshot: {
-      id: `hobby-player-rankings:${sport}:${'c'.repeat(64)}`,
-      generatedAt: '2026-07-24T19:30:00.000Z',
-      historyStart: '2025-01',
-      historyMonths: 18,
-      dataThrough: '2026-06',
-      publishedAt: '2026-07-12T00:00:00.000Z',
-      acquiredAt: '2026-07-24T18:00:00.000Z',
-      freshness: {
-        status: 'current',
-        marketStatus: 'current',
-        fundamentalsStatus: 'current',
-        nextExpectedBy: '2026-08-20T00:00:00.000Z',
-        reasonCodes: [],
+    recordVersion: 'backstop-binder-graduation-item/v1',
+    player: {
+      id: input.id,
+      name: input.name,
+      normalizedName: input.name.toLocaleLowerCase('en-US'),
+      sport: input.sport,
+      age: input.age,
+      positions: [input.position],
+      primaryPosition: input.position,
+      team: input.team,
+    },
+    graduation: {
+      status: 'ranked',
+      index: input.index,
+      globalRank: input.globalRank,
+      band: input.band,
+      horizonMonths: 24,
+      probability: null,
+      probabilityStatus: 'withheld_no_longitudinal_build_transitions',
+      target: {
+        designation: 'Master Build',
+        schemaVersion: 'hobby-oracle-master-ranking.v2',
+        contractVersion: 'hobby-oracle-master-ranking-contract/v2',
+        persistenceRule:
+          'enter_build_and_remain_build_in_two_of_three_monthly_snapshots',
+      },
+      projectedRoute: 'durable_scale',
+      primaryBlocker: 'ttm_scale',
+      marketPathReadiness: input.marketReadiness,
+      trajectorySupport: input.outlook,
+      trajectory: 'rising',
+      routeReadiness: {
+        established: input.marketReadiness,
+        escapeVelocity: input.marketReadiness - 4,
+        commonGates: input.marketReadiness - 2,
+      },
+      distance: {
+        ttmSalesUsd: Math.max(0, 20_000_000 - input.ttmSalesUsd),
+        currentRunRateUsd:
+          Math.max(0, 15_000_000 - input.currentRunRateUsd),
+        masterScorePoints: 8,
+        globalTopOneTtmUsd: 2_000_000,
+        persistencePoints: 3,
+        shockResistancePoints: 2,
+        downsideProtectionPoints: 4,
+        sixMonthGrowthMultiple: 0,
+        threeMonthGrowthMultiple: 0,
+      },
+      evidence: {
+        grade: 'A',
+        sourceCurrent: true,
+        completeHistory: true,
+        identityBridgeValid: true,
+        manualIdentityReviewed: true,
+      },
+      buildGateProgress: {
+        passed: 8,
+        required: 11,
+        reasonCodes: [
+          'below_observed_global_top_one_percent',
+          'neither_absolute_build_route_cleared',
+        ],
       },
     },
-    scope: {
-      sport,
-      screen: {
-        maxAge: null,
-        position: null,
-        posture: 'all',
-      },
+    playerSignal: {
+      score: input.index,
+      outlook: input.outlook,
+      marketDurability: input.marketReadiness,
+      evidenceYears: football ? 3 : 4,
+      evidenceStage: 'established',
+      inputIntegrity: 72,
     },
-    screenSummary: {
-      rankedCount: football ? 302 : 267,
-      buildCount: 7,
-      researchCount: 28,
-      watchCount: 96,
-      deprioritizeCount: football ? 171 : 136,
+    market: {
+      masterRank: input.globalRank + 30,
+      masterScore: 67,
+      boardPosture: 'watch',
+      buildRoute: null,
+      ttmSalesUsd: input.ttmSalesUsd,
+      currentRunRateUsd: input.currentRunRateUsd,
+      globalObservedPercentile: 98.7,
+      durability: 86,
+      persistence: 87,
+      shockResistance: 88,
+      downsideProtection: 86,
     },
-    items: [
+    identity: {
+      status: 'reviewed_exact',
+      manualReviewStatus: 'approved',
+      provider,
+      providerPlayerId: `${provider}:${input.id}`,
+      gemRateSourceKey: `athlete:${input.id}`,
+    },
+    sources: [
       {
-        recordVersion: 'hobby-player-ranking-item/v2',
-        id: `${sport}:${name.toLocaleLowerCase().replaceAll(/[^a-z]/gu, '')}`,
-        name,
-        normalizedName: name.toLocaleLowerCase().replaceAll(/[^a-z]/gu, ''),
-        sport,
-        age: football ? 24 : 22,
-        positions: football ? ['QB'] : ['C', 'PF'],
-        primaryPosition: football ? 'QB' : 'C',
-        team: football ? 'HOU' : 'SAS',
-        sportRank: 4,
-        screenRank: 1,
-        sportPercentile: 99.1,
-        score: 88.4,
-        posture: football ? 'Build' : 'Research',
-        confidence: {
-          score: 72,
-          band: 'moderate',
-          meaning: 'player_model_input_integrity_not_investment_confidence',
-          investmentConfidence: 'withheld',
-          reasonCodes: [],
-        },
-        components: {
-          outlook: 92,
-          marketDurability: 86,
-          volumePercentile: 91,
-          resilience: 79,
-          shockResistance: 97,
-          trendContext: 58,
-          divergencePenalty: 1.8,
-        },
-        diagnostics: {
-          monthlySalesUsd,
-          trailingTwelveSalesUsd: 1_984_000,
-          currentSixMonthSalesUsd: 1_027_000,
-          priorSixMonthSalesUsd: 917_000,
-          recentThreeMonthSalesUsd: 529_000,
-          priorThreeMonthSalesUsd: 498_000,
-          positiveMonthRatio: 1,
-          observedHistoryRatio: 1,
-          lowerQuartileToMedianRatio: 0.83,
-          salesConcentrationHhi: 0.084,
-          effectiveSalesMonths: 11.9,
-          largestMonthShare: 0.09,
-          topThreeMonthShare: 0.27,
-          concentrationPercentile: 24,
-          attentionGap: 0,
-          attentionGapBaseline: -2,
-          adjustedAttentionGap: 2,
-          accelerationLog: 0.06,
-          accelerationContext: 56,
-          providerPercentiles: football
-            ? {
-                oneQb: 96,
-                superflex: 94,
-                fiveSeason: null,
-                keeper: null,
-              }
-            : {
-                oneQb: null,
-                superflex: null,
-                fiveSeason: 98,
-                keeper: 96,
-              },
-        },
-        identity: {
-          status: 'reviewed_exact',
-          manualReviewStatus: 'approved',
-          provider,
-          providerPlayerId: `${provider}:${name}`,
-          gemRateSourceKey: `gemrate:${name}`,
-        },
-        gates: {
-          buildEligible: football,
-          passed: football ? 13 : 12,
-          required: 13,
-          checks: {
-            scoreAtLeast82: true,
-            outlookAtLeast80: true,
-            marketDurabilityAtLeast75: true,
-            volumePercentileAtLeast65: true,
-            divergencePenaltyBelow4: true,
-            topFivePercent: true,
-            sourcesCurrent: true,
-            completeEighteenMonthHistory: true,
-            identityBridgeValid: true,
-            manualIdentityReviewed: true,
-            robustTopFivePercent: football,
-            minimumEvidenceDepth: true,
-            concentrationBelowSportP90: true,
-          },
-          reasonCodes: football
-            ? []
-            : ['not_robust_in_top_five_percent_scenarios'],
-        },
-        sensitivity: {
-          robustTopFivePercent: football,
-          topFiveInclusionRate: football ? 1 : 0.8571,
-          rankRange: {
-            best: 3,
-            worst: football ? 5 : 18,
-          },
-          ranks: {
-            outlookHeavy: 3,
-            balanced: 4,
-            marketHeavy: 5,
-            recentWindow: 4,
-            fullHistory: 4,
-            primaryFormat: 3,
-            secondaryFormat: football ? 5 : 18,
-          },
-          scores: {
-            outlookHeavy: 89,
-            balanced: 88.4,
-            marketHeavy: 87.5,
-            recentWindow: 88.1,
-            fullHistory: 88.6,
-            primaryFormat: 89.2,
-            secondaryFormat: 87.4,
-          },
-          scoreSpread: 1.8,
-        },
-        evidence: {
-          marketHistoryMonths: 18,
-          requiredMarketHistoryMonths: 18,
-          rankWithinSportOnly: true,
-          ageIncludedInScore: false,
-          momentumCanOnlyPenalize: true,
-          exactCardPricingAvailable: false,
-          populationDataAvailable: false,
-          expectedReturnValidated: false,
-          evidenceYears: football ? 3 : 4,
-          evidenceStage: 'established',
-          evidenceBasis: football
-            ? 'nfl_draft_year'
-            : 'basketball_age_proxy',
-          careerStartYear: football ? 2023 : null,
-          firstGradedYear: 2023,
-          mostGradedYear: 2026,
-          jointHeat: true,
-          concentrationReview: false,
-        },
-        sources: [
-          {
-            id: 'gemrate',
-            label: 'GemRate',
-            url: 'https://www.gemrate.com/sales-trends',
-            asOf: '2026-06-30T00:00:00.000Z',
+        id: 'gemrate',
+        label: 'GemRate',
+        url: 'https://www.gemrate.com/sales-trends',
+        asOf: '2026-06-30T00:00:00.000Z',
+        fetchedAt: '2026-07-24T18:00:00.000Z',
+        freshness: 'current',
+        permissionBasis: 'documented permission',
+        measure: 'completed eBay singles sales volume',
+      },
+      football
+        ? {
+            id: 'keeptradecut',
+            label: 'KeepTradeCut',
+            url: 'https://keeptradecut.com/dynasty-rankings?format=2&page=0',
+            asOf: '2026-07-23T00:00:00.000Z',
             fetchedAt: '2026-07-24T18:00:00.000Z',
             freshness: 'current',
-            permissionBasis: 'documented permission',
-            measure: 'completed eBay singles sales volume',
-          },
-          {
-            ...providerSource,
+            permissionBasis: 'public research input',
+            measure: 'dynasty player outlook',
+          }
+        : {
+            id: 'hashtag_basketball',
+            label: 'Hashtag Basketball',
+            url: 'https://hashtagbasketball.com/fantasy-basketball-dynasty-rankings',
             asOf: '2026-07-23T00:00:00.000Z',
             fetchedAt: '2026-07-24T18:00:00.000Z',
             freshness: 'current',
             permissionBasis: 'public research input',
             measure: 'dynasty player outlook',
           },
-        ],
-        formulaVersion:
-          'hobby-player-durable-signal/18m-robust-core-v2.0.0',
-      },
     ],
-    cohorts: [
-      {
-        sport,
-        rankedCount: football ? 302 : 267,
-        buildCount: 7,
-        researchCount: 28,
-        watchCount: 96,
-        deprioritizeCount: football ? 171 : 136,
+  }
+}
+
+function graduationFixtureResponse(
+  sport: HobbyPlayerRankingSport | 'all' = 'all',
+  freshnessStatus: 'current' | 'stale' = 'current',
+): BinderGraduationResponse {
+  const allItems = [
+    graduationItem({
+      id: 'football:cj-stroud',
+      name: 'C.J. Stroud',
+      sport: 'football',
+      age: 24,
+      position: 'QB',
+      team: 'HOU',
+      globalRank: 4,
+      index: 88.4,
+      band: 'on_deck',
+      outlook: 92,
+      marketReadiness: 86,
+      ttmSalesUsd: 8_100_000,
+      currentRunRateUsd: 10_200_000,
+    }),
+    graduationItem({
+      id: 'basketball:victor-wembanyama',
+      name: 'Victor Wembanyama',
+      sport: 'basketball',
+      age: 22,
+      position: 'C',
+      team: 'SAS',
+      globalRank: 7,
+      index: 76.3,
+      band: 'approaching',
+      outlook: 96,
+      marketReadiness: 71,
+      ttmSalesUsd: 6_500_000,
+      currentRunRateUsd: 8_400_000,
+    }),
+  ]
+  const selectedItems = allItems.filter(
+    (item) => sport === 'all' || item.player.sport === sport,
+  )
+  const items = freshnessStatus === 'current' ? selectedItems : []
+  return {
+    schemaVersion: 'backstop-binder-index.v1',
+    contractVersion: 'backstop-binder-index-contract/v1',
+    modelVersion: 'binder-graduation-readiness/master-build-v2.0.0',
+    snapshot: {
+      id: `backstop-binder-index/v1:${'c'.repeat(64)}`,
+      generatedAt: '2026-07-24T19:30:00.000Z',
+      dataThrough: '2026-06-30',
+      historyStart: '2025-01-01',
+      historyMonths: 18,
+      freshness: {
+        status: freshnessStatus,
+        reasonCodes: freshnessStatus === 'current'
+          ? []
+          : ['football_ranking_publication_suspended'],
       },
-      {
-        sport: football ? 'basketball' : 'football',
-        rankedCount: football ? 267 : 302,
-        buildCount: 7,
-        researchCount: 28,
-        watchCount: 96,
-        deprioritizeCount: football ? 136 : 171,
-      },
-    ],
+    },
+    items,
+    scope: {
+      sport,
+      maxAge: 26,
+      position: null,
+      band: 'all',
+    },
+    summary: {
+      rankedCount: items.length,
+      graduatedCount: 0,
+      onDeckCount: items.filter(
+        (item) => item.graduation.band === 'on_deck',
+      ).length,
+      approachingCount: items.filter(
+        (item) => item.graduation.band === 'approaching',
+      ).length,
+      developingCount: 0,
+      longRangeCount: 0,
+      withheldCount: 0,
+    },
     page: {
       page: 1,
       limit: 50,
-      total: football ? 302 : 267,
-      totalPages: football ? 7 : 6,
+      total: items.length,
+      totalPages: items.length === 0 ? 0 : 1,
     },
     meta: {
       researchOnly: true,
       investmentAdvice: false,
-      expectedReturnClaim: false,
-      rankingPolicy: 'within_sport_only',
+      probabilityAvailable: false,
+      probabilityReason:
+        'no_longitudinal_master_build_transitions_or_prospective_holdout',
+      rankingPolicy:
+        'one_global_rank_before_sport_age_position_or_search_filters',
       agePolicy:
-        'not_a_positive_score_input_basketball_age_supplies_evidence_depth_gate',
-      momentumPolicy: 'penalty_or_flag_only_never_positive_score_driver',
-      marketMeasure: 'subject_level_completed_ebay_singles_sales_volume_usd',
-      exactCardRecommendationsAvailable: false,
-      populationDataAvailable: false,
-      outcomeValidationStatus: 'not_yet_outcome_validated',
-      methodology: {
-        formulas: {
-          outlookFootball: 'Football outlook formula.',
-          outlookBasketball: 'Basketball outlook formula.',
-          resilience: 'Resilience formula.',
-          marketDurability: 'Market durability formula.',
-          attentionGap: 'Attention gap formula.',
-          divergencePenalty: 'Adjusted divergence formula.',
-          durableScore: 'Durable Growth formula.',
-          sensitivity: 'Sensitivity formula.',
-          age: 'Age is excluded from the score.',
-          evidenceDepth: 'Evidence depth formula.',
-          concentration: 'Sales concentration formula.',
-        },
-        buildGate: 'All thirteen evidence gates must pass.',
+        'age_is_a_filter_not_a_score_input_because_dynasty_outlook_already_prices_runway',
+      targetBoard: 'hobby-oracle-master-ranking.v2',
+      targetBuildCount: 23,
+      rankingUniverseCount: 569,
+      globalTopOneTtmFloorUsd: 8_177_000,
+      formula: {
+        establishedRoute: 'Established route proximity.',
+        escapeVelocityRoute: 'Escape route proximity.',
+        commonGates: 'Common gate proximity.',
+        marketPathReadiness: 'Market path readiness formula.',
+        graduationIndex: 'Weak-link Graduation Index formula.',
       },
-      quarantine: {
-        total: 9,
-        ambiguousProviderIdentity: 1,
-        ambiguousMarketIdentity: 2,
-        missingMarketMatch: 3,
-        incompleteProviderRanks: 1,
-        invalidAge: 2,
-        identityControlBlocked: 0,
-        impossibleGradedChronology: 0,
+      calibrationPlan: {
+        targetHorizonMonths: 24,
+        durableGraduationDefinition:
+          'enter_build_and_remain_build_in_two_of_three_monthly_snapshots',
+        minimumObservedTransitionsBeforeProbability: 100,
+        currentObservedTransitions: 0,
       },
-      globalQuarantine: {
-        total: 12,
-        ambiguousProviderIdentity: 1,
-        ambiguousMarketIdentity: 2,
-        missingMarketMatch: 4,
-        incompleteProviderRanks: 2,
-        invalidAge: 2,
-        identityControlBlocked: 1,
-        impossibleGradedChronology: 0,
-      },
-      coverage: {
-        sourceRows: football ? 311 : 279,
-        rankedRows: football ? 302 : 267,
-        coveragePercent: football ? 97.1 : 95.7,
-      },
-      availableFilters: {
-        sports: ['football', 'basketball'],
-        postures: ['Build', 'Research', 'Watch', 'Deprioritize'],
-        sortKeys: [
-          'rank',
-          'score',
-          'outlook',
-          'market_durability',
-          'ttm_sales',
-          'resilience',
-          'divergence_penalty',
-          'concentration',
-          'attention_gap',
-          'age',
-          'name',
-        ],
-        positionsBySport: {
-          football: ['QB', 'RB', 'WR', 'TE'],
-          basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
-        },
-        ageRange: {
-          minimum: 18,
-          maximum: 42,
-        },
-      },
-      provenance: [
-        {
-          id: 'gemrate',
-          label: 'GemRate',
-          url: 'https://www.gemrate.com/sales-trends',
-          permissionBasis: 'documented permission',
-          asOf: '2026-06-30T00:00:00.000Z',
-          fetchedAt: '2026-07-24T18:00:00.000Z',
-          semantics: 'subject-level completed sales volume',
-        },
-        {
-          ...providerSource,
-          permissionBasis: 'public research input',
-          asOf: '2026-07-23T00:00:00.000Z',
-          fetchedAt: '2026-07-24T18:00:00.000Z',
-          semantics: 'dynasty player outlook',
-        },
-      ],
-      permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
     },
   }
 }
@@ -665,8 +579,24 @@ function jsonResponse(payload: unknown): Response {
   })
 }
 
-describe('Hobby Oracle investor workbench', () => {
-  it('renders a dense decision table and keeps exact-card action withheld', async () => {
+function routedFixtureFetch(input: RequestInfo | URL): Promise<Response> {
+  const url = String(input)
+  if (url.includes('/api/v1/backstop-binder-index')) {
+    const sport = new URL(url, 'https://binder.test').searchParams.get('sport')
+    const selectedSport =
+      sport === 'football' || sport === 'basketball' ? sport : 'all'
+    return Promise.resolve(jsonResponse(
+      graduationFixtureResponse(selectedSport),
+    ))
+  }
+  if (url.includes('/api/v1/binder-scores')) {
+    return Promise.resolve(jsonResponse(youngFixtureResponse()))
+  }
+  return Promise.resolve(jsonResponse(fixtureResponse()))
+}
+
+describe('Backstop Binder Index', () => {
+  it('renders the Build Board with the new brand and decision hierarchy', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(jsonResponse(fixtureResponse())),
@@ -675,58 +605,59 @@ describe('Hobby Oracle investor workbench', () => {
     render(<HobbyApp />)
 
     expect(
-      screen.getByRole('heading', { name: 'Investor Workbench' }),
+      screen.getByRole('heading', { name: 'The Build Board' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('No sport is guaranteed a Build.'),
-    ).toBeInTheDocument()
+      screen.getByRole('link', { name: 'Backstop Binder Index' }),
+    ).toHaveAttribute('href', '/hobby')
+    expect(screen.getByText('Subject-level research only.'))
+      .toBeInTheDocument()
 
-    const pikachu = await screen.findByText('Pikachu')
+    const table = await screen.findByRole('table', {
+      name: 'Long-term collection research table',
+    })
+    const pikachu = within(table).getByText('Pikachu')
     const row = pikachu.closest('tr')
     expect(row).not.toBeNull()
-    expect(within(row!).getByText('Build candidate')).toBeInTheDocument()
+    expect(within(row!).getByText('Build')).toBeInTheDocument()
     expect(within(row!).getByText('#2')).toBeInTheDocument()
     expect(within(row!).getByText('Cohort #1')).toBeInTheDocument()
     expect(screen.getByText('Exact-card action withheld')).toBeInTheDocument()
-    expect(
-      screen.getByText(/One master order/u),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/One master order/u)).toBeInTheDocument()
 
     fireEvent.click(
       within(row!).getByRole('button', {
         name: 'Show research detail for Pikachu',
       }),
     )
+    expect(screen.getByText(/Character demand only/u)).toBeInTheDocument()
+    expect(screen.getByText(/Exact card, grade, scarcity/u)).toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: /Board rank/u }))
+      .toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: /Binder Index/u }))
+      .toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: /TTM demand/u }))
+      .toBeInTheDocument()
     expect(
-      screen.getByText(/Character demand only/u),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/Exact card, grade, scarcity/u),
-    ).toBeInTheDocument()
-
-    expect(screen.getByRole('columnheader', { name: /TTM demand/u }))
-      .toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /6M YoY/u }))
-      .toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /Master rank/u }))
-      .toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Baseball Oracle' })).toHaveAttribute(
-      'href',
-      '/',
-    )
-    expect(screen.getByRole('link', { name: 'GemRate Pokémon' })).toHaveAttribute(
+      screen.getByRole('link', { name: 'GemRate Pokémon' }),
+    ).toHaveAttribute(
       'href',
       'https://www.gemrate.com/sales-trends-pokemon',
     )
   })
 
-  it('persists posture, cohort, search, and full-universe sort controls', async () => {
+  it('persists and resets Build Board controls', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtureResponse()))
     vi.stubGlobal('fetch', fetchMock)
     render(<HobbyApp />)
 
-    await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
+    const table = await screen.findByRole('table', {
+      name: 'Long-term collection research table',
+    })
+    expect(within(table).getByText('Pikachu')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Near-Build candidates' }),
+    )
     fireEvent.change(screen.getByLabelText('Cohort'), {
       target: { value: 'pokemon' },
     })
@@ -753,16 +684,15 @@ describe('Hobby Oracle investor workbench', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
     expect(screen.getByLabelText('Cohort')).toHaveValue('all')
-    expect(screen.getByRole('button', { name: 'Build' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Build Board qualifiers' }),
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('searchbox', { name: 'Subject' })).toHaveValue('')
     expect(screen.getByLabelText('Sort')).toHaveValue('master_rank')
     expect(screen.getByLabelText('Direction')).toHaveValue('asc')
   })
 
-  it('suspends the build screen when the market snapshot is stale', async () => {
+  it('suspends the Build Board when the market snapshot is stale', async () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
       jsonResponse(fixtureResponse('stale')),
     ))
@@ -776,44 +706,130 @@ describe('Hobby Oracle investor workbench', () => {
       )
     })
     expect(
-      await screen.findByText('Master rank suspended · refresh queue shown'),
+      await screen.findByText('Build Board suspended · refresh queue shown'),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('Needs refresh')).toHaveLength(2)
+    expect(screen.getAllByText('Needs refresh').length).toBeGreaterThan(0)
   })
 
-  it('re-ranks the verified young-player slice without promoting its Binder call', async () => {
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input)
-      return Promise.resolve(
-        jsonResponse(
-          url.includes('/api/v1/binder-scores')
-            ? youngFixtureResponse()
-            : fixtureResponse(),
-        ),
-      )
-    })
+  it('shows one global Graduation rank and persists age, band, and sort', async () => {
+    const fetchMock = vi.fn(routedFixtureFetch)
     vi.stubGlobal('fetch', fetchMock)
-
     render(<HobbyApp />)
 
-    await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Player Rankings' }))
+    await screen.findByRole('table', {
+      name: 'Long-term collection research table',
+    })
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Graduation Board\. Players projected to earn Build/u,
+      }),
+    )
 
-    const player = await screen.findByText('Jackson Holliday')
+    const table = await screen.findByRole('table', {
+      name: 'football and basketball Binder Graduation rankings',
+    })
+    const player = within(table).getByText('C.J. Stroud')
+    const row = player.closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row!).getByText('#4')).toBeInTheDocument()
+    expect(within(row!).getByText('24')).toBeInTheDocument()
+    expect(within(row!).getByText('88.4')).toBeInTheDocument()
+    expect(within(row!).getByText('On Deck')).toBeInTheDocument()
+    expect(screen.getAllByText('C.J. Stroud')).toHaveLength(2)
+    expect(within(table).getByRole('columnheader', { name: 'Grad rank' }))
+      .toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'Graduation Index' }),
+    ).toBeInTheDocument()
+    expect(
+      within(table).getByRole('columnheader', { name: 'Market readiness' }),
+    ).toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', { name: 'Next gate' }))
+      .toBeInTheDocument()
+    expect(screen.getByText('Probability withheld')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Show the global football and basketball graduation ranking',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('/api/v1/backstop-binder-index?')
+      expect(latestUrl).toContain('sport=all')
+      expect(latestUrl).toContain('maxAge=26')
+      expect(latestUrl).toContain('band=all')
+      expect(latestUrl).toContain('sort=graduation_rank')
+    })
+
+    fireEvent.change(screen.getByLabelText('Age screen'), {
+      target: { value: '23' },
+    })
+    fireEvent.change(screen.getByLabelText('Position'), {
+      target: { value: 'QB' },
+    })
+    fireEvent.change(screen.getByLabelText('Path'), {
+      target: { value: 'on_deck' },
+    })
+    fireEvent.change(screen.getByLabelText('Sort'), {
+      target: { value: 'market_readiness' },
+    })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Player' }), {
+      target: { value: 'Stroud' },
+    })
+
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('/api/v1/backstop-binder-index?')
+      expect(latestUrl).toContain('sport=all')
+      expect(latestUrl).toContain('maxAge=23')
+      expect(latestUrl).toContain('position=QB')
+      expect(latestUrl).toContain('band=on_deck')
+      expect(latestUrl).toContain('sort=market_readiness')
+      expect(latestUrl).toContain('q=Stroud')
+    })
+    expect(window.location.search).toContain('lens=players')
+    expect(window.location.search).toContain('sport=all')
+    expect(window.location.search).toContain('maxAge=23')
+    expect(window.location.search).toContain('band=on_deck')
+    expect(window.location.search).toContain('sort=market_readiness')
+  })
+
+  it('keeps baseball as a distinct development tab', async () => {
+    const fetchMock = vi.fn(routedFixtureFetch)
+    vi.stubGlobal('fetch', fetchMock)
+    render(<HobbyApp />)
+
+    await screen.findByRole('table', {
+      name: 'Long-term collection research table',
+    })
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Graduation Board\. Players projected to earn Build/u,
+      }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Show the baseball development ranking',
+      }),
+    )
+
+    const table = await screen.findByRole('table', {
+      name: 'Young baseball collection research table',
+    })
+    const player = within(table).getByText('Jackson Holliday')
     const row = player.closest('tr')
     expect(row).not.toBeNull()
     expect(within(row!).getByText('#1')).toBeInTheDocument()
     expect(within(row!).getByText('of 42')).toBeInTheDocument()
     expect(within(row!).getByText('Action withheld')).toBeInTheDocument()
     expect(within(row!).getByText('Provisional')).toBeInTheDocument()
-    expect(screen.getByText('Age is a lens—not a shortcut.')).toBeInTheDocument()
     expect(
-      screen.getByRole('columnheader', { name: 'Young player rank' }),
+      screen.getByText(/baseball development screen/u),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Player Rankings' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      within(table).getByRole('columnheader', { name: 'Development rank' }),
+    ).toBeInTheDocument()
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
@@ -838,310 +854,106 @@ describe('Hobby Oracle investor workbench', () => {
       expect(latestUrl).toContain('maxAge=23')
       expect(latestUrl).toContain('stage=Minors')
     })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Master Ranking' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
-    await screen.findByText('Pikachu')
-    await waitFor(() => {
-      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v2/hobby-oracle?')
-      expect(latestUrl).toContain('posture=hold_candidate')
-      expect(latestUrl).toContain('sort=master_rank')
-      expect(latestUrl).toContain('direction=asc')
-    })
-    expect(
-      screen.getByRole('columnheader', { name: 'Master rank' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('#2')).toBeInTheDocument()
   })
 
-  it('ranks football players within sport and preserves the evidence boundary', async () => {
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/api/v2/hobby-player-rankings')) {
-        const sport = new URL(url, 'https://oracle.test').searchParams.get('sport')
-        return Promise.resolve(jsonResponse(
-          playerRankingFixtureResponse(
-            sport === 'basketball' ? 'basketball' : 'football',
-          ),
-        ))
-      }
-      if (url.includes('/api/v1/binder-scores')) {
-        return Promise.resolve(jsonResponse(youngFixtureResponse()))
-      }
-      return Promise.resolve(jsonResponse(fixtureResponse()))
-    })
+  it('restores a direct Graduation Board URL without reranking the screen', async () => {
+    const fetchMock = vi.fn(routedFixtureFetch)
     vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=players&sport=football&maxAge=23&position=QB&band=approaching&sort=market_readiness&q=Stroud',
+    )
 
     render(<HobbyApp />)
 
-    await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Player Rankings' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Football' }))
-
-    const player = await screen.findByText('C.J. Stroud')
-    const row = player.closest('tr')
+    const table = await screen.findByRole('table', {
+      name: 'football Binder Graduation rankings',
+    })
+    const row = within(table).getByText('C.J. Stroud').closest('tr')
     expect(row).not.toBeNull()
     expect(within(row!).getByText('#4')).toBeInTheDocument()
-    expect(within(row!).getByText('88.4')).toBeInTheDocument()
-    expect(within(row!).getByText('Build candidate')).toBeInTheDocument()
     expect(
-      screen.getByRole('columnheader', { name: 'Build Score' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('columnheader', { name: 'Dynasty outlook' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('columnheader', { name: 'Input integrity' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('columnheader', { name: 'Adjusted gap' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('option', { name: 'Qualified research' }),
-    ).toHaveValue('Research')
-    expect(
-      screen.getByRole('option', {
-        name: 'Adjusted demand/outlook divergence',
+      screen.getByRole('button', {
+        name: /Graduation Board\. Players projected to earn Build/u,
       }),
-    ).toHaveValue('divergence_penalty')
+    ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('option', { name: 'Sales concentration' }),
-    ).toHaveValue('concentration')
-    expect(
-      screen.getByRole('option', { name: 'Adjusted gap' }),
-    ).toHaveValue('attention_gap')
-    expect(within(row!).getByText(/moderate · 72\/75 inputs/u))
-      .toBeInTheDocument()
-    expect(
-      screen.getByText('Build-candidate screen—not expected return.'),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/Build candidates 7/u)).toBeInTheDocument()
-    expect(screen.getByText(/Qualified research 28/u)).toBeInTheDocument()
-    expect(screen.getByText(/NFL draft year supplies the evidence-depth gate/u))
-      .toBeInTheDocument()
+      screen.getByRole('button', {
+        name: 'Show football graduation candidates',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Age screen')).toHaveValue('23')
+    expect(screen.getByLabelText('Position')).toHaveValue('QB')
+    expect(screen.getByLabelText('Path')).toHaveValue('approaching')
+    expect(screen.getByLabelText('Sort')).toHaveValue('market_readiness')
+    expect(screen.getByRole('searchbox', { name: 'Player' }))
+      .toHaveValue('Stroud')
 
     await waitFor(() => {
-      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v2/hobby-player-rankings?')
-      expect(latestUrl).toContain('sport=football')
-      expect(latestUrl).toContain('posture=all')
-      expect(latestUrl).toContain('sort=score')
+      const initialUrl = String(fetchMock.mock.calls[0]?.[0])
+      expect(initialUrl).toContain('/api/v1/backstop-binder-index?')
+      expect(initialUrl).toContain('sport=football')
+      expect(initialUrl).toContain('maxAge=23')
+      expect(initialUrl).toContain('position=QB')
+      expect(initialUrl).toContain('band=approaching')
+      expect(initialUrl).toContain('sort=market_readiness')
+      expect(initialUrl).toContain('q=Stroud')
     })
     expect(window.location.search).toContain('lens=players')
     expect(window.location.search).toContain('sport=football')
+    expect(window.location.search).toContain('band=approaching')
+  })
 
-    fireEvent.click(
-      within(row!).getByRole('button', {
-        name: 'Show investor evidence for C.J. Stroud',
+  it('fails closed when a Graduation Board source is stale', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(graduationFixtureResponse('all', 'stale')),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState({}, '', '/hobby?lens=players&sport=all')
+
+    render(<HobbyApp />)
+
+    expect(
+      await screen.findByText('Graduation publication is suspended.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/every readiness rank is withheld/u))
+      .toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        'Broaden the path, age, position, or search filters.',
+      ),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('table', {
+        name: 'football and basketball Binder Graduation rankings',
       }),
-    )
-    expect(
-      screen.getByText(/not expected return, ROI/u),
-    ).toBeInTheDocument()
-    expect(screen.getByText('13 of 13 gates passed')).toBeInTheDocument()
-    expect(
-      screen.getAllByText('Adjusted demand/outlook divergence'),
-    ).toHaveLength(2)
-    expect(screen.getByText('Shock resistance')).toBeInTheDocument()
-    expect(screen.getByText('Raw attention gap')).toBeInTheDocument()
-    expect(screen.getByText('Cohort gap baseline')).toBeInTheDocument()
-    expect(screen.getByText('Concentration pct')).toBeInTheDocument()
-    expect(screen.getByText('Effective sales months')).toBeInTheDocument()
-    expect(screen.getByText(/Established · 3 years · NFL draft year/u))
-      .toBeInTheDocument()
-    expect(screen.getByText(/100% top-5% inclusion/u)).toBeInTheDocument()
-    expect(screen.getByText(/rank range #3–#5/u)).toBeInTheDocument()
-    expect(screen.getByText(/Input integrity: 72\/75 \(moderate\)/u))
-      .toBeInTheDocument()
-    expect(screen.getByText(/not investment confidence/u))
-      .toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'KeepTradeCut' })).toHaveAttribute(
-      'href',
-      'https://keeptradecut.com/dynasty-rankings?format=2&page=0',
-    )
-
-    fireEvent.change(screen.getByLabelText('Age screen'), {
-      target: { value: '26' },
-    })
-    fireEvent.change(screen.getByLabelText('Position'), {
-      target: { value: 'QB' },
-    })
-    fireEvent.change(screen.getByLabelText('Action'), {
-      target: { value: 'Research' },
-    })
-    fireEvent.change(screen.getByLabelText('Sort'), {
-      target: { value: 'concentration' },
-    })
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Player' }), {
-      target: { value: 'Stroud' },
-    })
-
-    await waitFor(() => {
-      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('maxAge=26')
-      expect(latestUrl).toContain('position=QB')
-      expect(latestUrl).toContain('posture=Research')
-      expect(latestUrl).toContain('sort=concentration')
-      expect(latestUrl).toContain('q=Stroud')
-    })
-    const filteredRow = (await screen.findByText('C.J. Stroud')).closest('tr')
-    expect(filteredRow).not.toBeNull()
-    expect(within(filteredRow!).getByText('#1')).toBeInTheDocument()
-    expect(within(filteredRow!).getByText('Sport #4')).toBeInTheDocument()
-    expect(
-      screen.getByRole('columnheader', { name: 'Screen rank' }),
-    ).toBeInTheDocument()
-    expect(window.location.search).toContain('maxAge=26')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Basketball' }))
-    const basketballPlayer = await screen.findByText('Victor Wembanyama')
-    const basketballRow = basketballPlayer.closest('tr')
-    expect(basketballRow).not.toBeNull()
-    expect(within(basketballRow!).getByText('Qualified research'))
-      .toBeInTheDocument()
-    await waitFor(() => {
-      expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain(
-        'sport=basketball',
-      )
-    })
-    expect(window.location.search).toContain('sport=basketball')
-    expect(screen.queryByText('Football Beta')).not.toBeInTheDocument()
-  })
-
-  it('opens direct and legacy player-ranking URLs without falling back to Positions', async () => {
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/api/v2/hobby-player-rankings')) {
-        return Promise.resolve(jsonResponse(
-          playerRankingFixtureResponse('football'),
-        ))
-      }
-      return Promise.resolve(jsonResponse(fixtureResponse()))
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    window.history.replaceState(
-      {},
-      '',
-      '/hobby?lens=young&sport=football',
-    )
-
-    render(<HobbyApp />)
-
-    expect(await screen.findByText('C.J. Stroud')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Player Rankings' }))
-      .toHaveAttribute('aria-pressed', 'true')
-    expect(window.location.search).toContain('lens=players')
-    expect(window.location.search).not.toContain('lens=young')
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
-      '/api/v2/hobby-player-rankings?sport=football',
-    )
-  })
-
-  it('keeps football players with unknown age in the open-age screen', async () => {
-    const rankingResponse = playerRankingFixtureResponse('football')
-    rankingResponse.items[0]!.age = null
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input)
-      return Promise.resolve(jsonResponse(
-        url.includes('/api/v2/hobby-player-rankings')
-          ? rankingResponse
-          : fixtureResponse(),
-      ))
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    window.history.replaceState(
-      {},
-      '',
-      '/hobby?lens=players&sport=football',
-    )
-
-    render(<HobbyApp />)
-
-    const player = await screen.findByText('C.J. Stroud')
-    const row = player.closest('tr')
-    expect(row).not.toBeNull()
-    expect(within(row!).getByText('—')).toBeInTheDocument()
-    expect(within(row!).getByText('unknown')).toBeInTheDocument()
-    expect(screen.getByText(/all ages/u)).toBeInTheDocument()
-  })
-
-  it('explains a fail-closed source suspension instead of suggesting filters', async () => {
-    const staleResponse = playerRankingFixtureResponse('football')
-    staleResponse.snapshot.freshness = {
-      status: 'stale',
-      marketStatus: 'current',
-      fundamentalsStatus: 'stale',
-      nextExpectedBy: '2026-07-23T00:00:00.000Z',
-      reasonCodes: [
-        'keeptradecut-dynasty-football_snapshot_overdue',
-        'football_ranking_publication_suspended',
-      ],
-    }
-    staleResponse.items = []
-    staleResponse.page = {
-      page: 1,
-      limit: 50,
-      total: 0,
-      totalPages: 0,
-    }
-    staleResponse.screenSummary = {
-      rankedCount: 0,
-      buildCount: 0,
-      researchCount: 0,
-      watchCount: 0,
-      deprioritizeCount: 0,
-    }
-    staleResponse.cohorts[0] = {
-      sport: 'football',
-      rankedCount: 0,
-      buildCount: 0,
-      researchCount: 0,
-      watchCount: 0,
-      deprioritizeCount: 0,
-    }
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input)
-      return Promise.resolve(jsonResponse(
-        url.includes('/api/v2/hobby-player-rankings')
-          ? staleResponse
-          : fixtureResponse(),
-      ))
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    window.history.replaceState(
-      {},
-      '',
-      '/hobby?lens=players&sport=football',
-    )
-
-    render(<HobbyApp />)
-
-    expect(
-      await screen.findByText('Rank publication is suspended.'),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/withheld every rank/u)).toBeInTheDocument()
-    expect(
-      screen.queryByText('Broaden the age, position, action, or search filters.'),
     ).not.toBeInTheDocument()
   })
 
-  it('does not leave stale rows visible after a failed screen request', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtureResponse()))
+  it('clears Graduation rows after a failed filter request', async () => {
+    const fetchMock = vi.fn(routedFixtureFetch)
     vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState({}, '', '/hobby?lens=players&sport=all')
     render(<HobbyApp />)
 
-    await screen.findByText('Pikachu')
-    fetchMock.mockRejectedValueOnce(new Error('Filter request failed.'))
-    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
+    const table = await screen.findByRole('table', {
+      name: 'football and basketball Binder Graduation rankings',
+    })
+    expect(within(table).getByText('C.J. Stroud')).toBeInTheDocument()
+
+    fetchMock.mockRejectedValueOnce(new Error('Graduation filter failed.'))
+    fireEvent.change(screen.getByLabelText('Path'), {
+      target: { value: 'approaching' },
+    })
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Filter request failed.',
+      'Graduation filter failed.',
     )
-    expect(screen.queryByText('Pikachu')).not.toBeInTheDocument()
+    expect(screen.queryAllByText('C.J. Stroud')).toHaveLength(0)
     expect(
       screen.queryByRole('table', {
-        name: 'Long-term collection research table',
+        name: 'football and basketball Binder Graduation rankings',
       }),
     ).not.toBeInTheDocument()
   })

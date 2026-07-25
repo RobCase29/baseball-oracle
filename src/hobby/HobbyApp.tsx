@@ -1,8 +1,8 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import {
+  BookOpenCheck,
   Database,
   LockKeyhole,
-  Orbit,
 } from 'lucide-react'
 import {
   HOBBY_MASTER_SORT_KEYS,
@@ -18,10 +18,10 @@ import {
   type BinderScoresResponse,
 } from '../domain/binderScore'
 import {
-  isHobbyPlayerRankingsResponse,
-  type HobbyPlayerRankingsResponse,
-  type HobbyPlayerRankingSortKey,
-} from '../domain/hobbyPlayerRanking'
+  isBinderGraduationResponse,
+  type BinderGraduationResponse,
+  type BinderGraduationSortKey,
+} from '../domain/binderGraduationIndex'
 import { InvestorWorkbench } from './InvestorWorkbench'
 import {
   ResearchLensTabs,
@@ -36,8 +36,8 @@ import {
 import {
   CrossSportPlayerWorkbench,
   type PlayerRankingAgeCeiling,
+  type PlayerRankingBand,
   type PlayerRankingPosition,
-  type PlayerRankingPosture,
 } from './CrossSportPlayerWorkbench'
 
 const PAGE_SIZE = 50
@@ -46,11 +46,11 @@ const DEFAULT_SORT: HobbyMasterSortKey = 'master_rank'
 const DEFAULT_DIRECTION: HobbyMasterSortDirection = 'asc'
 const DEFAULT_YOUNG_AGE: YoungPlayerAgeCeiling = 25
 const DEFAULT_YOUNG_STAGE: YoungPlayerStage = 'All'
-const DEFAULT_PLAYER_SPORT: PlayerRankingSport = 'baseball'
-const DEFAULT_PLAYER_AGE: PlayerRankingAgeCeiling = 'all'
+const DEFAULT_PLAYER_SPORT: PlayerRankingSport = 'all'
+const DEFAULT_PLAYER_AGE: PlayerRankingAgeCeiling = 26
 const DEFAULT_PLAYER_POSITION: PlayerRankingPosition = 'all'
-const DEFAULT_PLAYER_POSTURE: PlayerRankingPosture = 'all'
-const DEFAULT_PLAYER_SORT: HobbyPlayerRankingSortKey = 'score'
+const DEFAULT_PLAYER_BAND: PlayerRankingBand = 'all'
+const DEFAULT_PLAYER_SORT: BinderGraduationSortKey = 'graduation_rank'
 
 const validDomains = new Set<MagnificentXDomain>([
   'baseball',
@@ -90,7 +90,10 @@ function initialLens(): HobbyResearchLens {
 
 function initialPlayerSport(): PlayerRankingSport {
   const value = initialParameters().get('sport')
-  return value === 'football' || value === 'basketball'
+  return value === 'baseball' ||
+      value === 'football' ||
+      value === 'basketball' ||
+      value === 'all'
     ? value
     : DEFAULT_PLAYER_SPORT
 }
@@ -169,23 +172,33 @@ function initialPlayerPosition(): PlayerRankingPosition {
   return initialParameters().get('position') ?? DEFAULT_PLAYER_POSITION
 }
 
-function initialPlayerPosture(): PlayerRankingPosture {
-  const value = initialParameters().get('posture')
-  return value === 'Build' ||
-      value === 'Research' ||
-      value === 'Watch' ||
-      value === 'Deprioritize'
-    ? value
-    : DEFAULT_PLAYER_POSTURE
+function initialPlayerBand(): PlayerRankingBand {
+  const value = initialParameters().get('band')
+  if (
+    value === 'graduated' ||
+    value === 'on_deck' ||
+    value === 'approaching' ||
+    value === 'developing' ||
+    value === 'long_range' ||
+    value === 'withheld'
+  ) {
+    return value
+  }
+  const legacyPosture = initialParameters().get('posture')
+  if (legacyPosture === 'Build') return 'on_deck'
+  if (legacyPosture === 'Research') return 'approaching'
+  if (legacyPosture === 'Watch') return 'developing'
+  if (legacyPosture === 'Deprioritize') return 'long_range'
+  return DEFAULT_PLAYER_BAND
 }
 
-function initialPlayerSort(): HobbyPlayerRankingSortKey {
+function initialPlayerSort(): BinderGraduationSortKey {
   const value = initialParameters().get('sort')
-  return value === 'outlook' ||
-      value === 'market_durability' ||
-      value === 'divergence_penalty' ||
-      value === 'concentration' ||
-      value === 'attention_gap' ||
+  return value === 'graduation_index' ||
+      value === 'market_readiness' ||
+      value === 'player_outlook' ||
+      value === 'ttm_sales' ||
+      value === 'current_run_rate' ||
       value === 'age' ||
       value === 'name'
     ? value
@@ -227,10 +240,10 @@ export function HobbyApp() {
     useState<PlayerRankingAgeCeiling>(initialPlayerAge)
   const [playerPosition, setPlayerPosition] =
     useState<PlayerRankingPosition>(initialPlayerPosition)
-  const [playerPosture, setPlayerPosture] =
-    useState<PlayerRankingPosture>(initialPlayerPosture)
+  const [playerBand, setPlayerBand] =
+    useState<PlayerRankingBand>(initialPlayerBand)
   const [playerSort, setPlayerSort] =
-    useState<HobbyPlayerRankingSortKey>(initialPlayerSort)
+    useState<BinderGraduationSortKey>(initialPlayerSort)
   const [playerSearch, setPlayerSearch] = useState(() => (
     initialLens() === 'players' && initialPlayerSport() !== 'baseball'
       ? initialParameters().get('q') ?? ''
@@ -248,7 +261,7 @@ export function HobbyApp() {
     ))
   const [youngError, setYoungError] = useState<string | null>(null)
   const [playerResponse, setPlayerResponse] =
-    useState<HobbyPlayerRankingsResponse | null>(null)
+    useState<BinderGraduationResponse | null>(null)
   const [playerLoading, setPlayerLoading] = useState(() => (
     initialLens() === 'players' && initialPlayerSport() !== 'baseball'
   ))
@@ -279,11 +292,11 @@ export function HobbyApp() {
     })
       .then(async (result) => {
         if (!result.ok) {
-          throw new Error(`Hobby Oracle returned ${result.status}.`)
+          throw new Error(`Build Board returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
         if (!isHobbyMasterFeedResponse(payload)) {
-          throw new Error('Hobby Oracle returned an unexpected response.')
+          throw new Error('Build Board returned an unexpected response.')
         }
         setResponse(payload)
       })
@@ -298,7 +311,7 @@ export function HobbyApp() {
         setError(
           requestError instanceof Error
             ? requestError.message
-            : 'Unable to load Hobby Oracle.',
+            : 'Unable to load the Build Board.',
         )
       })
       .finally(() => {
@@ -363,7 +376,7 @@ export function HobbyApp() {
     const controller = new AbortController()
     const parameters = new URLSearchParams({
       sport: playerSport,
-      posture: playerPosture,
+      band: playerBand,
       sort: playerSort,
       page: page.toString(),
       limit: PAGE_SIZE.toString(),
@@ -380,21 +393,26 @@ export function HobbyApp() {
     setPlayerLoading(true)
     setPlayerError(null)
     setPlayerResponse(null)
-    fetch(`/api/v2/hobby-player-rankings?${parameters.toString()}`, {
+    fetch(`/api/v1/backstop-binder-index?${parameters.toString()}`, {
       cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: controller.signal,
     })
       .then(async (result) => {
         if (!result.ok) {
-          throw new Error(`Player rankings returned ${result.status}.`)
+          throw new Error(`Graduation Board returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
         if (
-          !isHobbyPlayerRankingsResponse(payload) ||
-          payload.items.some((item) => item.sport !== playerSport)
+          !isBinderGraduationResponse(payload) ||
+          (
+            playerSport !== 'all' &&
+            payload.items.some(
+              (item) => item.player.sport !== playerSport,
+            )
+          )
         ) {
-          throw new Error('Player rankings returned an unexpected response.')
+          throw new Error('Graduation Board returned an unexpected response.')
         }
         setPlayerResponse(payload)
       })
@@ -409,7 +427,7 @@ export function HobbyApp() {
         setPlayerError(
           requestError instanceof Error
             ? requestError.message
-            : 'Unable to load player rankings.',
+            : 'Unable to load the Graduation Board.',
         )
       })
       .finally(() => {
@@ -422,8 +440,8 @@ export function HobbyApp() {
     lens,
     page,
     playerAgeMax,
+    playerBand,
     playerPosition,
-    playerPosture,
     playerSort,
     playerSport,
   ])
@@ -467,11 +485,12 @@ export function HobbyApp() {
         } else {
           url.searchParams.set('position', playerPosition)
         }
-        if (playerPosture === DEFAULT_PLAYER_POSTURE) {
-          url.searchParams.delete('posture')
+        if (playerBand === DEFAULT_PLAYER_BAND) {
+          url.searchParams.delete('band')
         } else {
-          url.searchParams.set('posture', playerPosture)
+          url.searchParams.set('band', playerBand)
         }
+        url.searchParams.delete('posture')
         if (playerSort === DEFAULT_PLAYER_SORT) {
           url.searchParams.delete('sort')
         } else {
@@ -484,6 +503,7 @@ export function HobbyApp() {
         else url.searchParams.set('stage', youngStage)
         url.searchParams.delete('q')
         url.searchParams.delete('position')
+        url.searchParams.delete('band')
         url.searchParams.delete('posture')
         url.searchParams.delete('sort')
       }
@@ -495,6 +515,7 @@ export function HobbyApp() {
       url.searchParams.delete('maxAge')
       url.searchParams.delete('stage')
       url.searchParams.delete('position')
+      url.searchParams.delete('band')
       url.searchParams.delete('format')
       if (normalizedSearch) url.searchParams.set('q', normalizedSearch)
       else url.searchParams.delete('q')
@@ -514,8 +535,8 @@ export function HobbyApp() {
     lens,
     page,
     playerAgeMax,
+    playerBand,
     playerPosition,
-    playerPosture,
     playerSearch,
     playerSort,
     playerSport,
@@ -609,12 +630,12 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  function changePlayerPosture(value: PlayerRankingPosture): void {
-    setPlayerPosture(value)
+  function changePlayerBand(value: PlayerRankingBand): void {
+    setPlayerBand(value)
     setPage(1)
   }
 
-  function changePlayerSort(value: HobbyPlayerRankingSortKey): void {
+  function changePlayerSort(value: BinderGraduationSortKey): void {
     setPlayerSort(value)
     setPage(1)
   }
@@ -627,7 +648,7 @@ export function HobbyApp() {
   function resetPlayerFilters(): void {
     setPlayerAgeMax(DEFAULT_PLAYER_AGE)
     setPlayerPosition(DEFAULT_PLAYER_POSITION)
-    setPlayerPosture(DEFAULT_PLAYER_POSTURE)
+    setPlayerBand(DEFAULT_PLAYER_BAND)
     setPlayerSort(DEFAULT_PLAYER_SORT)
     setPlayerSearch('')
     setPage(1)
@@ -660,6 +681,16 @@ export function HobbyApp() {
     : playerSport === 'baseball'
       ? youngResponse?.snapshot.marketDataThrough
       : playerResponse?.snapshot.dataThrough
+  const headlineMetricLabel = lens === 'market'
+    ? 'On Build Board'
+    : playerSport === 'baseball'
+      ? 'Ranked players'
+      : 'On Deck'
+  const headlineMetricValue = lens === 'market'
+    ? response?.meta.buildCount
+    : playerSport === 'baseball'
+      ? resultCount
+      : playerResponse?.summary.onDeckCount
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
@@ -667,18 +698,22 @@ export function HobbyApp() {
   return (
     <div className="mx-app">
       <header className="mx-topbar">
-        <a className="mx-brand" href="/hobby" aria-label="Hobby Oracle">
+        <a
+          className="mx-brand"
+          href="/hobby"
+          aria-label="Backstop Binder Index"
+        >
           <span className="mx-brand-mark" aria-hidden="true">
-            <Orbit size={18} />
+            <BookOpenCheck size={18} />
           </span>
           <span>
-            <small>ORACLE</small>
-            <strong>HOBBY ORACLE</strong>
+            <small>BACKSTOP CARDS</small>
+            <strong>BINDER INDEX</strong>
           </span>
         </a>
-        <nav className="mx-nav" aria-label="Oracle products">
-          <a href="/">Baseball Oracle</a>
-          <a href="/football">Football Research</a>
+        <nav className="mx-nav" aria-label="Binder Index sections">
+          <a href="/hobby">Build Board</a>
+          <a href="/hobby?lens=players">Graduation Board</a>
           <a href="#methodology">Data &amp; methodology</a>
         </nav>
       </header>
@@ -686,21 +721,25 @@ export function HobbyApp() {
       <main className="mx-main">
         <section className="mx-page-heading" aria-labelledby="investor-workbench-title">
           <div className="mx-heading-copy">
-            <span>LONG-HORIZON COLLECTION RESEARCH</span>
-            <h1 id="investor-workbench-title">Investor Workbench</h1>
+            <span>BACKSTOP BINDER INDEX</span>
+            <h1 id="investor-workbench-title">
+              {lens === 'market'
+                ? 'The Build Board'
+                : 'The Graduation Board'}
+            </h1>
             <p>
               {lens === 'market'
-                ? 'One master ranking across sports and Pokémon, ordered by absolute demand scale and durability—not by who happens to lead a cohort.'
+                ? 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
                 : playerSport === 'baseball'
-                  ? 'Find the strongest scored baseball prospects, recent callups, and young MLB players inside an Oracle age window.'
-                  : `Rank ${playerSport} players by forward-looking dynasty consensus and recurring collector demand, with age as a transparent filter rather than a hidden boost.`}
+                  ? 'A baseball development screen for prospects, recent callups, and young MLB players while Build-transition history accumulates.'
+                  : 'One global football and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'}
             </p>
           </div>
 
           <dl className="mx-snapshot-strip">
             <div>
-              <dt>Results</dt>
-              <dd>{resultCount?.toLocaleString() ?? '—'}</dd>
+              <dt>{headlineMetricLabel}</dt>
+              <dd>{headlineMetricValue?.toLocaleString() ?? '—'}</dd>
             </div>
             <div>
               <dt>Data through</dt>
@@ -718,25 +757,16 @@ export function HobbyApp() {
 
         <aside className="mx-boundary-note" aria-label="Research scope">
           <LockKeyhole size={15} aria-hidden="true" />
-          <strong>
-            {lens === 'market'
-              ? 'No sport is guaranteed a Build.'
-              : playerSport === 'baseball'
-                ? 'Age is a lens—not a shortcut.'
-                : 'Build-candidate screen—not expected return.'}
-          </strong>
+          <strong>Subject-level research only.</strong>
           <span>
-            {lens === 'market'
-              ? 'Build requires absolute scale plus durable demand or exceptional escape velocity. Exact-card value, supply, liquidity, and entry price still decide whether a position is investable.'
-              : playerSport === 'baseball'
-                ? 'The existing Binder Score is re-ordered inside the selected age and stage universe; the base posture does not change.'
-                : 'Build Score balances forward-looking dynasty consensus with 18-month subject-level demand; it prioritizes research and does not select a card, estimate ROI, or issue a sell instruction.'}
+            Card, grade, supply, entry price, liquidity, and personal risk
+            tolerance remain separate underwriting.
           </span>
         </aside>
 
         <section
           className="iw-shell"
-          aria-label="Investor research workbench"
+          aria-label="Backstop Binder Index boards"
         >
           <ResearchLensTabs
             lens={lens}
@@ -774,13 +804,13 @@ export function HobbyApp() {
               sport={playerSport}
               maxAge={playerAgeMax}
               position={playerPosition}
-              posture={playerPosture}
+              band={playerBand}
               sort={playerSort}
               search={playerSearch}
               page={page}
               onMaxAgeChange={changePlayerAge}
               onPositionChange={changePlayerPosition}
-              onPostureChange={changePlayerPosture}
+              onBandChange={changePlayerBand}
               onSortChange={changePlayerSort}
               onSearchChange={changePlayerSearch}
               onPageChange={setPage}
@@ -804,7 +834,7 @@ export function HobbyApp() {
       </main>
 
       <footer className="mx-footer" id="methodology">
-        <span>Hobby Oracle · long-horizon collection research</span>
+        <span>Backstop Binder Index · long-horizon collection research</span>
         <nav aria-label="Data sources">
           <a
             href="https://www.gemrate.com/sales-trends"

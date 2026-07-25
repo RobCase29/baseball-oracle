@@ -1,6 +1,7 @@
-import { Fragment, useState, type CSSProperties } from 'react'
+import { Fragment, useState } from 'react'
 import {
   AlertTriangle,
+  ArrowUpRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -8,37 +9,38 @@ import {
   LockKeyhole,
   RotateCcw,
   Search,
+  ShieldCheck,
 } from 'lucide-react'
 import {
-  HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY,
-  type HobbyPlayerRankingItem,
-  type HobbyPlayerRankingPosture,
-  type HobbyPlayerRankingsResponse,
-  type HobbyPlayerRankingSortKey,
-  type HobbyPlayerRankingSport,
-} from '../domain/hobbyPlayerRanking'
+  type BinderGraduationBand,
+  type BinderGraduationBlocker,
+  type BinderGraduationItem,
+  type BinderGraduationResponse,
+  type BinderGraduationSortKey,
+} from '../domain/binderGraduationIndex'
+import type { HobbyPlayerRankingSport } from '../domain/hobbyPlayerRanking'
 import './cross-sport-player-workbench.css'
 
 export type PlayerRankingAgeCeiling = 'all' | 23 | 26 | 30
-export type PlayerRankingPosture = HobbyPlayerRankingPosture | 'all'
+export type PlayerRankingBand = BinderGraduationBand | 'all'
 export type PlayerRankingPosition = string | 'all'
 
 interface CrossSportPlayerWorkbenchProps {
-  response: HobbyPlayerRankingsResponse | null
+  response: BinderGraduationResponse | null
   loading: boolean
   error: string | null
-  sport: HobbyPlayerRankingSport
+  sport: HobbyPlayerRankingSport | 'all'
   search: string
   maxAge: PlayerRankingAgeCeiling
   position: PlayerRankingPosition
-  posture: PlayerRankingPosture
-  sort: HobbyPlayerRankingSortKey
+  band: PlayerRankingBand
+  sort: BinderGraduationSortKey
   page: number
   onSearchChange: (value: string) => void
   onMaxAgeChange: (value: PlayerRankingAgeCeiling) => void
   onPositionChange: (value: PlayerRankingPosition) => void
-  onPostureChange: (value: PlayerRankingPosture) => void
-  onSortChange: (value: HobbyPlayerRankingSortKey) => void
+  onBandChange: (value: PlayerRankingBand) => void
+  onSortChange: (value: BinderGraduationSortKey) => void
   onPageChange: (value: number) => void
   onReset: () => void
 }
@@ -47,43 +49,69 @@ const ageOptions: ReadonlyArray<{
   value: PlayerRankingAgeCeiling
   label: string
 }> = [
-  { value: 'all', label: 'Open' },
+  { value: 'all', label: 'All ages' },
   { value: 23, label: 'Age ≤23' },
   { value: 26, label: 'Age ≤26' },
   { value: 30, label: 'Age ≤30' },
 ]
 
-const postureOptions: ReadonlyArray<{
-  value: PlayerRankingPosture
+const bandOptions: ReadonlyArray<{
+  value: PlayerRankingBand
   label: string
 }> = [
-  { value: 'all', label: 'All actions' },
-  { value: 'Build', label: 'Build candidates' },
-  { value: 'Research', label: 'Qualified research' },
-  { value: 'Watch', label: 'Watch' },
-  { value: 'Deprioritize', label: 'Deprioritize' },
+  { value: 'all', label: 'All paths' },
+  { value: 'on_deck', label: 'On Deck' },
+  { value: 'approaching', label: 'Approaching' },
+  { value: 'developing', label: 'Developing' },
+  { value: 'long_range', label: 'Long Range' },
+  { value: 'graduated', label: 'Already on board' },
+  { value: 'withheld', label: 'Withheld' },
 ]
 
 const sortOptions: ReadonlyArray<{
-  value: HobbyPlayerRankingSortKey
+  value: BinderGraduationSortKey
   label: string
 }> = [
-  { value: 'score', label: 'Build Score' },
-  { value: 'outlook', label: 'Dynasty outlook' },
-  { value: 'market_durability', label: 'Demand durability' },
-  {
-    value: 'divergence_penalty',
-    label: 'Adjusted demand/outlook divergence',
-  },
-  { value: 'concentration', label: 'Sales concentration' },
-  { value: 'attention_gap', label: 'Adjusted gap' },
+  { value: 'graduation_rank', label: 'Graduation rank' },
+  { value: 'graduation_index', label: 'Graduation Index' },
+  { value: 'market_readiness', label: 'Market readiness' },
+  { value: 'player_outlook', label: 'Player outlook' },
+  { value: 'ttm_sales', label: 'TTM demand' },
+  { value: 'current_run_rate', label: 'Current run rate' },
   { value: 'age', label: 'Age' },
   { value: 'name', label: 'Player name' },
 ]
 
-const defaultPositions: Record<HobbyPlayerRankingSport, readonly string[]> = {
+const defaultPositions: Record<
+  HobbyPlayerRankingSport | 'all',
+  readonly string[]
+> = {
+  all: ['QB', 'RB', 'WR', 'TE', 'PG', 'SG', 'SF', 'PF', 'C'],
   football: ['QB', 'RB', 'WR', 'TE'],
   basketball: ['PG', 'SG', 'SF', 'PF', 'C'],
+}
+
+const bandLabels: Record<BinderGraduationBand, string> = {
+  graduated: 'On Build Board',
+  on_deck: 'On Deck',
+  approaching: 'Approaching',
+  developing: 'Developing',
+  long_range: 'Long Range',
+  withheld: 'Withheld',
+}
+
+const blockerLabels: Record<BinderGraduationBlocker, string> = {
+  already_on_build_board: 'Already cleared the Build standard',
+  ttm_scale: 'Trailing demand is the binding gate',
+  current_run_rate: 'Current demand run rate is the binding gate',
+  master_score: 'Binder Index is the binding gate',
+  global_top_one_percent: 'Observed top-1% demand is not yet cleared',
+  persistence: 'Monthly persistence is the binding gate',
+  shock_resistance: 'Demand concentration is the binding gate',
+  downside_protection: 'Recent demand downside is the binding gate',
+  six_month_growth: 'Six-month escape velocity is not yet cleared',
+  three_month_growth: 'Three-month escape velocity is not yet cleared',
+  evidence_not_publishable: 'Source or identity evidence is withheld',
 }
 
 const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
@@ -93,8 +121,12 @@ const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
 
-function scoreLabel(value: number): string {
-  return value.toFixed(1)
+function moneyLabel(value: number): string {
+  return compactCurrencyFormatter.format(value)
+}
+
+function scoreLabel(value: number | null): string {
+  return value === null ? '—' : value.toFixed(1)
 }
 
 function ageLabel(value: number | null): string {
@@ -102,115 +134,142 @@ function ageLabel(value: number | null): string {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1)
 }
 
-function moneyLabel(value: number): string {
-  return compactCurrencyFormatter.format(value)
+function titleLabel(value: string): string {
+  return value
+    .replaceAll('_', ' ')
+    .replace(/\b\w/gu, (character) => character.toLocaleUpperCase('en-US'))
 }
 
-function percentageChange(current: number, prior: number): number | null {
-  if (prior <= 0) return null
-  return ((current / prior) - 1) * 100
-}
-
-function percentLabel(value: number | null): string {
-  if (value === null) return '—'
-  const prefix = value > 0 ? '+' : ''
-  return `${prefix}${value.toFixed(Math.abs(value) >= 100 ? 0 : 1)}%`
-}
-
-function attentionGapLabel(value: number): string {
-  const prefix = value > 0 ? '+' : ''
-  return `${prefix}${value.toFixed(1)}`
-}
-
-function attentionTone(value: number): 'opportunity' | 'risk' | 'neutral' {
-  if (value >= 15) return 'risk'
-  if (value <= -15) return 'opportunity'
-  return 'neutral'
-}
-
-function codeLabel(value: string): string {
-  const words = value.replaceAll('_', ' ')
-  const label = `${words.charAt(0).toLocaleUpperCase()}${words.slice(1)}`
-  return label.replace(/^Nfl\b/u, 'NFL')
-}
-
-function sentenceLabel(value: string): string {
-  return `${codeLabel(value)}.`
-}
-
-function postureClass(posture: HobbyPlayerRankingPosture): string {
-  if (posture === 'Build') return 'build_candidate'
-  if (posture === 'Research') return 'hold_candidate'
-  if (posture === 'Deprioritize') return 'pass'
-  return 'watch'
-}
-
-function postureLabel(item: HobbyPlayerRankingItem): string {
-  if (
-    item.identity.manualReviewStatus === 'unreviewed' &&
-    item.gates.reasonCodes.length === 1 &&
-    item.gates.reasonCodes[0] === 'manual_identity_review_not_completed'
-  ) {
-    return 'Review pending'
+function nextGateLabel(item: BinderGraduationItem): string {
+  const { graduation } = item
+  if (graduation.status === 'graduated') {
+    return `Build Board #${item.market.masterRank ?? '—'}`
   }
-  if (item.posture === 'Build') return 'Build candidate'
-  if (item.posture === 'Research') return 'Qualified research'
-  return item.posture
+  if (graduation.status === 'withheld') return 'Evidence refresh required'
+  const distance = graduation.distance
+  switch (graduation.primaryBlocker) {
+    case 'ttm_scale':
+      return `Needs ${moneyLabel(distance.ttmSalesUsd)} more TTM demand`
+    case 'current_run_rate':
+      return `Needs ${moneyLabel(distance.currentRunRateUsd)} more run rate`
+    case 'master_score':
+      return `${distance.masterScorePoints.toFixed(1)} Binder Index points short`
+    case 'global_top_one_percent':
+      return `Needs ${moneyLabel(distance.globalTopOneTtmUsd)} to observed P99`
+    case 'persistence':
+      return `${distance.persistencePoints.toFixed(1)} persistence points short`
+    case 'shock_resistance':
+      return `${distance.shockResistancePoints.toFixed(1)} stability points short`
+    case 'downside_protection':
+      return `${distance.downsideProtectionPoints.toFixed(1)} downside points short`
+    case 'six_month_growth':
+      return `${distance.sixMonthGrowthMultiple.toFixed(2)}× short of 6M escape pace`
+    case 'three_month_growth':
+      return `${distance.threeMonthGrowthMultiple.toFixed(2)}× short of 3M escape pace`
+    case 'already_on_build_board':
+      return 'Build standard cleared'
+    case 'evidence_not_publishable':
+      return 'Evidence refresh required'
+  }
 }
 
-function sourceDate(value: string): string {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(parsed)
+function pathRank(item: BinderGraduationItem): string {
+  if (item.graduation.status === 'graduated') return 'BOARD'
+  if (item.graduation.globalRank === null) return '—'
+  return `#${item.graduation.globalRank}`
 }
 
-function SalesHistory({
-  item,
-  historyStart,
-}: {
-  item: HobbyPlayerRankingItem
-  historyStart: string
-}) {
-  const values = item.diagnostics.monthlySalesUsd
-  const observedValues = values.filter(
-    (value): value is number => value !== null && Number.isFinite(value),
-  )
-  const maximum = Math.max(...observedValues, 1)
-  const start = new Date(`${historyStart}T00:00:00.000Z`)
-
+function GraduationDetail({ item }: { item: BinderGraduationItem }) {
+  const { graduation } = item
   return (
-    <div
-      className="csw-sales-history"
-      role="img"
-      aria-label={`Eighteen-month sales-volume history for ${item.name}; ${observedValues.length} months observed.`}
-    >
-      {values.map((value, index) => {
-        const observed = value !== null && Number.isFinite(value)
-        const month = new Date(start)
-        month.setUTCMonth(month.getUTCMonth() + index)
-        const label = new Intl.DateTimeFormat('en-US', {
-          month: 'short',
-          year: '2-digit',
-          timeZone: 'UTC',
-        }).format(month)
-        return (
-          <span
-            key={`${label}-${index}`}
-            className={observed ? undefined : 'is-missing'}
-            title={`${label}: ${observed ? moneyLabel(value) : 'not observed'}`}
-            style={{
-              '--csw-bar-height': !observed
-                ? '4%'
-                : `${Math.max(4, (value / maximum) * 100)}%`,
-            } as CSSProperties}
-          />
-        )
-      })}
+    <div className="bbi-graduation-detail">
+      <section>
+        <span className="iw-detail-label">Why this rank</span>
+        <h3>
+          {graduation.status === 'graduated'
+            ? `Master Build #${item.market.masterRank ?? '—'}`
+            : `${scoreLabel(graduation.index)} Graduation Index`}
+        </h3>
+        <p>
+          Player outlook {item.playerSignal.outlook.toFixed(1)} meets market-path
+          readiness {scoreLabel(graduation.marketPathReadiness)} through a
+          weak-link formula. A strong career signal cannot carry a small or
+          fragile collector market.
+        </p>
+        <dl className="bbi-detail-metrics">
+          <div>
+            <dt>Player outlook</dt>
+            <dd>{item.playerSignal.outlook.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>Market readiness</dt>
+            <dd>{scoreLabel(graduation.marketPathReadiness)}</dd>
+          </div>
+          <div>
+            <dt>Current Binder Index</dt>
+            <dd>{item.market.masterScore.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>Durability</dt>
+            <dd>{item.market.durability.toFixed(1)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section>
+        <span className="iw-detail-label">Path to Build</span>
+        <h3>{nextGateLabel(item)}</h3>
+        <p>
+          Projected route:{' '}
+          <strong>{titleLabel(graduation.projectedRoute)}</strong>. The target
+          is the same absolute Master Build standard used by the Build Board.
+        </p>
+        <dl className="bbi-detail-metrics">
+          <div>
+            <dt>Durable route</dt>
+            <dd>{graduation.routeReadiness.established.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>Escape route</dt>
+            <dd>{graduation.routeReadiness.escapeVelocity.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>Common gates</dt>
+            <dd>{graduation.routeReadiness.commonGates.toFixed(1)}</dd>
+          </div>
+          <div>
+            <dt>Gate progress</dt>
+            <dd>
+              {graduation.buildGateProgress.passed}/
+              {graduation.buildGateProgress.required}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section>
+        <span className="iw-detail-label">What could break</span>
+        <h3>{blockerLabels[graduation.primaryBlocker]}</h3>
+        <p>
+          Trajectory is <strong>{graduation.trajectory}</strong>. Evidence grade{' '}
+          <strong>{graduation.evidence.grade}</strong> reflects freshness,
+          identity, and history—not investment confidence.
+        </p>
+        <ul>
+          {graduation.buildGateProgress.reasonCodes.length > 0 ? (
+            graduation.buildGateProgress.reasonCodes.slice(0, 4).map((reason) => (
+              <li key={reason}>{titleLabel(reason)}</li>
+            ))
+          ) : (
+            <li>All current Master Build gates are cleared.</li>
+          )}
+        </ul>
+        <div className="iw-detail-scope">
+          A calibrated probability is withheld: there are no observed historical
+          Build graduations yet. The Index is a 24-month readiness rank, never a
+          percentage or expected return.
+        </div>
+      </section>
     </div>
   )
 }
@@ -223,13 +282,13 @@ export function CrossSportPlayerWorkbench({
   search,
   maxAge,
   position,
-  posture,
+  band,
   sort,
   page,
   onSearchChange,
   onMaxAgeChange,
   onPositionChange,
-  onPostureChange,
+  onBandChange,
   onSortChange,
   onPageChange,
   onReset,
@@ -242,20 +301,20 @@ export function CrossSportPlayerWorkbench({
     total: 0,
     totalPages: 0,
   }
-  const positions = response?.meta.availableFilters.positionsBySport[sport] ??
-    defaultPositions[sport]
-  const screenSummary = response?.screenSummary
+  const positions = defaultPositions[sport]
+  const sportLabel = sport === 'all'
+    ? 'football and basketball'
+    : sport
+  const summary = response?.summary
   const publicationSuspended =
     response?.snapshot.freshness.status !== undefined &&
     response.snapshot.freshness.status !== 'current'
-  const scopedRankActive =
-    maxAge !== 'all' ||
-    position !== 'all' ||
-    posture !== 'all'
   const filtersActive =
     search.trim().length > 0 ||
-    scopedRankActive ||
-    sort !== 'score'
+    maxAge !== 26 ||
+    position !== 'all' ||
+    band !== 'all' ||
+    sort !== 'graduation_rank'
 
   return (
     <div className="csw-body" aria-busy={loading}>
@@ -266,16 +325,16 @@ export function CrossSportPlayerWorkbench({
         aria-atomic="true"
       >
         {loading
-          ? `Updating ${sport} player rankings.`
+          ? `Updating ${sportLabel} Graduation Board.`
           : error
             ? ''
-            : `${pagination.total.toLocaleString()} ${sport} player matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
+            : `${pagination.total.toLocaleString()} ${sportLabel} graduation candidates. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
       </div>
 
       <div
         className="iw-controls csw-controls"
         role="group"
-        aria-label={`${sport} player ranking filters`}
+        aria-label={`${sportLabel} graduation filters`}
       >
         <label className="iw-search">
           <span className="iw-control-label">Player</span>
@@ -284,7 +343,7 @@ export function CrossSportPlayerWorkbench({
             <input
               type="search"
               value={search}
-              placeholder={`Search ${sport} players`}
+              placeholder={`Search ${sportLabel} players`}
               onChange={(event) => onSearchChange(event.currentTarget.value)}
             />
           </span>
@@ -326,16 +385,14 @@ export function CrossSportPlayerWorkbench({
         </label>
 
         <label>
-          <span className="iw-control-label">Action</span>
+          <span className="iw-control-label">Path</span>
           <select
-            value={posture}
+            value={band}
             onChange={(event) => {
-              onPostureChange(
-                event.currentTarget.value as PlayerRankingPosture,
-              )
+              onBandChange(event.currentTarget.value as PlayerRankingBand)
             }}
           >
-            {postureOptions.map((option) => (
+            {bandOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -349,7 +406,7 @@ export function CrossSportPlayerWorkbench({
             value={sort}
             onChange={(event) => {
               onSortChange(
-                event.currentTarget.value as HobbyPlayerRankingSortKey,
+                event.currentTarget.value as BinderGraduationSortKey,
               )
             }}
           >
@@ -372,28 +429,26 @@ export function CrossSportPlayerWorkbench({
         </button>
       </div>
 
-      <div className="iw-result-bar csw-result-bar">
+      <div className="bbi-pipeline-summary">
         <div>
-          <strong>
-            {(screenSummary?.rankedCount ?? pagination.total).toLocaleString()}
-          </strong>
-          <span>
-            ranked · {sport} · {maxAge === 'all' ? 'all ages' : `age ≤${maxAge}`}
-            {screenSummary
-              ? ` · Build candidates ${screenSummary.buildCount} · Qualified research ${screenSummary.researchCount}`
-              : ''}
-          </span>
+          <span>Pipeline</span>
+          <strong>{(summary?.rankedCount ?? pagination.total).toLocaleString()}</strong>
+        </div>
+        <div className="is-on-deck">
+          <span>On Deck</span>
+          <strong>{summary?.onDeckCount ?? '—'}</strong>
+        </div>
+        <div>
+          <span>Approaching</span>
+          <strong>{summary?.approachingCount ?? '—'}</strong>
         </div>
         <p>
-          Build Score combines dynasty outlook and durable demand within{' '}
-          {sport}; age never adds points.{' '}
-          {sport === 'basketball'
-            ? 'Basketball age only supplies a conservative evidence-depth proxy.'
-            : 'NFL draft year supplies the evidence-depth gate.'}
+          One global graduation rank across football and basketball. Sport and
+          age filters never manufacture a new #1.
         </p>
         <span className="iw-withheld-status">
           <LockKeyhole size={13} aria-hidden="true" />
-          Expected return withheld
+          Probability withheld
         </span>
       </div>
 
@@ -406,409 +461,191 @@ export function CrossSportPlayerWorkbench({
 
       {loading && items.length === 0 ? (
         <div className="iw-message" role="status">
-          Loading current {sport} investor signals…
+          Loading the current Graduation Board…
         </div>
       ) : null}
 
       {items.length > 0 ? (
-        <div
-          className={`iw-table-frame csw-table-frame${loading ? ' is-loading' : ''}`}
-          aria-busy={loading}
-        >
-          <table aria-label={`${sport} long-horizon player rankings`}>
-            <caption className="iw-sr-only">
-              {sport} players ordered within their sport by Build Score, a
-              research signal that is not an expected-return forecast.
-            </caption>
-            <thead>
-              <tr>
-                <th className="iw-expand-column" aria-label="Row details" />
-                <th scope="col">
-                  {scopedRankActive ? 'Screen rank' : 'Sport rank'}
-                </th>
-                <th className="iw-subject-column" scope="col">Player</th>
-                <th scope="col">Age</th>
-                <th scope="col">Build Score</th>
-                <th scope="col">Dynasty outlook</th>
-                <th scope="col">Demand durability</th>
-                <th scope="col">Adjusted gap</th>
-                <th scope="col">Input integrity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const expanded = expandedId === item.id
-                const postureTone = postureClass(item.posture)
-                const sixMonthChange = percentageChange(
-                  item.diagnostics.currentSixMonthSalesUsd,
-                  item.diagnostics.priorSixMonthSalesUsd,
-                )
-                const threeMonthChange = percentageChange(
-                  item.diagnostics.recentThreeMonthSalesUsd,
-                  item.diagnostics.priorThreeMonthSalesUsd,
-                )
-                const gapTone = attentionTone(
-                  item.diagnostics.adjustedAttentionGap,
-                )
-                const primaryRank = scopedRankActive
-                  ? item.screenRank
-                  : item.sportRank
-                return (
-                  <Fragment key={item.id}>
-                    <tr className={`iw-data-row iw-posture--${postureTone}`}>
-                      <td className="iw-expand-column">
-                        <button
-                          type="button"
-                          aria-label={`${expanded ? 'Hide' : 'Show'} investor evidence for ${item.name}`}
-                          aria-expanded={expanded}
-                          onClick={() => setExpandedId(expanded ? null : item.id)}
-                        >
-                          {expanded ? (
-                            <ChevronUp size={15} aria-hidden="true" />
-                          ) : (
-                            <ChevronDown size={15} aria-hidden="true" />
-                          )}
-                        </button>
-                      </td>
-                      <td className="iw-number iw-rank csw-rank">
-                        <strong>#{primaryRank}</strong>
-                        <span>
-                          {scopedRankActive
-                            ? `Sport #${item.sportRank}`
-                            : `${item.sportPercentile.toFixed(1)} pct`}
-                        </span>
-                      </td>
-                      <th className="iw-subject-column" scope="row">
-                        <strong>{item.name}</strong>
-                        <span>
-                          {[
-                            item.primaryPosition,
-                            item.team,
-                          ].filter(Boolean).join(' · ')}
-                        </span>
-                      </th>
-                      <td className="iw-number csw-age">
-                        <strong>{ageLabel(item.age)}</strong>
-                        <span>
-                          {item.age === null
-                            ? 'unknown'
-                            : sport === 'basketball'
-                              ? 'evidence proxy'
-                              : 'filter only'}
-                        </span>
-                      </td>
-                      <td className="iw-number iw-score csw-build-score">
-                        <strong>{scoreLabel(item.score)}</strong>
-                        <span>Dynasty + Demand</span>
-                      </td>
-                      <td className="iw-number">
-                        <strong>{scoreLabel(item.components.outlook)}</strong>
-                        <span>/100</span>
-                      </td>
-                      <td className="iw-number">
-                        <strong>
-                          {scoreLabel(item.components.marketDurability)}
-                        </strong>
-                        <span>{moneyLabel(item.diagnostics.trailingTwelveSalesUsd)} TTM</span>
-                      </td>
-                      <td className={`iw-number csw-gap is-${gapTone}`}>
-                        <strong>
-                          {attentionGapLabel(
-                            item.diagnostics.adjustedAttentionGap,
-                          )}
-                        </strong>
-                        <span>vs position peers</span>
-                      </td>
-                      <td className="csw-decision">
-                        <span className={`iw-posture iw-posture--${postureTone}`}>
-                          {postureLabel(item)}
-                        </span>
-                        <span>
-                          {item.confidence.band} ·{' '}
-                          {item.confidence.score.toFixed(0)}/
-                          {HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY} inputs
-                        </span>
-                      </td>
-                    </tr>
-                    {expanded ? (
-                      <tr className="iw-detail-row">
-                        <td colSpan={9}>
-                          <div className="iw-detail csw-detail">
-                            <section>
-                              <span className="iw-detail-label">
-                                Build Score anatomy
-                              </span>
-                              <h3>
-                                {postureLabel(item)} ·{' '}
-                                {scoreLabel(item.score)}
-                              </h3>
-                              <dl className="iw-signal-grid">
-                                <div>
-                                  <dt>Dynasty outlook</dt>
-                                  <dd>{scoreLabel(item.components.outlook)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Durability</dt>
-                                  <dd>
-                                    {scoreLabel(item.components.marketDurability)}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Volume pct</dt>
-                                  <dd>
-                                    {scoreLabel(item.components.volumePercentile)}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Resilience</dt>
-                                  <dd>{scoreLabel(item.components.resilience)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Shock resistance</dt>
-                                  <dd>
-                                    {scoreLabel(item.components.shockResistance)}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Trend context</dt>
-                                  <dd>{scoreLabel(item.components.trendContext)}</dd>
-                                </div>
-                                <div>
-                                  <dt>
-                                    Adjusted demand/outlook divergence
-                                  </dt>
-                                  <dd>
-                                    {item.components.divergencePenalty.toFixed(1)}
-                                  </dd>
-                                </div>
-                              </dl>
-                              <p className="csw-formula">
-                                Build formula:{' '}
-                                {response?.meta.methodology.formulas.durableScore}
-                              </p>
-                              <p className="csw-formula">
-                                Dynasty outlook formula:{' '}
-                                {sport === 'football'
-                                  ? response?.meta.methodology.formulas.outlookFootball
-                                  : response?.meta.methodology.formulas.outlookBasketball}
-                                {' '}Age never adds score points.{' '}
-                                {sport === 'basketball'
-                                  ? 'Basketball age only supplies a conservative evidence-depth proxy.'
-                                  : 'NFL draft year, not age, supplies the evidence-depth gate.'}
-                              </p>
-                              <div className="iw-detail-scope">
-                                This prioritizes player-level consensus and
-                                demand evidence for card-level research. It is
-                                not expected return, ROI, a price target, or an
-                                exact-card recommendation.
-                              </div>
-                            </section>
-
-                            <section>
-                              <span className="iw-detail-label">
-                                18-month sales diagnostics
-                              </span>
-                              <SalesHistory
-                                item={item}
-                                historyStart={response?.snapshot.historyStart ?? ''}
-                              />
-                              <dl className="csw-diagnostic-grid">
-                                <div>
-                                  <dt>TTM volume</dt>
-                                  <dd>
-                                    {moneyLabel(
-                                      item.diagnostics.trailingTwelveSalesUsd,
-                                    )}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>6M change</dt>
-                                  <dd>{percentLabel(sixMonthChange)}</dd>
-                                </div>
-                                <div>
-                                  <dt>3M change</dt>
-                                  <dd>{percentLabel(threeMonthChange)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Positive months</dt>
-                                  <dd>
-                                    {(item.diagnostics.positiveMonthRatio * 100)
-                                      .toFixed(0)}%
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Floor / median</dt>
-                                  <dd>
-                                    {(item.diagnostics.lowerQuartileToMedianRatio *
-                                      100).toFixed(0)}%
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>History observed</dt>
-                                  <dd>
-                                    {(item.diagnostics.observedHistoryRatio * 100)
-                                      .toFixed(0)}%
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Raw attention gap</dt>
-                                  <dd>
-                                    {attentionGapLabel(
-                                      item.diagnostics.attentionGap,
-                                    )}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Cohort gap baseline</dt>
-                                  <dd>
-                                    {attentionGapLabel(
-                                      item.diagnostics.attentionGapBaseline,
-                                    )}
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Concentration pct</dt>
-                                  <dd>
-                                    {item.diagnostics.concentrationPercentile
-                                      .toFixed(0)}th
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Effective sales months</dt>
-                                  <dd>
-                                    {item.diagnostics.effectiveSalesMonths
-                                      .toFixed(1)} / 12
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Largest month share</dt>
-                                  <dd>
-                                    {(item.diagnostics.largestMonthShare * 100)
-                                      .toFixed(0)}%
-                                  </dd>
-                                </div>
-                                <div>
-                                  <dt>Top 3 month share</dt>
-                                  <dd>
-                                    {(item.diagnostics.topThreeMonthShare * 100)
-                                      .toFixed(0)}%
-                                  </dd>
-                                </div>
-                              </dl>
-                            </section>
-
-                            <section>
-                              <span className="iw-detail-label">
-                                Evidence gates
-                              </span>
-                              <p className="iw-gate-count">
-                                {item.gates.passed} of {item.gates.required} gates
-                                passed
-                              </p>
-                              <p className="csw-gate-rule">
-                                {response?.meta.methodology.buildGate}
-                              </p>
-                              <p className="csw-sensitivity">
-                                Evidence: {codeLabel(
-                                  item.evidence.evidenceStage,
-                                )}
-                                {' '}· {item.evidence.evidenceYears}{' '}
-                                {item.evidence.evidenceYears === 1
-                                  ? 'year'
-                                  : 'years'}
-                                {' '}· {codeLabel(item.evidence.evidenceBasis)}
-                              </p>
-                              <ul>
-                                {item.gates.reasonCodes.length > 0 ? (
-                                  item.gates.reasonCodes.slice(0, 6).map((reason) => (
-                                    <li key={reason}>{sentenceLabel(reason)}</li>
-                                  ))
-                                ) : (
-                                  <li>All published evidence gates passed.</li>
-                                )}
-                              </ul>
-                              <p className="csw-sensitivity">
-                                Robustness:{' '}
-                                {(item.sensitivity.topFiveInclusionRate * 100)
-                                  .toFixed(0)}% top-5% inclusion
-                                {' '}· rank range #
-                                {item.sensitivity.rankRange.best}–#
-                                {item.sensitivity.rankRange.worst}
-                                {' '}· score spread{' '}
-                                {item.sensitivity.scoreSpread.toFixed(1)}
-                              </p>
-                              <p className="csw-sensitivity">
-                                Input integrity: {item.confidence.score.toFixed(0)}
-                                /{HOBBY_PLAYER_RANKING_MAX_INPUT_INTEGRITY}{' '}
-                                ({item.confidence.band}). This grades source,
-                                identity, completeness, and robustness—not
-                                investment confidence. Investment confidence is{' '}
-                                {item.confidence.investmentConfidence}.
-                              </p>
-                            </section>
-
-                            <section>
-                              <span className="iw-detail-label">
-                                Source attribution
-                              </span>
-                              <ul className="csw-source-list">
-                                {item.sources.map((source) => (
-                                  <li key={source.id}>
-                                    {source.url ? (
-                                      <a
-                                        href={source.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        {source.label}
-                                      </a>
-                                    ) : (
-                                      <strong>{source.label}</strong>
-                                    )}
-                                    <span>
-                                      As of {sourceDate(source.asOf)} ·{' '}
-                                      {source.measure} ·{' '}
-                                      {sentenceLabel(source.permissionBasis)}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                              <p className="csw-identity">
-                                Identity: {codeLabel(item.identity.status)}
-                                {' '}· manual review{' '}
-                                {item.identity.manualReviewStatus}.
-                              </p>
-                            </section>
+        <>
+          <div
+            className={`iw-table-frame csw-table-frame${loading ? ' is-loading' : ''}`}
+            aria-busy={loading}
+          >
+            <table aria-label={`${sportLabel} Binder Graduation rankings`}>
+              <caption className="iw-sr-only">
+                Players ranked globally by readiness to clear the Master Build
+                standard. The Graduation Index is not a probability.
+              </caption>
+              <thead>
+                <tr>
+                  <th className="iw-expand-column" aria-label="Row details" />
+                  <th scope="col">Grad rank</th>
+                  <th className="iw-subject-column" scope="col">Player</th>
+                  <th scope="col">Age</th>
+                  <th scope="col">Graduation Index</th>
+                  <th scope="col">Market readiness</th>
+                  <th scope="col">TTM demand</th>
+                  <th scope="col">Path</th>
+                  <th scope="col">Next gate</th>
+                  <th scope="col">Evidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const expanded = expandedId === item.player.id
+                  return (
+                    <Fragment key={item.player.id}>
+                      <tr className={`iw-data-row bbi-band--${item.graduation.band}`}>
+                        <td className="iw-expand-column">
+                          <button
+                            type="button"
+                            aria-label={`${expanded ? 'Hide' : 'Show'} graduation evidence for ${item.player.name}`}
+                            aria-expanded={expanded}
+                            onClick={() => setExpandedId(
+                              expanded ? null : item.player.id,
+                            )}
+                          >
+                            {expanded ? (
+                              <ChevronUp size={15} aria-hidden="true" />
+                            ) : (
+                              <ChevronDown size={15} aria-hidden="true" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="iw-number iw-rank bbi-grad-rank">
+                          <strong>{pathRank(item)}</strong>
+                          <span>global path</span>
+                        </td>
+                        <th className="iw-subject-column" scope="row">
+                          <strong>{item.player.name}</strong>
+                          <span>
+                            {[
+                              item.player.primaryPosition,
+                              item.player.team,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        </th>
+                        <td className="iw-number csw-age">
+                          <strong>{ageLabel(item.player.age)}</strong>
+                          <span>filter only</span>
+                        </td>
+                        <td className="bbi-index-cell">
+                          <div>
+                            <strong>{scoreLabel(item.graduation.index)}</strong>
+                            <span>/100</span>
                           </div>
+                          <span className="bbi-index-track" aria-hidden="true">
+                            <span
+                              style={{
+                                width: `${item.graduation.index ?? 0}%`,
+                              }}
+                            />
+                          </span>
+                        </td>
+                        <td className="iw-number">
+                          <strong>
+                            {scoreLabel(item.graduation.marketPathReadiness)}
+                          </strong>
+                          <span>{item.playerSignal.outlook.toFixed(1)} outlook</span>
+                        </td>
+                        <td className="iw-number">
+                          <strong>{moneyLabel(item.market.ttmSalesUsd)}</strong>
+                          <span>{moneyLabel(item.market.currentRunRateUsd)} run rate</span>
+                        </td>
+                        <td className="bbi-path-cell">
+                          <span className={`bbi-path bbi-path--${item.graduation.band}`}>
+                            {bandLabels[item.graduation.band]}
+                          </span>
+                          <small>{titleLabel(item.graduation.trajectory)}</small>
+                        </td>
+                        <td className="bbi-next-gate">
+                          <strong>{nextGateLabel(item)}</strong>
+                          <span>{titleLabel(item.graduation.projectedRoute)}</span>
+                        </td>
+                        <td className="bbi-evidence-grade">
+                          <strong>{item.graduation.evidence.grade}</strong>
+                          <span>input grade</span>
                         </td>
                       </tr>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                      {expanded ? (
+                        <tr className="iw-detail-row">
+                          <td colSpan={10}>
+                            <GraduationDetail item={item} />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="bbi-mobile-list" aria-label="Mobile Graduation Board">
+            {items.map((item) => {
+              const expanded = expandedId === item.player.id
+              return (
+                <article
+                  className={`bbi-mobile-card bbi-band--${item.graduation.band}`}
+                  key={item.player.id}
+                >
+                  <button
+                    type="button"
+                    className="bbi-mobile-card__toggle"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedId(
+                      expanded ? null : item.player.id,
+                    )}
+                  >
+                    <span className="bbi-mobile-rank">{pathRank(item)}</span>
+                    <span className="bbi-mobile-player">
+                      <strong>{item.player.name}</strong>
+                      <small>
+                        {item.player.sport} · {item.player.primaryPosition}
+                        {' '}· age {ageLabel(item.player.age)}
+                      </small>
+                    </span>
+                    <span className="bbi-mobile-index">
+                      <strong>{scoreLabel(item.graduation.index)}</strong>
+                      <small>INDEX</small>
+                    </span>
+                    {expanded ? (
+                      <ChevronUp size={17} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={17} aria-hidden="true" />
+                    )}
+                  </button>
+                  <div className="bbi-mobile-card__signal">
+                    <span className={`bbi-path bbi-path--${item.graduation.band}`}>
+                      {bandLabels[item.graduation.band]}
+                    </span>
+                    <span>{moneyLabel(item.market.ttmSalesUsd)} TTM</span>
+                    <span>{nextGateLabel(item)}</span>
+                  </div>
+                  {expanded ? <GraduationDetail item={item} /> : null}
+                </article>
+              )
+            })}
+          </div>
+        </>
       ) : null}
 
       {!loading && !error && items.length === 0 ? (
         <div className="iw-empty" role="status">
           {publicationSuspended ? (
             <>
-              <strong>Rank publication is suspended.</strong>
+              <strong>Graduation publication is suspended.</strong>
               <span>
-                A required source is past its freshness deadline. The API
-                withheld every rank instead of serving an aging signal.
+                A required source is past its freshness deadline, so every
+                readiness rank is withheld.
               </span>
             </>
           ) : (
             <>
-              <strong>No players match this screen.</strong>
-              <span>
-                Broaden the age, position, action, or search filters.
-              </span>
+              <strong>No players match this Graduation Board.</strong>
+              <span>Broaden the path, age, position, or search filters.</span>
               <button type="button" onClick={onReset}>
-                Reset player filters
+                Reset graduation filters
               </button>
             </>
           )}
@@ -816,7 +653,7 @@ export function CrossSportPlayerWorkbench({
       ) : null}
 
       {!error && pagination.totalPages > 1 ? (
-        <nav className="iw-pagination" aria-label="Player ranking result pages">
+        <nav className="iw-pagination" aria-label="Graduation result pages">
           <button
             type="button"
             disabled={loading || pagination.page <= 1}
@@ -839,6 +676,19 @@ export function CrossSportPlayerWorkbench({
           </button>
         </nav>
       ) : null}
+
+      <div className="bbi-calibration-note">
+        <ShieldCheck size={16} aria-hidden="true" />
+        <p>
+          <strong>Why no percentage yet?</strong> A real probability needs
+          observed player transitions into a durable Build state. This contract
+          freezes the target and defines the required monthly archive;
+          percentages remain withheld until prospective calibration earns them.
+        </p>
+        <a href="#methodology">
+          Methodology <ArrowUpRight size={13} aria-hidden="true" />
+        </a>
+      </div>
     </div>
   )
 }

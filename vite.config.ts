@@ -24,6 +24,7 @@ export default defineConfig({
       '/api/v1/player-signals': publicApiTarget,
       '/api/model-status': publicApiTarget,
       '/api/football': publicApiTarget,
+      '/api/v1/backstop-binder-index': publicApiTarget,
       '/api/v1/magnificent-x': publicApiTarget,
       '/api/v1/hobby-oracle': publicApiTarget,
       '/api/v1/hobby-player-rankings': publicApiTarget,
