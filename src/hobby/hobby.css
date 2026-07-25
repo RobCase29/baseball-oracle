@@ -360,7 +360,7 @@ input:focus-visible {
     font-size: 0.63rem;
   }
 
-  .mx-nav a:nth-child(n + 3) {
+  .mx-nav a:last-child {
     display: none;
   }
 

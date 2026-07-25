@@ -285,6 +285,12 @@ Raw provider JSON and scouting prose are never returned by the public API.
   The UI reads `/api/v2/backstop-binder-index`; the football-and-basketball v1
   Graduation contract and older within-sport player-ranking contract remain
   frozen.
+- **Printable Binder Index Top 100 (`/hobby?view=top100`):** the first 100
+  positions from the unfiltered global Graduation order in one compact
+  investor board. It removes the default age screen, retains each player's
+  absolute global rank, and uses a letter-portrait print layout with repeating
+  table headers. Printing is enabled only when the source snapshot is current
+  and all 100 positions are present.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 

@@ -28,6 +28,16 @@ JSON Schema:
 
 The v1 endpoint remains frozen for football and basketball consumers.
 
+The printable global Top 100 is available at:
+
+```text
+/hobby?view=top100
+```
+
+It requests page one with `limit=100`, no age ceiling, and the canonical
+`graduation_rank` sort. The print action is withheld unless the snapshot is
+current and all 100 ranked positions are present.
+
 Supported filters:
 
 ```text
