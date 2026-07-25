@@ -130,6 +130,7 @@ const sortOptions: ReadonlyArray<{
   { value: 'master_score', label: 'Binder Index' },
   { value: 'ttm_sales', label: 'TTM demand' },
   { value: 'current_run_rate', label: 'Current run rate' },
+  { value: 'exit_window', label: 'Exit-window priority' },
   { value: 'durability', label: 'Durability' },
   { value: 'cohort_rank', label: 'Cohort rank' },
   { value: 'trend', label: '6M demand change' },

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ExitWindowBoard } from './ExitWindowBoard'
 import { HobbyApp } from './HobbyApp'
 import { Top100BinderBoard } from './Top100BinderBoard'
 import { Under25BinderBoard } from './Under25BinderBoard'
@@ -13,6 +14,8 @@ createRoot(document.getElementById('root')!).render(
       ? <Top100BinderBoard />
       : view === 'under25'
         ? <Under25BinderBoard />
-        : <HobbyApp />}
+        : view === 'exit100'
+          ? <ExitWindowBoard />
+          : <HobbyApp />}
   </StrictMode>,
 )

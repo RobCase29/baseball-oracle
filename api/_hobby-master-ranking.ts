@@ -25,6 +25,9 @@ import {
   type MagnificentXResearchPosture,
   type MagnificentXSourceRow,
 } from '../src/domain/hobbyMasterRanking.js'
+import {
+  buildHobbyExitWindowSignal,
+} from '../src/domain/hobbyLiquidationSignal.js'
 
 type HobbySnapshot = ReturnType<typeof parseHobbySnapshot>
 
@@ -255,6 +258,12 @@ export function buildHobbyMasterFeed(
     )
   const page = Math.max(1, Math.floor(query.page ?? 1))
   const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? 50)))
+  const exitWindowScoreById = sort === 'exit_window'
+    ? new Map(catalog.items.map((item) => [
+        item.subject.id,
+        buildHobbyExitWindowSignal(item).score,
+      ]))
+    : null
   const filtered = catalog.items.filter((item) => (
     (domain === 'all' || item.subject.domain === domain) &&
     (posture === 'all' || item.assessment.posture === posture) &&
@@ -291,6 +300,11 @@ export function buildHobbyMasterFeed(
         comparison =
           leftSignal.annualizedCurrentSixMonthSalesUsd -
           rightSignal.annualizedCurrentSixMonthSalesUsd
+        break
+      case 'exit_window':
+        comparison =
+          (exitWindowScoreById?.get(left.subject.id) ?? 0) -
+          (exitWindowScoreById?.get(right.subject.id) ?? 0)
         break
       case 'trend':
         comparison =

@@ -31,6 +31,7 @@ export const HOBBY_MASTER_SORT_KEYS = [
   'master_score',
   'ttm_sales',
   'current_run_rate',
+  'exit_window',
   'trend',
   'durability',
   'persistence',

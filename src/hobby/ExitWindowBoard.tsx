@@ -7,6 +7,14 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import {
+  buildHobbyExitWindowSignal,
+  HOBBY_EXIT_WINDOW_MIN_DECLINE,
+  HOBBY_EXIT_WINDOW_MIN_RUN_RATE_USD,
+  HOBBY_EXIT_WINDOW_MIN_TTM_PERCENTILE,
+  HOBBY_EXIT_WINDOW_MODEL_VERSION,
+  type HobbyExitWindowSignal,
+} from '../domain/hobbyLiquidationSignal'
+import {
   isHobbyMasterFeedResponse,
   type HobbyMasterFeedItem,
   type HobbyMasterFeedResponse,
@@ -16,11 +24,27 @@ import {
 import { PrintableBoardTabs } from './PrintableBoardTabs'
 import './top-100-binder-board.css'
 
+interface ExitWindowRow {
+  item: HobbyMasterFeedItem
+  exit: HobbyExitWindowSignal
+}
+
 const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   notation: 'compact',
   maximumFractionDigits: 1,
+})
+
+const percentFormatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 0,
+  signDisplay: 'always',
+})
+
+const unsignedPercentFormatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 0,
 })
 
 const domainLabels: Record<MagnificentXDomain, string> = {
@@ -51,6 +75,14 @@ function moneyLabel(value: number): string {
   return compactCurrencyFormatter.format(value)
 }
 
+function percentLabel(value: number): string {
+  return percentFormatter.format(value)
+}
+
+function unsignedPercentLabel(value: number): string {
+  return unsignedPercentFormatter.format(value)
+}
+
 function calendarDateLabel(value: string | undefined): string {
   if (!value) return '—'
   const date = new Date(`${value}T12:00:00.000Z`)
@@ -75,35 +107,26 @@ function timestampLabel(value: string | undefined): string {
   }).format(date)
 }
 
-function qualificationLabel(item: HobbyMasterFeedItem): string {
-  switch (item.assessment.buildQualification.route) {
-    case 'established_durability':
-      return 'Durable scale'
-    case 'escape_velocity':
-      return 'Escape velocity'
-    case null:
-      return 'Not qualified'
-  }
-}
-
-function rankedTop100(
+function rankedExit100(
   response: HobbyMasterFeedResponse | null,
-): HobbyMasterFeedItem[] {
+): ExitWindowRow[] {
   return (response?.items ?? [])
-    .filter(
-      (item) =>
-        item.masterRank !== null &&
-        item.masterRank >= 1 &&
-        item.masterRank <= 100,
-    )
+    .map((item) => ({
+      item,
+      exit: buildHobbyExitWindowSignal(item),
+    }))
+    .filter((row) => row.exit.eligible)
     .toSorted(
       (left, right) =>
-        (left.masterRank ?? 101) - (right.masterRank ?? 101),
+        right.exit.score - left.exit.score ||
+        right.exit.resaleHeat - left.exit.resaleHeat ||
+        (left.item.masterRank ?? Number.MAX_SAFE_INTEGER) -
+          (right.item.masterRank ?? Number.MAX_SAFE_INTEGER),
     )
     .slice(0, 100)
 }
 
-export function Top100BinderBoard() {
+export function ExitWindowBoard() {
   const [response, setResponse] =
     useState<HobbyMasterFeedResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -111,7 +134,7 @@ export function Top100BinderBoard() {
 
   useEffect(() => {
     const previousTitle = document.title
-    document.title = 'Top 100 by Binder Index · Backstop'
+    document.title = 'Exit 100 · Backstop Binder Index'
     return () => {
       document.title = previousTitle
     }
@@ -121,8 +144,8 @@ export function Top100BinderBoard() {
     const controller = new AbortController()
     const parameters = new URLSearchParams({
       posture: 'all',
-      sort: 'master_rank',
-      direction: 'asc',
+      sort: 'exit_window',
+      direction: 'desc',
       page: '1',
       limit: '100',
     })
@@ -136,11 +159,11 @@ export function Top100BinderBoard() {
     })
       .then(async (result) => {
         if (!result.ok) {
-          throw new Error(`Top 100 board returned ${result.status}.`)
+          throw new Error(`Exit 100 board returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
         if (!isHobbyMasterFeedResponse(payload)) {
-          throw new Error('Top 100 board returned an unexpected response.')
+          throw new Error('Exit 100 board returned an unexpected response.')
         }
         setResponse(payload)
       })
@@ -155,7 +178,7 @@ export function Top100BinderBoard() {
         setError(
           requestError instanceof Error
             ? requestError.message
-            : 'Unable to load the Top 100 board.',
+            : 'Unable to load the Exit 100 board.',
         )
       })
       .finally(() => {
@@ -165,13 +188,12 @@ export function Top100BinderBoard() {
     return () => controller.abort()
   }, [])
 
-  const items = rankedTop100(response)
+  const rows = rankedExit100(response)
   const current = response?.snapshot.freshness.status === 'current'
-  const complete = current && items.length === 100
-  const modelVersion = items[0]?.assessment.modelVersion ?? '—'
+  const complete = current && rows.length === 100
 
   return (
-    <div className="bbi-top100">
+    <div className="bbi-top100 bbi-top100--exit">
       <header className="bbi-top100__screen-nav">
         <a className="bbi-top100__brand" href="/hobby">
           <span aria-hidden="true"><BookOpenCheck size={18} /></span>
@@ -181,19 +203,22 @@ export function Top100BinderBoard() {
           </span>
         </a>
         <div className="bbi-top100__actions">
-          <PrintableBoardTabs current="top100" />
-          <a className="bbi-top100__live-link" href="/hobby">
+          <PrintableBoardTabs current="exit100" />
+          <a
+            className="bbi-top100__live-link"
+            href="/hobby?posture=all&sort=exit_window&direction=desc"
+          >
             <ArrowLeft size={14} aria-hidden="true" />
             Live board
           </a>
           <button
             type="button"
-            aria-label="Print Top 100"
+            aria-label="Print Exit 100"
             disabled={!complete}
             onClick={() => window.print()}
           >
             <Printer size={15} aria-hidden="true" />
-            <span>Print Top 100</span>
+            <span>Print Exit 100</span>
           </button>
         </div>
       </header>
@@ -201,7 +226,7 @@ export function Top100BinderBoard() {
       <main>
         <header className="bbi-top100__masthead">
           <div className="bbi-top100__edition">
-            <span>PRINT EDITION · ABSOLUTE BINDER SCORE</span>
+            <span>PRINT EDITION · LIQUIDATION WATCHLIST</span>
             <strong>
               {response?.snapshot.id
                 ? response.snapshot.id.slice(-8).toLocaleUpperCase('en-US')
@@ -211,28 +236,28 @@ export function Top100BinderBoard() {
           <div className="bbi-top100__title-row">
             <div>
               <p>BACKSTOP BINDER INDEX</p>
-              <h1>Top 100</h1>
-              <h2>By Binder Index</h2>
+              <h1>Exit 100</h1>
+              <h2>Hot demand. Fading durability.</h2>
             </div>
             <div className="bbi-top100__mark" aria-hidden="true">
               <BookOpenCheck size={29} />
             </div>
           </div>
           <p className="bbi-top100__dek">
-            The actual score order across the coherent GemRate athlete and
-            Pokémon universe. No cohort quotas, sport balancing, age screen,
-            or Graduation Index.
+            Non-Build, non-Hold subjects with top-15% observed TTM demand,
+            at least {moneyLabel(HOBBY_EXIT_WINDOW_MIN_RUN_RATE_USD)} in
+            annualized current sales, persistent monthly activity, and a
+            six-month decline of at least{' '}
+            {unsignedPercentLabel(HOBBY_EXIT_WINDOW_MIN_DECLINE)}.
           </p>
           <dl className="bbi-top100__snapshot">
             <div>
               <dt>Positions</dt>
-              <dd>{items.length || '—'} / 100</dd>
+              <dd>{rows.length || '—'} / 100</dd>
             </div>
             <div>
-              <dt>Ranked universe</dt>
-              <dd>
-                {response?.meta.rankingUniverseCount.toLocaleString() ?? '—'}
-              </dd>
+              <dt>TTM screen</dt>
+              <dd>P{HOBBY_EXIT_WINDOW_MIN_TTM_PERCENTILE}+</dd>
             </div>
             <div>
               <dt>Data through</dt>
@@ -249,24 +274,24 @@ export function Top100BinderBoard() {
         </header>
 
         <section className="bbi-top100__formula" aria-label="Ranking definition">
-          <strong>Binder Index</strong>
+          <strong>Exit Window</strong>
           <span>
-            Absolute demand magnitude and durability on a 0–100 scale.
-            Positive momentum never adds score. Rank follows Binder Index;
-            TTM demand breaks score ties.
+            A weak-link blend of current resale heat and decline pressure.
+            High demand without deterioration—and sharp deterioration without
+            active demand—cannot rank near the top.
           </span>
         </section>
 
         {error ? (
           <div className="bbi-top100__message" role="alert">
-            <strong>Top 100 unavailable.</strong>
+            <strong>Exit 100 unavailable.</strong>
             <span>{error}</span>
           </div>
         ) : null}
 
         {loading ? (
           <div className="bbi-top100__message" role="status">
-            Preparing the current Binder Index Top 100…
+            Preparing the current Exit 100…
           </div>
         ) : null}
 
@@ -274,36 +299,35 @@ export function Top100BinderBoard() {
           <div className="bbi-top100__message" role="status">
             <strong>Print edition withheld.</strong>
             <span>
-              The board requires a current snapshot with all 100
-              score-ranked positions.
+              The board requires a current snapshot with 100 subjects clearing
+              every exit-window screen.
             </span>
           </div>
         ) : null}
 
-        {items.length > 0 ? (
+        {rows.length > 0 ? (
           <div className="bbi-top100__table-frame">
-            <table aria-label="Backstop Binder Index score-ranked Top 100">
+            <table aria-label="Backstop Binder Index Exit 100">
               <caption>
-                The 100 highest Binder Index scores in the eligible master
-                ranking universe.
+                The 100 strongest subject-level exit-window signals among
+                markets not designated Build or Hold.
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Rank</th>
+                  <th scope="col">Exit rank</th>
                   <th scope="col">Subject</th>
                   <th scope="col">Cohort</th>
-                  <th scope="col">Binder Index</th>
+                  <th scope="col">Exit Window</th>
+                  <th scope="col">Resale heat</th>
+                  <th scope="col">Decline pressure</th>
                   <th scope="col">TTM / run rate</th>
-                  <th scope="col">Demand / durability</th>
-                  <th scope="col">Persistence / stability</th>
-                  <th scope="col">Board read</th>
-                  <th scope="col">Qualification</th>
+                  <th scope="col">6M / recent 3M</th>
+                  <th scope="col">Binder read</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => {
+                {rows.map(({ item, exit }, index) => {
                   const signal = item.assessment.marketSignal
-                  const qualification = item.assessment.buildQualification
                   return (
                     <tr
                       className={`bbi-top100__row bbi-top100__row--${item.subject.domain}`}
@@ -311,7 +335,7 @@ export function Top100BinderBoard() {
                     >
                       <td className="bbi-top100__rank">
                         <span aria-hidden="true" />
-                        <strong>#{item.masterRank}</strong>
+                        <strong>#{index + 1}</strong>
                       </td>
                       <th scope="row">
                         <strong>{item.subject.name}</strong>
@@ -323,11 +347,19 @@ export function Top100BinderBoard() {
                       </th>
                       <td>
                         <strong>{domainLabels[item.subject.domain]}</strong>
-                        <span>Cohort #{item.withinCohortRank}</span>
+                        <span>P{signal.globalObservedPercentile.toFixed(1)} TTM</span>
                       </td>
-                      <td className="bbi-top100__index">
-                        <strong>{signal.score.toFixed(1)}</strong>
+                      <td className="bbi-top100__index bbi-top100__index--exit">
+                        <strong>{exit.score.toFixed(1)}</strong>
                         <span>/100</span>
+                      </td>
+                      <td>
+                        <strong>{exit.resaleHeat.toFixed(1)}</strong>
+                        <span>active-demand proxy</span>
+                      </td>
+                      <td>
+                        <strong>{exit.declinePressure.toFixed(1)}</strong>
+                        <span>downside signal</span>
                       </td>
                       <td>
                         <strong>
@@ -341,29 +373,19 @@ export function Top100BinderBoard() {
                         </span>
                       </td>
                       <td>
-                        <strong>{signal.demandMagnitudeScore.toFixed(0)}</strong>
-                        <span>{signal.durabilityScore.toFixed(0)} durability</span>
-                      </td>
-                      <td>
-                        <strong>
-                          {signal.components.persistence.toFixed(0)}
-                        </strong>
+                        <strong>{percentLabel(exit.sixMonthChange)}</strong>
                         <span>
-                          {signal.components.shockResistance.toFixed(0)} stability
+                          {percentLabel(exit.recentThreeMonthChange)} recent
                         </span>
                       </td>
                       <td>
                         <strong>
+                          {signal.score.toFixed(1)} ·{' '}
                           {postureLabels[item.assessment.posture]}
                         </strong>
                         <span>
-                          P{signal.globalObservedPercentile.toFixed(1)} demand
-                        </span>
-                      </td>
-                      <td>
-                        <strong>{qualificationLabel(item)}</strong>
-                        <span>
-                          {qualification.passed}/{qualification.required} gates
+                          {signal.durabilityScore.toFixed(0)} durability ·{' '}
+                          {exit.openBuildGates} gates open
                         </span>
                       </td>
                     </tr>
@@ -377,12 +399,14 @@ export function Top100BinderBoard() {
         <footer className="bbi-top100__notes">
           <ShieldCheck size={16} aria-hidden="true" />
           <p>
-            <strong>Research boundary.</strong> Subject-level demand
-            prioritization only. Card, grade, supply, entry price, liquidity,
-            and personal risk tolerance require separate underwriting.
+            <strong>Research boundary.</strong> Subject sales dollars are only
+            a resale-heat proxy. This board cannot observe exact-card bids,
+            spread, transaction count, grade, population, cost basis, fees, or
+            tax consequences. It is a liquidation research queue—not advice to
+            sell.
           </p>
           <span>
-            Model {modelVersion} · Published{' '}
+            Model {HOBBY_EXIT_WINDOW_MODEL_VERSION} · Published{' '}
             {timestampLabel(response?.snapshot.publishedAt)}
           </span>
         </footer>

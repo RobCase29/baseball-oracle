@@ -195,3 +195,15 @@ card or autograph recommendation.
 
 The UI therefore keeps exact-card action withheld even when the subject earns a
 Build research label.
+
+## Exit-window companion screen
+
+Master Ranking v2 also supports the descending `exit_window` sort used by the
+printable `/hobby?view=exit100` board. The sort does not change Binder Index,
+Master rank, or Build qualification. It applies the separate
+[Binder Exit Window v1](BINDER_EXIT_WINDOW_V1.md) screen and score to identify
+non-Build, non-Hold subjects that retain meaningful active demand despite a
+material six-month decline.
+
+Exit Window is a subject-level liquidation-research priority. It is not an
+exact-card liquidity estimate or a sell instruction.

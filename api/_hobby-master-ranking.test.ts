@@ -4,6 +4,9 @@ import {
   buildHobbyMasterFeed,
   hobbyMasterCatalog,
 } from './_hobby-master-ranking.js'
+import {
+  buildHobbyExitWindowSignal,
+} from '../src/domain/hobbyLiquidationSignal.js'
 
 const currentAt = new Date('2026-07-25T12:00:00.000Z')
 
@@ -103,5 +106,28 @@ describe('Hobby Oracle master-ranking catalog', () => {
       (item) => !item.assessment.buildQualification.eligible,
     )).toBe(true)
     expect(response.page.total).toBe(6_022)
+  })
+
+  it('orders a complete Exit 100 by active demand and decline pressure', () => {
+    const response = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      posture: 'all',
+      sort: 'exit_window',
+      direction: 'desc',
+      limit: 100,
+    })
+    const signals = response.items.map(buildHobbyExitWindowSignal)
+
+    expect(response.items).toHaveLength(100)
+    expect(signals.every((signal) => signal.eligible)).toBe(true)
+    expect(signals.every(
+      (signal, index) =>
+        index === 0 || signals[index - 1]!.score >= signal.score,
+    )).toBe(true)
+    expect(response.items.every(
+      (item) =>
+        item.assessment.posture !== 'build_candidate' &&
+        item.assessment.posture !== 'hold_candidate',
+    )).toBe(true)
+    expect(response.items[0]?.subject.name).toBe('Jayden Daniels')
   })
 })

@@ -138,6 +138,26 @@
   content: "25";
 }
 
+.bbi-top100--exit .bbi-top100__masthead {
+  background:
+    linear-gradient(120deg, rgba(228, 134, 116, 0.09), transparent 40%),
+    radial-gradient(circle at 88% 20%, rgba(224, 178, 96, 0.1), transparent 22rem),
+    #15110e;
+}
+
+.bbi-top100--exit .bbi-top100__masthead::after {
+  content: "EXIT";
+  top: -0.08em;
+  font-size: clamp(9rem, 21vw, 21rem);
+  letter-spacing: -0.08em;
+}
+
+.bbi-top100--exit .bbi-top100__board-tabs a[aria-current="page"] {
+  border-color: rgba(224, 178, 96, 0.42);
+  color: var(--bbi-watch);
+  background: rgba(224, 178, 96, 0.08);
+}
+
 .bbi-top100__edition,
 .bbi-top100__title-row,
 .bbi-top100__dek,
@@ -189,6 +209,14 @@
 
 .bbi-top100--under25 .bbi-top100__title-row h1 {
   font-size: clamp(3.8rem, 8vw, 7.2rem);
+}
+
+.bbi-top100--exit .bbi-top100__title-row h1 {
+  font-size: clamp(4rem, 9vw, 8rem);
+}
+
+.bbi-top100--exit .bbi-top100__title-row p {
+  color: var(--bbi-watch);
 }
 
 .bbi-top100__title-row h2 {
@@ -513,6 +541,10 @@
   font-size: 0.86rem !important;
 }
 
+.bbi-top100__index--exit strong {
+  color: var(--bbi-watch) !important;
+}
+
 .bbi-top100__grade {
   text-align: center !important;
 }
@@ -613,7 +645,8 @@
 
   .bbi-top100__board-tabs a {
     min-height: 34px;
-    padding: 0 8px;
+    padding: 0 5px;
+    font-size: 0.58rem;
   }
 
   .bbi-top100__actions button {
@@ -649,6 +682,10 @@
   .bbi-top100--under25 .bbi-top100__title-row h1 {
     font-size: clamp(3.1rem, 15vw, 5.2rem);
     line-height: 0.82;
+  }
+
+  .bbi-top100--exit .bbi-top100__title-row h1 {
+    font-size: clamp(3.4rem, 18vw, 5.8rem);
   }
 
   .bbi-top100__mark {
@@ -766,6 +803,10 @@
 
   .bbi-top100--under25 .bbi-top100__title-row h1 {
     font-size: 30pt;
+  }
+
+  .bbi-top100--exit .bbi-top100__title-row h1 {
+    font-size: 34pt;
   }
 
   .bbi-top100__title-row h2 {

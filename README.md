@@ -290,9 +290,14 @@ Raw provider JSON and scouting prose are never returned by the public API.
   athlete and Pokémon universe—not the players closest to Build. The separate
   `/hobby?view=under25` board ranks 25 baseball, football, and basketball
   players age 25 or younger by Graduation Index and retains each player's
-  absolute global path rank. Both use letter-portrait print layouts with
-  repeating table headers. Printing is enabled only when the applicable source
-  snapshot is current and every position is present.
+  absolute global path rank. `/hobby?view=exit100` is a third board for
+  non-Build, non-Hold subjects whose markets retain meaningful active demand
+  despite a material six-month decline. Its weak-link Exit Window score
+  balances resale heat with decline pressure and remains a subject-level
+  liquidation-research queue, not a sell instruction. All three use
+  letter-portrait print layouts with repeating table headers. Printing is
+  enabled only when the applicable source snapshot is current and every
+  position is present.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 

@@ -14,6 +14,7 @@ import {
   type BinderGraduationV2Item,
   type BinderGraduationV2Response,
 } from '../domain/binderGraduationIndexV2'
+import { PrintableBoardTabs } from './PrintableBoardTabs'
 import './top-100-binder-board.css'
 
 const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
@@ -227,15 +228,7 @@ export function Under25BinderBoard() {
           </span>
         </a>
         <div className="bbi-top100__actions">
-          <nav
-            className="bbi-top100__board-tabs"
-            aria-label="Printable Binder Index boards"
-          >
-            <a href="/hobby?view=top100">Top 100</a>
-            <a aria-current="page" href="/hobby?view=under25">
-              25 Under 25
-            </a>
-          </nav>
+          <PrintableBoardTabs current="under25" />
           <a
             className="bbi-top100__live-link"
             href="/hobby?lens=players&sport=all&maxAge=26"

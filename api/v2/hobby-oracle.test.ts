@@ -101,6 +101,39 @@ describe('/api/v2/hobby-oracle', () => {
     expect(headRecorder.body()).toBe('')
   })
 
+  it('serves the Exit 100 sort without presenting it as a sell instruction', () => {
+    const recorder = responseRecorder()
+    handleHobbyMasterRanking(
+      request(
+        '/api/v2/hobby-oracle?posture=all' +
+        '&sort=exit_window&direction=desc&limit=100',
+      ),
+      recorder.response,
+      currentAt,
+    )
+    const payload = recorder.json() as {
+      items: Array<{
+        subject: { name: string }
+        assessment: { posture: string }
+      }>
+      meta: {
+        investmentAdvice: boolean
+        exactCardRecommendationsAvailable: boolean
+      }
+    }
+
+    expect(recorder.response.statusCode).toBe(200)
+    expect(payload.items).toHaveLength(100)
+    expect(payload.items[0]?.subject.name).toBe('Jayden Daniels')
+    expect(payload.items.every(
+      (item) =>
+        item.assessment.posture !== 'build_candidate' &&
+        item.assessment.posture !== 'hold_candidate',
+    )).toBe(true)
+    expect(payload.meta.investmentAdvice).toBe(false)
+    expect(payload.meta.exactCardRecommendationsAvailable).toBe(false)
+  })
+
   it('rejects duplicate, unsupported, and oversized parameters', () => {
     for (const url of [
       '/api/v2/hobby-oracle?domain=football&domain=basketball',
