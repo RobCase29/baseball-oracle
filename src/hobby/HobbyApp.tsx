@@ -579,7 +579,7 @@ export function HobbyApp() {
         <nav className="mx-nav" aria-label="Binder Index sections">
           <a href="/hobby">Build Board</a>
           <a href="/hobby?lens=players">Graduation Board</a>
-          <a href="/hobby?view=top100">Top 100 / Print</a>
+          <a href="/hobby?view=top100">Print Boards</a>
           <a href="#methodology">Data &amp; methodology</a>
         </nav>
       </header>

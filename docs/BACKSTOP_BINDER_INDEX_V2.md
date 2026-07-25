@@ -28,15 +28,21 @@ JSON Schema:
 
 The v1 endpoint remains frozen for football and basketball consumers.
 
-The printable global Top 100 is available at:
+The printable young-player board is available at:
 
 ```text
-/hobby?view=top100
+/hobby?view=under25
 ```
 
-It requests page one with `limit=100`, no age ceiling, and the canonical
-`graduation_rank` sort. The print action is withheld unless the snapshot is
-current and all 100 ranked positions are present.
+It requests the unified player feed with `maxAge=25`, sorts by
+`graduation_index`, and publishes the first 25 non-graduated players. The
+displayed 25 Under 25 position is specific to this age screen; each row also
+retains its absolute global Graduation rank. The print action is withheld
+unless the snapshot is current and all 25 positions are present.
+
+The separate `/hobby?view=top100` print board reads the Master Ranking endpoint,
+not this Graduation endpoint. It contains the actual 100 highest Binder Index
+positions across the eligible athlete and Pokémon universe.
 
 Supported filters:
 

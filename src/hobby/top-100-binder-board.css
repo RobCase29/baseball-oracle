@@ -61,6 +61,12 @@
   gap: 9px;
 }
 
+.bbi-top100__board-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .bbi-top100__actions a,
 .bbi-top100__actions button {
   min-height: 36px;
@@ -77,6 +83,12 @@
   font-weight: 720;
   text-decoration: none;
   cursor: pointer;
+}
+
+.bbi-top100__board-tabs a[aria-current="page"] {
+  border-color: rgba(214, 255, 100, 0.38);
+  color: var(--bbi-accent);
+  background: rgba(214, 255, 100, 0.07);
 }
 
 .bbi-top100__actions button {
@@ -120,6 +132,10 @@
   letter-spacing: -0.1em;
   line-height: 1;
   pointer-events: none;
+}
+
+.bbi-top100--under25 .bbi-top100__masthead::after {
+  content: "25";
 }
 
 .bbi-top100__edition,
@@ -169,6 +185,10 @@
   font-weight: 500;
   letter-spacing: -0.08em;
   line-height: 0.74;
+}
+
+.bbi-top100--under25 .bbi-top100__title-row h1 {
+  font-size: clamp(3.8rem, 8vw, 7.2rem);
 }
 
 .bbi-top100__title-row h2 {
@@ -294,7 +314,7 @@
 
 .bbi-top100 table {
   width: 100%;
-  min-width: 1050px;
+  min-width: 1100px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -340,36 +360,72 @@
 }
 
 .bbi-top100 thead th:nth-child(2) {
-  width: 218px;
+  width: 210px;
 }
 
 .bbi-top100 thead th:nth-child(3) {
-  width: 48px;
+  width: 95px;
 }
 
 .bbi-top100 thead th:nth-child(4) {
-  width: 66px;
+  width: 90px;
 }
 
 .bbi-top100 thead th:nth-child(5) {
-  width: 102px;
+  width: 125px;
 }
 
 .bbi-top100 thead th:nth-child(6) {
-  width: 112px;
+  width: 120px;
 }
 
 .bbi-top100 thead th:nth-child(7) {
-  width: 104px;
+  width: 130px;
 }
 
 .bbi-top100 thead th:nth-child(8) {
-  width: 150px;
+  width: 105px;
 }
 
 .bbi-top100 thead th:nth-child(9) {
-  width: 52px;
+  width: 120px;
   text-align: center;
+}
+
+.bbi-top100--under25 thead th:nth-child(1) {
+  width: 88px;
+}
+
+.bbi-top100--under25 thead th:nth-child(2) {
+  width: 218px;
+}
+
+.bbi-top100--under25 thead th:nth-child(3) {
+  width: 48px;
+}
+
+.bbi-top100--under25 thead th:nth-child(4) {
+  width: 96px;
+}
+
+.bbi-top100--under25 thead th:nth-child(5) {
+  width: 112px;
+}
+
+.bbi-top100--under25 thead th:nth-child(6) {
+  width: 122px;
+}
+
+.bbi-top100--under25 thead th:nth-child(7) {
+  width: 104px;
+}
+
+.bbi-top100--under25 thead th:nth-child(8) {
+  width: 150px;
+}
+
+.bbi-top100--under25 thead th:nth-child(9) {
+  width: 52px;
 }
 
 .bbi-top100 tbody tr {
@@ -423,13 +479,26 @@
   gap: 8px;
 }
 
-.bbi-top100__rank > span {
+.bbi-top100__rank > span:first-child {
   width: 9px;
   height: 9px;
   flex: 0 0 auto;
   margin: 0;
   border: 1px solid #59645d;
   border-radius: 2px;
+}
+
+.bbi-top100__rank > div {
+  display: grid;
+  gap: 1px;
+}
+
+.bbi-top100__rank small {
+  color: #68756c;
+  font-size: 0.44rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .bbi-top100__rank strong {
@@ -464,6 +533,19 @@
 
 .bbi-top100__row--basketball {
   box-shadow: inset 2px 0 0 rgba(224, 178, 96, 0.6);
+}
+
+.bbi-top100__row--pokemon {
+  box-shadow: inset 2px 0 0 rgba(229, 190, 76, 0.68);
+}
+
+.bbi-top100__row--hockey,
+.bbi-top100__row--soccer,
+.bbi-top100__row--golf,
+.bbi-top100__row--combat,
+.bbi-top100__row--other_sport,
+.bbi-top100__row--mixed_sport {
+  box-shadow: inset 2px 0 0 rgba(154, 177, 213, 0.55);
 }
 
 .bbi-top100__notes {
@@ -505,6 +587,7 @@
 
   .bbi-top100__screen-nav {
     min-height: 60px;
+    gap: 10px;
   }
 
   .bbi-top100__brand > span:first-child {
@@ -512,13 +595,35 @@
     height: 34px;
   }
 
-  .bbi-top100__actions a {
+  .bbi-top100__brand > span:last-child {
     display: none;
   }
 
-  .bbi-top100__actions button {
+  .bbi-top100__live-link {
+    display: none;
+  }
+
+  .bbi-top100__actions {
+    gap: 5px;
+  }
+
+  .bbi-top100__board-tabs {
+    gap: 3px;
+  }
+
+  .bbi-top100__board-tabs a {
     min-height: 34px;
-    padding: 0 10px;
+    padding: 0 8px;
+  }
+
+  .bbi-top100__actions button {
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+
+  .bbi-top100__actions button span {
+    display: none;
   }
 
   .bbi-top100 main {
@@ -539,6 +644,11 @@
 
   .bbi-top100__title-row h1 {
     font-size: clamp(4.2rem, 23vw, 7rem);
+  }
+
+  .bbi-top100--under25 .bbi-top100__title-row h1 {
+    font-size: clamp(3.1rem, 15vw, 5.2rem);
+    line-height: 0.82;
   }
 
   .bbi-top100__mark {
@@ -654,6 +764,10 @@
     line-height: 0.78;
   }
 
+  .bbi-top100--under25 .bbi-top100__title-row h1 {
+    font-size: 30pt;
+  }
+
   .bbi-top100__title-row h2 {
     margin-top: 8pt;
     color: #333;
@@ -754,34 +868,70 @@
   }
 
   .bbi-top100 thead th:nth-child(2) {
-    width: 24%;
+    width: 22%;
   }
 
   .bbi-top100 thead th:nth-child(3) {
-    width: 5%;
+    width: 9%;
   }
 
   .bbi-top100 thead th:nth-child(4) {
-    width: 7%;
+    width: 9%;
   }
 
   .bbi-top100 thead th:nth-child(5) {
-    width: 11%;
+    width: 13%;
   }
 
   .bbi-top100 thead th:nth-child(6) {
-    width: 12%;
-  }
-
-  .bbi-top100 thead th:nth-child(7) {
     width: 11%;
   }
 
+  .bbi-top100 thead th:nth-child(7) {
+    width: 12%;
+  }
+
   .bbi-top100 thead th:nth-child(8) {
-    width: 18%;
+    width: 8%;
   }
 
   .bbi-top100 thead th:nth-child(9) {
+    width: 9%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(1) {
+    width: 9%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(2) {
+    width: 23%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(3) {
+    width: 5%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(4) {
+    width: 10%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(5) {
+    width: 11%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(6) {
+    width: 12%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(7) {
+    width: 11%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(8) {
+    width: 14%;
+  }
+
+  .bbi-top100--under25 thead th:nth-child(9) {
     width: 5%;
   }
 
@@ -823,7 +973,7 @@
     gap: 3pt;
   }
 
-  .bbi-top100__rank > span {
+  .bbi-top100__rank > span:first-child {
     width: 6pt;
     height: 6pt;
     border: 0.6pt solid #222;
@@ -833,6 +983,11 @@
   .bbi-top100__index strong,
   .bbi-top100__grade strong {
     color: #111 !important;
+  }
+
+  .bbi-top100__rank small {
+    color: #555;
+    font-size: 4pt;
   }
 
   .bbi-top100__notes {

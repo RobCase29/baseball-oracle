@@ -6,14 +6,13 @@ import {
   Printer,
   ShieldCheck,
 } from 'lucide-react'
-import type {
-  BinderGraduationBlocker,
-} from '../domain/binderGraduationIndex'
 import {
-  isBinderGraduationV2Response,
-  type BinderGraduationV2Item,
-  type BinderGraduationV2Response,
-} from '../domain/binderGraduationIndexV2'
+  isHobbyMasterFeedResponse,
+  type HobbyMasterFeedItem,
+  type HobbyMasterFeedResponse,
+  type MagnificentXDomain,
+  type MagnificentXResearchPosture,
+} from '../domain/hobbyMasterRanking'
 import './top-100-binder-board.css'
 
 const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
@@ -23,52 +22,32 @@ const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 })
 
-const sportLabels = {
+const domainLabels: Record<MagnificentXDomain, string> = {
   baseball: 'Baseball',
-  football: 'Football',
   basketball: 'Basketball',
-} as const
+  football: 'Football',
+  soccer: 'Soccer',
+  hockey: 'Hockey',
+  golf: 'Golf',
+  combat: 'Combat',
+  other_sport: 'Other sport',
+  mixed_sport: 'Mixed sport',
+  culture: 'Culture',
+  pokemon: 'Pokémon',
+}
 
-const pathLabels = {
-  graduated: 'On Build Board',
-  on_deck: 'On Deck',
-  approaching: 'Approaching',
-  developing: 'Developing',
-  long_range: 'Long Range',
-  withheld: 'Withheld',
-} as const
-
-const blockerLabels: Record<BinderGraduationBlocker, string> = {
-  already_on_build_board: 'Build standard cleared',
-  ttm_scale: 'TTM demand',
-  current_run_rate: 'Current run rate',
-  master_score: 'Current Binder Index',
-  global_top_one_percent: 'Top-1% demand',
-  persistence: 'Persistence',
-  shock_resistance: 'Demand stability',
-  downside_protection: 'Downside protection',
-  six_month_growth: 'Six-month velocity',
-  three_month_growth: 'Three-month velocity',
-  evidence_not_publishable: 'Evidence refresh',
+const postureLabels: Record<MagnificentXResearchPosture, string> = {
+  build_candidate: 'Build',
+  hold_candidate: 'Hold',
+  watch: 'Watch',
+  risk_review: 'Risk review',
+  pass: 'Pass',
+  unrated: 'Unrated',
+  needs_refresh: 'Needs refresh',
 }
 
 function moneyLabel(value: number): string {
   return compactCurrencyFormatter.format(value)
-}
-
-function scoreLabel(value: number | null): string {
-  return value === null ? '—' : value.toFixed(1)
-}
-
-function ageLabel(value: number | null): string {
-  if (value === null) return '—'
-  return Number.isInteger(value) ? value.toString() : value.toFixed(1)
-}
-
-function titleLabel(value: string): string {
-  return value
-    .replaceAll('_', ' ')
-    .replace(/\b\w/gu, (character) => character.toLocaleUpperCase('en-US'))
 }
 
 function calendarDateLabel(value: string | undefined): string {
@@ -95,64 +74,43 @@ function timestampLabel(value: string | undefined): string {
   }).format(date)
 }
 
-function nextGateLabel(item: BinderGraduationV2Item): string {
-  const { graduation } = item
-  if (graduation.status === 'graduated') return 'Build standard cleared'
-  if (graduation.status === 'withheld') return 'Evidence refresh required'
-  const distance = graduation.distance
-  switch (graduation.primaryBlocker) {
-    case 'ttm_scale':
-      return `TTM +${moneyLabel(distance.ttmSalesUsd)}`
-    case 'current_run_rate':
-      return `Run rate +${moneyLabel(distance.currentRunRateUsd)}`
-    case 'master_score':
-      return `Binder +${distance.masterScorePoints.toFixed(1)} pts`
-    case 'global_top_one_percent':
-      return `P99 +${moneyLabel(distance.globalTopOneTtmUsd)}`
-    case 'persistence':
-      return `Persistence +${distance.persistencePoints.toFixed(1)}`
-    case 'shock_resistance':
-      return `Stability +${distance.shockResistancePoints.toFixed(1)}`
-    case 'downside_protection':
-      return `Downside +${distance.downsideProtectionPoints.toFixed(1)}`
-    case 'six_month_growth':
-      return `6M pace +${distance.sixMonthGrowthMultiple.toFixed(2)}×`
-    case 'three_month_growth':
-      return `3M pace +${distance.threeMonthGrowthMultiple.toFixed(2)}×`
-    case 'already_on_build_board':
-      return 'Build standard cleared'
-    case 'evidence_not_publishable':
-      return 'Evidence refresh required'
+function qualificationLabel(item: HobbyMasterFeedItem): string {
+  switch (item.assessment.buildQualification.route) {
+    case 'established_durability':
+      return 'Durable scale'
+    case 'escape_velocity':
+      return 'Escape velocity'
+    case null:
+      return 'Not qualified'
   }
 }
 
 function rankedTop100(
-  response: BinderGraduationV2Response | null,
-): BinderGraduationV2Item[] {
+  response: HobbyMasterFeedResponse | null,
+): HobbyMasterFeedItem[] {
   return (response?.items ?? [])
     .filter(
       (item) =>
-        item.graduation.status === 'ranked' &&
-        item.graduation.globalRank !== null &&
-        item.graduation.globalRank <= 100,
+        item.masterRank !== null &&
+        item.masterRank >= 1 &&
+        item.masterRank <= 100,
     )
     .toSorted(
       (left, right) =>
-        (left.graduation.globalRank ?? 101) -
-        (right.graduation.globalRank ?? 101),
+        (left.masterRank ?? 101) - (right.masterRank ?? 101),
     )
     .slice(0, 100)
 }
 
 export function Top100BinderBoard() {
   const [response, setResponse] =
-    useState<BinderGraduationV2Response | null>(null)
+    useState<HobbyMasterFeedResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const previousTitle = document.title
-    document.title = 'Top 100 · Backstop Binder Index'
+    document.title = 'Top 100 by Binder Index · Backstop'
     return () => {
       document.title = previousTitle
     }
@@ -161,16 +119,16 @@ export function Top100BinderBoard() {
   useEffect(() => {
     const controller = new AbortController()
     const parameters = new URLSearchParams({
-      sport: 'all',
-      band: 'all',
-      sort: 'graduation_rank',
+      posture: 'all',
+      sort: 'master_rank',
+      direction: 'asc',
       page: '1',
       limit: '100',
     })
 
     setLoading(true)
     setError(null)
-    fetch(`/api/v2/backstop-binder-index?${parameters.toString()}`, {
+    fetch(`/api/v2/hobby-oracle?${parameters.toString()}`, {
       cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: controller.signal,
@@ -180,11 +138,7 @@ export function Top100BinderBoard() {
           throw new Error(`Top 100 board returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
-        if (
-          !isBinderGraduationV2Response(payload) ||
-          payload.scope.sport !== 'all' ||
-          payload.scope.maxAge !== null
-        ) {
+        if (!isHobbyMasterFeedResponse(payload)) {
           throw new Error('Top 100 board returned an unexpected response.')
         }
         setResponse(payload)
@@ -211,9 +165,9 @@ export function Top100BinderBoard() {
   }, [])
 
   const items = rankedTop100(response)
-  const current =
-    response?.snapshot.freshness.status === 'current'
+  const current = response?.snapshot.freshness.status === 'current'
   const complete = current && items.length === 100
+  const modelVersion = items[0]?.assessment.modelVersion ?? '—'
 
   return (
     <div className="bbi-top100">
@@ -226,17 +180,25 @@ export function Top100BinderBoard() {
           </span>
         </a>
         <div className="bbi-top100__actions">
-          <a href="/hobby?lens=players&sport=all">
+          <nav
+            className="bbi-top100__board-tabs"
+            aria-label="Printable Binder Index boards"
+          >
+            <a aria-current="page" href="/hobby?view=top100">Top 100</a>
+            <a href="/hobby?view=under25">25 Under 25</a>
+          </nav>
+          <a className="bbi-top100__live-link" href="/hobby">
             <ArrowLeft size={14} aria-hidden="true" />
             Live board
           </a>
           <button
             type="button"
+            aria-label="Print Top 100"
             disabled={!complete}
             onClick={() => window.print()}
           >
             <Printer size={15} aria-hidden="true" />
-            Print Top 100
+            <span>Print Top 100</span>
           </button>
         </div>
       </header>
@@ -244,7 +206,7 @@ export function Top100BinderBoard() {
       <main>
         <header className="bbi-top100__masthead">
           <div className="bbi-top100__edition">
-            <span>PRINT EDITION · GLOBAL PLAYER PIPELINE</span>
+            <span>PRINT EDITION · ABSOLUTE BINDER SCORE</span>
             <strong>
               {response?.snapshot.id
                 ? response.snapshot.id.slice(-8).toLocaleUpperCase('en-US')
@@ -255,15 +217,16 @@ export function Top100BinderBoard() {
             <div>
               <p>BACKSTOP BINDER INDEX</p>
               <h1>Top 100</h1>
-              <h2>Closest to Master Build</h2>
+              <h2>By Binder Index</h2>
             </div>
             <div className="bbi-top100__mark" aria-hidden="true">
               <BookOpenCheck size={29} />
             </div>
           </div>
           <p className="bbi-top100__dek">
-            One absolute order across baseball, football, and basketball.
-            No sport quotas, no age screen, and no filtered reranking.
+            The actual score order across the coherent GemRate athlete and
+            Pokémon universe. No cohort quotas, sport balancing, age screen,
+            or Graduation Index.
           </p>
           <dl className="bbi-top100__snapshot">
             <div>
@@ -271,12 +234,14 @@ export function Top100BinderBoard() {
               <dd>{items.length || '—'} / 100</dd>
             </div>
             <div>
-              <dt>Data through</dt>
-              <dd>{calendarDateLabel(response?.snapshot.dataThrough)}</dd>
+              <dt>Ranked universe</dt>
+              <dd>
+                {response?.meta.rankingUniverseCount.toLocaleString() ?? '—'}
+              </dd>
             </div>
             <div>
-              <dt>Published</dt>
-              <dd>{timestampLabel(response?.snapshot.generatedAt)}</dd>
+              <dt>Data through</dt>
+              <dd>{calendarDateLabel(response?.snapshot.dataThrough)}</dd>
             </div>
             <div>
               <dt>Snapshot</dt>
@@ -289,11 +254,11 @@ export function Top100BinderBoard() {
         </header>
 
         <section className="bbi-top100__formula" aria-label="Ranking definition">
-          <strong>Graduation Index</strong>
+          <strong>Binder Index</strong>
           <span>
-            Weak-link blend of player outlook and absolute market-path
-            readiness. Higher means closer to the existing Master Build
-            standard; it is not a probability.
+            Absolute demand magnitude and durability on a 0–100 scale.
+            Positive momentum never adds score. Rank follows Binder Index;
+            TTM demand breaks score ties.
           </span>
         </section>
 
@@ -306,7 +271,7 @@ export function Top100BinderBoard() {
 
         {loading ? (
           <div className="bbi-top100__message" role="status">
-            Preparing the current global Top 100…
+            Preparing the current Binder Index Top 100…
           </div>
         ) : null}
 
@@ -314,81 +279,101 @@ export function Top100BinderBoard() {
           <div className="bbi-top100__message" role="status">
             <strong>Print edition withheld.</strong>
             <span>
-              The board requires a current snapshot with all 100 globally
-              ranked positions.
+              The board requires a current snapshot with all 100
+              score-ranked positions.
             </span>
           </div>
         ) : null}
 
         {items.length > 0 ? (
           <div className="bbi-top100__table-frame">
-            <table aria-label="Backstop Binder Index global Top 100">
+            <table aria-label="Backstop Binder Index score-ranked Top 100">
               <caption>
-                The 100 globally ranked players closest to the Master Build
-                standard.
+                The 100 highest Binder Index scores in the eligible master
+                ranking universe.
               </caption>
               <thead>
                 <tr>
                   <th scope="col">Rank</th>
-                  <th scope="col">Player</th>
-                  <th scope="col">Age</th>
-                  <th scope="col">Index</th>
-                  <th scope="col">Outlook / market</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Cohort</th>
+                  <th scope="col">Binder Index</th>
                   <th scope="col">TTM / run rate</th>
-                  <th scope="col">Path</th>
-                  <th scope="col">Binding gate</th>
-                  <th scope="col">Grade</th>
+                  <th scope="col">Demand / durability</th>
+                  <th scope="col">Persistence / stability</th>
+                  <th scope="col">Board read</th>
+                  <th scope="col">Qualification</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr
-                    className={`bbi-top100__row bbi-top100__row--${item.player.sport}`}
-                    key={item.player.id}
-                  >
-                    <td className="bbi-top100__rank">
-                      <span aria-hidden="true" />
-                      <strong>#{item.graduation.globalRank}</strong>
-                    </td>
-                    <th scope="row">
-                      <strong>{item.player.name}</strong>
-                      <span>
-                        {sportLabels[item.player.sport]} ·{' '}
-                        {item.player.primaryPosition}
-                        {item.player.team ? ` · ${item.player.team}` : ''}
-                      </span>
-                    </th>
-                    <td>{ageLabel(item.player.age)}</td>
-                    <td className="bbi-top100__index">
-                      <strong>{scoreLabel(item.graduation.index)}</strong>
-                    </td>
-                    <td>
-                      <strong>{item.playerSignal.outlook.toFixed(1)}</strong>
-                      <span>
-                        {scoreLabel(item.graduation.marketPathReadiness)} market
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{moneyLabel(item.market.ttmSalesUsd)}</strong>
-                      <span>
-                        {moneyLabel(item.market.currentRunRateUsd)} run rate
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{pathLabels[item.graduation.band]}</strong>
-                      <span>{titleLabel(item.graduation.trajectory)}</span>
-                    </td>
-                    <td>
-                      <strong>{nextGateLabel(item)}</strong>
-                      <span>
-                        {blockerLabels[item.graduation.primaryBlocker]}
-                      </span>
-                    </td>
-                    <td className="bbi-top100__grade">
-                      <strong>{item.graduation.evidence.grade}</strong>
-                    </td>
-                  </tr>
-                ))}
+                {items.map((item) => {
+                  const signal = item.assessment.marketSignal
+                  const qualification = item.assessment.buildQualification
+                  return (
+                    <tr
+                      className={`bbi-top100__row bbi-top100__row--${item.subject.domain}`}
+                      key={item.subject.id}
+                    >
+                      <td className="bbi-top100__rank">
+                        <span aria-hidden="true" />
+                        <strong>#{item.masterRank}</strong>
+                      </td>
+                      <th scope="row">
+                        <strong>{item.subject.name}</strong>
+                        <span>
+                          {item.subject.type === 'pokemon_character'
+                            ? 'Character'
+                            : 'Athlete'}
+                        </span>
+                      </th>
+                      <td>
+                        <strong>{domainLabels[item.subject.domain]}</strong>
+                        <span>Cohort #{item.withinCohortRank}</span>
+                      </td>
+                      <td className="bbi-top100__index">
+                        <strong>{signal.score.toFixed(1)}</strong>
+                        <span>/100</span>
+                      </td>
+                      <td>
+                        <strong>
+                          {moneyLabel(signal.latestTwelveMonthSalesUsd)}
+                        </strong>
+                        <span>
+                          {moneyLabel(
+                            signal.annualizedCurrentSixMonthSalesUsd,
+                          )}{' '}
+                          run rate
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{signal.demandMagnitudeScore.toFixed(0)}</strong>
+                        <span>{signal.durabilityScore.toFixed(0)} durability</span>
+                      </td>
+                      <td>
+                        <strong>
+                          {signal.components.persistence.toFixed(0)}
+                        </strong>
+                        <span>
+                          {signal.components.shockResistance.toFixed(0)} stability
+                        </span>
+                      </td>
+                      <td>
+                        <strong>
+                          {postureLabels[item.assessment.posture]}
+                        </strong>
+                        <span>
+                          P{signal.globalObservedPercentile.toFixed(1)} demand
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{qualificationLabel(item)}</strong>
+                        <span>
+                          {qualification.passed}/{qualification.required} gates
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -397,16 +382,13 @@ export function Top100BinderBoard() {
         <footer className="bbi-top100__notes">
           <ShieldCheck size={16} aria-hidden="true" />
           <p>
-            <strong>Research boundary.</strong> Subject-level prioritization
-            only. Card, grade, supply, entry price, liquidity, and personal risk
-            tolerance require separate underwriting. Probability remains
-            withheld until prospective transition history earns calibration.
+            <strong>Research boundary.</strong> Subject-level demand
+            prioritization only. Card, grade, supply, entry price, liquidity,
+            and personal risk tolerance require separate underwriting.
           </p>
           <span>
-            Model {response?.modelVersion ?? '—'} ·{' '}
-            {response?.meta.rankingPolicy
-              ? 'Global rank assigned before every filter'
-              : 'Loading ranking policy'}
+            Model {modelVersion} · Published{' '}
+            {timestampLabel(response?.snapshot.publishedAt)}
           </span>
         </footer>
       </main>
