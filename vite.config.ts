@@ -27,6 +27,7 @@ export default defineConfig({
       '/api/v1/magnificent-x': publicApiTarget,
       '/api/v1/hobby-oracle': publicApiTarget,
       '/api/v1/hobby-player-rankings': publicApiTarget,
+      '/api/v2/hobby-oracle': publicApiTarget,
       '/api/v2/hobby-player-rankings': publicApiTarget,
     },
   },

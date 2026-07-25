@@ -1,0 +1,107 @@
+import { describe, expect, it } from 'vitest'
+import {
+  buildHobbyMasterCatalog,
+  buildHobbyMasterFeed,
+  hobbyMasterCatalog,
+} from './_hobby-master-ranking.js'
+
+const currentAt = new Date('2026-07-25T12:00:00.000Z')
+
+describe('Hobby Oracle master-ranking catalog', () => {
+  it('builds one contiguous observed-universe rank before filtering', () => {
+    const catalog = buildHobbyMasterCatalog(
+      hobbyMasterCatalog.snapshot,
+      currentAt,
+    )
+    const ranks = catalog.items
+      .map((item) => item.masterRank)
+      .filter((rank): rank is number => rank !== null)
+      .toSorted((left, right) => left - right)
+
+    expect(catalog.items).toHaveLength(6_022)
+    expect(catalog.rankingUniverseCount).toBe(5_866)
+    expect(ranks).toHaveLength(5_866)
+    expect(new Set(ranks).size).toBe(ranks.length)
+    expect(ranks[0]).toBe(1)
+    expect(ranks.at(-1)).toBe(ranks.length)
+  })
+
+  it('produces an absolute master order instead of interleaving cohort leaders', () => {
+    const response = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      posture: 'build_candidate',
+      sort: 'master_rank',
+      limit: 100,
+    })
+
+    expect(response.page.total).toBe(23)
+    expect(response.items.slice(0, 5).map((item) => item.subject.name))
+      .toEqual([
+        'Charizard',
+        'Pikachu',
+        'Shohei Ohtani',
+        'Michael Jordan',
+        'Victor Wembanyama',
+      ])
+    expect(response.cohorts.filter((cohort) => cohort.buildCount > 0))
+      .toMatchObject([
+        { domain: 'baseball', buildCount: 4 },
+        { domain: 'basketball', buildCount: 6 },
+        { domain: 'football', buildCount: 3 },
+        { domain: 'pokemon', buildCount: 9 },
+        { domain: 'soccer', buildCount: 1 },
+      ])
+    expect(response.cohorts.find((cohort) => cohort.domain === 'combat'))
+      .toMatchObject({ buildCount: 0 })
+    expect(response.cohorts.find((cohort) => cohort.domain === 'hockey'))
+      .toMatchObject({ buildCount: 0 })
+  })
+
+  it('preserves master and cohort ranks under cohort and search filters', () => {
+    const all = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Tom Brady',
+      limit: 10,
+    })
+    const football = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      domain: 'football',
+      q: 'Tom Brady',
+      limit: 10,
+    })
+
+    expect(all.items).toHaveLength(1)
+    expect(football.items).toHaveLength(1)
+    expect(football.items[0]?.masterRank).toBe(all.items[0]?.masterRank)
+    expect(football.items[0]?.withinCohortRank)
+      .toBe(all.items[0]?.withinCohortRank)
+  })
+
+  it('removes low-dollar cohort leaders from Build', () => {
+    const conor = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      domain: 'combat',
+      q: 'Conor McGregor',
+      limit: 10,
+    }).items[0]
+
+    expect(conor).toBeDefined()
+    expect(conor?.assessment.marketSignal.latestTwelveMonthSalesUsd)
+      .toBe(989_161)
+    expect(conor?.assessment.buildQualification.eligible).toBe(false)
+    expect(conor?.assessment.posture).not.toBe('build_candidate')
+  })
+
+  it('suspends Build qualification when the monthly snapshot is stale', () => {
+    const staleCatalog = buildHobbyMasterCatalog(
+      hobbyMasterCatalog.snapshot,
+      new Date('2026-08-21T00:00:00.000Z'),
+    )
+    const response = buildHobbyMasterFeed(staleCatalog, {
+      posture: 'needs_refresh',
+      limit: 100,
+    })
+
+    expect(staleCatalog.freshness.status).toBe('stale')
+    expect(staleCatalog.items.every(
+      (item) => !item.assessment.buildQualification.eligible,
+    )).toBe(true)
+    expect(response.page.total).toBe(6_022)
+  })
+})

@@ -10,30 +10,29 @@ import {
   Search,
 } from 'lucide-react'
 import {
-  researchPostureForAssessment,
+  type HobbyMasterFeedItem,
+  type HobbyMasterFeedResponse,
+  type HobbyMasterSortDirection,
+  type HobbyMasterSortKey,
   type MagnificentXDomain,
-  type MagnificentXFeedItem,
-  type MagnificentXFeedResponse,
   type MagnificentXResearchPosture,
-  type MagnificentXSortDirection,
-  type MagnificentXSortKey,
-} from '../domain/magnificentX'
+} from '../domain/hobbyMasterRanking'
 import './investor-workbench.css'
 
 export interface InvestorWorkbenchProps {
-  response: MagnificentXFeedResponse | null
+  response: HobbyMasterFeedResponse | null
   loading: boolean
   error: string | null
   search: string
   domain: MagnificentXDomain | 'all'
   posture: MagnificentXResearchPosture | 'all'
-  sort: MagnificentXSortKey
-  direction: MagnificentXSortDirection
+  sort: HobbyMasterSortKey
+  direction: HobbyMasterSortDirection
   page: number
   onSearchChange: (value: string) => void
   onDomainChange: (value: MagnificentXDomain | 'all') => void
-  onSortChange: (value: MagnificentXSortKey) => void
-  onDirectionChange: (value: MagnificentXSortDirection) => void
+  onSortChange: (value: HobbyMasterSortKey) => void
+  onDirectionChange: (value: HobbyMasterSortDirection) => void
   onPageChange: (value: number) => void
   onReset: () => void
 }
@@ -76,11 +75,13 @@ const postureMeta: Record<MagnificentXResearchPosture, {
 }> = {
   build_candidate: {
     label: 'Build candidate',
-    description: 'Highest-priority subject for exact-card underwriting or a core hold review.',
+    description:
+      'Cleared an absolute cross-hobby durability or escape-velocity route. Underwrite the exact card before committing capital.',
   },
   hold_candidate: {
-    label: 'Hold candidate',
-    description: 'Durable demand supports a hold or selective-add research review.',
+    label: 'Near Build',
+    description:
+      'Meaningful absolute demand, but at least one strict Build threshold remains open.',
   },
   watch: {
     label: 'Watch',
@@ -109,25 +110,28 @@ const selectedPostureDescriptions: Record<
   string
 > = {
   build_candidate:
-    'Strongest subject-level demand candidates. Underwrite the exact card before committing capital.',
+    'Absolute cross-hobby qualifiers. No sport receives a reserved place.',
   hold_candidate:
-    'Durable demand candidates for existing-position review or selective-add research.',
+    'Near-Build subjects with meaningful scale but an open qualification gate.',
   watch: 'Credible demand that still needs a stronger durability profile.',
   risk_review:
     'Concentrated or weakening demand to examine before considering additions.',
   pass: 'Low-priority subject demand. Pass is not an instruction to sell a scarce card.',
   unrated: 'Rows withheld because cohort or identity evidence is insufficient.',
   needs_refresh: 'Rows suspended because the monthly market snapshot is overdue.',
-  all: 'All evidence lanes. Ordinal conviction is reserved for Build candidates.',
+  all: 'Every eligible row retains the same observed-universe master rank.',
 }
 
 const sortOptions: ReadonlyArray<{
-  value: MagnificentXSortKey
+  value: HobbyMasterSortKey
   label: string
 }> = [
-  { value: 'cohort_rank', label: 'Cohort rank' },
-  { value: 'signal', label: 'Demand durability' },
+  { value: 'master_rank', label: 'Master rank' },
+  { value: 'master_score', label: 'Master score' },
   { value: 'ttm_sales', label: 'TTM demand' },
+  { value: 'current_run_rate', label: 'Current run rate' },
+  { value: 'durability', label: 'Durability' },
+  { value: 'cohort_rank', label: 'Cohort rank' },
   { value: 'trend', label: '6M demand change' },
   { value: 'persistence', label: 'Persistence' },
   { value: 'shock_resistance', label: 'Shock resistance' },
@@ -136,19 +140,18 @@ const sortOptions: ReadonlyArray<{
 ]
 
 const reasonLabels: Readonly<Record<string, string>> = {
-  market_strength_gate_not_met: 'Market-strength threshold has not cleared.',
-  cohort_quality_gate_not_met: 'Provider cohort is not eligible.',
-  history_below_36_complete_months: 'Only 18 of 36 required months are available.',
-  canonical_subject_identity_missing: 'Canonical subject identity is missing.',
-  domain_fundamentals_missing: 'Validated domain fundamentals are missing.',
-  global_scale_overlap_not_verified: 'Cross-cohort global scale is not verified.',
-  supply_dilution_evidence_missing: 'Supply and dilution evidence is missing.',
-  exact_card_evidence_missing: 'Exact-card, grade, scarcity, and price evidence is missing.',
-  outcome_validation_missing: 'Durable-return outcome validation is missing.',
+  observed_universe_comparison_not_eligible:
+    'The provider cohort or source-name identity is not comparison eligible.',
   market_snapshot_not_current: 'The monthly snapshot is not current.',
-  pokemon_character_bucket_not_exact_card: 'Pokémon evidence is character-level.',
-  national_dex_identity_missing: 'Reviewed National Pokédex identity is missing.',
-  athlete_sport_era_identity_unverified: 'Athlete sport and era identity is unverified.',
+  complete_18_month_history_missing: 'The complete 18-month history is missing.',
+  below_observed_global_top_one_percent:
+    'Absolute demand is below the observed global top one percent.',
+  persistence_below_90: 'Monthly persistence is below 90.',
+  shock_resistance_below_90: 'Sales concentration is too high.',
+  material_six_month_demand_decline:
+    'Like-for-like six-month demand has materially declined.',
+  neither_absolute_build_route_cleared:
+    'Neither the established durability nor escape-velocity route cleared.',
 }
 
 const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
@@ -186,15 +189,15 @@ function formatReason(value: string): string {
 
 function sortAriaValue(
   active: boolean,
-  direction: MagnificentXSortDirection,
+  direction: HobbyMasterSortDirection,
 ): 'ascending' | 'descending' | undefined {
   if (!active) return undefined
   return direction === 'asc' ? 'ascending' : 'descending'
 }
 
-function unresolvedGateCount(item: MagnificentXFeedItem): number {
-  return item.assessment.magnificentX.requiredGateCount -
-    item.assessment.magnificentX.passedGateCount
+function unresolvedGateCount(item: HobbyMasterFeedItem): number {
+  return item.assessment.buildQualification.required -
+    item.assessment.buildQualification.passed
 }
 
 export function InvestorWorkbench({
@@ -230,18 +233,21 @@ export function InvestorWorkbench({
     search.length > 0 ||
     domain !== 'all' ||
     posture !== 'build_candidate' ||
-    sort !== (posture === 'build_candidate' ? 'cohort_rank' : 'name') ||
+    sort !== 'master_rank' ||
     direction !== 'asc'
-  const showBuildRank = posture === 'build_candidate'
 
-  function changeSort(nextSort: MagnificentXSortKey): void {
+  function changeSort(nextSort: HobbyMasterSortKey): void {
     if (nextSort === sort) {
       onDirectionChange(direction === 'asc' ? 'desc' : 'asc')
       return
     }
     onSortChange(nextSort)
     onDirectionChange(
-      nextSort === 'cohort_rank' || nextSort === 'name' ? 'asc' : 'desc',
+      nextSort === 'master_rank' ||
+      nextSort === 'cohort_rank' ||
+      nextSort === 'name'
+        ? 'asc'
+        : 'desc',
     )
   }
 
@@ -294,22 +300,20 @@ export function InvestorWorkbench({
           <select
             value={sort}
             onChange={(event) => {
-              const nextSort = event.currentTarget.value as MagnificentXSortKey
+              const nextSort = event.currentTarget.value as HobbyMasterSortKey
               if (nextSort !== sort) {
                 onSortChange(nextSort)
                 onDirectionChange(
-                  nextSort === 'cohort_rank' || nextSort === 'name'
+                  nextSort === 'master_rank' ||
+                    nextSort === 'cohort_rank' ||
+                    nextSort === 'name'
                     ? 'asc'
                     : 'desc',
                 )
               }
             }}
           >
-            {sortOptions
-              .filter((option) => (
-                option.value !== 'cohort_rank' || showBuildRank
-              ))
-              .map((option) => (
+            {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -323,7 +327,7 @@ export function InvestorWorkbench({
             value={direction}
             onChange={(event) => {
               onDirectionChange(
-                event.currentTarget.value as MagnificentXSortDirection,
+                event.currentTarget.value as HobbyMasterSortDirection,
               )
             }}
           >
@@ -351,13 +355,11 @@ export function InvestorWorkbench({
           </span>
         </div>
         <p>
-          {domain === 'all' && sort !== 'name' ? (
-            <strong className="iw-comparability">
-              Cross-hobby order is a screen only; compare numeric signals within cohort.
-            </strong>
-          ) : (
-            selectedPostureDescriptions[posture]
-          )}
+          <strong className="iw-comparability">
+            {domain === 'all'
+              ? 'One master order · absolute demand first · no cohort quotas.'
+              : selectedPostureDescriptions[posture]}
+          </strong>
         </p>
         <span className="iw-withheld-status">
           <LockKeyhole size={13} aria-hidden="true" />
@@ -403,30 +405,30 @@ export function InvestorWorkbench({
                 <th scope="col">Research posture</th>
                 <th
                   scope="col"
-                  aria-sort={sortAriaValue(sort === 'signal', direction)}
+                  aria-sort={sortAriaValue(sort === 'master_score', direction)}
                 >
-                  <button type="button" onClick={() => changeSort('signal')}>
-                    Demand score
+                  <button type="button" onClick={() => changeSort('master_score')}>
+                    Master score
                     <span aria-hidden="true">
-                      {sort === 'signal' ? (direction === 'asc' ? '↑' : '↓') : '↕'}
+                      {sort === 'master_score'
+                        ? (direction === 'asc' ? '↑' : '↓')
+                        : '↕'}
                     </span>
                   </button>
                 </th>
-                {showBuildRank ? (
-                  <th
-                    scope="col"
-                    aria-sort={sortAriaValue(sort === 'cohort_rank', direction)}
-                  >
-                    <button type="button" onClick={() => changeSort('cohort_rank')}>
-                      Build rank
-                      <span aria-hidden="true">
-                        {sort === 'cohort_rank'
-                          ? (direction === 'asc' ? '↑' : '↓')
-                          : '↕'}
-                      </span>
-                    </button>
-                  </th>
-                ) : null}
+                <th
+                  scope="col"
+                  aria-sort={sortAriaValue(sort === 'master_rank', direction)}
+                >
+                  <button type="button" onClick={() => changeSort('master_rank')}>
+                    Master rank
+                    <span aria-hidden="true">
+                      {sort === 'master_rank'
+                        ? (direction === 'asc' ? '↑' : '↓')
+                        : '↕'}
+                    </span>
+                  </button>
+                </th>
                 <th
                   scope="col"
                   aria-sort={sortAriaValue(sort === 'ttm_sales', direction)}
@@ -435,6 +437,38 @@ export function InvestorWorkbench({
                     TTM demand
                     <span aria-hidden="true">
                       {sort === 'ttm_sales' ? (direction === 'asc' ? '↑' : '↓') : '↕'}
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  aria-sort={sortAriaValue(
+                    sort === 'current_run_rate',
+                    direction,
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => changeSort('current_run_rate')}
+                  >
+                    Current run rate
+                    <span aria-hidden="true">
+                      {sort === 'current_run_rate'
+                        ? (direction === 'asc' ? '↑' : '↓')
+                        : '↕'}
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  aria-sort={sortAriaValue(sort === 'durability', direction)}
+                >
+                  <button type="button" onClick={() => changeSort('durability')}>
+                    Durability
+                    <span aria-hidden="true">
+                      {sort === 'durability'
+                        ? (direction === 'asc' ? '↑' : '↓')
+                        : '↕'}
                     </span>
                   </button>
                 </th>
@@ -449,46 +483,14 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th
-                  scope="col"
-                  aria-sort={sortAriaValue(sort === 'persistence', direction)}
-                >
-                  <button type="button" onClick={() => changeSort('persistence')}>
-                    Persistence
-                    <span aria-hidden="true">
-                      {sort === 'persistence'
-                        ? (direction === 'asc' ? '↑' : '↓')
-                        : '↕'}
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  aria-sort={sortAriaValue(
-                    sort === 'shock_resistance',
-                    direction,
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => changeSort('shock_resistance')}
-                  >
-                    Stability
-                    <span aria-hidden="true">
-                      {sort === 'shock_resistance'
-                        ? (direction === 'asc' ? '↑' : '↓')
-                        : '↕'}
-                    </span>
-                  </button>
-                </th>
-                <th scope="col">Evidence</th>
+                <th scope="col">Qualification</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
                 const { subject, assessment } = item
                 const signal = assessment.marketSignal
-                const rowPosture = researchPostureForAssessment(assessment)
+                const rowPosture = assessment.posture
                 const meta = postureMeta[rowPosture]
                 const sixMonthGrowth = growthPercent(
                   signal.diagnostics.yearOverYearSixMonthLogGrowth,
@@ -527,32 +529,44 @@ export function InvestorWorkbench({
                         <strong>{signal.score.toFixed(1)}</strong>
                         <span>/100</span>
                       </td>
-                      {showBuildRank ? (
-                        <td className="iw-number iw-rank">
-                          <strong>#{item.withinCohortRank}</strong>
-                          <span>{signal.withinCohortPercentile.toFixed(1)} pct</span>
-                        </td>
-                      ) : null}
+                      <td className="iw-number iw-rank">
+                        <strong>
+                          {item.masterRank === null ? '—' : `#${item.masterRank}`}
+                        </strong>
+                        <span>
+                          Cohort #{item.withinCohortRank}
+                        </span>
+                      </td>
                       <td className="iw-number">
                         <strong>{formatMoney(signal.latestTwelveMonthSalesUsd)}</strong>
+                      </td>
+                      <td className="iw-number">
+                        <strong>
+                          {formatMoney(signal.annualizedCurrentSixMonthSalesUsd)}
+                        </strong>
+                      </td>
+                      <td className="iw-number">
+                        <strong>{signal.durabilityScore.toFixed(0)}</strong>
                       </td>
                       <td className={`iw-number ${growthClass(sixMonthGrowth)}`}>
                         <strong>{formatPercent(sixMonthGrowth)}</strong>
                       </td>
-                      <td className="iw-number">
-                        <strong>{signal.components.persistence.toFixed(0)}</strong>
-                      </td>
-                      <td className="iw-number">
-                        <strong>{signal.components.shockResistance.toFixed(0)}</strong>
-                      </td>
                       <td className="iw-evidence">
-                        <strong>{assessment.confidence.score.toFixed(0)}/100</strong>
+                        <strong>
+                          {assessment.buildQualification.route ===
+                            'established_durability'
+                            ? 'Durable'
+                            : assessment.buildQualification.route ===
+                                'escape_velocity'
+                              ? 'Escape'
+                              : 'Withheld'}
+                        </strong>
                         <span>{unresolvedGateCount(item)} gates open</span>
                       </td>
                     </tr>
                     {expanded ? (
                       <tr className="iw-detail-row">
-                        <td colSpan={showBuildRank ? 11 : 10}>
+                        <td colSpan={11}>
                           <div className="iw-detail">
                             <section>
                               <span className="iw-detail-label">Research read</span>
@@ -569,20 +583,28 @@ export function InvestorWorkbench({
                               <span className="iw-detail-label">Signal anatomy</span>
                               <dl className="iw-signal-grid">
                                 <div>
-                                  <dt>Scale</dt>
-                                  <dd>{signal.components.scale.toFixed(0)}</dd>
+                                  <dt>Absolute demand</dt>
+                                  <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
+                                </div>
+                                <div>
+                                  <dt>Global demand pct</dt>
+                                  <dd>{signal.globalObservedPercentile.toFixed(1)}</dd>
+                                </div>
+                                <div>
+                                  <dt>Durability</dt>
+                                  <dd>{signal.durabilityScore.toFixed(0)}</dd>
                                 </div>
                                 <div>
                                   <dt>Persistence</dt>
                                   <dd>{signal.components.persistence.toFixed(0)}</dd>
                                 </div>
                                 <div>
-                                  <dt>Stability</dt>
+                                  <dt>Shock resistance</dt>
                                   <dd>{signal.components.shockResistance.toFixed(0)}</dd>
                                 </div>
                                 <div>
-                                  <dt>Trend</dt>
-                                  <dd>{signal.components.trendContext.toFixed(0)}</dd>
+                                  <dt>Downside protection</dt>
+                                  <dd>{signal.downsideProtectionScore.toFixed(0)}</dd>
                                 </div>
                                 <div>
                                   <dt>Recent 3M YoY</dt>
@@ -594,27 +616,51 @@ export function InvestorWorkbench({
                                   </dd>
                                 </div>
                                 <div>
-                                  <dt>Evidence</dt>
-                                  <dd>{assessment.confidence.score.toFixed(0)}/100</dd>
+                                  <dt>Worst scenario</dt>
+                                  <dd>
+                                    {signal.sensitivity.worstScenarioScore.toFixed(1)}
+                                  </dd>
                                 </div>
                               </dl>
+                              <p className="iw-detail-scope">
+                                Positive momentum never adds score. It can only
+                                clear the separate escape-velocity gate after
+                                absolute demand and durability thresholds pass.
+                              </p>
                             </section>
 
                             <section>
                               <span className="iw-detail-label">
-                                Why card action is withheld
+                                Build qualification
                               </span>
                               <p className="iw-gate-count">
-                                {assessment.magnificentX.passedGateCount} of{' '}
-                                {assessment.magnificentX.requiredGateCount} gates passed
+                                {assessment.buildQualification.passed} of{' '}
+                                {assessment.buildQualification.required} common
+                                gates passed
                               </p>
+                              {assessment.buildQualification.route ? (
+                                <p>
+                                  Route:{' '}
+                                  <strong>
+                                    {assessment.buildQualification.route ===
+                                      'established_durability'
+                                      ? 'Durable scale'
+                                      : 'Escape velocity'}
+                                  </strong>
+                                </p>
+                              ) : null}
                               <ul>
-                                {assessment.magnificentX.reasonCodes
+                                {assessment.buildQualification.reasonCodes
                                   .slice(0, 6)
                                   .map((reason) => (
                                     <li key={reason}>{formatReason(reason)}</li>
                                   ))}
                               </ul>
+                              <div className="iw-detail-scope">
+                                Subject-level demand only. Exact card, grade,
+                                scarcity, population growth, price paid, and
+                                expected return remain outside this label.
+                              </div>
                             </section>
                           </div>
                         </td>

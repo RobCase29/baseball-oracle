@@ -1,0 +1,758 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/hobby-oracle-master-ranking.v2.schema.json",
+  "title": "Hobby Oracle Master Ranking v2",
+  "description": "Research-only observed-universe ranking based on absolute subject-level demand and durability. Exact-card and expected-return claims remain withheld.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "snapshot",
+    "items",
+    "cohorts",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hobby-oracle-master-ranking.v2"
+    },
+    "contractVersion": {
+      "const": "hobby-oracle-master-ranking-contract/v2"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "cohorts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cohort"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "domain": {
+      "enum": [
+        "baseball",
+        "basketball",
+        "football",
+        "soccer",
+        "hockey",
+        "golf",
+        "combat",
+        "other_sport",
+        "mixed_sport",
+        "culture",
+        "pokemon"
+      ]
+    },
+    "taxonomyStatus": {
+      "enum": [
+        "coherent_provider_cohort",
+        "small_provider_cohort",
+        "mixed_provider_cohort",
+        "outside_sports_scope"
+      ]
+    },
+    "identityStatus": {
+      "enum": [
+        "source_name_only",
+        "ambiguous_normalized_name",
+        "canonical_identity_missing"
+      ]
+    },
+    "freshnessStatus": {
+      "enum": [
+        "current",
+        "stale",
+        "unknown"
+      ]
+    },
+    "posture": {
+      "enum": [
+        "build_candidate",
+        "hold_candidate",
+        "watch",
+        "risk_review",
+        "pass",
+        "unrated",
+        "needs_refresh"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "historyStart",
+        "historyMonths",
+        "dataThrough",
+        "publishedAt",
+        "acquiredAt",
+        "freshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^hobby-oracle-master-ranking/v2:[a-f0-9]{64}$"
+        },
+        "historyStart": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyMonths": {
+          "const": 18
+        },
+        "dataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "cadence",
+            "nextExpectedBy",
+            "reasonCodes"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "cadence": {
+              "const": "monthly"
+            },
+            "nextExpectedBy": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reasonCodes": {
+              "$ref": "#/$defs/reasonCodes"
+            }
+          }
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "domain",
+        "sourceCategory",
+        "name",
+        "identityStatus",
+        "firstGradedYear",
+        "mostGradedYear"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "athlete",
+            "pokemon_character"
+          ]
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "sourceCategory": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identityStatus": {
+          "$ref": "#/$defs/identityStatus"
+        },
+        "firstGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        },
+        "mostGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        }
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "demandMagnitudeScore",
+        "durabilityScore",
+        "downsideProtectionScore",
+        "latestTwelveMonthSalesUsd",
+        "currentSixMonthSalesUsd",
+        "annualizedCurrentSixMonthSalesUsd",
+        "priorYearSixMonthSalesUsd",
+        "globalObservedPercentile",
+        "withinCohortPercentile",
+        "components",
+        "diagnostics",
+        "sensitivity"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "demandMagnitudeScore": {
+          "$ref": "#/$defs/score"
+        },
+        "durabilityScore": {
+          "$ref": "#/$defs/score"
+        },
+        "downsideProtectionScore": {
+          "$ref": "#/$defs/score"
+        },
+        "latestTwelveMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "currentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "annualizedCurrentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "priorYearSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "globalObservedPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "withinCohortPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trailingTwelveMonthMagnitude",
+            "currentRunRateMagnitude",
+            "persistence",
+            "shockResistance",
+            "downsideProtection"
+          ],
+          "properties": {
+            "trailingTwelveMonthMagnitude": {
+              "$ref": "#/$defs/score"
+            },
+            "currentRunRateMagnitude": {
+              "$ref": "#/$defs/score"
+            },
+            "persistence": {
+              "$ref": "#/$defs/score"
+            },
+            "shockResistance": {
+              "$ref": "#/$defs/score"
+            },
+            "downsideProtection": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedMonths",
+            "positiveMonthRatio",
+            "lowerQuartileToMedianRatio",
+            "latestTwelveMonthHhi",
+            "effectiveSalesMonths",
+            "yearOverYearSixMonthLogGrowth",
+            "recentThreeMonthYearOverYearLogGrowth"
+          ],
+          "properties": {
+            "observedMonths": {
+              "const": 18
+            },
+            "positiveMonthRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "lowerQuartileToMedianRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "latestTwelveMonthHhi": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "effectiveSalesMonths": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 12
+            },
+            "yearOverYearSixMonthLogGrowth": {
+              "type": "number"
+            },
+            "recentThreeMonthYearOverYearLogGrowth": {
+              "type": "number"
+            }
+          }
+        },
+        "sensitivity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "demandHeavy",
+            "balanced",
+            "durabilityHeavy",
+            "worstScenarioScore",
+            "momentumAddsScore"
+          ],
+          "properties": {
+            "demandHeavy": {
+              "$ref": "#/$defs/score"
+            },
+            "balanced": {
+              "$ref": "#/$defs/score"
+            },
+            "durabilityHeavy": {
+              "$ref": "#/$defs/score"
+            },
+            "worstScenarioScore": {
+              "$ref": "#/$defs/score"
+            },
+            "momentumAddsScore": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "buildChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparisonEligible",
+        "sourceCurrent",
+        "completeEighteenMonthHistory",
+        "globalTopOnePercent",
+        "persistenceAtLeast90",
+        "shockResistanceAtLeast90",
+        "downsideProtectionAtLeast90",
+        "establishedRoute",
+        "escapeVelocityRoute",
+        "eitherBuildRoute"
+      ],
+      "properties": {
+        "comparisonEligible": {
+          "type": "boolean"
+        },
+        "sourceCurrent": {
+          "type": "boolean"
+        },
+        "completeEighteenMonthHistory": {
+          "type": "boolean"
+        },
+        "globalTopOnePercent": {
+          "type": "boolean"
+        },
+        "persistenceAtLeast90": {
+          "type": "boolean"
+        },
+        "shockResistanceAtLeast90": {
+          "type": "boolean"
+        },
+        "downsideProtectionAtLeast90": {
+          "type": "boolean"
+        },
+        "establishedRoute": {
+          "type": "boolean"
+        },
+        "escapeVelocityRoute": {
+          "type": "boolean"
+        },
+        "eitherBuildRoute": {
+          "type": "boolean"
+        }
+      }
+    },
+    "buildQualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "designation",
+        "route",
+        "passed",
+        "required",
+        "checks",
+        "reasonCodes"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "designation": {
+          "enum": [
+            "Build",
+            "withheld"
+          ]
+        },
+        "route": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "established_durability",
+            "escape_velocity",
+            null
+          ]
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "required": {
+          "const": 8
+        },
+        "checks": {
+          "$ref": "#/$defs/buildChecks"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "eligible": {
+                "const": true
+              }
+            },
+            "required": [
+              "eligible"
+            ]
+          },
+          "then": {
+            "properties": {
+              "designation": {
+                "const": "Build"
+              },
+              "passed": {
+                "const": 8
+              },
+              "reasonCodes": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "designation": {
+                "const": "withheld"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "modelVersion",
+        "posture",
+        "marketSignal",
+        "buildQualification",
+        "flags"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hobby-oracle-master-ranking.v2"
+        },
+        "contractVersion": {
+          "const": "hobby-oracle-master-ranking-contract/v2"
+        },
+        "modelVersion": {
+          "const": "hobby-oracle-absolute-demand-durability/18m-v2.0.0"
+        },
+        "posture": {
+          "$ref": "#/$defs/posture"
+        },
+        "marketSignal": {
+          "$ref": "#/$defs/signal"
+        },
+        "buildQualification": {
+          "$ref": "#/$defs/buildQualification"
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "identityStatus",
+            "taxonomyStatus",
+            "freshnessStatus",
+            "cohortSize",
+            "observedHistoryMonths",
+            "subjectLevelOnly",
+            "exactCardActionable"
+          ],
+          "properties": {
+            "identityStatus": {
+              "$ref": "#/$defs/identityStatus"
+            },
+            "taxonomyStatus": {
+              "$ref": "#/$defs/taxonomyStatus"
+            },
+            "freshnessStatus": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "cohortSize": {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            "observedHistoryMonths": {
+              "const": 18
+            },
+            "subjectLevelOnly": {
+              "const": true
+            },
+            "exactCardActionable": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "subject",
+        "masterRank",
+        "withinCohortRank",
+        "assessment"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "hobby-oracle-master-ranking-item/v2"
+        },
+        "subject": {
+          "$ref": "#/$defs/subject"
+        },
+        "masterRank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "withinCohortRank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "assessment": {
+          "$ref": "#/$defs/assessment"
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "taxonomyStatus",
+        "subjectCount",
+        "rankedCount",
+        "buildCount"
+      ],
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "taxonomyStatus": {
+          "$ref": "#/$defs/taxonomyStatus"
+        },
+        "subjectCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "rankedCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "buildCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "totalPages": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "rankingPolicy",
+        "rankingUniverse",
+        "rankingUniverseCount",
+        "buildCount",
+        "marketSource",
+        "marketMeasure",
+        "exactCardRecommendationsAvailable",
+        "globalComparisonStatus",
+        "globalComparisonLimitations",
+        "buildPolicy",
+        "permissionAttestation"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "rankingPolicy": {
+          "const": "single_observed_universe_absolute_demand_and_durability_order"
+        },
+        "rankingUniverse": {
+          "const": "coherent_unambiguous_gemrate_subject_rows"
+        },
+        "rankingUniverseCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "buildCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "marketSource": {
+          "const": "GemRate Athlete + Pokémon Sales Trends"
+        },
+        "marketMeasure": {
+          "const": "completed_ebay_singles_sales_volume_usd"
+        },
+        "exactCardRecommendationsAvailable": {
+          "const": false
+        },
+        "globalComparisonStatus": {
+          "const": "observed_snapshot_comparable_not_canonical_hobby_census"
+        },
+        "globalComparisonLimitations": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "buildPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fixedDollarAnchors",
+            "establishedTtmFloorUsd",
+            "establishedRunRateFloorUsd",
+            "escapeTtmFloorUsd",
+            "escapeRunRateFloorUsd",
+            "positiveMomentumAddsScore"
+          ],
+          "properties": {
+            "fixedDollarAnchors": {
+              "const": true
+            },
+            "establishedTtmFloorUsd": {
+              "const": 20000000
+            },
+            "establishedRunRateFloorUsd": {
+              "const": 15000000
+            },
+            "escapeTtmFloorUsd": {
+              "const": 15000000
+            },
+            "escapeRunRateFloorUsd": {
+              "const": 20000000
+            },
+            "positiveMomentumAddsScore": {
+              "const": false
+            }
+          }
+        },
+        "permissionAttestation": {
+          "const": "docs/permissions/GEMRATE_ATTESTATION.md"
+        }
+      }
+    }
+  }
+}

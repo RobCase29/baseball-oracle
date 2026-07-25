@@ -5,13 +5,14 @@ import {
   Orbit,
 } from 'lucide-react'
 import {
-  isMagnificentXFeedResponse,
+  HOBBY_MASTER_SORT_KEYS,
+  isHobbyMasterFeedResponse,
+  type HobbyMasterFeedResponse,
+  type HobbyMasterSortDirection,
+  type HobbyMasterSortKey,
   type MagnificentXDomain,
-  type MagnificentXFeedResponse,
   type MagnificentXResearchPosture,
-  type MagnificentXSortDirection,
-  type MagnificentXSortKey,
-} from '../domain/magnificentX'
+} from '../domain/hobbyMasterRanking'
 import {
   isBinderScoresResponse,
   type BinderScoresResponse,
@@ -41,8 +42,8 @@ import {
 
 const PAGE_SIZE = 50
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
-const DEFAULT_SORT: MagnificentXSortKey = 'cohort_rank'
-const DEFAULT_DIRECTION: MagnificentXSortDirection = 'asc'
+const DEFAULT_SORT: HobbyMasterSortKey = 'master_rank'
+const DEFAULT_DIRECTION: HobbyMasterSortDirection = 'asc'
 const DEFAULT_YOUNG_AGE: YoungPlayerAgeCeiling = 25
 const DEFAULT_YOUNG_STAGE: YoungPlayerStage = 'All'
 const DEFAULT_PLAYER_SPORT: PlayerRankingSport = 'baseball'
@@ -75,16 +76,7 @@ const validPostures = new Set<MagnificentXResearchPosture>([
   'needs_refresh',
 ])
 
-const validSorts = new Set<MagnificentXSortKey>([
-  'cohort_rank',
-  'signal',
-  'ttm_sales',
-  'trend',
-  'persistence',
-  'shock_resistance',
-  'cohort_percentile',
-  'name',
-])
+const validSorts = new Set<HobbyMasterSortKey>(HOBBY_MASTER_SORT_KEYS)
 
 function initialParameters(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams()
@@ -127,20 +119,24 @@ function initialPosture(): MagnificentXResearchPosture | 'all' {
   return DEFAULT_POSTURE
 }
 
-function initialSort(): MagnificentXSortKey {
+function initialSort(): HobbyMasterSortKey {
   const value = initialParameters().get('sort')
-  const posture = initialPosture()
-  if (value && validSorts.has(value as MagnificentXSortKey)) {
-    if (value === 'cohort_rank' && posture !== 'build_candidate') return 'name'
-    return value as MagnificentXSortKey
+  if (value === 'signal') return 'master_score'
+  if (value && validSorts.has(value as HobbyMasterSortKey)) {
+    return value as HobbyMasterSortKey
   }
-  return posture === 'build_candidate' ? DEFAULT_SORT : 'name'
+  return DEFAULT_SORT
 }
 
-function initialDirection(): MagnificentXSortDirection {
-  return initialParameters().get('direction') === 'desc'
-    ? 'desc'
-    : DEFAULT_DIRECTION
+function initialDirection(): HobbyMasterSortDirection {
+  const explicit = initialParameters().get('direction')
+  if (explicit === 'asc' || explicit === 'desc') return explicit
+  const sort = initialSort()
+  return sort === 'master_rank' ||
+    sort === 'cohort_rank' ||
+    sort === 'name'
+    ? 'asc'
+    : 'desc'
 }
 
 function initialPage(): number {
@@ -217,9 +213,9 @@ export function HobbyApp() {
   const [posture, setPosture] = useState<
     MagnificentXResearchPosture | 'all'
   >(initialPosture)
-  const [sort, setSort] = useState<MagnificentXSortKey>(initialSort)
+  const [sort, setSort] = useState<HobbyMasterSortKey>(initialSort)
   const [direction, setDirection] =
-    useState<MagnificentXSortDirection>(initialDirection)
+    useState<HobbyMasterSortDirection>(initialDirection)
   const [page, setPage] = useState(initialPage)
   const [youngAgeMax, setYoungAgeMax] =
     useState<YoungPlayerAgeCeiling>(initialYoungAge)
@@ -240,7 +236,8 @@ export function HobbyApp() {
       ? initialParameters().get('q') ?? ''
       : ''
   ))
-  const [response, setResponse] = useState<MagnificentXFeedResponse | null>(null)
+  const [response, setResponse] =
+    useState<HobbyMasterFeedResponse | null>(null)
   const [loading, setLoading] = useState(() => initialLens() === 'market')
   const [error, setError] = useState<string | null>(null)
   const [youngResponse, setYoungResponse] =
@@ -276,7 +273,7 @@ export function HobbyApp() {
     setLoading(true)
     setError(null)
     setResponse(null)
-    fetch(`/api/v1/hobby-oracle?${parameters.toString()}`, {
+    fetch(`/api/v2/hobby-oracle?${parameters.toString()}`, {
       cache: 'no-store',
       signal: controller.signal,
     })
@@ -285,7 +282,7 @@ export function HobbyApp() {
           throw new Error(`Hobby Oracle returned ${result.status}.`)
         }
         const payload = (await result.json()) as unknown
-        if (!isMagnificentXFeedResponse(payload)) {
+        if (!isHobbyMasterFeedResponse(payload)) {
           throw new Error('Hobby Oracle returned an unexpected response.')
         }
         setResponse(payload)
@@ -544,7 +541,9 @@ export function HobbyApp() {
   ): void {
     setLens('market')
     setPosture(value)
-    setSort(value === 'build_candidate' ? 'cohort_rank' : 'name')
+    setSort(value === 'unrated' || value === 'needs_refresh'
+      ? 'name'
+      : 'master_rank')
     setDirection('asc')
     setPage(1)
   }
@@ -565,12 +564,12 @@ export function HobbyApp() {
     setPage(1)
   }
 
-  function changeSort(value: MagnificentXSortKey): void {
+  function changeSort(value: HobbyMasterSortKey): void {
     setSort(value)
     setPage(1)
   }
 
-  function changeDirection(value: MagnificentXSortDirection): void {
+  function changeDirection(value: HobbyMasterSortDirection): void {
     setDirection(value)
     setPage(1)
   }
@@ -691,7 +690,7 @@ export function HobbyApp() {
             <h1 id="investor-workbench-title">Investor Workbench</h1>
             <p>
               {lens === 'market'
-                ? 'Screen long-term collection positions across sports and Pokémon, then open only the evidence you need.'
+                ? 'One master ranking across sports and Pokémon, ordered by absolute demand scale and durability—not by who happens to lead a cohort.'
                 : playerSport === 'baseball'
                   ? 'Find the strongest scored baseball prospects, recent callups, and young MLB players inside an Oracle age window.'
                   : `Rank ${playerSport} players by forward-looking dynasty consensus and recurring collector demand, with age as a transparent filter rather than a hidden boost.`}
@@ -721,14 +720,14 @@ export function HobbyApp() {
           <LockKeyhole size={15} aria-hidden="true" />
           <strong>
             {lens === 'market'
-              ? 'Subject demand is the screen.'
+              ? 'No sport is guaranteed a Build.'
               : playerSport === 'baseball'
                 ? 'Age is a lens—not a shortcut.'
                 : 'Build-candidate screen—not expected return.'}
           </strong>
           <span>
             {lens === 'market'
-              ? 'Exact-card valuation, supply, liquidity, and return evidence still decide whether a position is investable.'
+              ? 'Build requires absolute scale plus durable demand or exceptional escape velocity. Exact-card value, supply, liquidity, and entry price still decide whether a position is investable.'
               : playerSport === 'baseball'
                 ? 'The existing Binder Score is re-ordered inside the selected age and stage universe; the base posture does not change.'
                 : 'Build Score balances forward-looking dynasty consensus with 18-month subject-level demand; it prioritizes research and does not select a card, estimate ROI, or issue a sell instruction.'}

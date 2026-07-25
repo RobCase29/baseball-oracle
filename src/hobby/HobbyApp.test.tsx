@@ -11,12 +11,12 @@ import {
 } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import {
-  buildMagnificentXAssessment,
+  buildHobbyMasterAssessment,
+  type HobbyMasterFeedItem,
+  type HobbyMasterFeedResponse,
   type MagnificentXDomain,
-  type MagnificentXFeedItem,
-  type MagnificentXFeedResponse,
   type MagnificentXSubjectType,
-} from '../domain/magnificentX'
+} from '../domain/hobbyMasterRanking'
 import {
   buildBinderScore,
   type BinderRoute,
@@ -43,6 +43,7 @@ const months = [
   650_000, 680_000, 700_000, 720_000, 740_000, 760_000,
   800_000, 830_000, 850_000, 880_000, 900_000, 920_000,
 ]
+const masterMonths = Array(18).fill(2_000_000) as number[]
 
 function feedItem(input: {
   id: string
@@ -53,8 +54,8 @@ function feedItem(input: {
   cohortSize: number
   percentile: number
   freshnessStatus?: 'current' | 'stale'
-}): MagnificentXFeedItem {
-  const assessment = buildMagnificentXAssessment({
+}): HobbyMasterFeedItem {
+  const assessment = buildHobbyMasterAssessment({
     row: {
       subjectType: input.type,
       domain: input.domain,
@@ -63,18 +64,18 @@ function feedItem(input: {
       subjectName: input.name,
       normalizedName: input.name.toLocaleLowerCase('en-US'),
       sourceKey: input.id,
-      monthlySalesUsd: months,
+      monthlySalesUsd: masterMonths,
       firstGradedYear: input.type === 'athlete' ? 2003 : null,
       mostGradedYear: input.type === 'athlete' ? 2024 : null,
     },
     cohortSize: input.cohortSize,
     withinCohortPercentile: input.percentile,
-    globalScalePercentile: null,
+    globalObservedPercentile: input.percentile,
     identityStatus: 'source_name_only',
     freshnessStatus: input.freshnessStatus ?? 'current',
   })
   return {
-    recordVersion: 'magnificent-x-feed-item/v1',
+    recordVersion: 'hobby-oracle-master-ranking-item/v2',
     subject: {
       id: input.id,
       type: input.type,
@@ -85,19 +86,20 @@ function feedItem(input: {
       firstGradedYear: input.type === 'athlete' ? 2003 : null,
       mostGradedYear: input.type === 'athlete' ? 2024 : null,
     },
-    withinCohortRank: input.rank,
+    masterRank: input.rank,
+    withinCohortRank: 1,
     assessment,
   }
 }
 
 function fixtureResponse(
   freshnessStatus: 'current' | 'stale' = 'current',
-): MagnificentXFeedResponse {
+): HobbyMasterFeedResponse {
   return {
-    schemaVersion: 'magnificent-x-feed.v1',
-    contractVersion: 'magnificent-x-contract/v1',
+    schemaVersion: 'hobby-oracle-master-ranking.v2',
+    contractVersion: 'hobby-oracle-master-ranking-contract/v2',
     snapshot: {
-      id: `magnificent-x-snapshot/v1:${'a'.repeat(64)}`,
+      id: `hobby-oracle-master-ranking/v2:${'a'.repeat(64)}`,
       historyStart: '2025-01-01',
       historyMonths: 18,
       dataThrough: '2026-06-30',
@@ -139,15 +141,15 @@ function fixtureResponse(
         domain: 'pokemon',
         taxonomyStatus: 'coherent_provider_cohort',
         subjectCount: 1_022,
-        marketLeaderCount: 8,
-        magnificentEligibleCount: 0,
+        rankedCount: 1_022,
+        buildCount: 1,
       },
       {
         domain: 'basketball',
         taxonomyStatus: 'coherent_provider_cohort',
         subjectCount: 839,
-        marketLeaderCount: 6,
-        magnificentEligibleCount: 0,
+        rankedCount: 839,
+        buildCount: 1,
       },
     ],
     page: {
@@ -159,17 +161,28 @@ function fixtureResponse(
     meta: {
       researchOnly: true,
       investmentAdvice: false,
-      magnificentEligibleCount: 0,
+      rankingPolicy:
+        'single_observed_universe_absolute_demand_and_durability_order',
+      rankingUniverse: 'coherent_unambiguous_gemrate_subject_rows',
+      rankingUniverseCount: 5_866,
+      buildCount: 2,
       marketSource: 'GemRate Athlete + Pokémon Sales Trends',
       marketMeasure: 'completed_ebay_singles_sales_volume_usd',
-      rawExportsPublished: false,
-      globalRankingAvailable: false,
-      globalRankingReason:
-        'provider_export_cap_and_cross_subject_overlap_not_independently_verified',
       exactCardRecommendationsAvailable: false,
-      ageIncluded: false,
-      agePolicy:
-        'age_requires_canonical_sport_identity_and_validated_domain_adapter_not_inferred_from_name',
+      globalComparisonStatus:
+        'observed_snapshot_comparable_not_canonical_hobby_census',
+      globalComparisonLimitations: [
+        'provider_export_may_be_capped',
+        'source_name_identity_is_not_canonical_subject_identity',
+      ],
+      buildPolicy: {
+        fixedDollarAnchors: true,
+        establishedTtmFloorUsd: 20_000_000,
+        establishedRunRateFloorUsd: 15_000_000,
+        escapeTtmFloorUsd: 15_000_000,
+        escapeRunRateFloorUsd: 20_000_000,
+        positiveMomentumAddsScore: false,
+      },
       permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
     },
   }
@@ -665,7 +678,7 @@ describe('Hobby Oracle investor workbench', () => {
       screen.getByRole('heading', { name: 'Investor Workbench' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Subject demand is the screen.'),
+      screen.getByText('No sport is guaranteed a Build.'),
     ).toBeInTheDocument()
 
     const pikachu = await screen.findByText('Pikachu')
@@ -673,10 +686,10 @@ describe('Hobby Oracle investor workbench', () => {
     expect(row).not.toBeNull()
     expect(within(row!).getByText('Build candidate')).toBeInTheDocument()
     expect(within(row!).getByText('#2')).toBeInTheDocument()
-    expect(within(row!).getByText('99.9 pct')).toBeInTheDocument()
+    expect(within(row!).getByText('Cohort #1')).toBeInTheDocument()
     expect(screen.getByText('Exact-card action withheld')).toBeInTheDocument()
     expect(
-      screen.getByText(/Cross-hobby order is a screen only/u),
+      screen.getByText(/One master order/u),
     ).toBeInTheDocument()
 
     fireEvent.click(
@@ -688,12 +701,14 @@ describe('Hobby Oracle investor workbench', () => {
       screen.getByText(/Character demand only/u),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Exact-card, grade, scarcity, and price evidence/u),
+      screen.getByText(/Exact card, grade, scarcity/u),
     ).toBeInTheDocument()
 
     expect(screen.getByRole('columnheader', { name: /TTM demand/u }))
       .toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: /6M YoY/u }))
+      .toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /Master rank/u }))
       .toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Baseball Oracle' })).toHaveAttribute(
       'href',
@@ -711,7 +726,7 @@ describe('Hobby Oracle investor workbench', () => {
     render(<HobbyApp />)
 
     await screen.findByText('Pikachu')
-    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
     fireEvent.change(screen.getByLabelText('Cohort'), {
       target: { value: 'pokemon' },
     })
@@ -724,7 +739,7 @@ describe('Hobby Oracle investor workbench', () => {
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v1/hobby-oracle?')
+      expect(latestUrl).toContain('/api/v2/hobby-oracle?')
       expect(latestUrl).toContain('domain=pokemon')
       expect(latestUrl).toContain('posture=hold_candidate')
       expect(latestUrl).toContain('q=Pikachu')
@@ -743,7 +758,7 @@ describe('Hobby Oracle investor workbench', () => {
       'true',
     )
     expect(screen.getByRole('searchbox', { name: 'Subject' })).toHaveValue('')
-    expect(screen.getByLabelText('Sort')).toHaveValue('cohort_rank')
+    expect(screen.getByLabelText('Sort')).toHaveValue('master_rank')
     expect(screen.getByLabelText('Direction')).toHaveValue('asc')
   })
 
@@ -761,7 +776,7 @@ describe('Hobby Oracle investor workbench', () => {
       )
     })
     expect(
-      await screen.findByText('Build rank suspended · refresh queue shown'),
+      await screen.findByText('Master rank suspended · refresh queue shown'),
     ).toBeInTheDocument()
     expect(screen.getAllByText('Needs refresh')).toHaveLength(2)
   })
@@ -824,20 +839,20 @@ describe('Hobby Oracle investor workbench', () => {
       expect(latestUrl).toContain('stage=Minors')
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Positions' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Master Ranking' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
     await screen.findByText('Pikachu')
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
-      expect(latestUrl).toContain('/api/v1/hobby-oracle?')
+      expect(latestUrl).toContain('/api/v2/hobby-oracle?')
       expect(latestUrl).toContain('posture=hold_candidate')
-      expect(latestUrl).toContain('sort=name')
+      expect(latestUrl).toContain('sort=master_rank')
       expect(latestUrl).toContain('direction=asc')
     })
     expect(
-      screen.queryByRole('columnheader', { name: 'Build rank' }),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText('#2')).not.toBeInTheDocument()
+      screen.getByRole('columnheader', { name: 'Master rank' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('#2')).toBeInTheDocument()
   })
 
   it('ranks football players within sport and preserves the evidence boundary', async () => {
@@ -1118,7 +1133,7 @@ describe('Hobby Oracle investor workbench', () => {
 
     await screen.findByText('Pikachu')
     fetchMock.mockRejectedValueOnce(new Error('Filter request failed.'))
-    fireEvent.click(screen.getByRole('button', { name: 'Core Hold' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Near Build' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Filter request failed.',

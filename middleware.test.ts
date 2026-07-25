@@ -86,6 +86,7 @@ describe('Oracle routing authentication', () => {
       '/api/v1/hobby-player-rankings?sport=football',
       '/api/v1/magnificent-x?domain=pokemon',
       '/api/v1/player-signals?stage=Minors',
+      '/api/v2/hobby-oracle?domain=football',
       '/api/v2/hobby-player-rankings?sport=football',
     ]) {
       const response = await oracleAccess(new Request(`https://oracle.example${path}`, {

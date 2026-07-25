@@ -1,4 +1,4 @@
-import type { MagnificentXResearchPosture } from '../domain/magnificentX'
+import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
 
 export type HobbyResearchLens = 'market' | 'players'
 export type PlayerRankingSport = 'baseball' | 'football' | 'basketball'
@@ -20,7 +20,7 @@ const postureOptions: ReadonlyArray<{
   label: string
 }> = [
   { value: 'build_candidate', shortLabel: 'Build', label: 'Build candidates' },
-  { value: 'hold_candidate', shortLabel: 'Core Hold', label: 'Core hold candidates' },
+  { value: 'hold_candidate', shortLabel: 'Near Build', label: 'Near-Build candidates' },
   { value: 'watch', shortLabel: 'Watch', label: 'Watch' },
   { value: 'risk_review', shortLabel: 'Risk Review', label: 'Risk review' },
   { value: 'pass', shortLabel: 'Pass', label: 'Pass' },
@@ -46,7 +46,7 @@ export function ResearchLensTabs({
           aria-pressed={lens === 'market'}
           onClick={onMarketSelect}
         >
-          Positions
+          Master Ranking
         </button>
         <button
           type="button"
@@ -76,7 +76,7 @@ export function ResearchLensTabs({
           ))}
           {showRefresh ? (
             <span className="iw-tab-status" role="status">
-              Build rank suspended · refresh queue shown
+              Master rank suspended · refresh queue shown
             </span>
           ) : null}
         </div>
