@@ -101,6 +101,15 @@ describe('Oracle routing authentication', () => {
     }
   })
 
+  it('continues for bearer-authenticated v2 Binder Index requests', async () => {
+    const response = await oracleAccess(new Request(
+      'https://oracle.example/api/v2/backstop-binder-index?sport=baseball&maxAge=25',
+      { headers: { authorization: 'Bearer middleware-test-read-key' } },
+    ))
+
+    expect(response.headers.get('x-middleware-next')).toBe('1')
+  })
+
   it('does not let the server read key authorize admin endpoints', async () => {
     const response = await oracleAccess(new Request(
       'https://oracle.example/api/admin/ingest-fangraphs',

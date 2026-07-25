@@ -55,6 +55,7 @@ function serverReadPath(pathname: string): boolean {
     pathname === '/api/v1/hobby-player-rankings' ||
     pathname === '/api/v1/magnificent-x' ||
     pathname === '/api/v1/player-signals' ||
+    pathname === '/api/v2/backstop-binder-index' ||
     pathname === '/api/v2/hobby-oracle' ||
     pathname === '/api/v2/hobby-player-rankings'
 }
