@@ -718,9 +718,12 @@ describe('Backstop Binder Index', () => {
     fireEvent.change(screen.getByLabelText('Cohort'), {
       target: { value: 'pokemon' },
     })
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Subject' }), {
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search every subject' }),
+      {
       target: { value: 'Pikachu' },
-    })
+      },
+    )
     fireEvent.change(screen.getByLabelText('Sort'), {
       target: { value: 'ttm_sales' },
     })
@@ -728,23 +731,29 @@ describe('Backstop Binder Index', () => {
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
       expect(latestUrl).toContain('/api/v2/hobby-oracle?')
-      expect(latestUrl).toContain('domain=pokemon')
-      expect(latestUrl).toContain('posture=hold_candidate')
+      expect(latestUrl).not.toContain('domain=')
+      expect(latestUrl).toContain('posture=all')
       expect(latestUrl).toContain('q=Pikachu')
       expect(latestUrl).toContain('sort=ttm_sales')
       expect(latestUrl).toContain('direction=desc')
       expect(latestUrl).toContain('page=1')
       expect(latestUrl).toContain('limit=50')
     })
-    expect(window.location.search).toContain('posture=hold_candidate')
+    expect(window.location.search).toContain('posture=all')
     expect(window.location.search).toContain('sort=ttm_sales')
+    expect(screen.getByLabelText('Cohort')).toHaveValue('all')
+    expect(
+      screen.getByRole('button', { name: 'All evidence' }),
+    ).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
     expect(screen.getByLabelText('Cohort')).toHaveValue('all')
     expect(
       screen.getByRole('button', { name: 'Build Board qualifiers' }),
     ).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('searchbox', { name: 'Subject' })).toHaveValue('')
+    expect(
+      screen.getByRole('searchbox', { name: 'Search every subject' }),
+    ).toHaveValue('')
     expect(screen.getByLabelText('Sort')).toHaveValue('master_rank')
     expect(screen.getByLabelText('Direction')).toHaveValue('asc')
   })
@@ -831,25 +840,29 @@ describe('Backstop Binder Index', () => {
     fireEvent.change(screen.getByLabelText('Sort'), {
       target: { value: 'market_readiness' },
     })
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Player' }), {
-      target: { value: 'Stroud' },
-    })
+    fireEvent.change(
+      screen.getByRole('searchbox', {
+        name: 'Search every graduation candidate',
+      }),
+      { target: { value: 'Stroud' } },
+    )
 
     await waitFor(() => {
       const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
       expect(latestUrl).toContain('/api/v2/backstop-binder-index?')
       expect(latestUrl).toContain('sport=all')
-      expect(latestUrl).toContain('maxAge=23')
-      expect(latestUrl).toContain('position=QB')
-      expect(latestUrl).toContain('band=on_deck')
-      expect(latestUrl).toContain('sort=market_readiness')
+      expect(latestUrl).not.toContain('maxAge=')
+      expect(latestUrl).not.toContain('position=')
+      expect(latestUrl).toContain('band=all')
+      expect(latestUrl).toContain('sort=graduation_rank')
       expect(latestUrl).toContain('q=Stroud')
     })
     expect(window.location.search).toContain('lens=players')
     expect(window.location.search).toContain('sport=all')
-    expect(window.location.search).toContain('maxAge=23')
-    expect(window.location.search).toContain('band=on_deck')
-    expect(window.location.search).toContain('sort=market_readiness')
+    expect(window.location.search).not.toContain('maxAge=')
+    expect(window.location.search).not.toContain('position=')
+    expect(window.location.search).not.toContain('band=')
+    expect(window.location.search).not.toContain('sort=')
   })
 
   it('keeps baseball in the global order and preserves its rank when filtered', async () => {
@@ -948,7 +961,9 @@ describe('Backstop Binder Index', () => {
     expect(screen.getByLabelText('Position')).toHaveValue('QB')
     expect(screen.getByLabelText('Path')).toHaveValue('approaching')
     expect(screen.getByLabelText('Sort')).toHaveValue('market_readiness')
-    expect(screen.getByRole('searchbox', { name: 'Player' }))
+    expect(screen.getByRole('searchbox', {
+      name: 'Search every graduation candidate',
+    }))
       .toHaveValue('Stroud')
 
     await waitFor(() => {

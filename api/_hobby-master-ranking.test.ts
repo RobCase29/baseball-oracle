@@ -77,6 +77,22 @@ describe('Hobby Oracle master-ranking catalog', () => {
       .toBe(all.items[0]?.withinCohortRank)
   })
 
+  it('searches names naturally across punctuation and prioritizes relevance', () => {
+    const initials = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'C.J. Stroud',
+      posture: 'all',
+      limit: 10,
+    })
+    const jordan = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Michael Jordan',
+      posture: 'all',
+      limit: 10,
+    })
+
+    expect(initials.items[0]?.subject.name).toBe('CJ Stroud')
+    expect(jordan.items[0]?.subject.name).toBe('Michael Jordan')
+  })
+
   it('removes low-dollar cohort leaders from Build', () => {
     const conor = buildHobbyMasterFeed(hobbyMasterCatalog, {
       domain: 'combat',

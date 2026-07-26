@@ -28,6 +28,10 @@ import {
 import {
   buildHobbyExitWindowSignal,
 } from '../src/domain/hobbyLiquidationSignal.js'
+import {
+  normalizeSubjectSearchText,
+  subjectSearchRelevance,
+} from '../src/domain/subjectSearch.js'
 
 type HobbySnapshot = ReturnType<typeof parseHobbySnapshot>
 
@@ -244,7 +248,7 @@ export function buildHobbyMasterFeed(
   catalog: HobbyMasterCatalog,
   query: HobbyMasterQuery = {},
 ): HobbyMasterFeedResponse {
-  const normalizedQuery = query.q?.trim().toLocaleLowerCase('en-US') ?? ''
+  const normalizedQuery = normalizeSubjectSearchText(query.q ?? '')
   const domain = query.domain ?? 'all'
   const posture = query.posture ?? 'all'
   const sort = query.sort ?? 'master_rank'
@@ -264,14 +268,35 @@ export function buildHobbyMasterFeed(
         buildHobbyExitWindowSignal(item).score,
       ]))
     : null
+  const searchRelevanceById = normalizedQuery
+    ? new Map(
+        catalog.items.flatMap((item) => {
+          const relevance = subjectSearchRelevance(
+            item.subject.name,
+            normalizedQuery,
+          )
+          return relevance === null
+            ? []
+            : [[item.subject.id, relevance] as const]
+        }),
+      )
+    : null
   const filtered = catalog.items.filter((item) => (
     (domain === 'all' || item.subject.domain === domain) &&
     (posture === 'all' || item.assessment.posture === posture) &&
     (
-      normalizedQuery.length === 0 ||
-      item.subject.name.toLocaleLowerCase('en-US').includes(normalizedQuery)
+      searchRelevanceById === null ||
+      searchRelevanceById.has(item.subject.id)
     )
   )).toSorted((left, right) => {
+    const searchComparison = searchRelevanceById === null
+      ? 0
+      : (
+          searchRelevanceById.get(left.subject.id)! -
+          searchRelevanceById.get(right.subject.id)!
+        )
+    if (searchComparison !== 0) return searchComparison
+
     const leftSignal = left.assessment.marketSignal
     const rightSignal = right.assessment.marketSignal
     const missingRankComparison =

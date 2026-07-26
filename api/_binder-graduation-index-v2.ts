@@ -38,6 +38,10 @@ import type {
 import type {
   UnifiedBoardCandidate,
 } from './players.js'
+import {
+  normalizeSubjectSearchText,
+  subjectSearchRelevance,
+} from '../src/domain/subjectSearch.js'
 
 export interface BinderGraduationV2Query {
   q?: string
@@ -522,8 +526,7 @@ export function buildBinderGraduationV2Feed(
   query: BinderGraduationV2Query = {},
 ): BinderGraduationV2Response {
   const sport = query.sport ?? 'all'
-  const normalizedQuery =
-    query.q?.trim().toLocaleLowerCase('en-US') ?? ''
+  const normalizedQuery = normalizeSubjectSearchText(query.q ?? '')
   const position =
     query.position?.trim().toLocaleUpperCase('en-US') || null
   const band = query.band ?? 'all'
@@ -532,6 +535,20 @@ export function buildBinderGraduationV2Feed(
   const limit = Math.max(1, Math.min(100, Math.floor(query.limit ?? 50)))
   const freshness = selectedFreshness(catalog, sport)
   const publishable = freshness.status === 'current' ? catalog.items : []
+  const searchRelevanceById = normalizedQuery
+    ? new Map(
+        publishable.flatMap((item) => {
+          const relevance = subjectSearchRelevance(
+            item.player.name,
+            normalizedQuery,
+          )
+          return relevance === null
+            ? []
+            : [[item.player.id, relevance] as const]
+        }),
+      )
+    : null
+  const comparator = displayComparator(sort)
   const filtered = publishable
     .filter((item) => (
       (sport === 'all' || item.player.sport === sport) &&
@@ -542,13 +559,19 @@ export function buildBinderGraduationV2Feed(
       (!position || item.player.positions.includes(position)) &&
       (band === 'all' || item.graduation.band === band) &&
       (
-        normalizedQuery.length === 0 ||
-        item.player.name
-          .toLocaleLowerCase('en-US')
-          .includes(normalizedQuery)
+        searchRelevanceById === null ||
+        searchRelevanceById.has(item.player.id)
       )
     ))
-    .toSorted(displayComparator(sort))
+    .toSorted((left, right) => {
+      const searchComparison = searchRelevanceById === null
+        ? 0
+        : (
+            searchRelevanceById.get(left.player.id)! -
+            searchRelevanceById.get(right.player.id)!
+          )
+      return searchComparison || comparator(left, right)
+    })
   const total = filtered.length
   const totalPages = total === 0 ? 0 : Math.ceil(total / limit)
   const offset = (page - 1) * limit

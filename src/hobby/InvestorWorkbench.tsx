@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   AlertTriangle,
   ChevronDown,
@@ -7,7 +7,6 @@ import {
   ChevronUp,
   LockKeyhole,
   RotateCcw,
-  Search,
 } from 'lucide-react'
 import {
   type HobbyMasterFeedItem,
@@ -29,7 +28,6 @@ export interface InvestorWorkbenchProps {
   sort: HobbyMasterSortKey
   direction: HobbyMasterSortDirection
   page: number
-  onSearchChange: (value: string) => void
   onDomainChange: (value: MagnificentXDomain | 'all') => void
   onSortChange: (value: HobbyMasterSortKey) => void
   onDirectionChange: (value: HobbyMasterSortDirection) => void
@@ -205,7 +203,6 @@ export function InvestorWorkbench({
   sort,
   direction,
   page,
-  onSearchChange,
   onDomainChange,
   onSortChange,
   onDirectionChange,
@@ -230,6 +227,16 @@ export function InvestorWorkbench({
     posture !== 'build_candidate' ||
     sort !== 'master_rank' ||
     direction !== 'asc'
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setExpandedId(null)
+      return
+    }
+    if (response?.items.length === 1) {
+      setExpandedId(response.items[0]!.subject.id)
+    }
+  }, [response, search])
 
   function changeSort(nextSort: HobbyMasterSortKey): void {
     if (nextSort === sort) {
@@ -259,19 +266,6 @@ export function InvestorWorkbench({
             : `${pagination.total.toLocaleString()} matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
       </div>
       <div className="iw-controls" role="group" aria-label="Build Board filters">
-        <label className="iw-search">
-          <span className="iw-control-label">Subject</span>
-          <span className="iw-input-shell">
-            <Search size={15} aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              placeholder="Search player or Pokémon"
-              onChange={(event) => onSearchChange(event.currentTarget.value)}
-            />
-          </span>
-        </label>
-
         <label>
           <span className="iw-control-label">Cohort</span>
           <select
@@ -351,9 +345,11 @@ export function InvestorWorkbench({
         </div>
         <p>
           <strong className="iw-comparability">
-            {domain === 'all'
-              ? 'One master order · absolute demand first · no cohort quotas.'
-              : selectedPostureDescriptions[posture]}
+            {search.trim()
+              ? 'Global name search · every board status and cohort.'
+              : domain === 'all'
+                ? 'One master order · absolute demand first · no cohort quotas.'
+                : selectedPostureDescriptions[posture]}
           </strong>
         </p>
         <span className="iw-withheld-status">
@@ -740,8 +736,16 @@ export function InvestorWorkbench({
 
       {!loading && !error && items.length === 0 ? (
         <div className="iw-empty" role="status">
-          <strong>No subjects match this screen.</strong>
-          <span>Broaden the posture, cohort, or search.</span>
+          <strong>
+            {search.trim()
+              ? `No tracked subject matches “${search.trim()}”.`
+              : 'No subjects match this screen.'}
+          </strong>
+          <span>
+            {search.trim()
+              ? 'Try another spelling. Every board status and sport was searched.'
+              : 'Broaden the posture or cohort.'}
+          </span>
           <button type="button" onClick={onReset}>Reset Build Board filters</button>
         </div>
       ) : null}

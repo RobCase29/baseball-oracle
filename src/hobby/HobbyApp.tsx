@@ -32,6 +32,7 @@ import {
   type PlayerRankingBand,
   type PlayerRankingPosition,
 } from './CrossSportPlayerWorkbench'
+import { GlobalBoardSearch } from './GlobalBoardSearch'
 
 const PAGE_SIZE = 50
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
@@ -110,6 +111,7 @@ function initialPosture(): MagnificentXResearchPosture | 'all' {
   if (legacyTier === 'noise_risk') return 'risk_review'
   if (legacyTier === 'long_tail') return 'pass'
   if (legacyTier === 'evidence_needed') return 'unrated'
+  if (parameters.get('q')?.trim()) return 'all'
   return DEFAULT_POSTURE
 }
 
@@ -139,10 +141,13 @@ function initialPage(): number {
 }
 
 function initialPlayerAge(): PlayerRankingAgeCeiling {
-  const value = Number.parseInt(initialParameters().get('maxAge') ?? '', 10)
+  const parameters = initialParameters()
+  const value = Number.parseInt(parameters.get('maxAge') ?? '', 10)
   return value === 23 || value === 26 || value === 30
     ? value
-    : DEFAULT_PLAYER_AGE
+    : parameters.get('q')?.trim()
+      ? 'all'
+      : DEFAULT_PLAYER_AGE
 }
 
 function initialPlayerPosition(): PlayerRankingPosition {
@@ -390,7 +395,10 @@ export function HobbyApp() {
       } else {
         url.searchParams.delete('q')
       }
-      if (playerAgeMax === DEFAULT_PLAYER_AGE) {
+      if (
+        playerAgeMax === DEFAULT_PLAYER_AGE ||
+        playerAgeMax === 'all'
+      ) {
         url.searchParams.delete('maxAge')
       } else {
         url.searchParams.set('maxAge', playerAgeMax.toString())
@@ -451,7 +459,20 @@ export function HobbyApp() {
   ])
 
   function changeSearch(value: string): void {
+    const enteringGlobalSearch =
+      value.trim().length > 0 &&
+      (
+        search.trim().length === 0 ||
+        domain !== 'all' ||
+        posture !== 'all'
+      )
     setSearch(value)
+    if (enteringGlobalSearch) {
+      setDomain('all')
+      setPosture('all')
+      setSort(DEFAULT_SORT)
+      setDirection(DEFAULT_DIRECTION)
+    }
     setPage(1)
   }
 
@@ -528,7 +549,23 @@ export function HobbyApp() {
   }
 
   function changePlayerSearch(value: string): void {
+    const enteringGlobalSearch =
+      value.trim().length > 0 &&
+      (
+        playerSearch.trim().length === 0 ||
+        playerSport !== 'all' ||
+        playerAgeMax !== 'all' ||
+        playerPosition !== 'all' ||
+        playerBand !== 'all'
+      )
     setPlayerSearch(value)
+    if (enteringGlobalSearch) {
+      setPlayerSport(DEFAULT_PLAYER_SPORT)
+      setPlayerAgeMax('all')
+      setPlayerPosition(DEFAULT_PLAYER_POSITION)
+      setPlayerBand(DEFAULT_PLAYER_BAND)
+      setPlayerSort(DEFAULT_PLAYER_SORT)
+    }
     setPage(1)
   }
 
@@ -559,6 +596,11 @@ export function HobbyApp() {
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
+  const activeSearch = lens === 'market' ? search : playerSearch
+  const searchLoading = lens === 'market' ? loading : playerLoading
+  const searchResultCount = lens === 'market'
+    ? response?.page.total ?? null
+    : playerResponse?.page.total ?? null
 
   return (
     <div className="mx-app">
@@ -632,6 +674,13 @@ export function HobbyApp() {
           className="iw-shell"
           aria-label="Backstop Binder Index boards"
         >
+          <GlobalBoardSearch
+            lens={lens}
+            value={activeSearch}
+            loading={searchLoading}
+            resultCount={searchResultCount}
+            onChange={lens === 'market' ? changeSearch : changePlayerSearch}
+          />
           <ResearchLensTabs
             lens={lens}
             posture={posture}
@@ -653,7 +702,6 @@ export function HobbyApp() {
               sort={sort}
               direction={direction}
               page={page}
-              onSearchChange={changeSearch}
               onDomainChange={changeDomain}
               onSortChange={changeSort}
               onDirectionChange={changeDirection}
@@ -676,7 +724,6 @@ export function HobbyApp() {
               onPositionChange={changePlayerPosition}
               onBandChange={changePlayerBand}
               onSortChange={changePlayerSort}
-              onSearchChange={changePlayerSearch}
               onPageChange={setPage}
               onReset={resetPlayerFilters}
             />

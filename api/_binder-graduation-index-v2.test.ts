@@ -79,6 +79,16 @@ describe('Backstop Binder Index v2 unified feed', () => {
     )).toBe(true)
   })
 
+  it('finds a player when mobile punctuation differs from the source name', () => {
+    const feed = buildBinderGraduationV2Feed(catalog(), {
+      q: 'CJ Stroud',
+      sport: 'all',
+      limit: 10,
+    })
+
+    expect(feed.items[0]?.player.name).toBe('C.J. Stroud')
+  })
+
   it('uses sport-specific outlooks against one absolute market target', () => {
     const feed = buildBinderGraduationV2Feed(catalog(), {
       maxAge: 26,

@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -8,7 +8,6 @@ import {
   ChevronUp,
   LockKeyhole,
   RotateCcw,
-  Search,
   ShieldCheck,
 } from 'lucide-react'
 import {
@@ -38,7 +37,6 @@ interface CrossSportPlayerWorkbenchProps {
   band: PlayerRankingBand
   sort: BinderGraduationSortKey
   page: number
-  onSearchChange: (value: string) => void
   onMaxAgeChange: (value: PlayerRankingAgeCeiling) => void
   onPositionChange: (value: PlayerRankingPosition) => void
   onBandChange: (value: PlayerRankingBand) => void
@@ -292,7 +290,6 @@ export function CrossSportPlayerWorkbench({
   band,
   sort,
   page,
-  onSearchChange,
   onMaxAgeChange,
   onPositionChange,
   onBandChange,
@@ -323,6 +320,16 @@ export function CrossSportPlayerWorkbench({
     band !== 'all' ||
     sort !== 'graduation_rank'
 
+  useEffect(() => {
+    if (!search.trim()) {
+      setExpandedId(null)
+      return
+    }
+    if (response?.items.length === 1) {
+      setExpandedId(response.items[0]!.player.id)
+    }
+  }, [response, search])
+
   return (
     <div className="csw-body" aria-busy={loading}>
       <div
@@ -343,19 +350,6 @@ export function CrossSportPlayerWorkbench({
         role="group"
         aria-label={`${sportLabel} graduation filters`}
       >
-        <label className="iw-search">
-          <span className="iw-control-label">Player</span>
-          <span className="iw-input-shell">
-            <Search size={15} aria-hidden="true" />
-            <input
-              type="search"
-              value={search}
-              placeholder={`Search ${sportLabel} players`}
-              onChange={(event) => onSearchChange(event.currentTarget.value)}
-            />
-          </span>
-        </label>
-
         <label>
           <span className="iw-control-label">Age</span>
           <select
@@ -655,8 +649,16 @@ export function CrossSportPlayerWorkbench({
             </>
           ) : (
             <>
-              <strong>No players match this Graduation Board.</strong>
-              <span>Broaden the path, age, position, or search filters.</span>
+              <strong>
+                {search.trim()
+                  ? `No graduation candidate matches “${search.trim()}”.`
+                  : 'No players match this Graduation Board.'}
+              </strong>
+              <span>
+                {search.trim()
+                  ? 'Try another spelling. Every sport, age, position, and path was searched.'
+                  : 'Broaden the path, age, or position filters.'}
+              </span>
               <button type="button" onClick={onReset}>
                 Reset graduation filters
               </button>
