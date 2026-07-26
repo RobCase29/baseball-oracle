@@ -43,6 +43,63 @@ This is an observed-snapshot comparison, not a canonical hobby census. Provider
 export caps, source-name identity, and incomplete cross-provider identity work
 remain explicit limitations.
 
+## Age and character origin context
+
+Age and origin are display metadata only. They never add to or subtract from
+Binder Index, durability, posture, Master rank, or Build qualification.
+
+The locked `hobby-subject-context.v1` artifact joins by the exact GemRate source
+key and currently covers:
+
+| Context | Covered subjects |
+| --- | ---: |
+| Baseball player age | 698 |
+| Football player age | 288 |
+| Basketball player age | 287 |
+| Pokémon introduction generation/year | 1,022 |
+
+Player ages come only from an existing verified/reviewed player-to-GemRate
+bridge. Unresolved and historical athlete identities display `Age —`; the
+system does not infer biological age from first graded year.
+
+Pokémon context uses the canonical species number from the
+[PokéAPI species index](https://pokeapi.co/docs/v2), then maps its generation
+to the original Japanese main-series release year documented in the
+[Pokémon company history](https://corporate.pokemon.com/en-us/about/).
+It displays as `Introduced 1996 · ~30 years`, not as a literal character age or
+first TCG-card release. The GemRate `Nidoran` bucket is explicitly retained as
+a merged Generation I label rather than assigned one gendered National Dex
+number.
+
+## Descriptive sales trend
+
+`assessment.salesTrend` translates the existing completed-sales-dollar history
+into a readable direction and magnitude. It is descriptive context, not price
+appreciation, transaction count, exact-card liquidity, or a forecast.
+
+The primary label uses like-for-like six-month year-over-year log change:
+
+| State | Six-month change |
+| --- | ---: |
+| Surging | at least +50% |
+| Rising | +15% to +50% |
+| Steady | approximately -13% to +15% |
+| Falling | -33% to -13% |
+| Steep decline | -33% or worse |
+
+The positive and negative cutoffs are symmetric in log space. A recent
+three-month reversal can override the label to `Cooling` or `Rebounding`; a
+strong move emerging from a steady six-month window can become `Early rise` or
+`Early decline`.
+
+Because the current market is broadly positive—and Pokémon and soccer have
+especially strong cohort-wide growth—the API also reports whether the subject
+is `ahead`, `inline`, or `lagging` its domain. The domain baseline is the median
+six-month log change among coherent rows with at least $50,000 in both
+comparison windows. `Thin base` and `Mixed window` qualifiers prevent a large
+percentage on sparse or contradictory evidence from looking fully confirmed.
+When the GemRate snapshot is stale, the directional label is withheld.
+
 ## Absolute demand magnitude
 
 Dollar magnitude enters the score directly. A fixed log scale prevents a

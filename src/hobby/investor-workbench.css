@@ -320,7 +320,7 @@
 
 .iw-table-frame table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1240px;
   border-spacing: 0;
   border-collapse: separate;
   color: var(--mx-text);
@@ -532,6 +532,54 @@
   color: #aab5ae;
 }
 
+.iw-context,
+.iw-trend {
+  min-width: 132px;
+}
+
+.iw-context strong,
+.iw-context span,
+.iw-trend strong,
+.iw-trend span {
+  display: block;
+}
+
+.iw-context strong,
+.iw-trend strong {
+  color: #c7d0ca;
+  font-size: 0.71rem;
+  font-weight: 710;
+}
+
+.iw-context span,
+.iw-trend span {
+  margin-top: 3px;
+  color: #68766e;
+  font-size: 0.59rem;
+}
+
+.iw-trend--up strong,
+.iw-detail-trend--up > strong {
+  color: var(--mx-mint);
+}
+
+.iw-trend--down strong,
+.iw-detail-trend--down > strong {
+  color: var(--mx-red);
+}
+
+.iw-trend--mixed strong,
+.iw-detail-trend--mixed > strong {
+  color: var(--mx-amber);
+}
+
+.iw-trend--flat strong,
+.iw-detail-trend--flat > strong,
+.iw-trend--unavailable strong,
+.iw-detail-trend--unavailable > strong {
+  color: #aab5ae;
+}
+
 .iw-evidence strong,
 .iw-evidence span {
   display: block;
@@ -596,6 +644,30 @@
   color: #b1bbb4;
   font-size: 0.68rem;
   line-height: 1.5;
+}
+
+.iw-detail-context,
+.iw-detail-trend {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 1px solid var(--mx-line);
+  border-radius: 7px;
+  background: rgba(5, 10, 7, 0.28);
+}
+
+.iw-detail-context strong,
+.iw-detail-trend strong {
+  color: #dce2dd;
+  font-size: 0.72rem;
+}
+
+.iw-detail-context span,
+.iw-detail-trend span {
+  color: #89968e;
+  font-size: 0.64rem;
+  line-height: 1.48;
 }
 
 .iw-signal-grid {
@@ -875,6 +947,24 @@
     padding: 0 12px 11px 55px;
     color: #87948c;
     font-size: 0.59rem;
+  }
+
+  .bbi-build-card__trend {
+    flex-basis: 100%;
+    padding-top: 2px;
+    font-weight: 700;
+  }
+
+  .bbi-build-card__trend.iw-trend--up {
+    color: var(--mx-mint);
+  }
+
+  .bbi-build-card__trend.iw-trend--down {
+    color: var(--mx-red);
+  }
+
+  .bbi-build-card__trend.iw-trend--mixed {
+    color: var(--mx-amber);
   }
 
   .bbi-build-card__detail {

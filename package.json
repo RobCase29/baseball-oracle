@@ -29,6 +29,7 @@
     "data:acquire": "tsx scripts/data/acquire-model-data.ts",
     "data:gemrate-sales:build": "node --import tsx scripts/data/build-gemrate-sales-snapshot.ts",
     "data:gemrate-hobby:build": "node --import tsx scripts/data/build-gemrate-hobby-snapshot.ts",
+    "data:hobby-subject-context:build": "node --import tsx scripts/data/build-hobby-subject-context.ts",
     "data:hobby-player-signals:import": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts",
     "data:hobby-player-signals:check": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --check",
     "data:hobby-player-signals:validate": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --source api/_data/checklist-hobby-player-signals.json --output api/_data/checklist-hobby-player-signals.json --check",

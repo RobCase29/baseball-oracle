@@ -21,6 +21,10 @@ import {
   type MagnificentXDomain,
   type MagnificentXResearchPosture,
 } from '../domain/hobbyMasterRanking'
+import {
+  salesTrendDisplay,
+  subjectContextDisplay,
+} from './hobbySubjectDisplay'
 import { PrintableBoardTabs } from './PrintableBoardTabs'
 import './top-100-binder-board.css'
 
@@ -34,12 +38,6 @@ const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
   notation: 'compact',
   maximumFractionDigits: 1,
-})
-
-const percentFormatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-  signDisplay: 'always',
 })
 
 const unsignedPercentFormatter = new Intl.NumberFormat('en-US', {
@@ -73,10 +71,6 @@ const postureLabels: Record<MagnificentXResearchPosture, string> = {
 
 function moneyLabel(value: number): string {
   return compactCurrencyFormatter.format(value)
-}
-
-function percentLabel(value: number): string {
-  return percentFormatter.format(value)
 }
 
 function unsignedPercentLabel(value: number): string {
@@ -321,13 +315,15 @@ export function ExitWindowBoard() {
                   <th scope="col">Resale heat</th>
                   <th scope="col">Decline pressure</th>
                   <th scope="col">TTM / run rate</th>
-                  <th scope="col">6M / recent 3M</th>
+                  <th scope="col">Demand trend</th>
                   <th scope="col">Binder read</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(({ item, exit }, index) => {
                   const signal = item.assessment.marketSignal
+                  const context = subjectContextDisplay(item.subject)
+                  const trend = salesTrendDisplay(item.assessment)
                   return (
                     <tr
                       className={`bbi-top100__row bbi-top100__row--${item.subject.domain}`}
@@ -341,8 +337,8 @@ export function ExitWindowBoard() {
                         <strong>{item.subject.name}</strong>
                         <span>
                           {item.subject.type === 'pokemon_character'
-                            ? 'Character'
-                            : 'Athlete'}
+                            ? `Character · ${context.compact}`
+                            : `Athlete · ${context.compact}`}
                         </span>
                       </th>
                       <td>
@@ -372,10 +368,12 @@ export function ExitWindowBoard() {
                           run rate
                         </span>
                       </td>
-                      <td>
-                        <strong>{percentLabel(exit.sixMonthChange)}</strong>
+                      <td
+                        className={`bbi-top100__trend bbi-top100__trend--${trend.direction}`}
+                      >
+                        <strong>{trend.compact}</strong>
                         <span>
-                          {percentLabel(exit.recentThreeMonthChange)} recent
+                          3M {trend.recentThreeMonth} · {trend.evidence}
                         </span>
                       </td>
                       <td>

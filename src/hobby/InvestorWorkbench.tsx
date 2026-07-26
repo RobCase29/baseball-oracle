@@ -16,6 +16,10 @@ import {
   type MagnificentXDomain,
   type MagnificentXResearchPosture,
 } from '../domain/hobbyMasterRanking'
+import {
+  salesTrendDisplay,
+  subjectContextDisplay,
+} from './hobbySubjectDisplay'
 import './investor-workbench.css'
 
 export interface InvestorWorkbenchProps {
@@ -162,15 +166,6 @@ const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
 
 function formatMoney(value: number): string {
   return compactCurrencyFormatter.format(value)
-}
-
-function formatPercent(value: number): string {
-  const prefix = value > 0 ? '+' : ''
-  return `${prefix}${value.toFixed(Math.abs(value) >= 100 ? 0 : 1)}%`
-}
-
-function growthPercent(logGrowth: number): number {
-  return 100 * Math.expm1(logGrowth)
 }
 
 function formatReason(value: string): string {
@@ -393,6 +388,7 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
+                <th scope="col">Age / origin</th>
                 <th scope="col">Board status</th>
                 <th
                   scope="col"
@@ -415,6 +411,19 @@ export function InvestorWorkbench({
                     Binder Index
                     <span aria-hidden="true">
                       {sort === 'master_score'
+                        ? (direction === 'asc' ? '↑' : '↓')
+                        : '↕'}
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  aria-sort={sortAriaValue(sort === 'trend', direction)}
+                >
+                  <button type="button" onClick={() => changeSort('trend')}>
+                    Demand trend
+                    <span aria-hidden="true">
+                      {sort === 'trend'
                         ? (direction === 'asc' ? '↑' : '↓')
                         : '↕'}
                     </span>
@@ -473,6 +482,8 @@ export function InvestorWorkbench({
                 const rowPosture = assessment.posture
                 const meta = postureMeta[rowPosture]
                 const expanded = expandedId === subject.id
+                const context = subjectContextDisplay(subject)
+                const trend = salesTrendDisplay(assessment)
                 return (
                   <Fragment key={subject.id}>
                     <tr className={`iw-data-row iw-posture--${rowPosture}`}>
@@ -499,6 +510,10 @@ export function InvestorWorkbench({
                             : 'Athlete'}
                         </span>
                       </th>
+                      <td className="iw-context">
+                        <strong>{context.primary}</strong>
+                        <span>{context.secondary}</span>
+                      </td>
                       <td>
                         <span className={`iw-posture iw-posture--${rowPosture}`}>
                           {meta.label}
@@ -515,6 +530,14 @@ export function InvestorWorkbench({
                       <td className="iw-number iw-score">
                         <strong>{signal.score.toFixed(1)}</strong>
                         <span>/100</span>
+                      </td>
+                      <td
+                        className={`iw-trend iw-trend--${trend.direction}`}
+                      >
+                        <strong>{trend.primary}</strong>
+                        <span>
+                          6M {trend.sixMonth} · 3M {trend.recentThreeMonth}
+                        </span>
                       </td>
                       <td className="iw-number">
                         <strong>{formatMoney(signal.latestTwelveMonthSalesUsd)}</strong>
@@ -542,7 +565,7 @@ export function InvestorWorkbench({
                     </tr>
                     {expanded ? (
                       <tr className="iw-detail-row">
-                        <td colSpan={9}>
+                        <td colSpan={11}>
                           <div className="iw-detail">
                             <section>
                               <span className="iw-detail-label">Research read</span>
@@ -552,6 +575,10 @@ export function InvestorWorkbench({
                                 {subject.type === 'pokemon_character'
                                   ? 'Character demand only. No set, card, language, grade, population, or entry price is selected.'
                                   : 'Athlete demand only. No exact card, expected return, or sell decision is implied.'}
+                              </div>
+                              <div className="iw-detail-context">
+                                <strong>{context.primary}</strong>
+                                <span>{context.detail}</span>
                               </div>
                             </section>
 
@@ -583,13 +610,12 @@ export function InvestorWorkbench({
                                   <dd>{signal.downsideProtectionScore.toFixed(0)}</dd>
                                 </div>
                                 <div>
+                                  <dt>6M demand trend</dt>
+                                  <dd>{trend.sixMonth}</dd>
+                                </div>
+                                <div>
                                   <dt>Recent 3M YoY</dt>
-                                  <dd>
-                                    {formatPercent(growthPercent(
-                                      signal.diagnostics
-                                        .recentThreeMonthYearOverYearLogGrowth,
-                                    ))}
-                                  </dd>
+                                  <dd>{trend.recentThreeMonth}</dd>
                                 </div>
                                 <div>
                                   <dt>Worst scenario</dt>
@@ -598,6 +624,12 @@ export function InvestorWorkbench({
                                   </dd>
                                 </div>
                               </dl>
+                              <div
+                                className={`iw-detail-trend iw-detail-trend--${trend.direction}`}
+                              >
+                                <strong>{trend.primary}</strong>
+                                <span>{trend.detail}</span>
+                              </div>
                               <p className="iw-detail-scope">
                                 Positive momentum never adds score. It can only
                                 clear the separate escape-velocity gate after
@@ -658,6 +690,8 @@ export function InvestorWorkbench({
               const signal = assessment.marketSignal
               const meta = postureMeta[assessment.posture]
               const expanded = expandedId === subject.id
+              const context = subjectContextDisplay(subject)
+              const trend = salesTrendDisplay(assessment)
               return (
                 <article
                   className={`bbi-build-card iw-posture--${assessment.posture}`}
@@ -699,6 +733,12 @@ export function InvestorWorkbench({
                       run rate
                     </span>
                     <span>{signal.durabilityScore.toFixed(0)} durability</span>
+                    <span>{context.compact}</span>
+                    <span
+                      className={`bbi-build-card__trend iw-trend--${trend.direction}`}
+                    >
+                      {trend.compact} · 6M demand
+                    </span>
                   </div>
                   {expanded ? (
                     <div className="bbi-build-card__detail">
@@ -716,7 +756,21 @@ export function InvestorWorkbench({
                           <dt>Shock resistance</dt>
                           <dd>{signal.components.shockResistance.toFixed(0)}</dd>
                         </div>
+                        <div>
+                          <dt>Age / origin</dt>
+                          <dd>{context.compact}</dd>
+                        </div>
+                        <div>
+                          <dt>6M demand trend</dt>
+                          <dd>{trend.sixMonth}</dd>
+                        </div>
                       </dl>
+                      <div
+                        className={`iw-detail-trend iw-detail-trend--${trend.direction}`}
+                      >
+                        <strong>{trend.primary}</strong>
+                        <span>{trend.detail}</span>
+                      </div>
                       <p className="iw-detail-scope">
                         {assessment.buildQualification.reasonCodes.length === 0
                           ? 'All current Build gates are cleared.'

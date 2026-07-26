@@ -7,6 +7,10 @@ import type {
   MagnificentXSubjectType,
   MagnificentXTaxonomyStatus,
 } from './magnificentX.js'
+import {
+  buildHobbySalesTrend,
+  type HobbySalesTrend,
+} from './hobbySalesTrend.js'
 
 export const HOBBY_MASTER_SCHEMA_VERSION =
   'hobby-oracle-master-ranking.v2' as const
@@ -55,6 +59,7 @@ export interface HobbyMasterSignalInput {
   globalObservedPercentile: number
   identityStatus: MagnificentXIdentityStatus
   freshnessStatus: MagnificentXFreshnessStatus
+  domainMedianSixMonthLogGrowth?: number | null
 }
 
 export interface HobbyMasterSignal {
@@ -112,6 +117,7 @@ export interface HobbyMasterAssessment {
   modelVersion: typeof HOBBY_MASTER_MODEL_VERSION
   posture: MagnificentXResearchPosture
   marketSignal: HobbyMasterSignal
+  salesTrend: HobbySalesTrend
   buildQualification: {
     eligible: boolean
     designation: 'Build' | 'withheld'
@@ -132,6 +138,33 @@ export interface HobbyMasterAssessment {
   }
 }
 
+export type HobbySubjectContextEvidence =
+  | 'verified_player_bridge'
+  | 'reviewed_player_bridge'
+  | 'unique_player_bridge'
+  | 'canonical_species_match'
+  | 'merged_species_label'
+  | 'unavailable'
+
+export type HobbySubjectContextSource =
+  | 'backstop_player_rankings'
+  | 'career_oracle'
+  | 'keeptradecut'
+  | 'hashtag_basketball'
+  | 'pokeapi'
+  | null
+
+export interface HobbySubjectContext {
+  age: number | null
+  ageAsOf: string | null
+  introducedYear: number | null
+  approximateYearsSinceIntroduction: number | null
+  introducedGeneration: number | null
+  nationalDexNumber: number | null
+  sourceId: HobbySubjectContextSource
+  evidence: HobbySubjectContextEvidence
+}
+
 export interface HobbyMasterFeedItem {
   recordVersion: typeof HOBBY_MASTER_RECORD_VERSION
   subject: {
@@ -143,6 +176,7 @@ export interface HobbyMasterFeedItem {
     identityStatus: MagnificentXIdentityStatus
     firstGradedYear: number | null
     mostGradedYear: number | null
+    context: HobbySubjectContext
   }
   masterRank: number | null
   withinCohortRank: number
@@ -417,6 +451,19 @@ export function buildHobbyMasterAssessment(
   input: HobbyMasterSignalInput,
 ): HobbyMasterAssessment {
   const marketSignal = computeHobbyMasterSignal(input)
+  const salesTrend = buildHobbySalesTrend({
+    monthlySalesUsd: input.row.monthlySalesUsd,
+    currentSixMonthSalesUsd: marketSignal.currentSixMonthSalesUsd,
+    priorYearSixMonthSalesUsd: marketSignal.priorYearSixMonthSalesUsd,
+    effectiveSalesMonths: marketSignal.diagnostics.effectiveSalesMonths,
+    sixMonthLogGrowth:
+      marketSignal.diagnostics.yearOverYearSixMonthLogGrowth,
+    recentThreeMonthLogGrowth:
+      marketSignal.diagnostics.recentThreeMonthYearOverYearLogGrowth,
+    domainMedianSixMonthLogGrowth:
+      input.domainMedianSixMonthLogGrowth ?? null,
+    freshnessStatus: input.freshnessStatus,
+  })
   const comparisonEligible =
     input.row.taxonomyStatus === 'coherent_provider_cohort' &&
     input.cohortSize >= 100 &&
@@ -505,6 +552,7 @@ export function buildHobbyMasterAssessment(
     modelVersion: HOBBY_MASTER_MODEL_VERSION,
     posture,
     marketSignal,
+    salesTrend,
     buildQualification: {
       eligible: buildEligible,
       designation: buildEligible ? 'Build' : 'withheld',
@@ -537,6 +585,8 @@ export function isHobbyMasterFeedResponse(
     Array.isArray(candidate.items) &&
     candidate.items.every((item) => (
       item.recordVersion === HOBBY_MASTER_RECORD_VERSION &&
+      Boolean(item.subject?.context) &&
+      typeof item.assessment?.salesTrend?.available === 'boolean' &&
       (
         item.masterRank === null ||
         (Number.isSafeInteger(item.masterRank) && item.masterRank > 0)

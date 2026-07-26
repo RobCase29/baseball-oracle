@@ -93,6 +93,44 @@ describe('Hobby Oracle master-ranking catalog', () => {
     expect(jordan.items[0]?.subject.name).toBe('Michael Jordan')
   })
 
+  it('adds evidence-gated player age, Pokémon origin, and category-aware trend', () => {
+    const ohtani = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Shohei Ohtani',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+    const pikachu = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Pikachu',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+    const calRaleigh = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Cal Raleigh',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+
+    expect(ohtani?.subject.context).toMatchObject({
+      age: 31,
+      sourceId: 'backstop_player_rankings',
+      evidence: 'verified_player_bridge',
+    })
+    expect(pikachu?.subject.context).toMatchObject({
+      introducedYear: 1996,
+      approximateYearsSinceIntroduction: 30,
+      introducedGeneration: 1,
+      nationalDexNumber: 25,
+      evidence: 'canonical_species_match',
+    })
+    expect(calRaleigh?.assessment.salesTrend).toMatchObject({
+      state: 'cooling',
+      sixMonthChangePct: 50.3,
+      recentThreeMonthChangePct: -45,
+      relativeToDomain: 'ahead',
+      evidence: 'mixed_window',
+    })
+  })
+
   it('removes low-dollar cohort leaders from Build', () => {
     const conor = buildHobbyMasterFeed(hobbyMasterCatalog, {
       domain: 'combat',
@@ -122,6 +160,9 @@ describe('Hobby Oracle master-ranking catalog', () => {
       (item) => !item.assessment.buildQualification.eligible,
     )).toBe(true)
     expect(response.page.total).toBe(6_022)
+    expect(staleCatalog.items.every(
+      (item) => !item.assessment.salesTrend.available,
+    )).toBe(true)
   })
 
   it('orders a complete Exit 100 by active demand and decline pressure', () => {

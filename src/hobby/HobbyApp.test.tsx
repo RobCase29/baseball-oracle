@@ -89,6 +89,27 @@ function feedItem(input: {
       identityStatus: 'source_name_only',
       firstGradedYear: input.type === 'athlete' ? 2003 : null,
       mostGradedYear: input.type === 'athlete' ? 2024 : null,
+      context: input.type === 'pokemon_character'
+        ? {
+            age: null,
+            ageAsOf: null,
+            introducedYear: 1996,
+            approximateYearsSinceIntroduction: 30,
+            introducedGeneration: 1,
+            nationalDexNumber: 25,
+            sourceId: 'pokeapi',
+            evidence: 'canonical_species_match',
+          }
+        : {
+            age: 24,
+            ageAsOf: '2026-06-30T00:00:00.000Z',
+            introducedYear: null,
+            approximateYearsSinceIntroduction: null,
+            introducedGeneration: null,
+            nationalDexNumber: null,
+            sourceId: 'backstop_player_rankings',
+            evidence: 'verified_player_bridge',
+          },
     },
     masterRank: input.rank,
     withinCohortRank: 1,

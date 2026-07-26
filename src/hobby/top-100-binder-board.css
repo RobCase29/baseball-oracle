@@ -545,6 +545,18 @@
   color: var(--bbi-watch) !important;
 }
 
+.bbi-top100__trend--up strong {
+  color: var(--bbi-growth) !important;
+}
+
+.bbi-top100__trend--down strong {
+  color: var(--bbi-danger) !important;
+}
+
+.bbi-top100__trend--mixed strong {
+  color: var(--bbi-watch) !important;
+}
+
 .bbi-top100__grade {
   text-align: center !important;
 }

@@ -182,7 +182,8 @@
         "name",
         "identityStatus",
         "firstGradedYear",
-        "mostGradedYear"
+        "mostGradedYear",
+        "context"
       ],
       "properties": {
         "id": {
@@ -223,6 +224,191 @@
           ],
           "minimum": 1800,
           "maximum": 2026
+        },
+        "context": {
+          "$ref": "#/$defs/subjectContext"
+        }
+      }
+    },
+    "subjectContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "age",
+        "ageAsOf",
+        "introducedYear",
+        "approximateYearsSinceIntroduction",
+        "introducedGeneration",
+        "nationalDexNumber",
+        "sourceId",
+        "evidence"
+      ],
+      "properties": {
+        "age": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 10,
+          "maximum": 100
+        },
+        "ageAsOf": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "introducedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1996,
+          "maximum": 2026
+        },
+        "approximateYearsSinceIntroduction": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "introducedGeneration": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 9
+        },
+        "nationalDexNumber": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1025
+        },
+        "sourceId": {
+          "enum": [
+            "backstop_player_rankings",
+            "career_oracle",
+            "keeptradecut",
+            "hashtag_basketball",
+            "pokeapi",
+            null
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "verified_player_bridge",
+            "reviewed_player_bridge",
+            "unique_player_bridge",
+            "canonical_species_match",
+            "merged_species_label",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "salesTrend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelVersion",
+        "available",
+        "state",
+        "label",
+        "direction",
+        "sixMonthChangePct",
+        "recentThreeMonthChangePct",
+        "domainMedianSixMonthChangePct",
+        "relativeToDomain",
+        "evidence",
+        "reasonCodes"
+      ],
+      "properties": {
+        "modelVersion": {
+          "const": "hobby-sales-trend/completed-sales-yoy-v1.0.0"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "surging",
+            "rising",
+            "steady",
+            "falling",
+            "steep_decline",
+            "cooling",
+            "rebounding",
+            "early_rise",
+            "early_decline",
+            "withheld"
+          ]
+        },
+        "label": {
+          "enum": [
+            "Surging",
+            "Rising",
+            "Steady",
+            "Falling",
+            "Steep decline",
+            "Cooling",
+            "Rebounding",
+            "Early rise",
+            "Early decline",
+            "Refresh needed"
+          ]
+        },
+        "direction": {
+          "enum": [
+            "up",
+            "flat",
+            "down",
+            "mixed",
+            "unavailable"
+          ]
+        },
+        "sixMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "recentThreeMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "domainMedianSixMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "relativeToDomain": {
+          "enum": [
+            "ahead",
+            "inline",
+            "lagging",
+            "unavailable"
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "confirmed",
+            "mixed_window",
+            "thin_base",
+            "withheld"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
         }
       }
     },
@@ -517,6 +703,7 @@
         "modelVersion",
         "posture",
         "marketSignal",
+        "salesTrend",
         "buildQualification",
         "flags"
       ],
@@ -535,6 +722,9 @@
         },
         "marketSignal": {
           "$ref": "#/$defs/signal"
+        },
+        "salesTrend": {
+          "$ref": "#/$defs/salesTrend"
         },
         "buildQualification": {
           "$ref": "#/$defs/buildQualification"

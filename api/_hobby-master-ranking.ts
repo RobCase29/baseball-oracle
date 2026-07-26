@@ -20,6 +20,7 @@ import {
   type HobbyMasterFeedResponse,
   type HobbyMasterSortDirection,
   type HobbyMasterSortKey,
+  type HobbySubjectContext,
   type MagnificentXDomain,
   type MagnificentXIdentityStatus,
   type MagnificentXResearchPosture,
@@ -32,6 +33,13 @@ import {
   normalizeSubjectSearchText,
   subjectSearchRelevance,
 } from '../src/domain/subjectSearch.js'
+import {
+  hobbySalesTrendDomainMedians,
+} from '../src/domain/hobbySalesTrend.js'
+import {
+  parseHobbySubjectContextArtifact,
+  type HobbySubjectContextRow,
+} from './_hobby-subject-context.js'
 
 type HobbySnapshot = ReturnType<typeof parseHobbySnapshot>
 
@@ -81,6 +89,53 @@ function comparisonEligible(
   )
 }
 
+function subjectContextFor(
+  row: MagnificentXSourceRow,
+  context: HobbySubjectContextRow | undefined,
+  dataThroughYear: number,
+): HobbySubjectContext {
+  if (context?.kind === 'person' && row.subjectType === 'athlete') {
+    return {
+      age: context.age,
+      ageAsOf: context.ageAsOf,
+      introducedYear: null,
+      approximateYearsSinceIntroduction: null,
+      introducedGeneration: null,
+      nationalDexNumber: null,
+      sourceId: context.sourceId,
+      evidence: context.identityStatus,
+    }
+  }
+  if (
+    context?.kind === 'pokemon_character' &&
+    row.subjectType === 'pokemon_character'
+  ) {
+    return {
+      age: null,
+      ageAsOf: null,
+      introducedYear: context.introducedYear,
+      approximateYearsSinceIntroduction: Math.max(
+        0,
+        dataThroughYear - context.introducedYear,
+      ),
+      introducedGeneration: context.introducedGeneration,
+      nationalDexNumber: context.nationalDexNumber,
+      sourceId: context.sourceId,
+      evidence: context.identityStatus,
+    }
+  }
+  return {
+    age: null,
+    ageAsOf: null,
+    introducedYear: null,
+    approximateYearsSinceIntroduction: null,
+    introducedGeneration: null,
+    nationalDexNumber: null,
+    sourceId: null,
+    evidence: 'unavailable',
+  }
+}
+
 function sortMasterItems(
   left: HobbyMasterFeedItem,
   right: HobbyMasterFeedItem,
@@ -101,6 +156,15 @@ export function buildHobbyMasterCatalog(
 ): HobbyMasterCatalog {
   const snapshot = parseHobbySnapshot(value)
   const freshness = magnificentXFreshness(snapshot.dataThrough, now)
+  const subjectContextArtifact = parseHobbySubjectContextArtifact()
+  const subjectContextBySourceKey = new Map(
+    subjectContextArtifact.rows.map((row) => [row.gemRateSourceKey, row]),
+  )
+  const dataThroughYear = Number(snapshot.dataThrough.slice(0, 4))
+  if (!Number.isSafeInteger(dataThroughYear)) {
+    throw new Error('Hobby master snapshot data-through year is invalid')
+  }
+  const trendMedianByDomain = hobbySalesTrendDomainMedians(snapshot.rows)
   const legacyCatalog = buildMagnificentXCatalog(snapshot, now)
   const legacyCohortRankBySourceKey = new Map(
     legacyCatalog.items.map((item) => [item.subject.id, item.withinCohortRank]),
@@ -166,6 +230,8 @@ export function buildHobbyMasterCatalog(
         globalPercentileBySourceKey.get(row.sourceKey) ?? 0,
       identityStatus,
       freshnessStatus: freshness.status,
+      domainMedianSixMonthLogGrowth:
+        trendMedianByDomain.get(row.domain) ?? null,
     })
     return {
       recordVersion: HOBBY_MASTER_RECORD_VERSION,
@@ -178,6 +244,11 @@ export function buildHobbyMasterCatalog(
         identityStatus,
         firstGradedYear: row.firstGradedYear,
         mostGradedYear: row.mostGradedYear,
+        context: subjectContextFor(
+          row,
+          subjectContextBySourceKey.get(row.sourceKey),
+          dataThroughYear,
+        ),
       },
       masterRank: null,
       withinCohortRank:
@@ -215,11 +286,17 @@ export function buildHobbyMasterCatalog(
     createHash('sha256').update(JSON.stringify({
       rowsSha256: snapshot.rowsSha256,
       modelVersion: HOBBY_MASTER_MODEL_VERSION,
+      subjectContextSha256: subjectContextArtifact.contentSha256,
+      trendDomainMedians: [...trendMedianByDomain],
       freshness: freshness.status,
       rankings: items.map((item) => [
         item.subject.id,
         item.masterRank,
         item.assessment.marketSignal.score,
+        item.assessment.salesTrend.state,
+        item.assessment.salesTrend.sixMonthChangePct,
+        item.subject.context.age,
+        item.subject.context.introducedYear,
         item.assessment.buildQualification.route,
       ]),
     })).digest('hex')

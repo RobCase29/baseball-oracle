@@ -59,6 +59,18 @@ function exitItem(rank: number): HobbyMasterFeedItem {
       identityStatus: 'source_name_only',
       firstGradedYear: 2020,
       mostGradedYear: 2026,
+      context: {
+        age: 24,
+        ageAsOf: '2026-06-30T00:00:00.000Z',
+        introducedYear: null,
+        approximateYearsSinceIntroduction: null,
+        introducedGeneration: null,
+        nationalDexNumber: null,
+        sourceId: rank % 2 === 0
+          ? 'backstop_player_rankings'
+          : 'keeptradecut',
+        evidence: 'verified_player_bridge',
+      },
     },
     masterRank: rank + 500,
     withinCohortRank: rank,
@@ -136,6 +148,12 @@ describe('Backstop Binder Index Exit 100', () => {
       name: 'Backstop Binder Index Exit 100',
     })
     expect(within(table).getAllByRole('row')).toHaveLength(101)
+    const firstRow = within(table).getByText('Exit Candidate').closest('tr')
+    expect(firstRow).not.toBeNull()
+    expect(within(firstRow!).getByText(/Age 24/)).toBeInTheDocument()
+    expect(
+      within(firstRow!).getByText('Steep decline -45.0%'),
+    ).toBeInTheDocument()
     expect(within(table).getByText('Exit Candidate')).toBeInTheDocument()
     expect(within(table).getByText('#1')).toBeInTheDocument()
     expect(within(table).getByText('#100')).toBeInTheDocument()

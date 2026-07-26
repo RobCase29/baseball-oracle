@@ -40,6 +40,27 @@ function top100Fixture(): HobbyMasterFeedResponse {
         identityStatus: 'source_name_only',
         firstGradedYear: pokemon ? null : 2003,
         mostGradedYear: pokemon ? null : 2026,
+        context: pokemon
+          ? {
+              age: null,
+              ageAsOf: null,
+              introducedYear: 1996,
+              approximateYearsSinceIntroduction: 30,
+              introducedGeneration: 1,
+              nationalDexNumber: 25,
+              sourceId: 'pokeapi',
+              evidence: 'canonical_species_match',
+            }
+          : {
+              age: 24,
+              ageAsOf: '2026-06-30T00:00:00.000Z',
+              introducedYear: null,
+              approximateYearsSinceIntroduction: null,
+              introducedGeneration: null,
+              nationalDexNumber: null,
+              sourceId: 'keeptradecut',
+              evidence: 'reviewed_player_bridge',
+            },
       },
       masterRank: rank,
       withinCohortRank: rank,
@@ -70,6 +91,19 @@ function top100Fixture(): HobbyMasterFeedResponse {
           },
           diagnostics: {},
           sensitivity: {},
+        },
+        salesTrend: {
+          modelVersion: 'hobby-sales-trend/completed-sales-yoy-v1.0.0',
+          available: true,
+          state: 'rising',
+          label: 'Rising',
+          direction: 'up',
+          sixMonthChangePct: 20,
+          recentThreeMonthChangePct: 25,
+          domainMedianSixMonthChangePct: 18,
+          relativeToDomain: 'inline',
+          evidence: 'confirmed',
+          reasonCodes: [],
         },
         buildQualification: {
           eligible: rank <= 20,
@@ -157,6 +191,12 @@ describe('Backstop Binder Index score-ranked Top 100', () => {
     expect(within(table).getByText('Pikachu')).toBeInTheDocument()
     expect(within(table).getByText('#1')).toBeInTheDocument()
     expect(within(table).getByText('#100')).toBeInTheDocument()
+    const pikachuRow = within(table).getByText('Pikachu').closest('tr')
+    expect(pikachuRow).not.toBeNull()
+    expect(within(pikachuRow!).getByText(/1996 debut/)).toBeInTheDocument()
+    expect(
+      within(pikachuRow!).getByText('Rising +20.0%'),
+    ).toBeInTheDocument()
     expect(screen.getByText('100 / 100')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'By Binder Index' }),

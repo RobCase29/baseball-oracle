@@ -13,6 +13,10 @@ import {
   type MagnificentXDomain,
   type MagnificentXResearchPosture,
 } from '../domain/hobbyMasterRanking'
+import {
+  salesTrendDisplay,
+  subjectContextDisplay,
+} from './hobbySubjectDisplay'
 import { PrintableBoardTabs } from './PrintableBoardTabs'
 import './top-100-binder-board.css'
 
@@ -294,7 +298,7 @@ export function Top100BinderBoard() {
                   <th scope="col">Cohort</th>
                   <th scope="col">Binder Index</th>
                   <th scope="col">TTM / run rate</th>
-                  <th scope="col">Demand / durability</th>
+                  <th scope="col">Demand trend / durability</th>
                   <th scope="col">Persistence / stability</th>
                   <th scope="col">Board read</th>
                   <th scope="col">Qualification</th>
@@ -304,6 +308,8 @@ export function Top100BinderBoard() {
                 {items.map((item) => {
                   const signal = item.assessment.marketSignal
                   const qualification = item.assessment.buildQualification
+                  const context = subjectContextDisplay(item.subject)
+                  const trend = salesTrendDisplay(item.assessment)
                   return (
                     <tr
                       className={`bbi-top100__row bbi-top100__row--${item.subject.domain}`}
@@ -317,8 +323,8 @@ export function Top100BinderBoard() {
                         <strong>{item.subject.name}</strong>
                         <span>
                           {item.subject.type === 'pokemon_character'
-                            ? 'Character'
-                            : 'Athlete'}
+                            ? `Character · ${context.compact}`
+                            : `Athlete · ${context.compact}`}
                         </span>
                       </th>
                       <td>
@@ -340,8 +346,10 @@ export function Top100BinderBoard() {
                           run rate
                         </span>
                       </td>
-                      <td>
-                        <strong>{signal.demandMagnitudeScore.toFixed(0)}</strong>
+                      <td
+                        className={`bbi-top100__trend bbi-top100__trend--${trend.direction}`}
+                      >
+                        <strong>{trend.compact}</strong>
                         <span>{signal.durabilityScore.toFixed(0)} durability</span>
                       </td>
                       <td>
