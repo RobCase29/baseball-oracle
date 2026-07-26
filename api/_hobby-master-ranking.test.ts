@@ -163,6 +163,9 @@ describe('Hobby Oracle master-ranking catalog', () => {
     expect(staleCatalog.items.every(
       (item) => !item.assessment.salesTrend.available,
     )).toBe(true)
+    expect(staleCatalog.items.every(
+      (item) => !item.assessment.breakoutSignal?.surfaced,
+    )).toBe(true)
   })
 
   it('orders a complete Exit 100 by active demand and decline pressure', () => {
@@ -186,5 +189,46 @@ describe('Hobby Oracle master-ranking catalog', () => {
         item.assessment.posture !== 'hold_candidate',
     )).toBe(true)
     expect(response.items[0]?.subject.name).toBe('Jayden Daniels')
+  })
+
+  it('surfaces a fixed global Breakout Radar without changing Binder ranks', () => {
+    const global = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      screen: 'breakout',
+      posture: 'all',
+      sort: 'breakout',
+      direction: 'desc',
+      limit: 100,
+    })
+    const baseball = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      screen: 'breakout',
+      domain: 'baseball',
+      posture: 'all',
+      sort: 'breakout',
+      direction: 'desc',
+      limit: 100,
+    })
+    const cam = global.items.find(
+      (item) => item.subject.name === 'Cam Schlittler',
+    )
+    const filteredCam = baseball.items.find(
+      (item) => item.subject.name === 'Cam Schlittler',
+    )
+
+    expect(global.page.total).toBe(25)
+    expect(global.items[0]?.subject.name).toBe('Cam Ward')
+    expect(cam?.assessment.breakoutSignal).toMatchObject({
+      rank: 2,
+      score: 80,
+      surfaced: true,
+      evidence: 'volume_confirmed_cold_start',
+      sixMonthDemandAddedUsd: 1_831_650,
+      confirmingMonths: 6,
+    })
+    expect(cam?.assessment.salesTrend.sixMonthChangePct)
+      .toBeGreaterThan(300_000)
+    expect(filteredCam?.assessment.breakoutSignal?.rank).toBe(2)
+    expect(filteredCam?.masterRank).toBe(cam?.masterRank)
+    expect(filteredCam?.assessment.marketSignal.score)
+      .toBe(cam?.assessment.marketSignal.score)
   })
 })

@@ -134,6 +134,42 @@ describe('/api/v2/hobby-oracle', () => {
     expect(payload.meta.exactCardRecommendationsAvailable).toBe(false)
   })
 
+  it('serves the capped Breakout Radar with stable global ranks', () => {
+    const recorder = responseRecorder()
+    handleHobbyMasterRanking(
+      request('/api/v2/hobby-oracle?screen=breakout&domain=baseball'),
+      recorder.response,
+      currentAt,
+    )
+    const payload = recorder.json() as {
+      items: Array<{
+        subject: { name: string; domain: string }
+        assessment: {
+          breakoutSignal: {
+            rank: number
+            score: number
+            sixMonthDemandAddedUsd: number
+          }
+        }
+      }>
+      page: { total: number }
+    }
+    const cam = payload.items.find(
+      (item) => item.subject.name === 'Cam Schlittler',
+    )
+
+    expect(recorder.response.statusCode).toBe(200)
+    expect(payload.page.total).toBe(7)
+    expect(payload.items.every(
+      (item) => item.subject.domain === 'baseball',
+    )).toBe(true)
+    expect(cam?.assessment.breakoutSignal).toMatchObject({
+      rank: 2,
+      score: 80,
+      sixMonthDemandAddedUsd: 1_831_650,
+    })
+  })
+
   it('rejects duplicate, unsupported, and oversized parameters', () => {
     for (const url of [
       '/api/v2/hobby-oracle?domain=football&domain=basketball',
@@ -141,6 +177,7 @@ describe('/api/v2/hobby-oracle', () => {
       '/api/v2/hobby-oracle?posture=Buy',
       '/api/v2/hobby-oracle?sort=expected_return',
       '/api/v2/hobby-oracle?direction=sideways',
+      '/api/v2/hobby-oracle?screen=hype',
       '/api/v2/hobby-oracle?limit=101',
       '/api/v2/hobby-oracle?tier=market_leader',
     ]) {

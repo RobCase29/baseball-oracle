@@ -18,6 +18,7 @@ import {
   midrankPercentiles,
   type HobbyMasterFeedItem,
   type HobbyMasterFeedResponse,
+  type HobbyMasterScreen,
   type HobbyMasterSortDirection,
   type HobbyMasterSortKey,
   type HobbySubjectContext,
@@ -29,6 +30,10 @@ import {
 import {
   buildHobbyExitWindowSignal,
 } from '../src/domain/hobbyLiquidationSignal.js'
+import {
+  HOBBY_BREAKOUT_DISPLAY_LIMIT,
+  buildHobbyBreakoutDomainBaseline,
+} from '../src/domain/hobbyBreakoutSignal.js'
 import {
   normalizeSubjectSearchText,
   subjectSearchRelevance,
@@ -45,6 +50,7 @@ type HobbySnapshot = ReturnType<typeof parseHobbySnapshot>
 
 export interface HobbyMasterQuery {
   q?: string
+  screen?: HobbyMasterScreen
   domain?: MagnificentXDomain | 'all'
   posture?: MagnificentXResearchPosture | 'all'
   sort?: HobbyMasterSortKey
@@ -165,6 +171,8 @@ export function buildHobbyMasterCatalog(
     throw new Error('Hobby master snapshot data-through year is invalid')
   }
   const trendMedianByDomain = hobbySalesTrendDomainMedians(snapshot.rows)
+  const breakoutBaselineByDomain =
+    buildHobbyBreakoutDomainBaseline(snapshot.rows)
   const legacyCatalog = buildMagnificentXCatalog(snapshot, now)
   const legacyCohortRankBySourceKey = new Map(
     legacyCatalog.items.map((item) => [item.subject.id, item.withinCohortRank]),
@@ -232,6 +240,8 @@ export function buildHobbyMasterCatalog(
       freshnessStatus: freshness.status,
       domainMedianSixMonthLogGrowth:
         trendMedianByDomain.get(row.domain) ?? null,
+      breakoutDomainBaseline:
+        breakoutBaselineByDomain.get(row.domain) ?? null,
     })
     return {
       recordVersion: HOBBY_MASTER_RECORD_VERSION,
@@ -264,9 +274,39 @@ export function buildHobbyMasterCatalog(
   const masterRankBySourceKey = new Map(
     rankedItems.map((item, index) => [item.subject.id, index + 1]),
   )
-  const items = unrankedItems.map((item) => ({
+  const masterRankedItems = unrankedItems.map((item) => ({
     ...item,
     masterRank: masterRankBySourceKey.get(item.subject.id) ?? null,
+  }))
+  const breakoutRankedItems = masterRankedItems
+    .filter((item) => item.assessment.breakoutSignal?.surfaced)
+    .toSorted((left, right) => (
+      (right.assessment.breakoutSignal?.score ?? 0) -
+        (left.assessment.breakoutSignal?.score ?? 0) ||
+      (right.assessment.breakoutSignal?.sixMonthDemandAddedUsd ?? 0) -
+        (left.assessment.breakoutSignal?.sixMonthDemandAddedUsd ?? 0) ||
+      right.assessment.marketSignal.annualizedCurrentSixMonthSalesUsd -
+        left.assessment.marketSignal.annualizedCurrentSixMonthSalesUsd ||
+      compareNullableRank(left.masterRank, right.masterRank) ||
+      left.subject.name.localeCompare(right.subject.name, 'en-US')
+    ))
+  const breakoutRankBySourceKey = new Map(
+    breakoutRankedItems.map((item, index) => [
+      item.subject.id,
+      index + 1,
+    ]),
+  )
+  const items = masterRankedItems.map((item): HobbyMasterFeedItem => ({
+    ...item,
+    assessment: item.assessment.breakoutSignal
+      ? {
+          ...item.assessment,
+          breakoutSignal: {
+            ...item.assessment.breakoutSignal,
+            rank: breakoutRankBySourceKey.get(item.subject.id) ?? null,
+          },
+        }
+      : item.assessment,
   }))
   const cohorts = snapshot.metadata.cohortCounts.map((cohort) => {
     const cohortItems = items.filter(
@@ -295,6 +335,8 @@ export function buildHobbyMasterCatalog(
         item.assessment.marketSignal.score,
         item.assessment.salesTrend.state,
         item.assessment.salesTrend.sixMonthChangePct,
+        item.assessment.breakoutSignal?.rank,
+        item.assessment.breakoutSignal?.score,
         item.subject.context.age,
         item.subject.context.introducedYear,
         item.assessment.buildQualification.route,
@@ -326,9 +368,12 @@ export function buildHobbyMasterFeed(
   query: HobbyMasterQuery = {},
 ): HobbyMasterFeedResponse {
   const normalizedQuery = normalizeSubjectSearchText(query.q ?? '')
+  const screen = query.screen ?? 'standard'
   const domain = query.domain ?? 'all'
   const posture = query.posture ?? 'all'
-  const sort = query.sort ?? 'master_rank'
+  const sort = query.sort ?? (
+    screen === 'breakout' ? 'breakout' : 'master_rank'
+  )
   const direction = query.direction ??
     (
       sort === 'master_rank' ||
@@ -359,6 +404,15 @@ export function buildHobbyMasterFeed(
       )
     : null
   const filtered = catalog.items.filter((item) => (
+    (
+      screen === 'standard' ||
+      (
+        item.assessment.breakoutSignal?.rank !== null &&
+        item.assessment.breakoutSignal?.rank !== undefined &&
+        item.assessment.breakoutSignal.rank <=
+          HOBBY_BREAKOUT_DISPLAY_LIMIT
+      )
+    ) &&
     (domain === 'all' || item.subject.domain === domain) &&
     (posture === 'all' || item.assessment.posture === posture) &&
     (
@@ -402,6 +456,11 @@ export function buildHobbyMasterFeed(
         comparison =
           leftSignal.annualizedCurrentSixMonthSalesUsd -
           rightSignal.annualizedCurrentSixMonthSalesUsd
+        break
+      case 'breakout':
+        comparison =
+          (left.assessment.breakoutSignal?.score ?? 0) -
+          (right.assessment.breakoutSignal?.score ?? 0)
         break
       case 'exit_window':
         comparison =

@@ -242,6 +242,44 @@ The first five master ranks are Charizard, Pikachu, Shohei Ohtani, Michael
 Jordan, and Victor Wembanyama. Conor McGregor remains useful combat-cohort
 context but no longer qualifies as a cross-hobby Build.
 
+## Breakout Radar companion screen
+
+`/hobby?screen=breakout` activates a separate, capped Top 25 screen for
+small- and mid-demand subjects whose completed-sales demand is expanding in
+real dollars. It does not change Binder Index, Master rank, posture, or Build
+qualification. A cohort filter preserves the same global Breakout rank.
+
+The model first floors sparse comparison bases at $50,000 for six months and
+$25,000 for three months. It then requires absolute dollar lift, at least five
+of six comparable months rising, non-declining sequential three-month demand,
+and effective-month/concentration checks. Annualized current demand must remain
+between $500,000 and $15 million, TTM demand must remain below $12 million, and
+the subject cannot already be a Build.
+
+Growth must also clear both an absolute threshold and the subject's domain
+median. This prevents a category-wide hot market—especially Pokémon—from
+looking like subject-specific breakout. The seven score components are:
+
+```text
+20% current run-rate scale
+15% absolute six-month dollars added
+25% six-month expansion versus domain
+15% recent-three-month expansion versus domain
+10% sequential three-month acceleration
+10% confirming-month breadth
+ 5% sales dispersion
+```
+
+Scores of 75+, 65–74.9, and 50–64.9 display as `Breakout`, `Strong`, and
+`Emerging`. The public radar is capped at the stable global Top 25. A
+`volume-confirmed cold start` label replaces raw percentage confidence when
+the prior base is thin; the stronger absolute-demand gates must still pass.
+
+In the current snapshot, Cam Schlittler ranks Breakout #2 with a score of 80.0.
+The useful evidence is approximately $1.83 million of six-month demand added
+and six of six comparable months rising—not the misleading six-digit
+percentage generated from a $471 prior base.
+
 ## Withheld evidence
 
 The model still lacks exact-card identity, grade, population growth, reprint or

@@ -23,6 +23,7 @@ import {
 import { InvestorWorkbench } from './InvestorWorkbench'
 import {
   ResearchLensTabs,
+  type HobbyMarketScreen,
   type HobbyResearchLens,
   type PlayerRankingSport,
 } from './ResearchLensTabs'
@@ -35,6 +36,7 @@ import {
 import { GlobalBoardSearch } from './GlobalBoardSearch'
 
 const PAGE_SIZE = 50
+const DEFAULT_MARKET_SCREEN: HobbyMarketScreen = 'standard'
 const DEFAULT_POSTURE: MagnificentXResearchPosture = 'build_candidate'
 const DEFAULT_SORT: HobbyMasterSortKey = 'master_rank'
 const DEFAULT_DIRECTION: HobbyMasterSortDirection = 'asc'
@@ -80,6 +82,16 @@ function initialLens(): HobbyResearchLens {
   return value === 'players' || value === 'young' ? 'players' : 'market'
 }
 
+function initialMarketScreen(): HobbyMarketScreen {
+  const parameters = initialParameters()
+  return (
+    parameters.get('screen') === 'breakout' &&
+    !parameters.get('q')?.trim()
+  )
+    ? 'breakout'
+    : DEFAULT_MARKET_SCREEN
+}
+
 function initialPlayerSport(): PlayerRankingSport {
   const value = initialParameters().get('sport')
   return value === 'baseball' ||
@@ -112,6 +124,7 @@ function initialPosture(): MagnificentXResearchPosture | 'all' {
   if (legacyTier === 'long_tail') return 'pass'
   if (legacyTier === 'evidence_needed') return 'unrated'
   if (parameters.get('q')?.trim()) return 'all'
+  if (parameters.get('screen') === 'breakout') return 'all'
   return DEFAULT_POSTURE
 }
 
@@ -121,7 +134,7 @@ function initialSort(): HobbyMasterSortKey {
   if (value && validSorts.has(value as HobbyMasterSortKey)) {
     return value as HobbyMasterSortKey
   }
-  return DEFAULT_SORT
+  return initialMarketScreen() === 'breakout' ? 'breakout' : DEFAULT_SORT
 }
 
 function initialDirection(): HobbyMasterSortDirection {
@@ -201,6 +214,8 @@ function formatDate(value: string | undefined): string {
 
 export function HobbyApp() {
   const [lens, setLens] = useState<HobbyResearchLens>(initialLens)
+  const [marketScreen, setMarketScreen] =
+    useState<HobbyMarketScreen>(initialMarketScreen)
   const [search, setSearch] = useState(() => (
     initialLens() === 'market' ? initialParameters().get('q') ?? '' : ''
   ))
@@ -250,6 +265,7 @@ export function HobbyApp() {
       page: page.toString(),
       limit: PAGE_SIZE.toString(),
     })
+    if (marketScreen === 'breakout') parameters.set('screen', 'breakout')
     const normalizedSearch = deferredSearch.trim()
     if (normalizedSearch) parameters.set('q', normalizedSearch)
     if (domain !== 'all') parameters.set('domain', domain)
@@ -290,7 +306,16 @@ export function HobbyApp() {
       })
 
     return () => controller.abort()
-  }, [deferredSearch, direction, domain, lens, page, posture, sort])
+  }, [
+    deferredSearch,
+    direction,
+    domain,
+    lens,
+    marketScreen,
+    page,
+    posture,
+    sort,
+  ])
 
   useEffect(() => {
     if (lens !== 'players') return
@@ -388,6 +413,7 @@ export function HobbyApp() {
       url.searchParams.set('lens', 'players')
       url.searchParams.delete('domain')
       url.searchParams.delete('direction')
+      url.searchParams.delete('screen')
       url.searchParams.set('sport', playerSport)
       const normalizedPlayerSearch = playerSearch.trim()
       if (normalizedPlayerSearch) {
@@ -430,6 +456,11 @@ export function HobbyApp() {
       url.searchParams.delete('position')
       url.searchParams.delete('band')
       url.searchParams.delete('format')
+      if (marketScreen === 'breakout') {
+        url.searchParams.set('screen', 'breakout')
+      } else {
+        url.searchParams.delete('screen')
+      }
       if (normalizedSearch) url.searchParams.set('q', normalizedSearch)
       else url.searchParams.delete('q')
       if (domain === 'all') url.searchParams.delete('domain')
@@ -446,6 +477,7 @@ export function HobbyApp() {
     direction,
     domain,
     lens,
+    marketScreen,
     page,
     playerAgeMax,
     playerBand,
@@ -468,6 +500,7 @@ export function HobbyApp() {
       )
     setSearch(value)
     if (enteringGlobalSearch) {
+      setMarketScreen(DEFAULT_MARKET_SCREEN)
       setDomain('all')
       setPosture('all')
       setSort(DEFAULT_SORT)
@@ -495,6 +528,20 @@ export function HobbyApp() {
 
   function selectPositions(): void {
     setLens('market')
+    setMarketScreen(DEFAULT_MARKET_SCREEN)
+    setPosture(DEFAULT_POSTURE)
+    setSort(DEFAULT_SORT)
+    setDirection(DEFAULT_DIRECTION)
+    setPage(1)
+  }
+
+  function selectBreakout(): void {
+    setLens('market')
+    setMarketScreen('breakout')
+    setSearch('')
+    setPosture('all')
+    setSort('breakout')
+    setDirection('desc')
     setPage(1)
   }
 
@@ -520,6 +567,7 @@ export function HobbyApp() {
   }
 
   function resetFilters(): void {
+    setMarketScreen(DEFAULT_MARKET_SCREEN)
     setSearch('')
     setDomain('all')
     setPosture(DEFAULT_POSTURE)
@@ -588,10 +636,14 @@ export function HobbyApp() {
     ? response?.snapshot.dataThrough
     : playerResponse?.snapshot.dataThrough
   const headlineMetricLabel = lens === 'market'
-    ? 'On Build Board'
+    ? marketScreen === 'breakout'
+      ? 'On Breakout Radar'
+      : 'On Build Board'
     : 'On Deck'
   const headlineMetricValue = lens === 'market'
-    ? response?.meta.buildCount
+    ? marketScreen === 'breakout'
+      ? response?.page.total
+      : response?.meta.buildCount
     : playerResponse?.summary.onDeckCount
   const showRefreshPosture =
     posture === 'needs_refresh' ||
@@ -632,12 +684,16 @@ export function HobbyApp() {
             <span>BACKSTOP BINDER INDEX</span>
             <h1 id="investor-workbench-title">
               {lens === 'market'
-                ? 'The Build Board'
+                ? marketScreen === 'breakout'
+                  ? 'The Breakout Radar'
+                  : 'The Build Board'
                 : 'The Graduation Board'}
             </h1>
             <p>
               {lens === 'market'
-                ? 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
+                ? marketScreen === 'breakout'
+                  ? 'A selective small- and mid-demand screen for subjects adding real completed-sales dollars with broad, accelerating momentum.'
+                  : 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
                 : 'One global baseball, football, and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'}
             </p>
           </div>
@@ -683,10 +739,12 @@ export function HobbyApp() {
           />
           <ResearchLensTabs
             lens={lens}
+            marketScreen={marketScreen}
             posture={posture}
             playerSport={playerSport}
             showRefresh={showRefreshPosture}
             onMarketSelect={selectPositions}
+            onBreakoutSelect={selectBreakout}
             onPlayerRankingsSelect={selectPlayerRankings}
             onPlayerSportSelect={changePlayerSport}
             onPostureSelect={changePosture}
@@ -697,6 +755,7 @@ export function HobbyApp() {
               loading={loading}
               error={error}
               search={search}
+              marketScreen={marketScreen}
               domain={domain}
               posture={posture}
               sort={sort}

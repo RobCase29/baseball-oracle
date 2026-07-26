@@ -20,6 +20,7 @@ import {
   salesTrendDisplay,
   subjectContextDisplay,
 } from './hobbySubjectDisplay'
+import type { HobbyMarketScreen } from './ResearchLensTabs'
 import './investor-workbench.css'
 
 export interface InvestorWorkbenchProps {
@@ -27,6 +28,7 @@ export interface InvestorWorkbenchProps {
   loading: boolean
   error: string | null
   search: string
+  marketScreen: HobbyMarketScreen
   domain: MagnificentXDomain | 'all'
   posture: MagnificentXResearchPosture | 'all'
   sort: HobbyMasterSortKey
@@ -132,6 +134,7 @@ const sortOptions: ReadonlyArray<{
   { value: 'master_score', label: 'Binder Index' },
   { value: 'ttm_sales', label: 'TTM demand' },
   { value: 'current_run_rate', label: 'Current run rate' },
+  { value: 'breakout', label: 'Breakout signal' },
   { value: 'exit_window', label: 'Exit-window priority' },
   { value: 'durability', label: 'Durability' },
   { value: 'cohort_rank', label: 'Cohort rank' },
@@ -168,6 +171,23 @@ function formatMoney(value: number): string {
   return compactCurrencyFormatter.format(value)
 }
 
+function formatSignedMoney(value: number): string {
+  return value >= 0 ? `+${formatMoney(value)}` : formatMoney(value)
+}
+
+const breakoutTierLabels = {
+  breakout: 'Breakout',
+  strong: 'Strong',
+  emerging: 'Emerging',
+  below_surface: 'Below surface',
+} as const
+
+const breakoutEvidenceLabels = {
+  confirmed: 'Confirmed',
+  volume_confirmed_cold_start: 'Cold start · volume confirmed',
+  withheld: 'Withheld',
+} as const
+
 function formatReason(value: string): string {
   const known = reasonLabels[value]
   if (known) return known
@@ -193,6 +213,7 @@ export function InvestorWorkbench({
   loading,
   error,
   search,
+  marketScreen,
   domain,
   posture,
   sort,
@@ -206,6 +227,7 @@ export function InvestorWorkbench({
 }: InvestorWorkbenchProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const items = response?.items ?? []
+  const breakoutActive = marketScreen === 'breakout'
   const pagination = response?.page ?? {
     page,
     limit: 50,
@@ -218,6 +240,7 @@ export function InvestorWorkbench({
   ) ?? 0
   const filtersActive =
     search.length > 0 ||
+    marketScreen !== 'standard' ||
     domain !== 'all' ||
     posture !== 'build_candidate' ||
     sort !== 'master_rank' ||
@@ -255,7 +278,9 @@ export function InvestorWorkbench({
     >
       <div className="iw-sr-only" role="status" aria-live="polite" aria-atomic="true">
         {loading
-          ? 'Updating the Build Board.'
+          ? `Updating the ${
+              breakoutActive ? 'Breakout Radar' : 'Build Board'
+            }.`
           : error
             ? ''
             : `${pagination.total.toLocaleString()} matches. Page ${pagination.page} of ${Math.max(1, pagination.totalPages)}.`}
@@ -342,6 +367,8 @@ export function InvestorWorkbench({
           <strong className="iw-comparability">
             {search.trim()
               ? 'Global name search · every board status and cohort.'
+              : marketScreen === 'breakout'
+                ? 'Top 25 globally · fixed demand-scale gates · no sport quotas.'
               : domain === 'all'
                 ? 'One master order · absolute demand first · no cohort quotas.'
                 : selectedPostureDescriptions[posture]}
@@ -362,7 +389,9 @@ export function InvestorWorkbench({
 
       {loading && items.length === 0 ? (
         <div className="iw-message" role="status">
-          Loading the current Build Board…
+          Loading the current {breakoutActive
+            ? 'Breakout Radar'
+            : 'Build Board'}…
         </div>
       ) : null}
 
@@ -372,7 +401,13 @@ export function InvestorWorkbench({
             className={`iw-table-frame${loading ? ' is-loading' : ''}`}
             aria-busy={loading}
           >
-            <table aria-label="Long-term collection research table">
+            <table
+              aria-label={
+                breakoutActive
+                  ? 'Small- and mid-demand Breakout Radar table'
+                  : 'Long-term collection research table'
+              }
+            >
             <thead>
               <tr>
                 <th className="iw-expand-column" aria-label="Row details" />
@@ -392,12 +427,20 @@ export function InvestorWorkbench({
                 <th scope="col">Board status</th>
                 <th
                   scope="col"
-                  aria-sort={sortAriaValue(sort === 'master_rank', direction)}
+                  aria-sort={sortAriaValue(
+                    sort === (breakoutActive ? 'breakout' : 'master_rank'),
+                    direction,
+                  )}
                 >
-                  <button type="button" onClick={() => changeSort('master_rank')}>
-                    Board rank
+                  <button
+                    type="button"
+                    onClick={() => changeSort(
+                      breakoutActive ? 'breakout' : 'master_rank',
+                    )}
+                  >
+                    {breakoutActive ? 'Breakout rank' : 'Board rank'}
                     <span aria-hidden="true">
-                      {sort === 'master_rank'
+                      {sort === (breakoutActive ? 'breakout' : 'master_rank')
                         ? (direction === 'asc' ? '↑' : '↓')
                         : '↕'}
                     </span>
@@ -405,12 +448,20 @@ export function InvestorWorkbench({
                 </th>
                 <th
                   scope="col"
-                  aria-sort={sortAriaValue(sort === 'master_score', direction)}
+                  aria-sort={sortAriaValue(
+                    sort === (breakoutActive ? 'breakout' : 'master_score'),
+                    direction,
+                  )}
                 >
-                  <button type="button" onClick={() => changeSort('master_score')}>
-                    Binder Index
+                  <button
+                    type="button"
+                    onClick={() => changeSort(
+                      breakoutActive ? 'breakout' : 'master_score',
+                    )}
+                  >
+                    {breakoutActive ? 'Breakout signal' : 'Binder Index'}
                     <span aria-hidden="true">
-                      {sort === 'master_score'
+                      {sort === (breakoutActive ? 'breakout' : 'master_score')
                         ? (direction === 'asc' ? '↑' : '↓')
                         : '↕'}
                     </span>
@@ -421,7 +472,7 @@ export function InvestorWorkbench({
                   aria-sort={sortAriaValue(sort === 'trend', direction)}
                 >
                   <button type="button" onClick={() => changeSort('trend')}>
-                    Demand trend
+                    {breakoutActive ? '6M demand added' : 'Demand trend'}
                     <span aria-hidden="true">
                       {sort === 'trend'
                         ? (direction === 'asc' ? '↑' : '↓')
@@ -472,7 +523,9 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th scope="col">Qualification</th>
+                <th scope="col">
+                  {breakoutActive ? 'Confirmation' : 'Qualification'}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -484,6 +537,7 @@ export function InvestorWorkbench({
                 const expanded = expandedId === subject.id
                 const context = subjectContextDisplay(subject)
                 const trend = salesTrendDisplay(assessment)
+                const breakout = assessment.breakoutSignal
                 return (
                   <Fragment key={subject.id}>
                     <tr className={`iw-data-row iw-posture--${rowPosture}`}>
@@ -521,24 +575,53 @@ export function InvestorWorkbench({
                       </td>
                       <td className="iw-number iw-rank">
                         <strong>
-                          {item.masterRank === null ? '—' : `#${item.masterRank}`}
+                          {breakoutActive
+                            ? breakout?.rank === null ||
+                                breakout?.rank === undefined
+                              ? '—'
+                              : `#${breakout.rank}`
+                            : item.masterRank === null
+                              ? '—'
+                              : `#${item.masterRank}`}
                         </strong>
                         <span>
-                          Cohort #{item.withinCohortRank}
+                          {breakoutActive
+                            ? `Binder ${
+                                item.masterRank === null
+                                  ? 'unranked'
+                                  : `#${item.masterRank}`
+                              }`
+                            : `Cohort #${item.withinCohortRank}`}
                         </span>
                       </td>
                       <td className="iw-number iw-score">
-                        <strong>{signal.score.toFixed(1)}</strong>
-                        <span>/100</span>
+                        <strong>
+                          {(breakoutActive
+                            ? breakout?.score ?? 0
+                            : signal.score
+                          ).toFixed(1)}
+                        </strong>
+                        <span>{breakoutActive ? 'BREAKOUT' : '/100'}</span>
                       </td>
-                      <td
-                        className={`iw-trend iw-trend--${trend.direction}`}
-                      >
-                        <strong>{trend.primary}</strong>
-                        <span>
-                          6M {trend.sixMonth} · 3M {trend.recentThreeMonth}
-                        </span>
-                      </td>
+                      {breakoutActive ? (
+                        <td className="iw-number is-positive">
+                          <strong>
+                            {formatSignedMoney(
+                              breakout?.sixMonthDemandAddedUsd ?? 0,
+                            )}
+                          </strong>
+                          <span>vs prior-year 6M</span>
+                        </td>
+                      ) : (
+                        <td
+                          className={`iw-trend iw-trend--${trend.direction}`}
+                        >
+                          <strong>{trend.primary}</strong>
+                          <span>
+                            6M {trend.sixMonth} · 3M {trend.recentThreeMonth}
+                          </span>
+                        </td>
+                      )}
                       <td className="iw-number">
                         <strong>{formatMoney(signal.latestTwelveMonthSalesUsd)}</strong>
                       </td>
@@ -552,15 +635,23 @@ export function InvestorWorkbench({
                       </td>
                       <td className="iw-evidence">
                         <strong>
-                          {assessment.buildQualification.route ===
-                            'established_durability'
-                            ? 'Durable'
+                          {breakoutActive
+                            ? breakout
+                              ? breakoutEvidenceLabels[breakout.evidence]
+                              : 'Withheld'
                             : assessment.buildQualification.route ===
-                                'escape_velocity'
-                              ? 'Escape'
-                              : 'Withheld'}
+                                'established_durability'
+                              ? 'Durable'
+                              : assessment.buildQualification.route ===
+                                  'escape_velocity'
+                                ? 'Escape'
+                                : 'Withheld'}
                         </strong>
-                        <span>{unresolvedGateCount(item)} gates open</span>
+                        <span>
+                          {breakoutActive
+                            ? `${breakout?.confirmingMonths ?? 0}/6 months confirming`
+                            : `${unresolvedGateCount(item)} gates open`}
+                        </span>
                       </td>
                     </tr>
                     {expanded ? (
@@ -568,13 +659,27 @@ export function InvestorWorkbench({
                         <td colSpan={11}>
                           <div className="iw-detail">
                             <section>
-                              <span className="iw-detail-label">Research read</span>
-                              <h3>{meta.label}</h3>
-                              <p>{meta.description}</p>
+                              <span className="iw-detail-label">
+                                {breakoutActive
+                                  ? 'Breakout read'
+                                  : 'Research read'}
+                              </span>
+                              <h3>
+                                {breakoutActive && breakout
+                                  ? breakoutTierLabels[breakout.tier]
+                                  : meta.label}
+                              </h3>
+                              <p>
+                                {breakoutActive
+                                  ? 'Emerging completed-sales demand has cleared fixed small- and mid-scale acceleration, breadth, and concentration gates.'
+                                  : meta.description}
+                              </p>
                               <div className="iw-detail-scope">
-                                {subject.type === 'pokemon_character'
-                                  ? 'Character demand only. No set, card, language, grade, population, or entry price is selected.'
-                                  : 'Athlete demand only. No exact card, expected return, or sell decision is implied.'}
+                                {breakoutActive
+                                  ? 'Demand acceleration only. This is not a Build label, card-price appreciation, or an instruction to buy.'
+                                  : subject.type === 'pokemon_character'
+                                    ? 'Character demand only. No set, card, language, grade, population, or entry price is selected.'
+                                    : 'Athlete demand only. No exact card, expected return, or sell decision is implied.'}
                               </div>
                               <div className="iw-detail-context">
                                 <strong>{context.primary}</strong>
@@ -583,70 +688,161 @@ export function InvestorWorkbench({
                             </section>
 
                             <section>
-                              <span className="iw-detail-label">Signal anatomy</span>
-                              <dl className="iw-signal-grid">
-                                <div>
-                                  <dt>Absolute demand</dt>
-                                  <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Global demand pct</dt>
-                                  <dd>{signal.globalObservedPercentile.toFixed(1)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Durability</dt>
-                                  <dd>{signal.durabilityScore.toFixed(0)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Persistence</dt>
-                                  <dd>{signal.components.persistence.toFixed(0)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Shock resistance</dt>
-                                  <dd>{signal.components.shockResistance.toFixed(0)}</dd>
-                                </div>
-                                <div>
-                                  <dt>Downside protection</dt>
-                                  <dd>{signal.downsideProtectionScore.toFixed(0)}</dd>
-                                </div>
-                                <div>
-                                  <dt>6M demand trend</dt>
-                                  <dd>{trend.sixMonth}</dd>
-                                </div>
-                                <div>
-                                  <dt>Recent 3M YoY</dt>
-                                  <dd>{trend.recentThreeMonth}</dd>
-                                </div>
-                                <div>
-                                  <dt>Worst scenario</dt>
-                                  <dd>
-                                    {signal.sensitivity.worstScenarioScore.toFixed(1)}
-                                  </dd>
-                                </div>
-                              </dl>
+                              <span className="iw-detail-label">
+                                {breakoutActive
+                                  ? 'Breakout anatomy'
+                                  : 'Signal anatomy'}
+                              </span>
+                              {breakoutActive && breakout ? (
+                                <dl className="iw-signal-grid">
+                                  <div>
+                                    <dt>6M demand added</dt>
+                                    <dd>
+                                      {formatSignedMoney(
+                                        breakout.sixMonthDemandAddedUsd,
+                                      )}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Recent 3M added</dt>
+                                    <dd>
+                                      {formatSignedMoney(
+                                        breakout.recentThreeMonthDemandAddedUsd,
+                                      )}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Months confirming</dt>
+                                    <dd>{breakout.confirmingMonths}/6</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Vs domain · 6M</dt>
+                                    <dd>
+                                      {breakout.relativeSixMonthMultiple
+                                        .toFixed(1)}×
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Sequential · 3M</dt>
+                                    <dd>
+                                      {breakout.sequentialThreeMonthMultiple
+                                        .toFixed(1)}×
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Demand scale</dt>
+                                    <dd>
+                                      {breakout.demandScale === 'small'
+                                        ? 'Small'
+                                        : 'Mid'}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Current velocity</dt>
+                                    <dd>
+                                      {breakout.components
+                                        .currentDemandVelocity.toFixed(0)}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Breadth</dt>
+                                    <dd>
+                                      {breakout.components.breadth.toFixed(0)}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt>Dispersion</dt>
+                                    <dd>
+                                      {breakout.components.dispersion.toFixed(0)}
+                                    </dd>
+                                  </div>
+                                </dl>
+                              ) : (
+                                <dl className="iw-signal-grid">
+                                  <div>
+                                    <dt>Absolute demand</dt>
+                                    <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Global demand pct</dt>
+                                    <dd>{signal.globalObservedPercentile.toFixed(1)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Durability</dt>
+                                    <dd>{signal.durabilityScore.toFixed(0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Persistence</dt>
+                                    <dd>{signal.components.persistence.toFixed(0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Shock resistance</dt>
+                                    <dd>{signal.components.shockResistance.toFixed(0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Downside protection</dt>
+                                    <dd>{signal.downsideProtectionScore.toFixed(0)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>6M demand trend</dt>
+                                    <dd>{trend.sixMonth}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Recent 3M YoY</dt>
+                                    <dd>{trend.recentThreeMonth}</dd>
+                                  </div>
+                                  <div>
+                                    <dt>Worst scenario</dt>
+                                    <dd>
+                                      {signal.sensitivity.worstScenarioScore.toFixed(1)}
+                                    </dd>
+                                  </div>
+                                </dl>
+                              )}
                               <div
-                                className={`iw-detail-trend iw-detail-trend--${trend.direction}`}
+                                className={
+                                  breakoutActive
+                                    ? 'iw-detail-trend iw-detail-trend--up'
+                                    : `iw-detail-trend iw-detail-trend--${trend.direction}`
+                                }
                               >
-                                <strong>{trend.primary}</strong>
-                                <span>{trend.detail}</span>
+                                <strong>
+                                  {breakoutActive && breakout
+                                    ? breakoutEvidenceLabels[breakout.evidence]
+                                    : trend.primary}
+                                </strong>
+                                <span>
+                                  {breakoutActive && breakout
+                                    ? `${formatSignedMoney(
+                                        breakout.sixMonthDemandAddedUsd,
+                                      )} versus the prior-year six-month window. ${
+                                        breakout.latestMonthCooling
+                                          ? 'Latest month is cooling; monitor confirmation.'
+                                          : 'Latest month has not triggered the cooling flag.'
+                                      }`
+                                    : trend.detail}
+                                </span>
                               </div>
                               <p className="iw-detail-scope">
-                                Positive momentum never adds score. It can only
-                                clear the separate escape-velocity gate after
-                                absolute demand and durability thresholds pass.
+                                {breakoutActive
+                                  ? 'The Breakout score is a separate radar signal and never changes Binder Index.'
+                                  : 'Positive momentum never adds score. It can only clear the separate escape-velocity gate after absolute demand and durability thresholds pass.'}
                               </p>
                             </section>
 
                             <section>
                               <span className="iw-detail-label">
-                                Build qualification
+                                {breakoutActive
+                                  ? 'Binder context'
+                                  : 'Build qualification'}
                               </span>
                               <p className="iw-gate-count">
-                                {assessment.buildQualification.passed} of{' '}
-                                {assessment.buildQualification.required} common
-                                gates passed
+                                {breakoutActive
+                                  ? `Binder ${signal.score.toFixed(1)} · ${meta.label}`
+                                  : `${assessment.buildQualification.passed} of ${assessment.buildQualification.required} common gates passed`}
                               </p>
-                              {assessment.buildQualification.route ? (
+                              {!breakoutActive &&
+                              assessment.buildQualification.route ? (
                                 <p>
                                   Route:{' '}
                                   <strong>
@@ -657,17 +853,34 @@ export function InvestorWorkbench({
                                   </strong>
                                 </p>
                               ) : null}
-                              <ul>
-                                {assessment.buildQualification.reasonCodes
-                                  .slice(0, 6)
-                                  .map((reason) => (
-                                    <li key={reason}>{formatReason(reason)}</li>
-                                  ))}
-                              </ul>
+                              {breakoutActive ? (
+                                <ul>
+                                  <li>
+                                    The stable Breakout rank is global and does
+                                    not rerank when a cohort is filtered.
+                                  </li>
+                                  <li>
+                                    Domain-relative growth controls for a
+                                    category-wide hot market.
+                                  </li>
+                                  <li>
+                                    Exact card, supply, price paid, and expected
+                                    return still require separate underwriting.
+                                  </li>
+                                </ul>
+                              ) : (
+                                <ul>
+                                  {assessment.buildQualification.reasonCodes
+                                    .slice(0, 6)
+                                    .map((reason) => (
+                                      <li key={reason}>{formatReason(reason)}</li>
+                                    ))}
+                                </ul>
+                              )}
                               <div className="iw-detail-scope">
-                                Subject-level demand only. Exact card, grade,
-                                scarcity, population growth, price paid, and
-                                expected return remain outside this label.
+                                {breakoutActive
+                                  ? 'Subject-level completed-sales demand only. This does not measure card-price appreciation.'
+                                  : 'Subject-level demand only. Exact card, grade, scarcity, population growth, price paid, and expected return remain outside this label.'}
                               </div>
                             </section>
                           </div>
@@ -683,7 +896,11 @@ export function InvestorWorkbench({
 
           <div
             className="bbi-build-mobile-list"
-            aria-label="Mobile Build Board"
+            aria-label={
+              breakoutActive
+                ? 'Mobile Breakout Radar'
+                : 'Mobile Build Board'
+            }
           >
             {items.map((item) => {
               const { subject, assessment } = item
@@ -692,6 +909,7 @@ export function InvestorWorkbench({
               const expanded = expandedId === subject.id
               const context = subjectContextDisplay(subject)
               const trend = salesTrendDisplay(assessment)
+              const breakout = assessment.breakoutSignal
               return (
                 <article
                   className={`bbi-build-card iw-posture--${assessment.posture}`}
@@ -706,7 +924,14 @@ export function InvestorWorkbench({
                     )}
                   >
                     <span className="bbi-build-card__rank">
-                      {item.masterRank === null ? '—' : `#${item.masterRank}`}
+                      {breakoutActive
+                        ? breakout?.rank === null ||
+                            breakout?.rank === undefined
+                          ? '—'
+                          : `#${breakout.rank}`
+                        : item.masterRank === null
+                          ? '—'
+                          : `#${item.masterRank}`}
                     </span>
                     <span className="bbi-build-card__subject">
                       <strong>{subject.name}</strong>
@@ -715,8 +940,13 @@ export function InvestorWorkbench({
                       </small>
                     </span>
                     <span className="bbi-build-card__index">
-                      <strong>{signal.score.toFixed(1)}</strong>
-                      <small>INDEX</small>
+                      <strong>
+                        {(breakoutActive
+                          ? breakout?.score ?? 0
+                          : signal.score
+                        ).toFixed(1)}
+                      </strong>
+                      <small>{breakoutActive ? 'BREAKOUT' : 'INDEX'}</small>
                     </span>
                     {expanded ? (
                       <ChevronUp size={17} aria-hidden="true" />
@@ -725,54 +955,138 @@ export function InvestorWorkbench({
                     )}
                   </button>
                   <div className="bbi-build-card__signal">
-                    <span>{formatMoney(signal.latestTwelveMonthSalesUsd)} TTM</span>
+                    {breakoutActive ? (
+                      <span className="bbi-build-card__breakout-lift">
+                        {formatSignedMoney(
+                          breakout?.sixMonthDemandAddedUsd ?? 0,
+                        )}{' '}
+                        vs prior 6M
+                      </span>
+                    ) : (
+                      <span>
+                        {formatMoney(signal.latestTwelveMonthSalesUsd)} TTM
+                      </span>
+                    )}
                     <span>
                       {formatMoney(
                         signal.annualizedCurrentSixMonthSalesUsd,
                       )}{' '}
                       run rate
                     </span>
-                    <span>{signal.durabilityScore.toFixed(0)} durability</span>
-                    <span>{context.compact}</span>
-                    <span
-                      className={`bbi-build-card__trend iw-trend--${trend.direction}`}
-                    >
-                      {trend.compact} · 6M demand
-                    </span>
+                    {breakoutActive ? (
+                      <>
+                        <span>
+                          {breakout?.confirmingMonths ?? 0}/6 months confirming
+                        </span>
+                        <span>
+                          {breakout?.evidence ===
+                            'volume_confirmed_cold_start'
+                            ? 'Cold start · volume confirmed'
+                            : 'Established comparison base'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span>
+                          {signal.durabilityScore.toFixed(0)} durability
+                        </span>
+                        <span>{context.compact}</span>
+                        <span
+                          className={`bbi-build-card__trend iw-trend--${trend.direction}`}
+                        >
+                          {trend.compact} · 6M demand
+                        </span>
+                      </>
+                    )}
                   </div>
                   {expanded ? (
                     <div className="bbi-build-card__detail">
-                      <p>{meta.description}</p>
+                      <p>
+                        {breakoutActive
+                          ? 'Ranks emerging completed-sales demand. It does not add to Binder Index and does not measure card-price appreciation.'
+                          : meta.description}
+                      </p>
                       <dl className="iw-signal-grid">
-                        <div>
-                          <dt>Absolute demand</dt>
-                          <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
-                        </div>
-                        <div>
-                          <dt>Persistence</dt>
-                          <dd>{signal.components.persistence.toFixed(0)}</dd>
-                        </div>
-                        <div>
-                          <dt>Shock resistance</dt>
-                          <dd>{signal.components.shockResistance.toFixed(0)}</dd>
-                        </div>
-                        <div>
-                          <dt>Age / origin</dt>
-                          <dd>{context.compact}</dd>
-                        </div>
-                        <div>
-                          <dt>6M demand trend</dt>
-                          <dd>{trend.sixMonth}</dd>
-                        </div>
+                        {breakoutActive && breakout ? (
+                          <>
+                            <div>
+                              <dt>6M demand added</dt>
+                              <dd>
+                                {formatSignedMoney(
+                                  breakout.sixMonthDemandAddedUsd,
+                                )}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Recent 3M added</dt>
+                              <dd>
+                                {formatSignedMoney(
+                                  breakout.recentThreeMonthDemandAddedUsd,
+                                )}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Vs domain · 6M</dt>
+                              <dd>
+                                {breakout.relativeSixMonthMultiple.toFixed(1)}×
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Months confirming</dt>
+                              <dd>{breakout.confirmingMonths}/6</dd>
+                            </div>
+                            <div>
+                              <dt>Binder context</dt>
+                              <dd>{signal.score.toFixed(1)} · {meta.label}</dd>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <dt>Absolute demand</dt>
+                              <dd>{signal.demandMagnitudeScore.toFixed(0)}</dd>
+                            </div>
+                            <div>
+                              <dt>Persistence</dt>
+                              <dd>{signal.components.persistence.toFixed(0)}</dd>
+                            </div>
+                            <div>
+                              <dt>Shock resistance</dt>
+                              <dd>{signal.components.shockResistance.toFixed(0)}</dd>
+                            </div>
+                            <div>
+                              <dt>Age / origin</dt>
+                              <dd>{context.compact}</dd>
+                            </div>
+                            <div>
+                              <dt>6M demand trend</dt>
+                              <dd>{trend.sixMonth}</dd>
+                            </div>
+                          </>
+                        )}
                       </dl>
                       <div
-                        className={`iw-detail-trend iw-detail-trend--${trend.direction}`}
+                        className={
+                          breakoutActive
+                            ? 'iw-detail-trend iw-detail-trend--up'
+                            : `iw-detail-trend iw-detail-trend--${trend.direction}`
+                        }
                       >
-                        <strong>{trend.primary}</strong>
-                        <span>{trend.detail}</span>
+                        <strong>
+                          {breakoutActive && breakout
+                            ? breakoutEvidenceLabels[breakout.evidence]
+                            : trend.primary}
+                        </strong>
+                        <span>
+                          {breakoutActive && breakout
+                            ? `${breakout.confirmingMonths}/6 comparable months are higher, with ${breakout.currentSixMonthEffectiveMonths.toFixed(1)} effective sales months in the current window.`
+                            : trend.detail}
+                        </span>
                       </div>
                       <p className="iw-detail-scope">
-                        {assessment.buildQualification.reasonCodes.length === 0
+                        {breakoutActive
+                          ? 'Demand acceleration—not a Build label, price forecast, or buy instruction.'
+                          : assessment.buildQualification.reasonCodes.length === 0
                           ? 'All current Build gates are cleared.'
                           : assessment.buildQualification.reasonCodes
                             .slice(0, 2)
@@ -800,7 +1114,9 @@ export function InvestorWorkbench({
               ? 'Try another spelling. Every board status and sport was searched.'
               : 'Broaden the posture or cohort.'}
           </span>
-          <button type="button" onClick={onReset}>Reset Build Board filters</button>
+          <button type="button" onClick={onReset}>
+            Reset {breakoutActive ? 'Breakout Radar' : 'Build Board'} filters
+          </button>
         </div>
       ) : null}
 

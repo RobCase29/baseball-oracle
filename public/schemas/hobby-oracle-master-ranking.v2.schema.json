@@ -412,6 +412,212 @@
         }
       }
     },
+    "breakoutSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelVersion",
+        "eligible",
+        "surfaced",
+        "rank",
+        "score",
+        "tier",
+        "evidence",
+        "demandScale",
+        "currentSixMonthSalesUsd",
+        "priorYearSixMonthSalesUsd",
+        "currentThreeMonthSalesUsd",
+        "precedingThreeMonthSalesUsd",
+        "sixMonthDemandAddedUsd",
+        "recentThreeMonthDemandAddedUsd",
+        "confirmingMonths",
+        "currentSixMonthEffectiveMonths",
+        "currentThreeMonthEffectiveMonths",
+        "latestTwelveMonthEffectiveMonths",
+        "currentSixMonthPeakShare",
+        "currentThreeMonthShareOfCurrentSix",
+        "adjustedSixMonthMultiple",
+        "relativeSixMonthMultiple",
+        "adjustedRecentThreeMonthMultiple",
+        "relativeRecentThreeMonthMultiple",
+        "sequentialThreeMonthMultiple",
+        "latestMonthCooling",
+        "components",
+        "checks",
+        "reasonCodes",
+        "warningCodes",
+        "interpretation"
+      ],
+      "properties": {
+        "modelVersion": {
+          "const": "hobby-breakout-radar/domain-relative-demand-v1.0.0"
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "surfaced": {
+          "type": "boolean"
+        },
+        "rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "tier": {
+          "enum": [
+            "breakout",
+            "strong",
+            "emerging",
+            "below_surface"
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "confirmed",
+            "volume_confirmed_cold_start",
+            "withheld"
+          ]
+        },
+        "demandScale": {
+          "enum": [
+            "small",
+            "mid",
+            "outside"
+          ]
+        },
+        "currentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "priorYearSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "currentThreeMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "precedingThreeMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "sixMonthDemandAddedUsd": {
+          "type": "integer"
+        },
+        "recentThreeMonthDemandAddedUsd": {
+          "type": "integer"
+        },
+        "confirmingMonths": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "currentSixMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "currentThreeMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "latestTwelveMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "currentSixMonthPeakShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "currentThreeMonthShareOfCurrentSix": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "adjustedSixMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relativeSixMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "adjustedRecentThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relativeRecentThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sequentialThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "latestMonthCooling": {
+          "type": "boolean"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currentDemandVelocity",
+            "absoluteDemandExpansion",
+            "relativeSixMonthExpansion",
+            "relativeRecentThreeMonthExpansion",
+            "sequentialAcceleration",
+            "breadth",
+            "dispersion"
+          ],
+          "properties": {
+            "currentDemandVelocity": {
+              "$ref": "#/$defs/score"
+            },
+            "absoluteDemandExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "relativeSixMonthExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "relativeRecentThreeMonthExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "sequentialAcceleration": {
+              "$ref": "#/$defs/score"
+            },
+            "breadth": {
+              "$ref": "#/$defs/score"
+            },
+            "dispersion": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "minProperties": 20,
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "warningCodes": {
+          "type": "array",
+          "items": {
+            "const": "latest_month_cooling"
+          }
+        },
+        "interpretation": {
+          "const": "subject_level_completed_sales_demand_not_binder_score_card_price_or_investment_advice"
+        }
+      }
+    },
     "signal": {
       "type": "object",
       "additionalProperties": false,
@@ -725,6 +931,9 @@
         },
         "salesTrend": {
           "$ref": "#/$defs/salesTrend"
+        },
+        "breakoutSignal": {
+          "$ref": "#/$defs/breakoutSignal"
         },
         "buildQualification": {
           "$ref": "#/$defs/buildQualification"

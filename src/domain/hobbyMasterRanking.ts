@@ -11,6 +11,11 @@ import {
   buildHobbySalesTrend,
   type HobbySalesTrend,
 } from './hobbySalesTrend.js'
+import {
+  buildHobbyBreakoutSignal,
+  type HobbyBreakoutDomainBaseline,
+  type HobbyBreakoutSignal,
+} from './hobbyBreakoutSignal.js'
 
 export const HOBBY_MASTER_SCHEMA_VERSION =
   'hobby-oracle-master-ranking.v2' as const
@@ -35,6 +40,7 @@ export const HOBBY_MASTER_SORT_KEYS = [
   'master_score',
   'ttm_sales',
   'current_run_rate',
+  'breakout',
   'exit_window',
   'trend',
   'durability',
@@ -47,6 +53,7 @@ export const HOBBY_MASTER_SORT_KEYS = [
 
 export type HobbyMasterSortKey = (typeof HOBBY_MASTER_SORT_KEYS)[number]
 export type HobbyMasterSortDirection = 'asc' | 'desc'
+export type HobbyMasterScreen = 'standard' | 'breakout'
 export type HobbyMasterBuildRoute =
   | 'established_durability'
   | 'escape_velocity'
@@ -60,6 +67,7 @@ export interface HobbyMasterSignalInput {
   identityStatus: MagnificentXIdentityStatus
   freshnessStatus: MagnificentXFreshnessStatus
   domainMedianSixMonthLogGrowth?: number | null
+  breakoutDomainBaseline?: HobbyBreakoutDomainBaseline | null
 }
 
 export interface HobbyMasterSignal {
@@ -118,6 +126,7 @@ export interface HobbyMasterAssessment {
   posture: MagnificentXResearchPosture
   marketSignal: HobbyMasterSignal
   salesTrend: HobbySalesTrend
+  breakoutSignal?: HobbyBreakoutSignal
   buildQualification: {
     eligible: boolean
     designation: 'Build' | 'withheld'
@@ -545,6 +554,23 @@ export function buildHobbyMasterAssessment(
   } else {
     posture = 'pass'
   }
+  const breakoutSignal = buildHobbyBreakoutSignal({
+    monthlySalesUsd: input.row.monthlySalesUsd,
+    latestTwelveMonthSalesUsd:
+      marketSignal.latestTwelveMonthSalesUsd,
+    annualizedCurrentSixMonthSalesUsd:
+      marketSignal.annualizedCurrentSixMonthSalesUsd,
+    persistence: marketSignal.components.persistence,
+    shockResistance: marketSignal.components.shockResistance,
+    comparisonEligible,
+    sourceCurrent,
+    completeEighteenMonthHistory,
+    buildEligible,
+    baselineSixMonthMultiple:
+      input.breakoutDomainBaseline?.sixMonthMultiple ?? 0,
+    baselineRecentThreeMonthMultiple:
+      input.breakoutDomainBaseline?.recentThreeMonthMultiple ?? 0,
+  })
 
   return {
     schemaVersion: HOBBY_MASTER_SCHEMA_VERSION,
@@ -553,6 +579,7 @@ export function buildHobbyMasterAssessment(
     posture,
     marketSignal,
     salesTrend,
+    breakoutSignal,
     buildQualification: {
       eligible: buildEligible,
       designation: buildEligible ? 'Build' : 'withheld',

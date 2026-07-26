@@ -1,15 +1,19 @@
 import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
 import type { BinderGraduationSport } from '../domain/binderGraduationIndexV2'
+import { Zap } from 'lucide-react'
 
 export type HobbyResearchLens = 'market' | 'players'
+export type HobbyMarketScreen = 'standard' | 'breakout'
 export type PlayerRankingSport = BinderGraduationSport | 'all'
 
 interface ResearchLensTabsProps {
   lens: HobbyResearchLens
+  marketScreen: HobbyMarketScreen
   posture: MagnificentXResearchPosture | 'all'
   playerSport: PlayerRankingSport
   showRefresh: boolean
   onMarketSelect: () => void
+  onBreakoutSelect: () => void
   onPlayerRankingsSelect: () => void
   onPlayerSportSelect: (value: PlayerRankingSport) => void
   onPostureSelect: (value: MagnificentXResearchPosture | 'all') => void
@@ -39,10 +43,12 @@ const postureOptions: ReadonlyArray<{
 
 export function ResearchLensTabs({
   lens,
+  marketScreen,
   posture,
   playerSport,
   showRefresh,
   onMarketSelect,
+  onBreakoutSelect,
   onPlayerRankingsSelect,
   onPlayerSportSelect,
   onPostureSelect,
@@ -84,29 +90,56 @@ export function ResearchLensTabs({
       </div>
 
       {lens === 'market' ? (
-        <div
-          className="iw-posture-tabs"
-          role="group"
-          aria-label="Build Board status"
-        >
-          {postureOptions.map((option) => (
+        <>
+          <div className="iw-breakout-preset">
             <button
               type="button"
-              key={option.value}
-              aria-pressed={posture === option.value}
-              aria-label={option.label}
-              title={option.label}
-              onClick={() => onPostureSelect(option.value)}
+              aria-pressed={marketScreen === 'breakout'}
+              aria-label="Breakout Radar. Small- and mid-demand subjects adding real sales dollars."
+              onClick={onBreakoutSelect}
             >
-              {option.shortLabel}
+              <Zap size={16} aria-hidden="true" />
+              <span>
+                <strong>Breakout Radar</strong>
+                <small>
+                  Small- and mid-demand subjects adding real sales dollars
+                </small>
+              </span>
             </button>
-          ))}
-          {showRefresh ? (
-            <span className="iw-tab-status" role="status">
-              Build Board suspended · refresh queue shown
-            </span>
-          ) : null}
-        </div>
+            {marketScreen === 'breakout' ? (
+              <span>
+                Demand acceleration—not a Build label or card-price forecast.
+              </span>
+            ) : null}
+          </div>
+          <div
+            className="iw-posture-tabs"
+            role="group"
+            aria-label={
+              marketScreen === 'breakout'
+                ? 'Breakout Radar board status'
+                : 'Build Board status'
+            }
+          >
+            {postureOptions.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                aria-pressed={posture === option.value}
+                aria-label={option.label}
+                title={option.label}
+                onClick={() => onPostureSelect(option.value)}
+              >
+                {option.shortLabel}
+              </button>
+            ))}
+            {showRefresh ? (
+              <span className="iw-tab-status" role="status">
+                Build Board suspended · refresh queue shown
+              </span>
+            ) : null}
+          </div>
+        </>
       ) : (
         <div
           className="iw-sport-tabs"

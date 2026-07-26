@@ -48,6 +48,11 @@ const months = [
   800_000, 830_000, 850_000, 880_000, 900_000, 920_000,
 ]
 const masterMonths = Array(18).fill(2_000_000) as number[]
+const camBreakoutMonths = [
+  0, 38, 51, 158, 12, 212,
+  5_248, 10_143, 30_806, 456_742, 101_962, 63_564,
+  53_086, 104_711, 235_348, 452_540, 547_408, 439_028,
+] as number[]
 
 function feedItem(input: {
   id: string
@@ -58,6 +63,13 @@ function feedItem(input: {
   cohortSize: number
   percentile: number
   freshnessStatus?: 'current' | 'stale'
+  monthlySalesUsd?: number[]
+  breakoutBaseline?: {
+    sixMonthMultiple: number
+    recentThreeMonthMultiple: number
+    sixMonthSampleSize: number
+    recentThreeMonthSampleSize: number
+  }
 }): HobbyMasterFeedItem {
   const assessment = buildHobbyMasterAssessment({
     row: {
@@ -68,7 +80,7 @@ function feedItem(input: {
       subjectName: input.name,
       normalizedName: input.name.toLocaleLowerCase('en-US'),
       sourceKey: input.id,
-      monthlySalesUsd: masterMonths,
+      monthlySalesUsd: input.monthlySalesUsd ?? masterMonths,
       firstGradedYear: input.type === 'athlete' ? 2003 : null,
       mostGradedYear: input.type === 'athlete' ? 2024 : null,
     },
@@ -77,6 +89,7 @@ function feedItem(input: {
     globalObservedPercentile: input.percentile,
     identityStatus: 'source_name_only',
     freshnessStatus: input.freshnessStatus ?? 'current',
+    breakoutDomainBaseline: input.breakoutBaseline,
   })
   return {
     recordVersion: 'hobby-oracle-master-ranking-item/v2',
@@ -209,6 +222,49 @@ function fixtureResponse(
         positiveMomentumAddsScore: false,
       },
       permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
+    },
+  }
+}
+
+function breakoutFixtureResponse(): HobbyMasterFeedResponse {
+  const base = fixtureResponse()
+  const cam = feedItem({
+    id: 'athlete:cam-schlittler',
+    name: 'Cam Schlittler',
+    type: 'athlete',
+    domain: 'baseball',
+    rank: 220,
+    cohortSize: 2_032,
+    percentile: 96.4,
+    monthlySalesUsd: camBreakoutMonths,
+    breakoutBaseline: {
+      sixMonthMultiple: 1.3,
+      recentThreeMonthMultiple: 1.3,
+      sixMonthSampleSize: 1_000,
+      recentThreeMonthSampleSize: 1_000,
+    },
+  })
+  if (!cam.assessment.breakoutSignal) {
+    throw new Error('Breakout fixture did not produce a signal')
+  }
+  cam.assessment.breakoutSignal.rank = 2
+  return {
+    ...base,
+    items: [cam],
+    cohorts: [
+      {
+        domain: 'baseball',
+        taxonomyStatus: 'coherent_provider_cohort',
+        subjectCount: 2_032,
+        rankedCount: 2_032,
+        buildCount: 4,
+      },
+    ],
+    page: {
+      page: 1,
+      limit: 50,
+      total: 25,
+      totalPages: 1,
     },
   }
 }
@@ -722,6 +778,51 @@ describe('Backstop Binder Index', () => {
       'href',
       'https://www.gemrate.com/sales-trends-pokemon',
     )
+  })
+
+  it('opens a dollar-led Breakout Radar and exits it for global search', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(breakoutFixtureResponse()),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    render(<HobbyApp />)
+
+    fireEvent.click(screen.getByRole('button', {
+      name: /Breakout Radar\. Small- and mid-demand/u,
+    }))
+
+    const table = await screen.findByRole('table', {
+      name: 'Small- and mid-demand Breakout Radar table',
+    })
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('screen=breakout')
+      expect(latestUrl).toContain('posture=all')
+      expect(latestUrl).toContain('sort=breakout')
+      expect(latestUrl).toContain('direction=desc')
+    })
+    expect(
+      screen.getByRole('heading', { name: 'The Breakout Radar' }),
+    ).toBeInTheDocument()
+    expect(within(table).getByText('#2')).toBeInTheDocument()
+    expect(within(table).getByText('80.0')).toBeInTheDocument()
+    expect(within(table).getByText('+$1.8M')).toBeInTheDocument()
+    expect(within(table).getByText('6/6 months confirming'))
+      .toBeInTheDocument()
+    expect(within(table).getByText('Cold start · volume confirmed'))
+      .toBeInTheDocument()
+    expect(screen.queryByText(/\+388/u)).not.toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search every subject' }),
+      { target: { value: 'Cam Schlittler' } },
+    )
+    await waitFor(() => {
+      const latestUrl = String(fetchMock.mock.calls.at(-1)?.[0])
+      expect(latestUrl).toContain('q=Cam+Schlittler')
+      expect(latestUrl).not.toContain('screen=breakout')
+    })
+    expect(window.location.search).not.toContain('screen=breakout')
   })
 
   it('persists and resets Build Board controls', async () => {

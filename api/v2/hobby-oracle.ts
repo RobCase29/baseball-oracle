@@ -14,6 +14,7 @@ import {
 
 const allowedParameters = new Set([
   'q',
+  'screen',
   'domain',
   'posture',
   'sort',
@@ -85,9 +86,11 @@ export function handleHobbyMasterRanking(
         throw new Error(`${key} is unsupported`)
       }
     }
+    const screen = oneParameter(url.searchParams, 'screen') ?? 'standard'
     const domain = oneParameter(url.searchParams, 'domain') ?? 'all'
     const posture = oneParameter(url.searchParams, 'posture') ?? 'all'
-    const sort = oneParameter(url.searchParams, 'sort') ?? 'master_rank'
+    const sort = oneParameter(url.searchParams, 'sort') ??
+      (screen === 'breakout' ? 'breakout' : 'master_rank')
     const direction = oneParameter(url.searchParams, 'direction') ??
       (
         sort === 'master_rank' ||
@@ -96,6 +99,12 @@ export function handleHobbyMasterRanking(
           ? 'asc'
           : 'desc'
       )
+    if (
+      screen !== 'standard' &&
+      screen !== 'breakout'
+    ) {
+      throw new Error('screen is unsupported')
+    }
     if (
       domain !== 'all' &&
       !hobbyMasterDomains.includes(
@@ -133,6 +142,7 @@ export function handleHobbyMasterRanking(
     const catalog = buildHobbyMasterCatalog(hobbyMasterCatalog.snapshot, now)
     const payload = buildHobbyMasterFeed(catalog, {
       q: search,
+      screen: screen as HobbyMasterQuery['screen'],
       domain: domain as HobbyMasterQuery['domain'],
       posture: posture as HobbyMasterQuery['posture'],
       sort: sort as HobbyMasterQuery['sort'],

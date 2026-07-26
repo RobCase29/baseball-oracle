@@ -42,8 +42,69 @@
 }
 
 .iw-mode-tabs + .iw-posture-tabs,
-.iw-mode-tabs + .iw-sport-tabs {
+.iw-mode-tabs + .iw-sport-tabs,
+.iw-mode-tabs + .iw-breakout-preset,
+.iw-breakout-preset + .iw-posture-tabs {
   border-top: 1px solid var(--mx-line);
+}
+
+.iw-breakout-preset {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.006);
+}
+
+.iw-breakout-preset > button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  border: 1px solid var(--mx-line);
+  border-radius: 8px;
+  color: #b8c2bc;
+  background: rgba(255, 255, 255, 0.018);
+  text-align: left;
+  cursor: pointer;
+}
+
+.iw-breakout-preset > button:hover {
+  color: var(--mx-text);
+  border-color: var(--mx-line-strong);
+}
+
+.iw-breakout-preset > button[aria-pressed="true"] {
+  color: var(--mx-lime);
+  border-color: rgba(217, 255, 98, 0.38);
+  background:
+    linear-gradient(90deg, rgba(217, 255, 98, 0.1), transparent),
+    rgba(255, 255, 255, 0.018);
+}
+
+.iw-breakout-preset > button span,
+.iw-breakout-preset > button strong,
+.iw-breakout-preset > button small {
+  display: block;
+}
+
+.iw-breakout-preset > button strong {
+  color: inherit;
+  font-size: 0.72rem;
+}
+
+.iw-breakout-preset > button small {
+  margin-top: 2px;
+  color: #748078;
+  font-size: 0.58rem;
+}
+
+.iw-breakout-preset > span {
+  color: #8d9a92;
+  font-size: 0.64rem;
+  line-height: 1.4;
 }
 
 .iw-posture-tabs,
@@ -839,6 +900,21 @@
     padding: 12px;
   }
 
+  .iw-breakout-preset {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .iw-breakout-preset > button {
+    width: 100%;
+  }
+
+  .iw-breakout-preset > span {
+    padding: 0 5px 2px 34px;
+  }
+
   .iw-reset {
     grid-column: 1 / -1;
     align-self: end;
@@ -953,6 +1029,11 @@
     flex-basis: 100%;
     padding-top: 2px;
     font-weight: 700;
+  }
+
+  .bbi-build-card__breakout-lift {
+    color: var(--mx-mint);
+    font-weight: 760;
   }
 
   .bbi-build-card__trend.iw-trend--up {
