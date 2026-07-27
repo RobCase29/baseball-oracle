@@ -17,10 +17,17 @@ import {
   type MagnificentXResearchPosture,
 } from '../domain/hobbyMasterRanking'
 import {
+  findItFactorEntry,
+  type ItFactorBadgeEntry,
+  type ItFactorSport,
+} from '../domain/itFactor'
+import {
+  mobilityContextDisplay,
   salesTrendDisplay,
   subjectContextDisplay,
 } from './hobbySubjectDisplay'
 import type { HobbyMarketScreen } from './ResearchLensTabs'
+import { ItFactorBadge } from './ItFactorBadge'
 import './investor-workbench.css'
 
 export interface InvestorWorkbenchProps {
@@ -29,6 +36,7 @@ export interface InvestorWorkbenchProps {
   error: string | null
   search: string
   marketScreen: HobbyMarketScreen
+  itFactorEntries?: readonly ItFactorBadgeEntry[]
   domain: MagnificentXDomain | 'all'
   posture: MagnificentXResearchPosture | 'all'
   sort: HobbyMasterSortKey
@@ -53,6 +61,17 @@ const domainLabels: Record<MagnificentXDomain, string> = {
   mixed_sport: 'Mixed sport',
   culture: 'Culture',
   pokemon: 'Pokémon',
+}
+
+function itFactorSport(
+  domain: MagnificentXDomain,
+): ItFactorSport | null {
+  return domain === 'baseball' ||
+      domain === 'football' ||
+      domain === 'basketball' ||
+      domain === 'hockey'
+    ? domain
+    : null
 }
 
 const domainOptions: ReadonlyArray<{
@@ -214,6 +233,7 @@ export function InvestorWorkbench({
   error,
   search,
   marketScreen,
+  itFactorEntries = [],
   domain,
   posture,
   sort,
@@ -423,7 +443,7 @@ export function InvestorWorkbench({
                     </span>
                   </button>
                 </th>
-                <th scope="col">Age / origin</th>
+                <th scope="col">Subject context</th>
                 <th scope="col">Board status</th>
                 <th
                   scope="col"
@@ -536,8 +556,17 @@ export function InvestorWorkbench({
                 const meta = postureMeta[rowPosture]
                 const expanded = expandedId === subject.id
                 const context = subjectContextDisplay(subject)
+                const mobility = mobilityContextDisplay(subject)
                 const trend = salesTrendDisplay(assessment)
                 const breakout = assessment.breakoutSignal
+                const flagSport = itFactorSport(subject.domain)
+                const itFactor = flagSport
+                  ? findItFactorEntry(
+                      itFactorEntries,
+                      flagSport,
+                      subject.name,
+                    )
+                  : null
                 return (
                   <Fragment key={subject.id}>
                     <tr className={`iw-data-row iw-posture--${rowPosture}`}>
@@ -556,7 +585,19 @@ export function InvestorWorkbench({
                         </button>
                       </td>
                       <th className="iw-subject-column" scope="row">
-                        <strong>{subject.name}</strong>
+                        <span className="it-name-line">
+                          <strong>{subject.name}</strong>
+                          <ItFactorBadge
+                            entry={itFactor}
+                            href={
+                              itFactor
+                                ? `/hobby?lens=it&q=${encodeURIComponent(
+                                    subject.name,
+                                  )}`
+                                : undefined
+                            }
+                          />
+                        </span>
                         <span>
                           {domainLabels[subject.domain]} ·{' '}
                           {subject.type === 'pokemon_character'
@@ -567,6 +608,21 @@ export function InvestorWorkbench({
                       <td className="iw-context">
                         <strong>{context.primary}</strong>
                         <span>{context.secondary}</span>
+                        {mobility.observed ? (
+                          <span className="iw-runway-inline">
+                            <span className="iw-runway-term">
+                              {mobility.compact}
+                            </span>
+                            {mobility.accentDecision &&
+                            mobility.decisionCompact ? (
+                              <span
+                                className={`iw-runway iw-runway--${mobility.band}`}
+                              >
+                                {mobility.decisionCompact}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : null}
                       </td>
                       <td>
                         <span className={`iw-posture iw-posture--${rowPosture}`}>
@@ -684,6 +740,52 @@ export function InvestorWorkbench({
                               <div className="iw-detail-context">
                                 <strong>{context.primary}</strong>
                                 <span>{context.detail}</span>
+                              </div>
+                              <div
+                                className={`iw-detail-mobility iw-detail-mobility--${mobility.band}`}
+                              >
+                                <span className="iw-detail-label">
+                                  Team runway
+                                </span>
+                                <strong>{mobility.primary}</strong>
+                                {mobility.guaranteeLabel ? (
+                                  <span>{mobility.guaranteeLabel}</span>
+                                ) : null}
+                                {mobility.decisionLabel ? (
+                                  <span>
+                                    {mobility.decisionActor
+                                      ? `Next decision: ${
+                                          mobility.decisionLabel
+                                        } · ${mobility.decisionActor}`
+                                      : mobility.decisionLabel}
+                                  </span>
+                                ) : null}
+                                {mobility.optionLabels.length > 0 ? (
+                                  <span>
+                                    Options: {mobility.optionLabels.join(' · ')}
+                                  </span>
+                                ) : null}
+                                <span>{mobility.secondary}</span>
+                                <p>{mobility.detail}</p>
+                                {mobility.sourceUrl ? (
+                                  <a
+                                    href={mobility.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label={`Open ${
+                                      mobility.sourceLabel ?? 'contract'
+                                    } contract source${
+                                      mobility.sourceAsOf
+                                        ? `, terms as of ${mobility.sourceAsOf}`
+                                        : ''
+                                    }`}
+                                  >
+                                    {mobility.sourceLabel ?? 'Contract source'}
+                                    {mobility.sourceAsOf
+                                      ? ` · terms as of ${mobility.sourceAsOf}`
+                                      : ''}
+                                  </a>
+                                ) : null}
                               </div>
                             </section>
 
@@ -908,8 +1010,17 @@ export function InvestorWorkbench({
               const meta = postureMeta[assessment.posture]
               const expanded = expandedId === subject.id
               const context = subjectContextDisplay(subject)
+              const mobility = mobilityContextDisplay(subject)
               const trend = salesTrendDisplay(assessment)
               const breakout = assessment.breakoutSignal
+              const flagSport = itFactorSport(subject.domain)
+              const itFactor = flagSport
+                ? findItFactorEntry(
+                    itFactorEntries,
+                    flagSport,
+                    subject.name,
+                  )
+                : null
               return (
                 <article
                   className={`bbi-build-card iw-posture--${assessment.posture}`}
@@ -934,7 +1045,10 @@ export function InvestorWorkbench({
                           : `#${item.masterRank}`}
                     </span>
                     <span className="bbi-build-card__subject">
-                      <strong>{subject.name}</strong>
+                      <span className="it-name-line">
+                        <strong>{subject.name}</strong>
+                        <ItFactorBadge entry={itFactor} compact />
+                      </span>
                       <small>
                         {domainLabels[subject.domain]} · {meta.label}
                       </small>
@@ -998,6 +1112,21 @@ export function InvestorWorkbench({
                         </span>
                       </>
                     )}
+                    {mobility.observed ? (
+                      <span className="iw-runway-inline">
+                        <span className="iw-runway-term">
+                          {mobility.compact}
+                        </span>
+                        {mobility.accentDecision &&
+                        mobility.decisionCompact ? (
+                          <span
+                            className={`iw-runway iw-runway--${mobility.band}`}
+                          >
+                            {mobility.decisionCompact}
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : null}
                   </div>
                   {expanded ? (
                     <div className="bbi-build-card__detail">
@@ -1082,6 +1211,50 @@ export function InvestorWorkbench({
                             ? `${breakout.confirmingMonths}/6 comparable months are higher, with ${breakout.currentSixMonthEffectiveMonths.toFixed(1)} effective sales months in the current window.`
                             : trend.detail}
                         </span>
+                      </div>
+                      <div
+                        className={`iw-detail-mobility iw-detail-mobility--${mobility.band}`}
+                      >
+                        <span className="iw-detail-label">Team runway</span>
+                        <strong>{mobility.primary}</strong>
+                        {mobility.guaranteeLabel ? (
+                          <span>{mobility.guaranteeLabel}</span>
+                        ) : null}
+                        {mobility.decisionLabel ? (
+                          <span>
+                            {mobility.decisionActor
+                              ? `Next decision: ${
+                                  mobility.decisionLabel
+                                } · ${mobility.decisionActor}`
+                              : mobility.decisionLabel}
+                          </span>
+                        ) : null}
+                        {mobility.optionLabels.length > 0 ? (
+                          <span>
+                            Options: {mobility.optionLabels.join(' · ')}
+                          </span>
+                        ) : null}
+                        <span>{mobility.secondary}</span>
+                        <p>{mobility.detail}</p>
+                        {mobility.sourceUrl ? (
+                          <a
+                            href={mobility.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Open ${
+                              mobility.sourceLabel ?? 'contract'
+                            } contract source${
+                              mobility.sourceAsOf
+                                ? `, terms as of ${mobility.sourceAsOf}`
+                                : ''
+                            }`}
+                          >
+                            {mobility.sourceLabel ?? 'Contract source'}
+                            {mobility.sourceAsOf
+                              ? ` · terms as of ${mobility.sourceAsOf}`
+                              : ''}
+                          </a>
+                        ) : null}
                       </div>
                       <p className="iw-detail-scope">
                         {breakoutActive

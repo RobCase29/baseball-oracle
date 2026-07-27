@@ -1,8 +1,8 @@
 import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
 import type { BinderGraduationSport } from '../domain/binderGraduationIndexV2'
-import { Zap } from 'lucide-react'
+import { Layers3, Sparkles, Zap } from 'lucide-react'
 
-export type HobbyResearchLens = 'market' | 'players'
+export type HobbyResearchLens = 'desk' | 'market' | 'players' | 'it'
 export type HobbyMarketScreen = 'standard' | 'breakout'
 export type PlayerRankingSport = BinderGraduationSport | 'all'
 
@@ -12,9 +12,11 @@ interface ResearchLensTabsProps {
   posture: MagnificentXResearchPosture | 'all'
   playerSport: PlayerRankingSport
   showRefresh: boolean
+  onDecisionDeskSelect: () => void
   onMarketSelect: () => void
   onBreakoutSelect: () => void
   onPlayerRankingsSelect: () => void
+  onItFactorSelect: () => void
   onPlayerSportSelect: (value: PlayerRankingSport) => void
   onPostureSelect: (value: MagnificentXResearchPosture | 'all') => void
 }
@@ -47,9 +49,11 @@ export function ResearchLensTabs({
   posture,
   playerSport,
   showRefresh,
+  onDecisionDeskSelect,
   onMarketSelect,
   onBreakoutSelect,
   onPlayerRankingsSelect,
+  onItFactorSelect,
   onPlayerSportSelect,
   onPostureSelect,
 }: ResearchLensTabsProps) {
@@ -63,6 +67,21 @@ export function ResearchLensTabs({
         role="group"
         aria-label="Binder Index board"
       >
+        <button
+          type="button"
+          aria-pressed={lens === 'desk'}
+          aria-label="Decision Desk. Transparent intersections across every research signal."
+          onClick={onDecisionDeskSelect}
+        >
+          <span className="iw-mode-title">
+            <Layers3 size={13} aria-hidden="true" />
+            Decision Desk
+          </span>
+          <br />
+          <small className="iw-mode-description">
+            Where signals intersect
+          </small>
+        </button>
         <button
           type="button"
           aria-pressed={lens === 'market'}
@@ -85,6 +104,21 @@ export function ResearchLensTabs({
           <br />
           <small className="iw-mode-description">
             Projected path to Build
+          </small>
+        </button>
+        <button
+          type="button"
+          aria-pressed={lens === 'it'}
+          aria-label="IT Board. Curated hobby star-power narratives."
+          onClick={onItFactorSelect}
+        >
+          <span className="iw-mode-title">
+            <Sparkles size={13} aria-hidden="true" />
+            IT Board
+          </span>
+          <br />
+          <small className="iw-mode-description">
+            Narrative star power
           </small>
         </button>
       </div>
@@ -140,7 +174,7 @@ export function ResearchLensTabs({
             ) : null}
           </div>
         </>
-      ) : (
+      ) : lens === 'players' ? (
         <div
           className="iw-sport-tabs"
           role="group"
@@ -179,7 +213,7 @@ export function ResearchLensTabs({
             Basketball
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:vercel": "npx vercel dev",
-    "prebuild": "tsx scripts/migrate-production-build.ts && npm run data:hobby-player-signals:validate && tsx scripts/refresh/export-artifact-status.ts",
+    "prebuild": "tsx scripts/migrate-production-build.ts && npm run data:hobby-player-signals:validate && npm run data:player-mobility:check && npm run data:it-factor:build && tsx scripts/refresh/export-artifact-status.ts",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "lint": "oxlint",
@@ -34,6 +34,9 @@
     "data:hobby-player-signals:check": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --check",
     "data:hobby-player-signals:validate": "node --import tsx scripts/ingest/checklist-hobby-player-signals.ts --source api/_data/checklist-hobby-player-signals.json --output api/_data/checklist-hobby-player-signals.json --check",
     "data:hobby-player-signals:test": "vitest run scripts/ingest/checklist-hobby-player-signals.test.ts",
+    "data:player-mobility:check": "node --import tsx scripts/data/build-player-mobility-context.ts --check",
+    "data:player-mobility:refresh": "node --import tsx scripts/data/build-player-mobility-context.ts",
+    "data:it-factor:build": "tsx scripts/data/build-it-factor-board.ts",
     "data:fangraphs-identity:build": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts",
     "data:fangraphs-identity:check": "tsx scripts/data/build-fangraphs-completed-season-identity-bridge.ts --check",
     "audit:twtc": ".venv/bin/python scripts/audits/audit_trouble_with_curve.py",

@@ -45,6 +45,10 @@ import {
   parseHobbySubjectContextArtifact,
   type HobbySubjectContextRow,
 } from './_hobby-subject-context.js'
+import {
+  playerMobilityArtifact,
+  playerMobilityContextForSubject,
+} from './_player-mobility-context.js'
 
 type HobbySnapshot = ReturnType<typeof parseHobbySnapshot>
 
@@ -66,6 +70,11 @@ export interface HobbyMasterCatalog {
   freshness: HobbyMasterFeedResponse['snapshot']['freshness']
   snapshotId: string
   rankingUniverseCount: number
+  mobility: {
+    dataThrough: string
+    observedRows: number
+    contentSha256: string
+  }
 }
 
 function trailingTwelveSales(row: MagnificentXSourceRow): number {
@@ -259,6 +268,11 @@ export function buildHobbyMasterCatalog(
           subjectContextBySourceKey.get(row.sourceKey),
           dataThroughYear,
         ),
+        mobility: playerMobilityContextForSubject(
+          row.sourceKey,
+          row.subjectType,
+          identityStatus,
+        ),
       },
       masterRank: null,
       withinCohortRank:
@@ -327,6 +341,7 @@ export function buildHobbyMasterCatalog(
       rowsSha256: snapshot.rowsSha256,
       modelVersion: HOBBY_MASTER_MODEL_VERSION,
       subjectContextSha256: subjectContextArtifact.contentSha256,
+      playerMobilitySha256: playerMobilityArtifact.contentSha256,
       trendDomainMedians: [...trendMedianByDomain],
       freshness: freshness.status,
       rankings: items.map((item) => [
@@ -339,6 +354,9 @@ export function buildHobbyMasterCatalog(
         item.assessment.breakoutSignal?.score,
         item.subject.context.age,
         item.subject.context.introducedYear,
+        item.subject.mobility?.availability,
+        item.subject.mobility?.mobilityWindow,
+        item.subject.mobility?.nextDecision?.season?.seasonEndYear,
         item.assessment.buildQualification.route,
       ]),
     })).digest('hex')
@@ -350,6 +368,11 @@ export function buildHobbyMasterCatalog(
     freshness,
     snapshotId,
     rankingUniverseCount: rankedItems.length,
+    mobility: {
+      dataThrough: playerMobilityArtifact.dataThrough,
+      observedRows: playerMobilityArtifact.coverage.observedRows,
+      contentSha256: playerMobilityArtifact.contentSha256,
+    },
   }
 }
 
@@ -555,6 +578,14 @@ export function buildHobbyMasterFeed(
         escapeTtmFloorUsd: HOBBY_MASTER_ESCAPE_TTM_FLOOR_USD,
         escapeRunRateFloorUsd: HOBBY_MASTER_ESCAPE_RUN_RATE_FLOOR_USD,
         positiveMomentumAddsScore: false,
+      },
+      mobilityContext: {
+        contextOnly: true,
+        directionalClaim: false,
+        observedRows: catalog.mobility.observedRows,
+        dataThrough: catalog.mobility.dataThrough,
+        permissionScope:
+          'docs/permissions/PLAYER_CONTRACT_SOURCE_SCOPE.md',
       },
       permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md',
     },

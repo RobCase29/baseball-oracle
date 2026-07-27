@@ -21,7 +21,11 @@ interface AppSidebarProps {
 
 const navigation = [
   { label: 'Board' as const, displayLabel: 'Rankings', icon: BarChart3 },
-  { label: 'Binder' as const, displayLabel: 'Build a Binder', icon: BookOpen },
+  {
+    label: 'Binder' as const,
+    displayLabel: 'Baseball Thesis',
+    icon: BookOpen,
+  },
   { label: 'Model lab' as const, displayLabel: 'Model review', icon: FlaskConical },
 ]
 
@@ -67,11 +71,11 @@ export function AppSidebar({
         </a>
         <a
           className="sport-switch-link"
-          href="/hobby"
-          title="Magnificent X"
+          href="/hobby?lens=desk"
+          title="Backstop Binder Index"
         >
           <Gem size={18} aria-hidden="true" />
-          <span>Magnificent X</span>
+          <span>Binder Index</span>
         </a>
       </nav>
 

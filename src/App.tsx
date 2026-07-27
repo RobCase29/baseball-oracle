@@ -747,7 +747,7 @@ function App() {
                 cardMarketLoading={cardMarketLoading}
                 cardMarketError={cardMarketError}
                 binderScore={selectedBinderScore}
-                returnLabel="Return to Build a Binder"
+                returnLabel="Return to Baseball Collection Thesis"
                 onReturnToBoard={returnToBoard}
               />
             ) : (
@@ -755,7 +755,7 @@ function App() {
                 <header className="workspace-header binder-workspace-header">
                   <div>
                     <span className="eyebrow">COLLECTION THESIS · RESEARCH ONLY</span>
-                    <h1>Build a Binder</h1>
+                    <h1>Baseball Collection Thesis</h1>
                     <p>
                       Rank long-term collection candidates using career trajectory,
                       age-adjusted runway, and measured collector demand. Demand volume

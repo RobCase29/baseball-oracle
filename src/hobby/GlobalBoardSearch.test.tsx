@@ -56,4 +56,36 @@ describe('GlobalBoardSearch', () => {
     )
     expect(onChange).toHaveBeenCalledWith('')
   })
+
+  it('describes the four-sport IT Board search scope', () => {
+    render(
+      <GlobalBoardSearch
+        lens="it"
+        value="Yankees"
+        loading={false}
+        resultCount={3}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('searchbox', {
+      name: 'Search every IT Board player or team',
+    })).toHaveAttribute('placeholder', 'Search player, team, league…')
+    expect(screen.getByText('MLB · NFL · NBA · NHL')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('3 matches')
+  })
+
+  it('lets the filtered IT Board own the live result announcement', () => {
+    render(
+      <GlobalBoardSearch
+        lens="it"
+        value="Yankees"
+        loading={false}
+        resultCount={null}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
 })

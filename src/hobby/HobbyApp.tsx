@@ -20,6 +20,17 @@ import {
   isBinderGraduationV2Response,
   type BinderGraduationV2Response,
 } from '../domain/binderGraduationIndexV2'
+import {
+  filterItFactorEntries,
+  isItFactorBadgeIndex,
+  isItFactorBoardResponse,
+  type ItFactorBoardResponse,
+} from '../domain/itFactor'
+import {
+  isHobbyDecisionDeskArtifact,
+  type HobbyDecisionDeskArtifact,
+} from '../domain/hobbyDecisionDesk'
+import itFactorBadgeIndexJson from '../data/it-factor-badges.v1.json'
 import { InvestorWorkbench } from './InvestorWorkbench'
 import {
   ResearchLensTabs,
@@ -34,6 +45,8 @@ import {
   type PlayerRankingPosition,
 } from './CrossSportPlayerWorkbench'
 import { GlobalBoardSearch } from './GlobalBoardSearch'
+import { ItFactorBoard } from './ItFactorBoard'
+import { HobbyDecisionDesk } from './HobbyDecisionDesk'
 
 const PAGE_SIZE = 50
 const DEFAULT_MARKET_SCREEN: HobbyMarketScreen = 'standard'
@@ -45,6 +58,10 @@ const DEFAULT_PLAYER_AGE: PlayerRankingAgeCeiling = 26
 const DEFAULT_PLAYER_POSITION: PlayerRankingPosition = 'all'
 const DEFAULT_PLAYER_BAND: PlayerRankingBand = 'all'
 const DEFAULT_PLAYER_SORT: BinderGraduationSortKey = 'graduation_rank'
+const itFactorBadgeEntries =
+  isItFactorBadgeIndex(itFactorBadgeIndexJson)
+    ? itFactorBadgeIndexJson.entries
+    : []
 
 const validDomains = new Set<MagnificentXDomain>([
   'baseball',
@@ -78,8 +95,26 @@ function initialParameters(): URLSearchParams {
 }
 
 function initialLens(): HobbyResearchLens {
-  const value = initialParameters().get('lens')
-  return value === 'players' || value === 'young' ? 'players' : 'market'
+  const parameters = initialParameters()
+  const value = parameters.get('lens')
+  if (value === 'players' || value === 'young') return 'players'
+  if (value === 'desk') return 'desk'
+  if (value === 'market' || value === 'it') return value
+  if (
+    [
+      'q',
+      'domain',
+      'direction',
+      'screen',
+      'posture',
+      'sort',
+      'page',
+      'tier',
+    ].some((parameter) => parameters.has(parameter))
+  ) {
+    return 'market'
+  }
+  return 'desk'
 }
 
 function initialMarketScreen(): HobbyMarketScreen {
@@ -212,6 +247,22 @@ function formatDate(value: string | undefined): string {
   }).format(parsed)
 }
 
+function itFactorSnapshotStatus(
+  response: ItFactorBoardResponse | null,
+): 'current' | 'review_due' | 'unknown' {
+  if (!response) return 'unknown'
+  const reviewDeadline = new Date(
+    `${response.snapshot.nextReviewBy}T23:59:59.999Z`,
+  )
+  if (
+    !Number.isNaN(reviewDeadline.getTime()) &&
+    Date.now() > reviewDeadline.getTime()
+  ) {
+    return 'review_due'
+  }
+  return response.snapshot.status
+}
+
 export function HobbyApp() {
   const [lens, setLens] = useState<HobbyResearchLens>(initialLens)
   const [marketScreen, setMarketScreen] =
@@ -242,6 +293,11 @@ export function HobbyApp() {
       ? initialParameters().get('q') ?? ''
       : ''
   ))
+  const [itSearch, setItSearch] = useState(() => (
+    initialLens() === 'it'
+      ? initialParameters().get('q') ?? ''
+      : ''
+  ))
   const [response, setResponse] =
     useState<HobbyMasterFeedResponse | null>(null)
   const [loading, setLoading] = useState(() => initialLens() === 'market')
@@ -252,8 +308,92 @@ export function HobbyApp() {
     initialLens() === 'players'
   ))
   const [playerError, setPlayerError] = useState<string | null>(null)
+  const [itFactorBoard, setItFactorBoard] =
+    useState<ItFactorBoardResponse | null>(null)
+  const [itFactorLoading, setItFactorLoading] = useState(() => (
+    initialLens() === 'it'
+  ))
+  const [itFactorError, setItFactorError] = useState<string | null>(null)
+  const [decisionArtifact, setDecisionArtifact] =
+    useState<HobbyDecisionDeskArtifact | null>(null)
+  const [decisionLoading, setDecisionLoading] = useState(() => (
+    initialLens() === 'desk'
+  ))
+  const [decisionError, setDecisionError] = useState<string | null>(null)
   const deferredSearch = useDeferredValue(search)
   const deferredPlayerSearch = useDeferredValue(playerSearch)
+
+  useEffect(() => {
+    if (lens !== 'it') return
+    if (itFactorBoard !== null) {
+      setItFactorLoading(false)
+      return
+    }
+    let active = true
+    setItFactorLoading(true)
+    setItFactorError(null)
+    import('../data/it-factor-board.v1.json')
+      .then((module) => {
+        if (!active) return
+        const payload = module.default as unknown
+        if (!isItFactorBoardResponse(payload)) {
+          throw new Error('The bundled IT dataset failed contract validation.')
+        }
+        setItFactorBoard(payload)
+      })
+      .catch((loadError: unknown) => {
+        if (!active) return
+        setItFactorError(
+          loadError instanceof Error
+            ? loadError.message
+            : 'Unable to load the IT research layer.',
+        )
+      })
+      .finally(() => {
+        if (active) setItFactorLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [itFactorBoard, lens])
+
+  useEffect(() => {
+    if (lens !== 'desk') return
+    if (decisionArtifact !== null) {
+      setDecisionLoading(false)
+      return
+    }
+    let active = true
+    setDecisionLoading(true)
+    setDecisionError(null)
+    import('../data/hobby-decision-desk.v1.json')
+      .then((module) => {
+        if (!active) return
+        const payload = module.default as unknown
+        if (!isHobbyDecisionDeskArtifact(payload)) {
+          throw new Error(
+            'The bundled Decision Desk failed contract validation.',
+          )
+        }
+        setDecisionArtifact(payload)
+      })
+      .catch((loadError: unknown) => {
+        if (!active) return
+        setDecisionError(
+          loadError instanceof Error
+            ? loadError.message
+            : 'Unable to load the Decision Desk signals.',
+        )
+      })
+      .finally(() => {
+        if (active) setDecisionLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [decisionArtifact, lens])
 
   useEffect(() => {
     if (lens !== 'market') return
@@ -409,7 +549,21 @@ export function HobbyApp() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
-    if (lens === 'players') {
+    if (lens === 'desk') {
+      url.searchParams.set('lens', 'desk')
+      url.searchParams.delete('q')
+      url.searchParams.delete('domain')
+      url.searchParams.delete('direction')
+      url.searchParams.delete('screen')
+      url.searchParams.delete('sport')
+      url.searchParams.delete('maxAge')
+      url.searchParams.delete('stage')
+      url.searchParams.delete('position')
+      url.searchParams.delete('band')
+      url.searchParams.delete('format')
+      url.searchParams.delete('posture')
+      url.searchParams.delete('sort')
+    } else if (lens === 'players') {
       url.searchParams.set('lens', 'players')
       url.searchParams.delete('domain')
       url.searchParams.delete('direction')
@@ -447,9 +601,28 @@ export function HobbyApp() {
       }
       url.searchParams.delete('stage')
       url.searchParams.delete('format')
+    } else if (lens === 'it') {
+      url.searchParams.set('lens', 'it')
+      url.searchParams.delete('domain')
+      url.searchParams.delete('direction')
+      url.searchParams.delete('screen')
+      url.searchParams.delete('sport')
+      url.searchParams.delete('maxAge')
+      url.searchParams.delete('stage')
+      url.searchParams.delete('position')
+      url.searchParams.delete('band')
+      url.searchParams.delete('format')
+      url.searchParams.delete('posture')
+      url.searchParams.delete('sort')
+      const normalizedItSearch = itSearch.trim()
+      if (normalizedItSearch) {
+        url.searchParams.set('q', normalizedItSearch)
+      } else {
+        url.searchParams.delete('q')
+      }
     } else {
       const normalizedSearch = search.trim()
-      url.searchParams.delete('lens')
+      url.searchParams.set('lens', 'market')
       url.searchParams.delete('sport')
       url.searchParams.delete('maxAge')
       url.searchParams.delete('stage')
@@ -469,13 +642,16 @@ export function HobbyApp() {
       url.searchParams.set('sort', sort)
       url.searchParams.set('direction', direction)
     }
-    if (page === 1) url.searchParams.delete('page')
+    if (lens === 'desk' || lens === 'it' || page === 1) {
+      url.searchParams.delete('page')
+    }
     else url.searchParams.set('page', page.toString())
     url.searchParams.delete('tier')
     window.history.replaceState(window.history.state, '', url)
   }, [
     direction,
     domain,
+    itSearch,
     lens,
     marketScreen,
     page,
@@ -545,8 +721,18 @@ export function HobbyApp() {
     setPage(1)
   }
 
+  function selectDecisionDesk(): void {
+    setLens('desk')
+    setPage(1)
+  }
+
   function selectPlayerRankings(): void {
     setLens('players')
+    setPage(1)
+  }
+
+  function selectItFactor(): void {
+    setLens('it')
     setPage(1)
   }
 
@@ -626,40 +812,88 @@ export function HobbyApp() {
     setPage(1)
   }
 
+  function changeItSearch(value: string): void {
+    setItSearch(value)
+  }
+
+  function resetItSearch(): void {
+    setItSearch('')
+  }
+
+  const decisionDesk = decisionArtifact?.desk ?? null
   const marketFreshness = response?.snapshot.freshness.status ?? 'unknown'
   const graduationFreshness =
     playerResponse?.snapshot.freshness.status ?? 'unknown'
-  const freshness = lens === 'market'
-    ? marketFreshness
-    : graduationFreshness
-  const dataThrough = lens === 'market'
-    ? response?.snapshot.dataThrough
-    : playerResponse?.snapshot.dataThrough
-  const headlineMetricLabel = lens === 'market'
-    ? marketScreen === 'breakout'
-      ? 'On Breakout Radar'
-      : 'On Build Board'
-    : 'On Deck'
-  const headlineMetricValue = lens === 'market'
-    ? marketScreen === 'breakout'
-      ? response?.page.total
-      : response?.meta.buildCount
-    : playerResponse?.summary.onDeckCount
+  const itFreshness = itFactorSnapshotStatus(itFactorBoard)
+  const decisionReviewDeadline = decisionArtifact
+    ? new Date(`${decisionArtifact.snapshot.itNextReviewBy}T23:59:59.999Z`)
+    : null
+  const decisionFreshness = decisionArtifact === null
+    ? 'unknown'
+    : decisionReviewDeadline &&
+        !Number.isNaN(decisionReviewDeadline.getTime()) &&
+        Date.now() > decisionReviewDeadline.getTime()
+      ? 'review_due'
+      : 'current'
+  const freshness = lens === 'desk'
+    ? decisionFreshness
+    : lens === 'market'
+      ? marketFreshness
+      : lens === 'players'
+        ? graduationFreshness
+        : itFreshness
+  const dataThrough = lens === 'desk'
+    ? decisionArtifact?.snapshot.marketDataThrough
+    : lens === 'market'
+      ? response?.snapshot.dataThrough
+      : lens === 'players'
+        ? playerResponse?.snapshot.dataThrough
+        : itFactorBoard?.snapshot.asOf
+  const headlineMetricLabel = lens === 'desk'
+    ? 'Surfaced subjects'
+    : lens === 'market'
+      ? marketScreen === 'breakout'
+        ? 'On Breakout Radar'
+        : 'On Build Board'
+      : lens === 'players'
+        ? 'On Deck'
+        : 'Flagged players'
+  const headlineMetricValue = lens === 'desk'
+    ? decisionDesk?.uniqueSubjectCount
+    : lens === 'market'
+      ? marketScreen === 'breakout'
+        ? response?.page.total
+        : response?.meta.buildCount
+      : lens === 'players'
+        ? playerResponse?.summary.onDeckCount
+        : itFactorBoard?.coverage.entryCount
   const showRefreshPosture =
     posture === 'needs_refresh' ||
     (response !== null && response.snapshot.freshness.status !== 'current')
-  const activeSearch = lens === 'market' ? search : playerSearch
-  const searchLoading = lens === 'market' ? loading : playerLoading
+  const activeSearch = lens === 'market'
+    ? search
+    : lens === 'players'
+      ? playerSearch
+      : itSearch
+  const searchLoading = lens === 'market'
+    ? loading
+    : lens === 'players'
+      ? playerLoading
+      : false
   const searchResultCount = lens === 'market'
     ? response?.page.total ?? null
-    : playerResponse?.page.total ?? null
+    : lens === 'players'
+      ? playerResponse?.page.total ?? null
+      : itFactorBoard
+        ? filterItFactorEntries(itFactorBoard.entries, itSearch).length
+        : null
 
   return (
     <div className="mx-app">
       <header className="mx-topbar">
         <a
           className="mx-brand"
-          href="/hobby"
+          href="/hobby?lens=desk"
           aria-label="Backstop Binder Index"
         >
           <span className="mx-brand-mark" aria-hidden="true">
@@ -671,10 +905,11 @@ export function HobbyApp() {
           </span>
         </a>
         <nav className="mx-nav" aria-label="Binder Index sections">
-          <a href="/hobby">Build Board</a>
+          <a href="/hobby?lens=desk">Decision Desk</a>
+          <a href="/hobby?lens=market">Build Board</a>
           <a href="/hobby?lens=players">Graduation Board</a>
-          <a href="/hobby?view=top100">Print Boards</a>
-          <a href="#methodology">Data &amp; methodology</a>
+          <a href="/hobby?lens=it">IT Board</a>
+          <a href="/hobby?view=top100">Print</a>
         </nav>
       </header>
 
@@ -683,18 +918,26 @@ export function HobbyApp() {
           <div className="mx-heading-copy">
             <span>BACKSTOP BINDER INDEX</span>
             <h1 id="investor-workbench-title">
-              {lens === 'market'
-                ? marketScreen === 'breakout'
-                  ? 'The Breakout Radar'
-                  : 'The Build Board'
-                : 'The Graduation Board'}
+              {lens === 'desk'
+                ? 'The Decision Desk'
+                : lens === 'market'
+                  ? marketScreen === 'breakout'
+                    ? 'The Breakout Radar'
+                    : 'The Build Board'
+                  : lens === 'players'
+                    ? 'The Graduation Board'
+                    : 'The IT Board'}
             </h1>
             <p>
-              {lens === 'market'
-                ? marketScreen === 'breakout'
-                  ? 'A selective small- and mid-demand screen for subjects adding real completed-sales dollars with broad, accelerating momentum.'
-                  : 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
-                : 'One global baseball, football, and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'}
+              {lens === 'desk'
+                ? 'Transparent intersections reveal where durable demand, player path, narrative, momentum, and risk reinforce—or challenge—one another.'
+                : lens === 'market'
+                  ? marketScreen === 'breakout'
+                    ? 'A selective small- and mid-demand screen for subjects adding real completed-sales dollars with broad, accelerating momentum.'
+                    : 'The few subjects whose demand scale and durability have earned a place in a long-horizon collection.'
+                  : lens === 'players'
+                    ? 'One global baseball, football, and basketball pipeline, ranked by readiness to earn the exact same absolute Build standard.'
+                    : 'A researched team-by-team map of the players whose superstar ceiling already carries hobby belief.'}
             </p>
           </div>
 
@@ -730,26 +973,54 @@ export function HobbyApp() {
           className="iw-shell"
           aria-label="Backstop Binder Index boards"
         >
-          <GlobalBoardSearch
-            lens={lens}
-            value={activeSearch}
-            loading={searchLoading}
-            resultCount={searchResultCount}
-            onChange={lens === 'market' ? changeSearch : changePlayerSearch}
-          />
+          {lens !== 'desk' ? (
+            <GlobalBoardSearch
+              lens={lens}
+              value={activeSearch}
+              loading={searchLoading}
+              resultCount={lens === 'it' ? null : searchResultCount}
+              onChange={
+                lens === 'market'
+                  ? changeSearch
+                  : lens === 'players'
+                    ? changePlayerSearch
+                    : changeItSearch
+              }
+            />
+          ) : null}
           <ResearchLensTabs
             lens={lens}
             marketScreen={marketScreen}
             posture={posture}
             playerSport={playerSport}
             showRefresh={showRefreshPosture}
+            onDecisionDeskSelect={selectDecisionDesk}
             onMarketSelect={selectPositions}
             onBreakoutSelect={selectBreakout}
             onPlayerRankingsSelect={selectPlayerRankings}
+            onItFactorSelect={selectItFactor}
             onPlayerSportSelect={changePlayerSport}
             onPostureSelect={changePosture}
           />
-          {lens === 'market' ? (
+          {lens === 'desk' ? (
+            <HobbyDecisionDesk
+              desk={decisionDesk}
+              loading={decisionLoading}
+              error={decisionError}
+              marketDataThrough={
+                decisionArtifact?.snapshot.marketDataThrough ?? null
+              }
+              graduationDataThrough={
+                decisionArtifact?.snapshot.pathDataThrough ?? null
+              }
+              itReviewedAsOf={
+                decisionArtifact?.snapshot.itReviewedAsOf ?? null
+              }
+              coverageLimitations={
+                decisionArtifact?.coverage.limitations ?? []
+              }
+            />
+          ) : lens === 'market' ? (
             <InvestorWorkbench
               response={response}
               loading={loading}
@@ -766,8 +1037,9 @@ export function HobbyApp() {
               onDirectionChange={changeDirection}
               onPageChange={setPage}
               onReset={resetFilters}
+              itFactorEntries={itFactorBadgeEntries}
             />
-          ) : (
+          ) : lens === 'players' ? (
             <CrossSportPlayerWorkbench
               response={playerResponse}
               loading={playerLoading}
@@ -785,6 +1057,15 @@ export function HobbyApp() {
               onSortChange={changePlayerSort}
               onPageChange={setPage}
               onReset={resetPlayerFilters}
+              itFactorEntries={itFactorBadgeEntries}
+            />
+          ) : (
+            <ItFactorBoard
+              response={itFactorBoard}
+              loading={itFactorLoading}
+              error={itFactorError}
+              search={itSearch}
+              onResetSearch={resetItSearch}
             />
           )}
         </section>

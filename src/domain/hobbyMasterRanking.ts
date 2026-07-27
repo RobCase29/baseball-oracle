@@ -16,6 +16,9 @@ import {
   type HobbyBreakoutDomainBaseline,
   type HobbyBreakoutSignal,
 } from './hobbyBreakoutSignal.js'
+import type {
+  PlayerMobilityContext,
+} from './playerMobilityContext.js'
 
 export const HOBBY_MASTER_SCHEMA_VERSION =
   'hobby-oracle-master-ranking.v2' as const
@@ -186,6 +189,7 @@ export interface HobbyMasterFeedItem {
     firstGradedYear: number | null
     mostGradedYear: number | null
     context: HobbySubjectContext
+    mobility?: PlayerMobilityContext
   }
   masterRank: number | null
   withinCohortRank: number
@@ -246,6 +250,13 @@ export interface HobbyMasterFeedResponse {
       escapeRunRateFloorUsd:
         typeof HOBBY_MASTER_ESCAPE_RUN_RATE_FLOOR_USD
       positiveMomentumAddsScore: false
+    }
+    mobilityContext?: {
+      contextOnly: true
+      directionalClaim: false
+      observedRows: number
+      dataThrough: string
+      permissionScope: 'docs/permissions/PLAYER_CONTRACT_SOURCE_SCOPE.md'
     }
     permissionAttestation: 'docs/permissions/GEMRATE_ATTESTATION.md'
   }

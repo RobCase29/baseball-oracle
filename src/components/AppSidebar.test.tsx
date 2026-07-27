@@ -21,15 +21,18 @@ describe('AppSidebar sport navigation', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'Build a Binder' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Baseball Thesis' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Model review' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Football' })).toHaveAttribute('href', '/football')
-    expect(screen.getByRole('link', { name: 'Magnificent X' })).toHaveAttribute('href', '/hobby')
+    expect(screen.getByRole('link', { name: 'Binder Index' })).toHaveAttribute(
+      'href',
+      '/hobby?lens=desk',
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Model review' }))
     expect(onChangeView).toHaveBeenCalledWith('Model lab')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Build a Binder' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Baseball Thesis' }))
     expect(onChangeView).toHaveBeenCalledWith('Binder')
   })
 })

@@ -183,7 +183,8 @@
         "identityStatus",
         "firstGradedYear",
         "mostGradedYear",
-        "context"
+        "context",
+        "mobility"
       ],
       "properties": {
         "id": {
@@ -227,6 +228,431 @@
         },
         "context": {
           "$ref": "#/$defs/subjectContext"
+        },
+        "mobility": {
+          "$ref": "#/$defs/playerMobilityContext"
+        }
+      }
+    },
+    "seasonReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seasonEndYear",
+        "label"
+      ],
+      "properties": {
+        "seasonEndYear": {
+          "type": "integer",
+          "minimum": 1900,
+          "maximum": 2200
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "playerMobilityContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "asOf",
+        "league",
+        "currentTeam",
+        "teamTenureStart",
+        "term",
+        "nextDecision",
+        "mobilityWindow",
+        "reasonCodes",
+        "lastTeamChange",
+        "provenance",
+        "semantics"
+      ],
+      "properties": {
+        "availability": {
+          "enum": [
+            "observed",
+            "unavailable",
+            "withheld_identity",
+            "not_applicable"
+          ]
+        },
+        "asOf": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "league": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "MLB",
+            "NFL",
+            "NBA",
+            "NHL",
+            null
+          ]
+        },
+        "currentTeam": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "name"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "teamTenureStart": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "term": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "kind",
+                "currentSeasonEndYear",
+                "currentSeasonLabel",
+                "reportedThrough",
+                "guaranteedThrough",
+                "maximumTeamControlThrough",
+                "remainingSeasonsIncludingCurrent",
+                "options"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "under_contract",
+                    "team_control",
+                    "restricted_free_agent",
+                    "unrestricted_free_agent",
+                    "unsigned",
+                    "unknown"
+                  ]
+                },
+                "kind": {
+                  "enum": [
+                    "standard",
+                    "extension",
+                    "rookie_scale",
+                    "entry_level",
+                    "pre_arbitration",
+                    "arbitration",
+                    "franchise_tag",
+                    "two_way",
+                    "other"
+                  ]
+                },
+                "currentSeasonEndYear": {
+                  "type": "integer",
+                  "minimum": 1900,
+                  "maximum": 2200
+                },
+                "currentSeasonLabel": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reportedThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "guaranteedThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "maximumTeamControlThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "remainingSeasonsIncludingCurrent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "season",
+                      "type",
+                      "status"
+                    ],
+                    "properties": {
+                      "season": {
+                        "$ref": "#/$defs/seasonReference"
+                      },
+                      "type": {
+                        "enum": [
+                          "club",
+                          "player",
+                          "mutual",
+                          "vesting",
+                          "opt_out"
+                        ]
+                      },
+                      "status": {
+                        "const": "pending"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "nextDecision": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "season",
+                "label"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "unrestricted_free_agency",
+                    "restricted_free_agency",
+                    "club_option",
+                    "player_option",
+                    "mutual_option",
+                    "vesting_option",
+                    "opt_out",
+                    "non_guarantee",
+                    "arbitration",
+                    "extension_eligibility",
+                    "unknown"
+                  ]
+                },
+                "season": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "mobilityWindow": {
+          "enum": [
+            "open_now",
+            "after_current_season",
+            "within_two_seasons",
+            "three_plus_seasons",
+            "unavailable"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "lastTeamChange": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "effectiveAt",
+                "kind",
+                "fromTeam",
+                "toTeam"
+              ],
+              "properties": {
+                "effectiveAt": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "kind": {
+                  "enum": [
+                    "trade",
+                    "free_agent_signing",
+                    "waiver",
+                    "other"
+                  ]
+                },
+                "fromTeam": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "toTeam": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "name"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceId",
+            "sourcePlayerId",
+            "sourceUrl",
+            "accessedAt",
+            "identityStatus"
+          ],
+          "properties": {
+            "sourceId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sourcePlayerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sourceUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            },
+            "accessedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "identityStatus": {
+              "enum": [
+                "verified_external_id",
+                "reviewed_bridge",
+                "unique_source_name_bridge",
+                "withheld",
+                "not_applicable"
+              ]
+            }
+          }
+        },
+        "semantics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contextOnly",
+            "directionalClaim",
+            "interpretation"
+          ],
+          "properties": {
+            "contextOnly": {
+              "const": true
+            },
+            "directionalClaim": {
+              "const": false
+            },
+            "interpretation": {
+              "const": "opportunity_or_disruption"
+            }
+          }
         }
       }
     },
@@ -1080,6 +1506,7 @@
         "globalComparisonStatus",
         "globalComparisonLimitations",
         "buildPolicy",
+        "mobilityContext",
         "permissionAttestation"
       ],
       "properties": {
@@ -1145,6 +1572,35 @@
             },
             "positiveMomentumAddsScore": {
               "const": false
+            }
+          }
+        },
+        "mobilityContext": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contextOnly",
+            "directionalClaim",
+            "observedRows",
+            "dataThrough",
+            "permissionScope"
+          ],
+          "properties": {
+            "contextOnly": {
+              "const": true
+            },
+            "directionalClaim": {
+              "const": false
+            },
+            "observedRows": {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            "dataThrough": {
+              "type": "string",
+              "format": "date"
+            },
+            "permissionScope": {
+              "const": "docs/permissions/PLAYER_CONTRACT_SOURCE_SCOPE.md"
             }
           }
         },

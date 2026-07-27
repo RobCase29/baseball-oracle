@@ -111,7 +111,7 @@ const response: Pick<BinderScoresResponse, 'snapshot' | 'meta'> = {
   },
 }
 
-describe('Build a Binder UI', () => {
+describe('Baseball Collection Thesis UI', () => {
   it('renders the research ranking, freshness, and accessible controls', () => {
     const onSelect = vi.fn()
     const onQueryChange = vi.fn()
@@ -133,8 +133,8 @@ describe('Build a Binder UI', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Build a Binder' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Binder Score' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Baseball Collection Thesis' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Thesis Score' })).toBeInTheDocument()
     expect(screen.getByText('June 2026')).toBeInTheDocument()
     expect(screen.getByText(/not card appreciation or card-level scarcity\/value/u)).toBeInTheDocument()
 
@@ -145,7 +145,7 @@ describe('Build a Binder UI', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'Open Build a Binder research for Example Star',
+        name: 'Open Baseball Collection Thesis research for Example Star',
       }),
     )
     expect(onSelect).toHaveBeenCalledWith('player-1')

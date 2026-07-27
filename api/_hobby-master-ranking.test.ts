@@ -131,6 +131,75 @@ describe('Hobby Oracle master-ranking catalog', () => {
     })
   })
 
+  it('attaches neutral Team Runway context without changing board order', () => {
+    const baseline = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      domain: 'baseball',
+      posture: 'all',
+      sort: 'master_rank',
+      limit: 100,
+    })
+    const changedContextCatalog = structuredClone(hobbyMasterCatalog)
+    const changedMookie = changedContextCatalog.items.find(
+      (item) => item.subject.name === 'Mookie Betts',
+    )
+    if (changedMookie?.subject.mobility) {
+      changedMookie.subject.mobility.reasonCodes.push(
+        'display_only_test_change',
+      )
+    }
+    const withDisplayOnlyChange = buildHobbyMasterFeed(
+      changedContextCatalog,
+      {
+        domain: 'baseball',
+        posture: 'all',
+        sort: 'master_rank',
+        limit: 100,
+      },
+    )
+    const mookie = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Mookie Betts',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+    const ohtani = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Shohei Ohtani',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+    const pikachu = buildHobbyMasterFeed(hobbyMasterCatalog, {
+      q: 'Pikachu',
+      posture: 'all',
+      limit: 1,
+    }).items[0]
+
+    expect(mookie?.subject.mobility).toMatchObject({
+      availability: 'observed',
+      currentTeam: { code: 'LAD' },
+      mobilityWindow: 'three_plus_seasons',
+      term: {
+        remainingSeasonsIncludingCurrent: 7,
+        reportedThrough: { seasonEndYear: 2032 },
+      },
+    })
+    expect(ohtani?.subject.mobility).toMatchObject({
+      availability: 'observed',
+      currentTeam: { code: 'LAD' },
+      mobilityWindow: 'three_plus_seasons',
+      term: {
+        remainingSeasonsIncludingCurrent: 8,
+        reportedThrough: { seasonEndYear: 2033 },
+      },
+    })
+    expect(pikachu?.subject.mobility?.availability).toBe('not_applicable')
+    expect(withDisplayOnlyChange.items.map((item) => [
+      item.subject.id,
+      item.masterRank,
+    ])).toEqual(baseline.items.map((item) => [
+      item.subject.id,
+      item.masterRank,
+    ]))
+  })
+
   it('removes low-dollar cohort leaders from Build', () => {
     const conor = buildHobbyMasterFeed(hobbyMasterCatalog, {
       domain: 'combat',

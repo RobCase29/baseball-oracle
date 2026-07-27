@@ -20,6 +20,11 @@ import type {
   BinderGraduationV2Item,
   BinderGraduationV2Response,
 } from '../domain/binderGraduationIndexV2'
+import {
+  findItFactorEntry,
+  type ItFactorBadgeEntry,
+} from '../domain/itFactor'
+import { ItFactorBadge } from './ItFactorBadge'
 import './cross-sport-player-workbench.css'
 
 export type PlayerRankingAgeCeiling = 'all' | 23 | 26 | 30
@@ -32,6 +37,7 @@ interface CrossSportPlayerWorkbenchProps {
   error: string | null
   sport: BinderGraduationSport | 'all'
   search: string
+  itFactorEntries?: readonly ItFactorBadgeEntry[]
   maxAge: PlayerRankingAgeCeiling
   position: PlayerRankingPosition
   band: PlayerRankingBand
@@ -285,6 +291,7 @@ export function CrossSportPlayerWorkbench({
   error,
   sport,
   search,
+  itFactorEntries = [],
   maxAge,
   position,
   band,
@@ -494,6 +501,11 @@ export function CrossSportPlayerWorkbench({
               <tbody>
                 {items.map((item) => {
                   const expanded = expandedId === item.player.id
+                  const itFactor = findItFactorEntry(
+                    itFactorEntries,
+                    item.player.sport,
+                    item.player.name,
+                  )
                   return (
                     <Fragment key={item.player.id}>
                       <tr className={`iw-data-row bbi-band--${item.graduation.band}`}>
@@ -518,7 +530,19 @@ export function CrossSportPlayerWorkbench({
                           <span>global path</span>
                         </td>
                         <th className="iw-subject-column" scope="row">
-                          <strong>{item.player.name}</strong>
+                          <span className="it-name-line">
+                            <strong>{item.player.name}</strong>
+                            <ItFactorBadge
+                              entry={itFactor}
+                              href={
+                                itFactor
+                                  ? `/hobby?lens=it&q=${encodeURIComponent(
+                                      item.player.name,
+                                    )}`
+                                  : undefined
+                              }
+                            />
+                          </span>
                           <span>
                             {[
                               titleLabel(item.player.sport),
@@ -591,6 +615,11 @@ export function CrossSportPlayerWorkbench({
           <div className="bbi-mobile-list" aria-label="Mobile Graduation Board">
             {items.map((item) => {
               const expanded = expandedId === item.player.id
+              const itFactor = findItFactorEntry(
+                itFactorEntries,
+                item.player.sport,
+                item.player.name,
+              )
               return (
                 <article
                   className={`bbi-mobile-card bbi-band--${item.graduation.band}`}
@@ -606,7 +635,10 @@ export function CrossSportPlayerWorkbench({
                   >
                     <span className="bbi-mobile-rank">{pathRank(item)}</span>
                     <span className="bbi-mobile-player">
-                      <strong>{item.player.name}</strong>
+                      <span className="it-name-line">
+                        <strong>{item.player.name}</strong>
+                        <ItFactorBadge entry={itFactor} compact />
+                      </span>
                       <small>
                         {item.player.sport} · {item.player.primaryPosition}
                         {' '}· age {ageLabel(item.player.age)}

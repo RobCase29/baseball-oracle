@@ -1,0 +1,11 @@
+# Representative policy fixture. The live policy is always fetched at runtime.
+User-agent: *
+Disallow: /mlb/contracts/_/sort/
+Disallow: /nfl/contracts/_/sort/
+Disallow: /nba/contracts/_/sort/
+Disallow: /nhl/contracts/_/sort/
+Allow: /mlb/contracts/_/team/
+Allow: /nfl/contracts/_/team/
+Allow: /nba/contracts/_/team/
+Allow: /nhl/contracts/_/team/
+Crawl-delay: 7

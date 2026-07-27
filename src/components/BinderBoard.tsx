@@ -113,7 +113,7 @@ export function BinderBoard({
       <div className="board-heading">
         <div>
           <span className="eyebrow">LONG-TERM COLLECTION RESEARCH</span>
-          <h2 id="binder-board-title">Build a Binder</h2>
+          <h2 id="binder-board-title">Baseball Collection Thesis</h2>
         </div>
         <div className="board-heading-actions">
           <span className="record-count">
@@ -123,7 +123,11 @@ export function BinderBoard({
         </div>
       </div>
 
-      <div className="board-filters" role="group" aria-label="Build a Binder filters">
+      <div
+        className="board-filters"
+        role="group"
+        aria-label="Baseball Collection Thesis filters"
+      >
         <label className="search-field">
           <span className="sr-only">Search players</span>
           <input
@@ -196,13 +200,13 @@ export function BinderBoard({
         <div className="board-table-wrap">
           <table className="board-table binder-board-table">
             <caption className="sr-only">
-              Build a Binder player rankings. Higher scores indicate a stronger long-term
+              Baseball Collection Thesis player rankings. Higher scores indicate a stronger long-term
               collection research thesis within this model version and market cohort.
             </caption>
             <thead>
               <tr>
                 <th scope="col">Player</th>
-                <th scope="col">Binder Score</th>
+                <th scope="col">Thesis Score</th>
                 <th scope="col">Guidance</th>
                 <th scope="col">Baseball Thesis</th>
                 <th scope="col">Collector Demand</th>
@@ -224,8 +228,8 @@ export function BinderBoard({
                         className="player-cell"
                         aria-label={
                           isOpening
-                            ? `Opening Build a Binder research for ${item.player.name}`
-                            : `Open Build a Binder research for ${item.player.name}`
+                            ? `Opening Baseball Collection Thesis research for ${item.player.name}`
+                            : `Open Baseball Collection Thesis research for ${item.player.name}`
                         }
                         aria-current={selectedId === item.player.id ? 'true' : undefined}
                         disabled={isOpening}
@@ -297,7 +301,10 @@ export function BinderBoard({
       ) : null}
 
       {page.totalPages > 1 ? (
-        <nav className="board-pagination" aria-label="Build a Binder results pages">
+        <nav
+          className="board-pagination"
+          aria-label="Baseball Collection Thesis results pages"
+        >
           <button
             type="button"
             className="icon-button"

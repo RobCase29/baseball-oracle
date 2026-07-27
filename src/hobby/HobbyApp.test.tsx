@@ -27,6 +27,9 @@ import type {
   BinderGraduationBand,
 } from '../domain/binderGraduationIndex'
 import type {
+  PlayerMobilityContext,
+} from '../domain/playerMobilityContext'
+import type {
   BinderGraduationSport,
   BinderGraduationV2Item,
   BinderGraduationV2Response,
@@ -34,7 +37,7 @@ import type {
 import { HobbyApp } from './HobbyApp'
 
 beforeEach(() => {
-  window.history.replaceState({}, '', '/hobby')
+  window.history.replaceState({}, '', '/hobby?lens=market')
 })
 
 afterEach(() => {
@@ -741,9 +744,10 @@ describe('Backstop Binder Index', () => {
     expect(
       screen.getByRole('heading', { name: 'The Build Board' }),
     ).toBeInTheDocument()
+    expect(window.location.search).toContain('lens=market')
     expect(
       screen.getByRole('link', { name: 'Backstop Binder Index' }),
-    ).toHaveAttribute('href', '/hobby')
+    ).toHaveAttribute('href', '/hobby?lens=desk')
     expect(screen.getByText('Subject-level research only.'))
       .toBeInTheDocument()
 
@@ -756,6 +760,7 @@ describe('Backstop Binder Index', () => {
     expect(within(row!).getByText('Build')).toBeInTheDocument()
     expect(within(row!).getByText('#2')).toBeInTheDocument()
     expect(within(row!).getByText('Cohort #1')).toBeInTheDocument()
+    expect(screen.queryByText('Runway —')).not.toBeInTheDocument()
     expect(screen.getByText('Exact-card action withheld')).toBeInTheDocument()
     expect(screen.getByText(/One master order/u)).toBeInTheDocument()
 
@@ -764,8 +769,18 @@ describe('Backstop Binder Index', () => {
         name: 'Show research detail for Pikachu',
       }),
     )
-    expect(screen.getByText(/Character demand only/u)).toBeInTheDocument()
-    expect(screen.getByText(/Exact card, grade, scarcity/u)).toBeInTheDocument()
+    expect(await screen.findByText(
+      /Character demand only/u,
+      {},
+      { timeout: 3_000 },
+    ))
+      .toBeInTheDocument()
+    expect(await screen.findByText(
+      /Exact card, grade, scarcity/u,
+      {},
+      { timeout: 3_000 },
+    ))
+      .toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: /Board rank/u }))
       .toBeInTheDocument()
     expect(within(table).getByRole('columnheader', { name: /Binder Index/u }))
@@ -778,6 +793,324 @@ describe('Backstop Binder Index', () => {
       'href',
       'https://www.gemrate.com/sales-trends-pokemon',
     )
+  })
+
+  it('surfaces Team Runway without turning mobility into a score', async () => {
+    const mookie = feedItem({
+      id: 'athlete|baseball|Mookie Betts',
+      name: 'Mookie Betts',
+      type: 'athlete',
+      domain: 'baseball',
+      rank: 42,
+      cohortSize: 2_032,
+      percentile: 98,
+    })
+    mookie.subject.mobility = {
+      availability: 'observed',
+      asOf: '2026-07-26',
+      league: 'MLB',
+      currentTeam: {
+        code: 'LAD',
+        name: 'Los Angeles Dodgers',
+      },
+      teamTenureStart: '2020-02-10',
+      term: {
+        status: 'under_contract',
+        kind: 'extension',
+        currentSeasonEndYear: 2026,
+        currentSeasonLabel: '2026',
+        reportedThrough: {
+          seasonEndYear: 2032,
+          label: '2032 season',
+        },
+        guaranteedThrough: {
+          seasonEndYear: 2032,
+          label: '2032 season',
+        },
+        maximumTeamControlThrough: {
+          seasonEndYear: 2032,
+          label: '2032 season',
+        },
+        remainingSeasonsIncludingCurrent: 7,
+        options: [],
+      },
+      nextDecision: {
+        kind: 'unrestricted_free_agency',
+        season: {
+          seasonEndYear: 2033,
+          label: '2033 offseason',
+        },
+        label: 'UFA after the 2032 season',
+      },
+      mobilityWindow: 'three_plus_seasons',
+      reasonCodes: ['long_current_team_runway'],
+      lastTeamChange: {
+        effectiveAt: '2020-02-10',
+        kind: 'trade',
+        fromTeam: {
+          code: 'BOS',
+          name: 'Boston Red Sox',
+        },
+        toTeam: {
+          code: 'LAD',
+          name: 'Los Angeles Dodgers',
+        },
+      },
+      provenance: {
+        sourceId: 'official_mlb',
+        sourcePlayerId: '605141',
+        sourceUrl:
+          'https://www.mlb.com/dodgers/press-release/press-release-dodgers-sign-2018-al-mvp-mookie-betts-to-a12-year-contract',
+        accessedAt: '2026-07-26',
+        identityStatus: 'reviewed_bridge',
+      },
+      semantics: {
+        contextOnly: true,
+        directionalClaim: false,
+        interpretation: 'opportunity_or_disruption',
+      },
+    } satisfies PlayerMobilityContext
+    const response = fixtureResponse()
+    response.items = [mookie]
+    response.page = {
+      page: 1,
+      limit: 50,
+      total: 1,
+      totalPages: 1,
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(response)),
+    )
+
+    render(<HobbyApp />)
+
+    const table = await screen.findByRole('table', {
+      name: 'Long-term collection research table',
+    })
+    expect(within(table).getByText('LAD · term 2032'))
+      .toBeInTheDocument()
+    fireEvent.click(within(table).getByRole('button', {
+      name: 'Show research detail for Mookie Betts',
+    }))
+    expect(screen.getAllByText('Contract term through 2032').length)
+      .toBeGreaterThan(0)
+    expect(screen.getAllByText('Guaranteed through 2032').length)
+      .toBeGreaterThan(0)
+    expect(screen.getAllByText(/Free agency/u).length)
+      .toBeGreaterThan(0)
+    expect(
+      screen.getAllByRole('link', {
+        name: 'Open MLB.com contract source, terms as of Jul 26, 2026',
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(screen.getAllByText('MLB.com · terms as of Jul 26, 2026').length)
+      .toBeGreaterThan(0)
+    const mobileBoard = screen.getByLabelText('Mobile Build Board')
+    expect(within(mobileBoard).getAllByText('Team runway')).toHaveLength(1)
+    expect(screen.getAllByText(
+      /disrupt continuity or expand collector reach/u,
+    ).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/mobility score/iu)).not.toBeInTheDocument()
+  })
+
+  it('keeps Team Runway visible on the mobile Breakout Radar', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=market&screen=breakout',
+    )
+    const response = breakoutFixtureResponse()
+    response.items[0]!.subject.mobility = {
+      availability: 'observed',
+      asOf: '2026-07-26',
+      league: 'NFL',
+      currentTeam: {
+        code: 'TEN',
+        name: 'Tennessee Titans',
+      },
+      teamTenureStart: '2025-04-24',
+      term: {
+        status: 'under_contract',
+        kind: 'rookie_scale',
+        currentSeasonEndYear: 2026,
+        currentSeasonLabel: '2026',
+        reportedThrough: {
+          seasonEndYear: 2029,
+          label: '2029 season',
+        },
+        guaranteedThrough: {
+          seasonEndYear: 2027,
+          label: '2027 season',
+        },
+        maximumTeamControlThrough: null,
+        remainingSeasonsIncludingCurrent: 4,
+        options: [],
+      },
+      nextDecision: {
+        kind: 'non_guarantee',
+        season: {
+          seasonEndYear: 2027,
+          label: '2027 offseason',
+        },
+        label: 'Team decision after the 2026 season',
+      },
+      mobilityWindow: 'after_current_season',
+      reasonCodes: ['practical_team_decision_before_term_end'],
+      lastTeamChange: null,
+      provenance: {
+        sourceId: 'spotrac',
+        sourcePlayerId: '12345',
+        sourceUrl:
+          'https://www.spotrac.com/nfl/player/_/id/12345/cam-ward',
+        accessedAt: '2026-07-26',
+        identityStatus: 'reviewed_bridge',
+      },
+      semantics: {
+        contextOnly: true,
+        directionalClaim: false,
+        interpretation: 'opportunity_or_disruption',
+      },
+    } satisfies PlayerMobilityContext
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(response)),
+    )
+
+    render(<HobbyApp />)
+
+    const mobileBoard = await screen.findByLabelText(
+      'Mobile Breakout Radar',
+    )
+    expect(within(mobileBoard).getByText('TEN · term 2029'))
+      .toBeInTheDocument()
+    expect(within(mobileBoard).getByText('Team decision 2027 offseason'))
+      .toBeInTheDocument()
+  })
+
+  it('keeps term-only contract rows neutral when a decision is unknown', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=market&screen=breakout',
+    )
+    const response = breakoutFixtureResponse()
+    response.items[0]!.subject.mobility = {
+      availability: 'observed',
+      asOf: '2026-07-26',
+      league: 'NFL',
+      currentTeam: {
+        code: 'TEN',
+        name: 'Tennessee Titans',
+      },
+      teamTenureStart: null,
+      term: {
+        status: 'under_contract',
+        kind: 'rookie_scale',
+        currentSeasonEndYear: 2026,
+        currentSeasonLabel: '2026',
+        reportedThrough: {
+          seasonEndYear: 2027,
+          label: '2027 season',
+        },
+        guaranteedThrough: null,
+        maximumTeamControlThrough: null,
+        remainingSeasonsIncludingCurrent: 2,
+        options: [],
+      },
+      nextDecision: {
+        kind: 'unknown',
+        season: {
+          seasonEndYear: 2027,
+          label: '2027 offseason',
+        },
+        label: 'Contract term concludes after the 2027 season',
+      },
+      mobilityWindow: 'after_current_season',
+      reasonCodes: ['team_list_term_only_detail_not_enriched'],
+      lastTeamChange: null,
+      provenance: {
+        sourceId: 'spotrac',
+        sourcePlayerId: '12345',
+        sourceUrl:
+          'https://www.spotrac.com/nfl/player/_/id/12345/cam-ward',
+        accessedAt: '2026-07-26',
+        identityStatus: 'unique_source_name_bridge',
+      },
+      semantics: {
+        contextOnly: true,
+        directionalClaim: false,
+        interpretation: 'opportunity_or_disruption',
+      },
+    } satisfies PlayerMobilityContext
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(response)),
+    )
+
+    render(<HobbyApp />)
+
+    const mobileBoard = await screen.findByLabelText(
+      'Mobile Breakout Radar',
+    )
+    expect(within(mobileBoard).getByText('TEN · term 2027'))
+      .toBeInTheDocument()
+    expect(within(mobileBoard).queryByText('Decision 2027 offseason'))
+      .not.toBeInTheDocument()
+
+    fireEvent.click(within(mobileBoard).getByRole('button'))
+
+    expect(within(mobileBoard).getByText('Decision not verified'))
+      .toBeInTheDocument()
+    expect(within(mobileBoard).getByText(
+      /does not by itself establish free agency, relocation, or a team change/u,
+    )).toBeInTheDocument()
+    expect(within(mobileBoard).queryByText(/Next decision:/u))
+      .not.toBeInTheDocument()
+  })
+
+  it('connects the existing models in a transparent Decision Desk', async () => {
+    window.history.replaceState({}, '', '/hobby')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<HobbyApp />)
+
+    expect(
+      screen.getByRole('heading', { name: 'The Decision Desk' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', {
+      name: 'See where the app agrees—and where it doesn’t',
+    })).toBeInTheDocument()
+    expect(screen.getByText('Durable franchise')).toBeInTheDocument()
+    expect(screen.getByText('Narrative with momentum')).toBeInTheDocument()
+    expect(screen.getByText('Narrative runway')).toBeInTheDocument()
+    expect(screen.getByText('Narrative under pressure')).toBeInTheDocument()
+    expect(screen.getByText('Early narrative')).toBeInTheDocument()
+    expect(screen.getByText(/no blended score/iu)).toBeInTheDocument()
+    expect(
+      screen.getByRole('searchbox', {
+        name: 'Search surfaced intersections',
+      }),
+    ).toBeInTheDocument()
+    expect(window.location.search).toContain('lens=desk')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps legacy market links on the Build Board', async () => {
+    window.history.replaceState({}, '', '/hobby?q=Pikachu')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(fixtureResponse())),
+    )
+
+    render(<HobbyApp />)
+
+    expect(
+      screen.getByRole('heading', { name: 'The Build Board' }),
+    ).toBeInTheDocument()
+    expect(window.location.search).toContain('lens=market')
+    expect((await screen.findAllByText('Pikachu')).length).toBeGreaterThan(0)
   })
 
   it('opens a dollar-led Breakout Radar and exits it for global search', async () => {
@@ -923,6 +1256,8 @@ describe('Backstop Binder Index', () => {
     expect(within(row!).getByText('24')).toBeInTheDocument()
     expect(within(row!).getByText('88.4')).toBeInTheDocument()
     expect(within(row!).getByText('On Deck')).toBeInTheDocument()
+    expect(within(row!).getByLabelText(/classification confidence/iu))
+      .toBeInTheDocument()
     expect(screen.getAllByText('C.J. Stroud')).toHaveLength(2)
     expect(within(table).getByRole('columnheader', { name: 'Grad rank' }))
       .toBeInTheDocument()
@@ -1154,5 +1489,48 @@ describe('Backstop Binder Index', () => {
         name: 'baseball, football, and basketball Binder Graduation rankings',
       }),
     ).not.toBeInTheDocument()
+  })
+
+  it('opens a direct IT Board URL without a runtime data request', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState(
+      {},
+      '',
+      '/hobby?lens=it&q=Shohei%20Ohtani',
+    )
+
+    render(<HobbyApp />)
+
+    expect(
+      screen.getByRole('heading', { name: 'The IT Board' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /IT Board\. Curated hobby star-power narratives/u,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('searchbox', {
+      name: 'Search every IT Board player or team',
+    })).toHaveValue('Shohei Ohtani')
+    expect(
+      await screen.findByRole('heading', { name: 'Shohei Ohtani' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Los Angeles Dodgers' }),
+    ).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByRole('searchbox', {
+      name: 'Search every IT Board player or team',
+    }), {
+      target: { value: 'no such player' },
+    })
+    expect(screen.getByText('No IT player matches these filters.'))
+      .toBeInTheDocument()
+    await waitFor(() => {
+      expect(window.location.search).toContain('lens=it')
+      expect(window.location.search).toContain('q=no+such+player')
+    })
   })
 })

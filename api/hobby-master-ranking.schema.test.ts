@@ -84,4 +84,23 @@ describe('hobby-oracle-master-ranking.v2 JSON Schema', () => {
       '/items/0/assessment/buildQualification/reasonCodes',
     )
   })
+
+  it('rejects a directional mobility score or recommendation', () => {
+    const drifted = structuredClone(buildHobbyMasterFeed(
+      hobbyMasterCatalog,
+      { q: 'Mookie Betts', posture: 'all', limit: 1 },
+    )) as unknown as {
+      items: Array<{
+        subject: {
+          mobility: Record<string, unknown>
+        }
+      }>
+    }
+    drifted.items[0]!.subject.mobility.riskScore = 72
+    drifted.items[0]!.subject.mobility.recommendation = 'sell'
+
+    const schemaErrors = errors(drifted).join('\n')
+    expect(schemaErrors).toContain('/items/0/subject/mobility')
+    expect(schemaErrors).toContain('additional properties')
+  })
 })

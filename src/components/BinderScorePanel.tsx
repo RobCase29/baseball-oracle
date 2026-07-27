@@ -150,7 +150,7 @@ export function BinderScorePanel({ result }: BinderScorePanelProps) {
           </div>
           <div className="dynasty-score-grid">
             <div>
-              <span>Binder Score</span>
+              <span>Thesis Score</span>
               <strong>{scoreLabel(result.score)}</strong>
               <small>0–100 research scale</small>
             </div>
@@ -204,7 +204,7 @@ export function BinderScorePanel({ result }: BinderScorePanelProps) {
           <div className="source-table-wrap">
             <table className="source-table source-table--plain">
               <caption className="sr-only">
-                Binder Score component values, weights, and weighted contributions
+                Baseball thesis component values, weights, and weighted contributions
               </caption>
               <thead>
                 <tr>

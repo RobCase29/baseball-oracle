@@ -23,9 +23,12 @@ export function GlobalBoardSearch({
   const inputRef = useRef<HTMLInputElement>(null)
   const searching = value.trim().length > 0
   const market = lens === 'market'
+  const itFactor = lens === 'it'
   const accessibleLabel = market
     ? 'Search every subject'
-    : 'Search every graduation candidate'
+    : itFactor
+      ? 'Search every IT Board player or team'
+      : 'Search every graduation candidate'
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent): void {
@@ -66,7 +69,11 @@ export function GlobalBoardSearch({
       <div className="bbi-global-search__heading">
         <span>Find anyone</span>
         <strong>
-          {market ? 'Search the entire hobby' : 'Search the entire pipeline'}
+          {market
+            ? 'Search the entire hobby'
+            : itFactor
+              ? 'Search every IT team'
+              : 'Search the entire pipeline'}
         </strong>
       </div>
 
@@ -83,7 +90,9 @@ export function GlobalBoardSearch({
           placeholder={
             market
               ? 'Search any player or Pokémon…'
-              : 'Search any graduation candidate…'
+              : itFactor
+                ? 'Search player, team, league…'
+                : 'Search any graduation candidate…'
           }
           aria-describedby={helperId}
           autoComplete="off"
@@ -110,18 +119,24 @@ export function GlobalBoardSearch({
 
       <div className="bbi-global-search__context" id={helperId}>
         <span className="bbi-global-search__scope">
-          {market ? 'All labels · all sports' : 'All paths · all sports'}
+          {market
+            ? 'All labels · all sports'
+            : itFactor
+              ? 'MLB · NFL · NBA · NHL'
+              : 'All paths · all sports'}
         </span>
         <span>
           {market
             ? 'Build, Near Build, Watch, Risk, Pass, and Unrated are searched together.'
-            : 'Age, position, sport, and graduation-path screens clear automatically.'}
+            : itFactor
+              ? 'Player and team names are searched across every IT tier.'
+              : 'Age, position, sport, and graduation-path screens clear automatically.'}
         </span>
-        {searching ? (
+        {searching && (loading || resultCount !== null) ? (
           <strong role="status" aria-live="polite">
             {loading
               ? 'Searching…'
-              : `${(resultCount ?? 0).toLocaleString()} ${
+              : `${resultCount?.toLocaleString()} ${
                   resultCount === 1 ? 'match' : 'matches'
                 }`}
           </strong>
