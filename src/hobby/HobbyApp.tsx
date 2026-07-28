@@ -367,7 +367,7 @@ export function HobbyApp() {
     let active = true
     setDecisionLoading(true)
     setDecisionError(null)
-    import('../data/hobby-decision-desk.v1.json')
+    import('../data/hobby-decision-desk.v2.json')
       .then((module) => {
         if (!active) return
         const payload = module.default as unknown

@@ -32,6 +32,9 @@ import {
   type HobbyDecisionDeskArtifact,
 } from '../../src/domain/hobbyDecisionDesk.js'
 import {
+  HOBBY_COMPOUNDING_MODEL_VERSION,
+} from '../../src/domain/hobbyCompoundingSignal.js'
+import {
   buildHobbyMasterCatalog,
 } from '../../api/_hobby-master-ranking.js'
 import {
@@ -53,7 +56,7 @@ const badgeOutputPath = resolve(
 )
 const decisionDeskOutputPath = resolve(
   projectRoot,
-  'src/data/hobby-decision-desk.v1.json',
+  'src/data/hobby-decision-desk.v2.json',
 )
 
 const AS_OF = '2026-07-26'
@@ -72,6 +75,51 @@ export interface GemRateSnapshot {
   dataThrough: string
   rowsSha256: string
   rows: GemRateRow[]
+}
+
+export function buildDecisionDeskArtifact(
+  board: ItFactorBoardResponse,
+  marketSnapshot: GemRateSnapshot,
+): HobbyDecisionDeskArtifact {
+  const generatedAt = new Date(GENERATED_AT)
+  const masterCatalog = buildHobbyMasterCatalog(
+    marketSnapshot,
+    generatedAt,
+  )
+  const graduationCatalog = buildBinderGraduationCatalog(
+    generatedAt,
+    undefined,
+    masterCatalog,
+  )
+  return {
+    schemaVersion: HOBBY_DECISION_DESK_SCHEMA_VERSION,
+    snapshot: {
+      generatedAt: GENERATED_AT,
+      marketDataThrough: marketSnapshot.dataThrough,
+      marketRowsSha256: marketSnapshot.rowsSha256,
+      itReviewedAsOf: AS_OF,
+      itNextReviewBy: NEXT_REVIEW_BY,
+      pathDataThrough: masterCatalog.snapshot.dataThrough,
+      compoundingModelVersion: HOBBY_COMPOUNDING_MODEL_VERSION,
+    },
+    coverage: {
+      marketSports: ['baseball', 'football', 'basketball', 'hockey'],
+      pathSports: ['football', 'basketball'],
+      limitations: [
+        'Power-law context describes the observed GemRate subject universe; it is not a complete hobby census, fitted Pareto law, or future-return forecast.',
+        'Compounding states use two observed six-month windows and monthly breadth; they do not establish long-term card appreciation.',
+        'Decision Desk path intersections use the static NFL and NBA graduation universe.',
+        'Baseball Graduation remains live-directory-derived and is available on the source board.',
+        'Hockey has no Graduation model; its Market and IT intersections remain available.',
+      ],
+    },
+    desk: buildHobbyDecisionDesk({
+      itEntries: board.entries,
+      marketItems: masterCatalog.items,
+      marketRows: marketSnapshot.rows,
+      graduationItems: graduationCatalog.items,
+    }),
+  }
 }
 
 const gemRateSource: ItFactorSource = {
@@ -515,47 +563,10 @@ async function main(): Promise<void> {
     `${JSON.stringify(badgeIndex, null, 2)}\n`,
     'utf8',
   )
-  const generatedAt = new Date(GENERATED_AT)
-  const masterCatalog = buildHobbyMasterCatalog(
+  const decisionDeskArtifact = buildDecisionDeskArtifact(
+    board,
     marketSnapshot,
-    generatedAt,
   )
-  const graduationCatalog = buildBinderGraduationCatalog(
-    generatedAt,
-    undefined,
-    masterCatalog,
-  )
-  const decisionDeskArtifact: HobbyDecisionDeskArtifact = {
-    schemaVersion: HOBBY_DECISION_DESK_SCHEMA_VERSION,
-    snapshot: {
-      generatedAt: GENERATED_AT,
-      marketDataThrough: marketSnapshot.dataThrough,
-      marketRowsSha256: marketSnapshot.rowsSha256,
-      itReviewedAsOf: AS_OF,
-      itNextReviewBy: NEXT_REVIEW_BY,
-      pathDataThrough: masterCatalog.snapshot.dataThrough,
-    },
-    coverage: {
-      marketSports: ['baseball', 'football', 'basketball', 'hockey'],
-      pathSports: ['football', 'basketball'],
-      limitations: [
-        'Decision Desk path intersections use the static NFL and NBA graduation universe.',
-        'Baseball Graduation remains live-directory-derived and is available on the source board.',
-        'Hockey has no Graduation model; its Market and IT intersections remain available.',
-      ],
-    },
-    desk: buildHobbyDecisionDesk({
-      itEntries: board.entries,
-      buildItems: masterCatalog.items.filter(
-        (item) => item.assessment.buildQualification.eligible,
-      ),
-      breakoutItems: masterCatalog.items.filter(
-        (item) => item.assessment.breakoutSignal?.surfaced,
-      ),
-      exitItems: masterCatalog.items,
-      graduationItems: graduationCatalog.items,
-    }),
-  }
   await writeFile(
     decisionDeskOutputPath,
     `${JSON.stringify(decisionDeskArtifact, null, 2)}\n`,

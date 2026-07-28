@@ -1080,17 +1080,26 @@ describe('Backstop Binder Index', () => {
       screen.getByRole('heading', { name: 'The Decision Desk' }),
     ).toBeInTheDocument()
     expect(await screen.findByRole('heading', {
-      name: 'See where the app agrees—and where it doesn’t',
+      name: 'Find demand that can keep compounding',
     })).toBeInTheDocument()
-    expect(screen.getByText('Durable franchise')).toBeInTheDocument()
-    expect(screen.getByText('Narrative with momentum')).toBeInTheDocument()
-    expect(screen.getByText('Narrative runway')).toBeInTheDocument()
-    expect(screen.getByText('Narrative under pressure')).toBeInTheDocument()
-    expect(screen.getByText('Early narrative')).toBeInTheDocument()
-    expect(screen.getByText(/no blended score/iu)).toBeInTheDocument()
+    expect(screen.getByText('Top 1% demand')).toBeInTheDocument()
+    expect(screen.getByRole('button', {
+      name: /Compounding now/u,
+    })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('heading', {
+      name: 'Compounding now',
+    })).toBeInTheDocument()
+    expect(screen.getByText(/market shape, not a buy signal/iu))
+      .toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', {
+      name: /All signals/u,
+    }))
+    expect(screen.getByText('Scale without breadth')).toBeInTheDocument()
+    expect(screen.getByText('Path catching the story')).toBeInTheDocument()
+    expect(screen.getByText('Story before scale')).toBeInTheDocument()
     expect(
       screen.getByRole('searchbox', {
-        name: 'Search surfaced intersections',
+        name: 'Search surfaced signals',
       }),
     ).toBeInTheDocument()
     expect(window.location.search).toContain('lens=desk')

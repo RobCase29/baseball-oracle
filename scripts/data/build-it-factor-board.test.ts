@@ -8,7 +8,7 @@ import boardJson from '../../src/data/it-factor-board.v1.json' with {
 import badgeIndexJson from '../../src/data/it-factor-badges.v1.json' with {
   type: 'json',
 }
-import decisionDeskJson from '../../src/data/hobby-decision-desk.v1.json' with {
+import decisionDeskJson from '../../src/data/hobby-decision-desk.v2.json' with {
   type: 'json',
 }
 import {
@@ -24,6 +24,7 @@ import {
   type ItFactorBoardResponse,
 } from '../../src/domain/itFactor.js'
 import {
+  buildDecisionDeskArtifact,
   buildItFactorBoard,
   type GemRateSnapshot,
 } from './build-it-factor-board.js'
@@ -148,22 +149,45 @@ describe('generated IT Factor board', () => {
 
   it('publishes deterministic cross-signal queues without a blended score', () => {
     expect(isHobbyDecisionDeskArtifact(decisionDeskJson)).toBe(true)
+    expect(buildDecisionDeskArtifact(
+      board(),
+      marketSnapshotJson as GemRateSnapshot,
+    )).toEqual(decisionDeskJson)
     expect(decisionDeskJson.snapshot.marketRowsSha256).toBe(
       board().snapshot.marketRowsSha256,
     )
+    expect(decisionDeskJson.desk.powerLaw).toMatchObject({
+      observedUniverseCount: 5_866,
+      topOnePercent: {
+        subjectCount: 59,
+        demandSharePct: 48.3,
+      },
+      topTenPercent: {
+        subjectCount: 587,
+        demandSharePct: 83.5,
+      },
+      priorTail: {
+        subjectCount: 59,
+        retainedCount: 48,
+        retentionPct: 81.4,
+      },
+      confirmedTailEntrantCount: 8,
+      descriptiveOnly: true,
+    })
     expect(decisionDeskJson.desk.queues.map((queue) => [
       queue.id,
       queue.items.length,
     ])).toEqual([
-      ['durable_franchise', 8],
+      ['compounding_now', 11],
       ['narrative_momentum', 12],
-      ['narrative_runway', 15],
+      ['noise_check', 19],
       ['narrative_pressure', 33],
+      ['narrative_runway', 15],
       ['story_before_scale', 24],
     ])
-    expect(decisionDeskJson.desk.uniqueSubjectCount).toBe(89)
+    expect(decisionDeskJson.desk.uniqueSubjectCount).toBe(105)
     expect(JSON.stringify(decisionDeskJson)).not.toMatch(
-      /compositeScore|expectedReturn|buyRecommendation/iu,
+      /compositeScore|expectedReturn|buyRecommendation|powerLawProbability/iu,
     )
   })
 

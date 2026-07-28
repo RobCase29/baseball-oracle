@@ -65,12 +65,15 @@ function marketItem(input: {
   build?: boolean
   breakoutRank?: number
   exitEligible?: boolean
+  comparisonEligible?: boolean
 }): HobbyMasterFeedItem {
   const decline = input.exitEligible ? Math.log(0.7) : Math.log(1.1)
   return {
     subject: {
       id: input.sourceKey,
       name: input.name,
+      domain: 'baseball',
+      type: 'athlete',
     },
     masterRank: input.rank,
     assessment: {
@@ -80,7 +83,7 @@ function marketItem(input: {
         passed: input.build ? 9 : 5,
         required: 9,
         checks: {
-          comparisonEligible: true,
+          comparisonEligible: input.comparisonEligible ?? true,
           sourceCurrent: true,
           completeEighteenMonthHistory: true,
         },
@@ -102,16 +105,31 @@ function marketItem(input: {
           recentThreeMonthYearOverYearLogGrowth: decline,
         },
       },
-      breakoutSignal: input.breakoutRank === undefined
-        ? undefined
-        : {
-            surfaced: true,
-            rank: input.breakoutRank,
-            score: 75,
-            sixMonthDemandAddedUsd: 500_000,
-          },
+      breakoutSignal: {
+        surfaced: input.breakoutRank !== undefined,
+        rank: input.breakoutRank ?? null,
+        score: input.breakoutRank === undefined ? 0 : 75,
+        sixMonthDemandAddedUsd: 500_000,
+        confirmingMonths: 6,
+        currentSixMonthEffectiveMonths: 6,
+        relativeSixMonthMultiple: 2.5,
+      },
     },
   } as unknown as HobbyMasterFeedItem
+}
+
+function marketRow(
+  sourceKey: string,
+  scale = 1_000_000,
+): { sourceKey: string; monthlySalesUsd: number[] } {
+  return {
+    sourceKey,
+    monthlySalesUsd: [
+      ...Array(6).fill(scale * 0.8),
+      ...Array(6).fill(scale),
+      ...Array(6).fill(scale * 1.3),
+    ],
+  }
 }
 
 function graduationItem(
@@ -146,7 +164,7 @@ describe('Hobby Decision Desk', () => {
     })
     const desk = buildHobbyDecisionDesk({
       itEntries: [exact, ambiguous],
-      buildItems: [
+      marketItems: [
         marketItem({
           sourceKey: 'athlete|baseball|Exact Match',
           name: 'Exact Match',
@@ -158,15 +176,18 @@ describe('Hobby Decision Desk', () => {
           name: 'Ambiguous Match',
           rank: 1,
           build: true,
+          comparisonEligible: false,
         }),
       ],
-      breakoutItems: [],
-      exitItems: [],
+      marketRows: [
+        marketRow('athlete|baseball|Exact Match'),
+        marketRow('athlete|baseball|Ambiguous Match'),
+      ],
       graduationItems: [],
     })
 
     expect(
-      desk.queues.find((queue) => queue.id === 'durable_franchise')?.items,
+      desk.queues.find((queue) => queue.id === 'compounding_now')?.items,
     ).toHaveLength(1)
     expect(desk.queues[0]?.items[0]?.playerName).toBe('Exact Match')
   })
@@ -187,8 +208,7 @@ describe('Hobby Decision Desk', () => {
     })
     const desk = buildHobbyDecisionDesk({
       itEntries: [first, second],
-      buildItems: [],
-      breakoutItems: [
+      marketItems: [
         marketItem({
           sourceKey: first.market.sourceKey!,
           name: first.player.name,
@@ -202,7 +222,10 @@ describe('Hobby Decision Desk', () => {
           breakoutRank: 2,
         }),
       ],
-      exitItems: [],
+      marketRows: [
+        marketRow(first.market.sourceKey!, 900_000),
+        marketRow(second.market.sourceKey!, 800_000),
+      ],
       graduationItems: [],
     })
     const queue = desk.queues.find(
@@ -233,9 +256,8 @@ describe('Hobby Decision Desk', () => {
     })
     const desk = buildHobbyDecisionDesk({
       itEntries: [path, early],
-      buildItems: [],
-      breakoutItems: [],
-      exitItems: [],
+      marketItems: [],
+      marketRows: [],
       graduationItems: [
         graduationItem(
           path.market.sourceKey!,
@@ -253,5 +275,69 @@ describe('Hobby Decision Desk', () => {
       desk.queues.find((queue) => queue.id === 'story_before_scale')
         ?.items[0]?.nativeSignal.detail,
     ).toBe('Rising narrative is ahead of confirmed demand scale')
+  })
+
+  it('separates broad tail compounding from concentrated tail noise', () => {
+    const broad = itEntry({
+      id: 'broad',
+      name: 'Broad Compounder',
+      sourceKey: 'athlete|baseball|Broad Compounder',
+    })
+    const noisy = itEntry({
+      id: 'noisy',
+      name: 'Noisy Tail',
+      sourceKey: 'athlete|baseball|Noisy Tail',
+    })
+    const broadDesk = buildHobbyDecisionDesk({
+      itEntries: [broad],
+      marketItems: [
+        marketItem({
+          sourceKey: broad.market.sourceKey!,
+          name: broad.player.name,
+          rank: 1,
+        }),
+      ],
+      marketRows: [
+        marketRow(broad.market.sourceKey!, 2_000_000),
+      ],
+      graduationItems: [],
+    })
+    const noiseDesk = buildHobbyDecisionDesk({
+      itEntries: [noisy],
+      marketItems: [
+        marketItem({
+          sourceKey: noisy.market.sourceKey!,
+          name: noisy.player.name,
+          rank: 1,
+        }),
+      ],
+      marketRows: [
+        {
+          sourceKey: noisy.market.sourceKey!,
+          monthlySalesUsd: [
+            ...Array(6).fill(1_000_000),
+            ...Array(6).fill(1_000_000),
+            100_000, 100_000, 100_000, 100_000, 100_000, 8_000_000,
+          ],
+        },
+      ],
+      graduationItems: [],
+    })
+
+    expect(
+      broadDesk.queues.find((queue) => queue.id === 'compounding_now')
+        ?.items.map((item) => item.playerName),
+    ).toEqual(['Broad Compounder'])
+    expect(
+      noiseDesk.queues.find((queue) => queue.id === 'noise_check')
+        ?.items.map((item) => item.playerName),
+    ).toEqual(['Noisy Tail'])
+    expect(broadDesk.powerLaw).toMatchObject({
+      descriptiveOnly: true,
+      observedUniverseCount: 1,
+    })
+    expect(JSON.stringify([broadDesk, noiseDesk])).not.toMatch(
+      /expectedReturn|buyRecommendation|probability/iu,
+    )
   })
 })

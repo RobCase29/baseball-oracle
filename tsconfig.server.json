@@ -31,6 +31,7 @@
     "src/domain/magnificentX.ts",
     "src/domain/hobbyMasterRanking.ts",
     "src/domain/hobbyBreakoutSignal.ts",
+    "src/domain/hobbyCompoundingSignal.ts",
     "src/domain/hobbySalesTrend.ts",
     "src/domain/hobbyLiquidationSignal.ts",
     "src/domain/hobbyPlayerRanking.ts",
