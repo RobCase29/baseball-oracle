@@ -1,7 +1,7 @@
 {
   "schemaVersion": "backstop-hobby-decision-desk.v2",
   "snapshot": {
-    "generatedAt": "2026-07-26T18:00:00.000Z",
+    "generatedAt": "2026-07-31T19:00:00.000Z",
     "marketDataThrough": "2026-06-30",
     "marketRowsSha256": "9584f55d14a1abb63014ff95dd6f2c7cc145731e1a54cd57cfe7fdb4c75f22c7",
     "itReviewedAsOf": "2026-07-26",
@@ -1944,12 +1944,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #2",
-              "detail": "93.7 readiness · ttm scale next",
+              "detail": "93.6 readiness · ttm scale next",
               "score": 2
             },
             "evidence": [
               "On Deck path",
-              "93.7 readiness",
+              "93.6 readiness",
               "ttm scale next"
             ]
           },
@@ -2019,12 +2019,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #5",
-              "detail": "89.6 readiness · ttm scale next",
+              "detail": "89.7 readiness · ttm scale next",
               "score": 5
             },
             "evidence": [
               "On Deck path",
-              "89.6 readiness",
+              "89.7 readiness",
               "ttm scale next"
             ]
           },
@@ -2169,12 +2169,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "Approaching #11",
-              "detail": "74.4 readiness · current run rate next",
+              "detail": "74.5 readiness · current run rate next",
               "score": 11
             },
             "evidence": [
               "Approaching path",
-              "74.4 readiness",
+              "74.5 readiness",
               "current run rate next"
             ]
           },
@@ -2194,12 +2194,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "Approaching #12",
-              "detail": "73.6 readiness · six month growth next",
+              "detail": "73.5 readiness · six month growth next",
               "score": 12
             },
             "evidence": [
               "Approaching path",
-              "73.6 readiness",
+              "73.5 readiness",
               "six month growth next"
             ]
           },
@@ -2269,12 +2269,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "Approaching #15",
-              "detail": "72.2 readiness · current run rate next",
+              "detail": "72.1 readiness · current run rate next",
               "score": 15
             },
             "evidence": [
               "Approaching path",
-              "72.2 readiness",
+              "72.1 readiness",
               "current run rate next"
             ]
           }

@@ -33,7 +33,7 @@ function invoke(
   handleBackstopBinderIndex(
     request,
     response,
-    new Date('2026-07-25T01:00:00.000Z'),
+    new Date('2026-07-31T19:00:00.000Z'),
   )
   return captured
 }

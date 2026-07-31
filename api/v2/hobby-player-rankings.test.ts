@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { describe, expect, it } from 'vitest'
 import { handleHobbyPlayerRankings } from './hobby-player-rankings.js'
 
-const currentAt = new Date('2026-07-25T01:00:00.000Z')
+const currentAt = new Date('2026-07-31T19:00:00.000Z')
 
 function request(url: string, method = 'GET'): IncomingMessage {
   return { url, method, headers: {} } as IncomingMessage

@@ -7,7 +7,7 @@ import {
   parseHobbyPlayerSignalExchange,
 } from './_hobby-player-rankings.js'
 
-const currentAt = new Date('2026-07-25T01:00:00.000Z')
+const currentAt = new Date('2026-07-31T19:00:00.000Z')
 
 describe('Hobby player ranking catalog', () => {
   it('reconciles Checklist v2 through reviewed identity controls and chronology quarantine', () => {
@@ -84,7 +84,7 @@ describe('Hobby player ranking catalog', () => {
     })
     expect(catalog.items.filter(
       (item) => item.sport === 'football' && item.age === null,
-    )).toHaveLength(10)
+    )).toHaveLength(7)
     expect(catalog.coverageBySport.football).toEqual({
       sourceRows: 464,
       rankedRows: 298,
