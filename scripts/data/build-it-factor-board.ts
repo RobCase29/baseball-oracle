@@ -61,7 +61,7 @@ const decisionDeskOutputPath = resolve(
 
 const AS_OF = '2026-07-26'
 const GENERATED_AT = '2026-07-26T18:00:00.000Z'
-const DECISION_DESK_GENERATED_AT = '2026-07-31T19:00:00.000Z'
+const DECISION_DESK_GENERATED_AT = '2026-08-02T10:46:52.000Z'
 const NEXT_REVIEW_BY = '2026-10-26'
 const GEMRATE_SOURCE_ID = 'gemrate-hobby-2026-06'
 

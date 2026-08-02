@@ -100,7 +100,7 @@ export const basketballItFactorCuration: ItFactorLeagueCuration = {
       publisher: 'NBA.com',
       url: 'https://www.nba.com/news/nba-offseason-deals-2026',
       publishedAt: '2026-07-26',
-      accessedAt: '2026-07-26',
+      accessedAt: '2026-08-02',
       kind: 'official',
     },
     {
@@ -713,10 +713,10 @@ export const basketballItFactorCuration: ItFactorLeagueCuration = {
 
     // Philadelphia 76ers
     b('PHI', 'LeBron James', 'F', 'established_star', 100, 100, 'holding',
-      'Historic production, global popularity, and unmatched cross-cycle collector demand make the hobby story permanent as a final Philadelphia chapter forms.',
+      'Historic production, global popularity, and unmatched cross-cycle collector demand make the hobby story permanent as his final Philadelphia chapter begins.',
       ['all-time icon', 'global reach', 'top-five jersey demand', 'elite hobby scale'],
       [OFFSEASON, JERSEY_SALES, SOCIAL_VIEWS],
-      ['Recheck official completion of the reported Philadelphia agreement.']),
+      ['Recheck role, health, and collector response after his Philadelphia debut.']),
     b('PHI', 'Tyrese Maxey', 'G', 'young_star', 88, 90, 'holding',
       'All-NBA, All-Star, and strong national demand establish Maxey as a real franchise guard rather than merely a veteran-star satellite.',
       ['All-NBA', 'All-Star', 'franchise guard', 'hobby confirmed'],

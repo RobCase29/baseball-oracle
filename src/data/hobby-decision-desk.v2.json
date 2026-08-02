@@ -1,7 +1,7 @@
 {
   "schemaVersion": "backstop-hobby-decision-desk.v2",
   "snapshot": {
-    "generatedAt": "2026-07-31T19:00:00.000Z",
+    "generatedAt": "2026-08-02T10:46:52.000Z",
     "marketDataThrough": "2026-06-30",
     "marketRowsSha256": "9584f55d14a1abb63014ff95dd6f2c7cc145731e1a54cd57cfe7fdb4c75f22c7",
     "itReviewedAsOf": "2026-07-26",
@@ -1944,12 +1944,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #2",
-              "detail": "93.6 readiness · ttm scale next",
+              "detail": "93.7 readiness · ttm scale next",
               "score": 2
             },
             "evidence": [
               "On Deck path",
-              "93.6 readiness",
+              "93.7 readiness",
               "ttm scale next"
             ]
           },
@@ -1969,12 +1969,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #3",
-              "detail": "92.5 readiness · ttm scale next",
+              "detail": "92.7 readiness · ttm scale next",
               "score": 3
             },
             "evidence": [
               "On Deck path",
-              "92.5 readiness",
+              "92.7 readiness",
               "ttm scale next"
             ]
           },
@@ -2019,12 +2019,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #5",
-              "detail": "89.7 readiness · ttm scale next",
+              "detail": "90.0 readiness · ttm scale next",
               "score": 5
             },
             "evidence": [
               "On Deck path",
-              "89.7 readiness",
+              "90.0 readiness",
               "ttm scale next"
             ]
           },
@@ -2219,12 +2219,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "Approaching #13",
-              "detail": "73.0 readiness · ttm scale next",
+              "detail": "72.9 readiness · ttm scale next",
               "score": 13
             },
             "evidence": [
               "Approaching path",
-              "73.0 readiness",
+              "72.9 readiness",
               "ttm scale next"
             ]
           },

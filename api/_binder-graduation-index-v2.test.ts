@@ -7,7 +7,7 @@ import {
   buildBinderGraduationV2Feed,
 } from './_binder-graduation-index-v2.js'
 
-const currentAt = new Date('2026-07-31T19:00:00.000Z')
+const currentAt = new Date('2026-08-02T11:00:00.000Z')
 
 function catalog() {
   return buildBinderGraduationV2Catalog(

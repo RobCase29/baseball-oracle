@@ -9,8 +9,8 @@ describe('hobby subject context artifact', () => {
     const artifact = parseHobbySubjectContextArtifact()
     const contexts = hobbySubjectContextBySourceKey()
     expect(artifact.counts).toMatchObject({
-      rows: 2300,
-      personAgeRows: 1278,
+      rows: 2301,
+      personAgeRows: 1279,
       pokemonIntroductionRows: 1022,
     })
     expect(contexts.get('athlete|baseball|Mike Trout')).toMatchObject({

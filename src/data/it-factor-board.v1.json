@@ -934,7 +934,7 @@
       "publisher": "NBA.com",
       "url": "https://www.nba.com/news/nba-offseason-deals-2026",
       "publishedAt": "2026-07-26",
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-02",
       "kind": "official"
     },
     {
@@ -11552,7 +11552,7 @@
       "tier": "icon",
       "confidence": 100,
       "trajectory": "holding",
-      "rationale": "Historic production, global popularity, and unmatched cross-cycle collector demand make the hobby story permanent as a final Philadelphia chapter forms.",
+      "rationale": "Historic production, global popularity, and unmatched cross-cycle collector demand make the hobby story permanent as his final Philadelphia chapter begins.",
       "signals": [
         "all-time icon",
         "global reach",
@@ -11560,7 +11560,7 @@
         "elite hobby scale"
       ],
       "recheckTriggers": [
-        "Recheck official completion of the reported Philadelphia agreement."
+        "Recheck role, health, and collector response after his Philadelphia debut."
       ],
       "sourceIds": [
         "gemrate-hobby-2026-06",
