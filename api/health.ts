@@ -18,6 +18,11 @@ import {
   composeMlbIdentityCrosswalk,
   type MlbIdentityOverlayRow,
 } from './_mlb-identity-overlay.js'
+import {
+  binderBaseballModelFreshness,
+  binderMarketCatalog,
+  binderMarketFreshness,
+} from './_binder-scores.js'
 
 interface HealthRow {
   database_time: string
@@ -684,6 +689,25 @@ export default async function handler(
       ...freshness.reasonCodes,
       ...identityReasonCodes,
     ])]
+    const healthNow = new Date(health.database_time)
+    const careerFeatureSeason = artifactStatus.artifacts.career.latestCompleteFeatureSeason
+    const binderBaseballFreshness = binderBaseballModelFreshness(
+      Number.isInteger(careerFeatureSeason)
+        ? `${careerFeatureSeason}-12-31T00:00:00.000Z`
+        : null,
+      healthNow,
+    )
+    const binderMarketStatus = binderMarketFreshness(healthNow)
+    const binderReasonCodes = [
+      ...(binderBaseballFreshness.reasonCodes ?? []),
+      ...(binderMarketStatus.reasonCodes ?? []),
+    ]
+    const binderStatus = binderBaseballFreshness.status === 'stale' ||
+        binderMarketStatus.status === 'stale'
+      ? 'stale'
+      : binderBaseballFreshness.status === 'unknown'
+        ? 'unknown'
+        : 'current'
 
     response.statusCode = 200
     response.setHeader('Cache-Control', 'no-store')
@@ -806,6 +830,29 @@ export default async function handler(
             finished_at: job.finished_at,
             trigger_kind: job.trigger_kind,
           })),
+        },
+        binder: {
+          status: binderStatus,
+          reasonCodes: binderReasonCodes,
+          researchOnly: true,
+          scoreModelVersion: 'binder-score-heuristic/v1.0.0',
+          baseball: {
+            dataAsOf: binderBaseballFreshness.dataAsOf,
+            freshness: binderBaseballFreshness.status,
+            latestCompleteFeatureSeason: careerFeatureSeason,
+          },
+          market: {
+            source: 'GemRate Athlete Sales Trends',
+            dataThrough: binderMarketCatalog.snapshot.dataThrough,
+            publishedAt: binderMarketCatalog.snapshot.publishedAt,
+            acquiredAt: binderMarketCatalog.snapshot.acquiredAt,
+            freshness: binderMarketStatus.status,
+            nextExpectedBy: binderMarketStatus.nextExpectedBy,
+            cadence: 'monthly',
+            baseballRows: binderMarketCatalog.snapshot.metadata.baseballRowCount,
+            ambiguousNormalizedNames:
+              binderMarketCatalog.ambiguousNormalizedNames.size,
+          },
         },
         modelArtifacts: artifactStatus.artifacts,
       }),

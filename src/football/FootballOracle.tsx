@@ -21,6 +21,7 @@ import {
 } from './footballData'
 import {
   FOOTBALL_MARKET_FORMAT_IDS,
+  isFootballMarketFeedResponse,
   isFootballMarketFormatId,
   type FootballMarketFeedResponse,
   type FootballMarketFormatId,
@@ -84,19 +85,6 @@ function formatMarketFormat(formatId: string): string {
   return isFootballMarketFormatId(formatId)
     ? FORMAT_LABELS[formatId]
     : formatId.replaceAll('_', ' ')
-}
-
-function isMarketFeedResponse(value: unknown): value is FootballMarketFeedResponse {
-  if (!value || typeof value !== 'object') return false
-  const response = value as Partial<FootballMarketFeedResponse>
-  const request = response.request as Partial<FootballMarketFeedResponse['request']> | undefined
-  return response.schemaVersion === 'football-market-feed.v1'
-    && typeof response.generatedAt === 'string'
-    && Boolean(request)
-    && (request?.universe === 'college' || request?.universe === 'nfl')
-    && typeof request?.formatId === 'string'
-    && Array.isArray(response.providers)
-    && Array.isArray(response.rankings)
 }
 
 function oraclePercentileFor(player: FootballPlayer): number | null {
@@ -170,7 +158,7 @@ export function FootballOracle() {
         if (!response.ok) throw new Error(`Market feed returned HTTP ${response.status}.`)
         const payload: unknown = await response.json()
         if (
-          !isMarketFeedResponse(payload)
+          !isFootballMarketFeedResponse(payload)
           || payload.request.universe !== universe
           || payload.request.formatId !== formatId
         ) {
@@ -283,6 +271,7 @@ export function FootballOracle() {
           <span className="fo-brand-copy"><small>BASEBALL ORACLE</small><strong>FOOTBALL LAB</strong></span>
         </a>
         <div className="fo-topbar-meta">
+          <a className="fo-topbar-link" href="/hobby">Hobby Oracle</a>
           <span>College + NFL</span>
           <span>QB · WR · RB · TE</span>
           <span className="fo-status-dot">Live market beta</span>

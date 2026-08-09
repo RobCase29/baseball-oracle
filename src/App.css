@@ -433,6 +433,14 @@
   overflow: hidden;
 }
 
+.binder-workspace-header {
+  border-bottom-color: #cbded7;
+}
+
+.binder-workspace-header p {
+  max-width: 760px;
+}
+
 .board-heading {
   display: flex;
   align-items: center;
@@ -1295,6 +1303,21 @@
 
 .board-table {
   min-width: 650px;
+}
+
+.binder-board-table {
+  min-width: 820px;
+  table-layout: fixed;
+}
+
+.binder-board-table th:first-child,
+.binder-board-table td:first-child {
+  width: 31%;
+}
+
+.binder-board-table th:not(:first-child),
+.binder-board-table td:not(:first-child) {
+  width: 13.8%;
 }
 
 .oracle-board-table {
@@ -3275,6 +3298,68 @@
 .dossier-section {
   min-width: 0;
   padding: 17px 20px;
+}
+
+.binder-score-panel {
+  padding: 0;
+  background: #fbfcfb;
+  border-bottom: 1px solid var(--line);
+}
+
+.binder-score-heading {
+  padding: 17px 20px;
+  background: linear-gradient(90deg, #f2f8f5, #fbfcfb);
+  border-bottom: 1px solid #d7e6e0;
+}
+
+.binder-score-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.binder-score-body > .dossier-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.binder-score-body > .dossier-section:last-of-type {
+  border-bottom: 0;
+}
+
+.binder-score-body .source-table td strong,
+.binder-score-body .source-table td small {
+  display: block;
+}
+
+.binder-score-body .source-table td small {
+  margin-top: 3px;
+  color: #8a6b32;
+  font-size: 8px;
+}
+
+.binder-score-body ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.65;
+}
+
+.binder-score-body ul + strong {
+  display: block;
+  margin-top: 13px;
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.binder-disclosures {
+  align-items: flex-start;
+}
+
+.binder-disclosures > span {
+  max-width: 260px;
+  line-height: 1.45;
 }
 
 .dynasty-score-panel {

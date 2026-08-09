@@ -666,7 +666,7 @@ export interface PlayerRecord {
   playerMap?: PlayerMapProfile | null
 }
 
-export type SortKey = 'prospectScore' | 'careerIndex' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'dynastyScore' | 'dynastyRiser' | 'oracleAhead' | 'crowdAhead' | 'age' | 'name'
+export type SortKey = 'prospectScore' | 'careerIndex' | 'binderScore' | 'stageStanding' | 'alphaOpportunity' | 'hofProbability' | 'nearTermImpact' | 'finalWar' | 'arrival36' | 'dynastyScore' | 'dynastyRiser' | 'oracleAhead' | 'crowdAhead' | 'age' | 'name'
 
 export type SignalFilter = 'All' | 'dynastyAvailable' | 'fastRisers' | 'oracleAhead' | 'crowdAhead' | 'bothTop10'
 

@@ -36,6 +36,7 @@ import {
   playerMapFor,
   routeRankFor,
 } from './playerMapView'
+import { LazyChartBoundary } from './LazyChartBoundary'
 
 const MilbOpportunityMap = lazy(() =>
   import('./MilbOpportunityMap').then((module) => ({ default: module.MilbOpportunityMap })),
@@ -556,17 +557,26 @@ export function ProspectBoard({
       ) : null}
 
       {players.length > 0 && activeDisplayMode === 'landscape' && (!landscapeLoading || Boolean(landscapeItems?.length)) ? (
-        <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
-          <MilbOpportunityMap
-            players={players}
-            feedItems={landscapeItems?.length ? landscapeItems : undefined}
-            totalCount={landscapeItems?.length ? landscapeTotal : pagination.total}
-            selectedId={selectedId}
-            openingPlayerId={openingPlayerId}
-            loadError={landscapeError}
-            onSelect={onSelect}
-          />
-        </Suspense>
+        <LazyChartBoundary
+          fallback={(
+            <div className="opportunity-map opportunity-map-loading" role="status">
+              The interactive prospect landscape is unavailable. Switch to the table for
+              the same ranked player research.
+            </div>
+          )}
+        >
+          <Suspense fallback={<div className="opportunity-map opportunity-map-loading">Loading ceiling landscape</div>}>
+            <MilbOpportunityMap
+              players={players}
+              feedItems={landscapeItems?.length ? landscapeItems : undefined}
+              totalCount={landscapeItems?.length ? landscapeTotal : pagination.total}
+              selectedId={selectedId}
+              openingPlayerId={openingPlayerId}
+              loadError={landscapeError}
+              onSelect={onSelect}
+            />
+          </Suspense>
+        </LazyChartBoundary>
       ) : null}
 
       {players.length > 0 && activeDisplayMode === 'table' ? (

@@ -1,6 +1,8 @@
 import {
   BarChart3,
+  BookOpen,
   FlaskConical,
+  Gem,
   Goal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -8,7 +10,7 @@ import {
 } from 'lucide-react'
 import './AppSidebarFootballLink.css'
 
-export type WorkspaceView = 'Board' | 'Model lab'
+export type WorkspaceView = 'Board' | 'Binder' | 'Model lab'
 
 interface AppSidebarProps {
   activeView: WorkspaceView
@@ -19,6 +21,11 @@ interface AppSidebarProps {
 
 const navigation = [
   { label: 'Board' as const, displayLabel: 'Rankings', icon: BarChart3 },
+  {
+    label: 'Binder' as const,
+    displayLabel: 'Baseball Thesis',
+    icon: BookOpen,
+  },
   { label: 'Model lab' as const, displayLabel: 'Model review', icon: FlaskConical },
 ]
 
@@ -61,6 +68,14 @@ export function AppSidebar({
         >
           <Goal size={18} aria-hidden="true" />
           <span>Football</span>
+        </a>
+        <a
+          className="sport-switch-link"
+          href="/hobby?lens=desk"
+          title="Backstop Binder Index"
+        >
+          <Gem size={18} aria-hidden="true" />
+          <span>Binder Index</span>
         </a>
       </nav>
 

@@ -1,0 +1,3504 @@
+{
+  "schemaVersion": "backstop-it-factor-badges.v1",
+  "snapshotAsOf": "2026-08-09",
+  "entries": [
+    {
+      "id": "mlb-ari-corbin-carroll",
+      "sport": "baseball",
+      "player": {
+        "name": "Corbin Carroll",
+        "normalizedName": "corbin carroll"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "mlb-ari-ryan-waldschmidt",
+      "sport": "baseball",
+      "player": {
+        "name": "Ryan Waldschmidt",
+        "normalizedName": "ryan waldschmidt"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 73
+    },
+    {
+      "id": "mlb-ari-druw-jones",
+      "sport": "baseball",
+      "player": {
+        "name": "Druw Jones",
+        "normalizedName": "druw jones"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 68
+    },
+    {
+      "id": "mlb-ath-leo-de-vries",
+      "sport": "baseball",
+      "player": {
+        "name": "Leo De Vries",
+        "normalizedName": "leo de vries"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "mlb-ath-nick-kurtz",
+      "sport": "baseball",
+      "player": {
+        "name": "Nick Kurtz",
+        "normalizedName": "nick kurtz"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "mlb-ath-jacob-wilson",
+      "sport": "baseball",
+      "player": {
+        "name": "Jacob Wilson",
+        "normalizedName": "jacob wilson"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "mlb-atl-ronald-acuna-jr",
+      "sport": "baseball",
+      "player": {
+        "name": "Ronald Acuña Jr.",
+        "normalizedName": "ronald acuna jr"
+      },
+      "score": 93,
+      "tier": "icon",
+      "confidence": 95
+    },
+    {
+      "id": "mlb-atl-drake-baldwin",
+      "sport": "baseball",
+      "player": {
+        "name": "Drake Baldwin",
+        "normalizedName": "drake baldwin"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "mlb-atl-eric-hartman",
+      "sport": "baseball",
+      "player": {
+        "name": "Eric Hartman",
+        "normalizedName": "eric hartman"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 82
+    },
+    {
+      "id": "mlb-bal-gunnar-henderson",
+      "sport": "baseball",
+      "player": {
+        "name": "Gunnar Henderson",
+        "normalizedName": "gunnar henderson"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 92
+    },
+    {
+      "id": "mlb-bal-jackson-holliday",
+      "sport": "baseball",
+      "player": {
+        "name": "Jackson Holliday",
+        "normalizedName": "jackson holliday"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "mlb-bal-eric-booth-jr",
+      "sport": "baseball",
+      "player": {
+        "name": "Eric Booth Jr.",
+        "normalizedName": "eric booth jr"
+      },
+      "score": 66,
+      "tier": "watch",
+      "confidence": 65
+    },
+    {
+      "id": "mlb-bos-roman-anthony",
+      "sport": "baseball",
+      "player": {
+        "name": "Roman Anthony",
+        "normalizedName": "roman anthony"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "mlb-bos-franklin-arias",
+      "sport": "baseball",
+      "player": {
+        "name": "Franklin Arias",
+        "normalizedName": "franklin arias"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "mlb-chc-pete-crow-armstrong",
+      "sport": "baseball",
+      "player": {
+        "name": "Pete Crow-Armstrong",
+        "normalizedName": "pete crow armstrong"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "mlb-chc-josiah-hartshorn",
+      "sport": "baseball",
+      "player": {
+        "name": "Josiah Hartshorn",
+        "normalizedName": "josiah hartshorn"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "mlb-chc-matt-shaw",
+      "sport": "baseball",
+      "player": {
+        "name": "Matt Shaw",
+        "normalizedName": "matt shaw"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 78
+    },
+    {
+      "id": "mlb-cws-munetaka-murakami",
+      "sport": "baseball",
+      "player": {
+        "name": "Munetaka Murakami",
+        "normalizedName": "munetaka murakami"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "mlb-cws-roch-cholowsky",
+      "sport": "baseball",
+      "player": {
+        "name": "Roch Cholowsky",
+        "normalizedName": "roch cholowsky"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "mlb-cws-braden-montgomery",
+      "sport": "baseball",
+      "player": {
+        "name": "Braden Montgomery",
+        "normalizedName": "braden montgomery"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "mlb-cin-elly-de-la-cruz",
+      "sport": "baseball",
+      "player": {
+        "name": "Elly De La Cruz",
+        "normalizedName": "elly de la cruz"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "mlb-cin-sal-stewart",
+      "sport": "baseball",
+      "player": {
+        "name": "Sal Stewart",
+        "normalizedName": "sal stewart"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "mlb-cin-chase-burns",
+      "sport": "baseball",
+      "player": {
+        "name": "Chase Burns",
+        "normalizedName": "chase burns"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 83
+    },
+    {
+      "id": "mlb-cle-travis-bazzana",
+      "sport": "baseball",
+      "player": {
+        "name": "Travis Bazzana",
+        "normalizedName": "travis bazzana"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "mlb-cle-chase-delauter",
+      "sport": "baseball",
+      "player": {
+        "name": "Chase DeLauter",
+        "normalizedName": "chase delauter"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "mlb-cle-angel-genao",
+      "sport": "baseball",
+      "player": {
+        "name": "Angel Genao",
+        "normalizedName": "angel genao"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 72
+    },
+    {
+      "id": "mlb-col-ethan-holliday",
+      "sport": "baseball",
+      "player": {
+        "name": "Ethan Holliday",
+        "normalizedName": "ethan holliday"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "mlb-col-charlie-condon",
+      "sport": "baseball",
+      "player": {
+        "name": "Charlie Condon",
+        "normalizedName": "charlie condon"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 77
+    },
+    {
+      "id": "mlb-det-kevin-mcgonigle",
+      "sport": "baseball",
+      "player": {
+        "name": "Kevin McGonigle",
+        "normalizedName": "kevin mcgonigle"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "mlb-det-max-clark",
+      "sport": "baseball",
+      "player": {
+        "name": "Max Clark",
+        "normalizedName": "max clark"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-det-bryce-rainer",
+      "sport": "baseball",
+      "player": {
+        "name": "Bryce Rainer",
+        "normalizedName": "bryce rainer"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 76
+    },
+    {
+      "id": "mlb-hou-yordan-alvarez",
+      "sport": "baseball",
+      "player": {
+        "name": "Yordan Alvarez",
+        "normalizedName": "yordan alvarez"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 83
+    },
+    {
+      "id": "mlb-hou-cam-smith",
+      "sport": "baseball",
+      "player": {
+        "name": "Cam Smith",
+        "normalizedName": "cam smith"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "mlb-hou-kevin-alvarez",
+      "sport": "baseball",
+      "player": {
+        "name": "Kevin Alvarez",
+        "normalizedName": "kevin alvarez"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 72
+    },
+    {
+      "id": "mlb-kc-bobby-witt-jr",
+      "sport": "baseball",
+      "player": {
+        "name": "Bobby Witt Jr.",
+        "normalizedName": "bobby witt jr"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "mlb-kc-jac-caglianone",
+      "sport": "baseball",
+      "player": {
+        "name": "Jac Caglianone",
+        "normalizedName": "jac caglianone"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "mlb-laa-mike-trout",
+      "sport": "baseball",
+      "player": {
+        "name": "Mike Trout",
+        "normalizedName": "mike trout"
+      },
+      "score": 96,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "mlb-laa-arjun-nimmala",
+      "sport": "baseball",
+      "player": {
+        "name": "Arjun Nimmala",
+        "normalizedName": "arjun nimmala"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "mlb-laa-tyler-bremner",
+      "sport": "baseball",
+      "player": {
+        "name": "Tyler Bremner",
+        "normalizedName": "tyler bremner"
+      },
+      "score": 64,
+      "tier": "watch",
+      "confidence": 64
+    },
+    {
+      "id": "mlb-lad-shohei-ohtani",
+      "sport": "baseball",
+      "player": {
+        "name": "Shohei Ohtani",
+        "normalizedName": "shohei ohtani"
+      },
+      "score": 100,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "mlb-lad-yoshinobu-yamamoto",
+      "sport": "baseball",
+      "player": {
+        "name": "Yoshinobu Yamamoto",
+        "normalizedName": "yoshinobu yamamoto"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "mlb-lad-roki-sasaki",
+      "sport": "baseball",
+      "player": {
+        "name": "Roki Sasaki",
+        "normalizedName": "roki sasaki"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "mlb-mia-thomas-white",
+      "sport": "baseball",
+      "player": {
+        "name": "Thomas White",
+        "normalizedName": "thomas white"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 82
+    },
+    {
+      "id": "mlb-mia-aiva-arquette",
+      "sport": "baseball",
+      "player": {
+        "name": "Aiva Arquette",
+        "normalizedName": "aiva arquette"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "mlb-mil-jacob-misiorowski",
+      "sport": "baseball",
+      "player": {
+        "name": "Jacob Misiorowski",
+        "normalizedName": "jacob misiorowski"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "mlb-mil-jesus-made",
+      "sport": "baseball",
+      "player": {
+        "name": "Jesús Made",
+        "normalizedName": "jesus made"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "mlb-mil-jackson-chourio",
+      "sport": "baseball",
+      "player": {
+        "name": "Jackson Chourio",
+        "normalizedName": "jackson chourio"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "mlb-min-walker-jenkins",
+      "sport": "baseball",
+      "player": {
+        "name": "Walker Jenkins",
+        "normalizedName": "walker jenkins"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-min-vahn-lackey",
+      "sport": "baseball",
+      "player": {
+        "name": "Vahn Lackey",
+        "normalizedName": "vahn lackey"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "mlb-nym-juan-soto",
+      "sport": "baseball",
+      "player": {
+        "name": "Juan Soto",
+        "normalizedName": "juan soto"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "mlb-nym-nolan-mclean",
+      "sport": "baseball",
+      "player": {
+        "name": "Nolan McLean",
+        "normalizedName": "nolan mclean"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 84
+    },
+    {
+      "id": "mlb-nym-carson-benge",
+      "sport": "baseball",
+      "player": {
+        "name": "Carson Benge",
+        "normalizedName": "carson benge"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 84
+    },
+    {
+      "id": "mlb-nyy-aaron-judge",
+      "sport": "baseball",
+      "player": {
+        "name": "Aaron Judge",
+        "normalizedName": "aaron judge"
+      },
+      "score": 98,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "mlb-nyy-ben-rice",
+      "sport": "baseball",
+      "player": {
+        "name": "Ben Rice",
+        "normalizedName": "ben rice"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "mlb-nyy-cam-schlittler",
+      "sport": "baseball",
+      "player": {
+        "name": "Cam Schlittler",
+        "normalizedName": "cam schlittler"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "mlb-phi-bryce-harper",
+      "sport": "baseball",
+      "player": {
+        "name": "Bryce Harper",
+        "normalizedName": "bryce harper"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 96
+    },
+    {
+      "id": "mlb-phi-aidan-miller",
+      "sport": "baseball",
+      "player": {
+        "name": "Aidan Miller",
+        "normalizedName": "aidan miller"
+      },
+      "score": 70,
+      "tier": "watch",
+      "confidence": 70
+    },
+    {
+      "id": "mlb-phi-andrew-painter",
+      "sport": "baseball",
+      "player": {
+        "name": "Andrew Painter",
+        "normalizedName": "andrew painter"
+      },
+      "score": 64,
+      "tier": "watch",
+      "confidence": 65
+    },
+    {
+      "id": "mlb-pit-paul-skenes",
+      "sport": "baseball",
+      "player": {
+        "name": "Paul Skenes",
+        "normalizedName": "paul skenes"
+      },
+      "score": 98,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "mlb-pit-konnor-griffin",
+      "sport": "baseball",
+      "player": {
+        "name": "Konnor Griffin",
+        "normalizedName": "konnor griffin"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 98
+    },
+    {
+      "id": "mlb-pit-seth-hernandez",
+      "sport": "baseball",
+      "player": {
+        "name": "Seth Hernandez",
+        "normalizedName": "seth hernandez"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "mlb-sd-fernando-tatis-jr",
+      "sport": "baseball",
+      "player": {
+        "name": "Fernando Tatis Jr.",
+        "normalizedName": "fernando tatis jr"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "mlb-sd-jackson-merrill",
+      "sport": "baseball",
+      "player": {
+        "name": "Jackson Merrill",
+        "normalizedName": "jackson merrill"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-sd-ethan-salas",
+      "sport": "baseball",
+      "player": {
+        "name": "Ethan Salas",
+        "normalizedName": "ethan salas"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "mlb-sf-bryce-eldridge",
+      "sport": "baseball",
+      "player": {
+        "name": "Bryce Eldridge",
+        "normalizedName": "bryce eldridge"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 89
+    },
+    {
+      "id": "mlb-sf-josuar-gonzalez",
+      "sport": "baseball",
+      "player": {
+        "name": "Josuar Gonzalez",
+        "normalizedName": "josuar gonzalez"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "mlb-sf-rafael-devers",
+      "sport": "baseball",
+      "player": {
+        "name": "Rafael Devers",
+        "normalizedName": "rafael devers"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 78
+    },
+    {
+      "id": "mlb-sea-kade-anderson",
+      "sport": "baseball",
+      "player": {
+        "name": "Kade Anderson",
+        "normalizedName": "kade anderson"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "mlb-sea-julio-rodriguez",
+      "sport": "baseball",
+      "player": {
+        "name": "Julio Rodríguez",
+        "normalizedName": "julio rodriguez"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 89
+    },
+    {
+      "id": "mlb-sea-colt-emerson",
+      "sport": "baseball",
+      "player": {
+        "name": "Colt Emerson",
+        "normalizedName": "colt emerson"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "mlb-stl-jj-wetherholt",
+      "sport": "baseball",
+      "player": {
+        "name": "JJ Wetherholt",
+        "normalizedName": "jj wetherholt"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "mlb-stl-jordan-walker",
+      "sport": "baseball",
+      "player": {
+        "name": "Jordan Walker",
+        "normalizedName": "jordan walker"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "mlb-stl-rainiel-rodriguez",
+      "sport": "baseball",
+      "player": {
+        "name": "Rainiel Rodriguez",
+        "normalizedName": "rainiel rodriguez"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "mlb-tb-junior-caminero",
+      "sport": "baseball",
+      "player": {
+        "name": "Junior Caminero",
+        "normalizedName": "junior caminero"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "mlb-tb-theo-gillen",
+      "sport": "baseball",
+      "player": {
+        "name": "Theo Gillen",
+        "normalizedName": "theo gillen"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-tb-grady-emerson",
+      "sport": "baseball",
+      "player": {
+        "name": "Grady Emerson",
+        "normalizedName": "grady emerson"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "mlb-tex-sebastian-walcott",
+      "sport": "baseball",
+      "player": {
+        "name": "Sebastian Walcott",
+        "normalizedName": "sebastian walcott"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 84
+    },
+    {
+      "id": "mlb-tex-wyatt-langford",
+      "sport": "baseball",
+      "player": {
+        "name": "Wyatt Langford",
+        "normalizedName": "wyatt langford"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-tor-vladimir-guerrero-jr",
+      "sport": "baseball",
+      "player": {
+        "name": "Vladimir Guerrero Jr.",
+        "normalizedName": "vladimir guerrero jr"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 89
+    },
+    {
+      "id": "mlb-tor-trey-yesavage",
+      "sport": "baseball",
+      "player": {
+        "name": "Trey Yesavage",
+        "normalizedName": "trey yesavage"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "mlb-wsh-james-wood",
+      "sport": "baseball",
+      "player": {
+        "name": "James Wood",
+        "normalizedName": "james wood"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "mlb-wsh-eli-willits",
+      "sport": "baseball",
+      "player": {
+        "name": "Eli Willits",
+        "normalizedName": "eli willits"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "mlb-wsh-dylan-crews",
+      "sport": "baseball",
+      "player": {
+        "name": "Dylan Crews",
+        "normalizedName": "dylan crews"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nfl-ari-jeremiyah-love",
+      "sport": "football",
+      "player": {
+        "name": "Jeremiyah Love",
+        "normalizedName": "jeremiyah love"
+      },
+      "score": 83,
+      "tier": "emerging",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-ari-marvin-harrison-jr",
+      "sport": "football",
+      "player": {
+        "name": "Marvin Harrison Jr.",
+        "normalizedName": "marvin harrison jr"
+      },
+      "score": 72,
+      "tier": "watch",
+      "confidence": 95
+    },
+    {
+      "id": "nfl-atl-bijan-robinson",
+      "sport": "football",
+      "player": {
+        "name": "Bijan Robinson",
+        "normalizedName": "bijan robinson"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-atl-michael-penix-jr",
+      "sport": "football",
+      "player": {
+        "name": "Michael Penix Jr.",
+        "normalizedName": "michael penix jr"
+      },
+      "score": 71,
+      "tier": "watch",
+      "confidence": 93
+    },
+    {
+      "id": "nfl-atl-tua-tagovailoa",
+      "sport": "football",
+      "player": {
+        "name": "Tua Tagovailoa",
+        "normalizedName": "tua tagovailoa"
+      },
+      "score": 66,
+      "tier": "watch",
+      "confidence": 88
+    },
+    {
+      "id": "nfl-bal-lamar-jackson",
+      "sport": "football",
+      "player": {
+        "name": "Lamar Jackson",
+        "normalizedName": "lamar jackson"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-bal-derrick-henry",
+      "sport": "football",
+      "player": {
+        "name": "Derrick Henry",
+        "normalizedName": "derrick henry"
+      },
+      "score": 93,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-buf-josh-allen",
+      "sport": "football",
+      "player": {
+        "name": "Josh Allen",
+        "normalizedName": "josh allen"
+      },
+      "score": 99,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-car-tetairoa-mcmillan",
+      "sport": "football",
+      "player": {
+        "name": "Tetairoa McMillan",
+        "normalizedName": "tetairoa mcmillan"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nfl-car-bryce-young",
+      "sport": "football",
+      "player": {
+        "name": "Bryce Young",
+        "normalizedName": "bryce young"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 90
+    },
+    {
+      "id": "nfl-chi-caleb-williams",
+      "sport": "football",
+      "player": {
+        "name": "Caleb Williams",
+        "normalizedName": "caleb williams"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-chi-colston-loveland",
+      "sport": "football",
+      "player": {
+        "name": "Colston Loveland",
+        "normalizedName": "colston loveland"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 91
+    },
+    {
+      "id": "nfl-cin-joe-burrow",
+      "sport": "football",
+      "player": {
+        "name": "Joe Burrow",
+        "normalizedName": "joe burrow"
+      },
+      "score": 98,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-cin-ja-marr-chase",
+      "sport": "football",
+      "player": {
+        "name": "Ja’Marr Chase",
+        "normalizedName": "ja marr chase"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-cle-kc-concepcion",
+      "sport": "football",
+      "player": {
+        "name": "KC Concepcion",
+        "normalizedName": "kc concepcion"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 78
+    },
+    {
+      "id": "nfl-cle-shedeur-sanders",
+      "sport": "football",
+      "player": {
+        "name": "Shedeur Sanders",
+        "normalizedName": "shedeur sanders"
+      },
+      "score": 73,
+      "tier": "watch",
+      "confidence": 95
+    },
+    {
+      "id": "nfl-dal-ceedee-lamb",
+      "sport": "football",
+      "player": {
+        "name": "CeeDee Lamb",
+        "normalizedName": "ceedee lamb"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nfl-dal-dak-prescott",
+      "sport": "football",
+      "player": {
+        "name": "Dak Prescott",
+        "normalizedName": "dak prescott"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nfl-dal-caleb-downs",
+      "sport": "football",
+      "player": {
+        "name": "Caleb Downs",
+        "normalizedName": "caleb downs"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nfl-den-bo-nix",
+      "sport": "football",
+      "player": {
+        "name": "Bo Nix",
+        "normalizedName": "bo nix"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-den-jaylen-waddle",
+      "sport": "football",
+      "player": {
+        "name": "Jaylen Waddle",
+        "normalizedName": "jaylen waddle"
+      },
+      "score": 65,
+      "tier": "watch",
+      "confidence": 77
+    },
+    {
+      "id": "nfl-det-jahmyr-gibbs",
+      "sport": "football",
+      "player": {
+        "name": "Jahmyr Gibbs",
+        "normalizedName": "jahmyr gibbs"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nfl-det-amon-ra-st-brown",
+      "sport": "football",
+      "player": {
+        "name": "Amon-Ra St. Brown",
+        "normalizedName": "amon ra st brown"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nfl-gb-jordan-love",
+      "sport": "football",
+      "player": {
+        "name": "Jordan Love",
+        "normalizedName": "jordan love"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nfl-gb-micah-parsons",
+      "sport": "football",
+      "player": {
+        "name": "Micah Parsons",
+        "normalizedName": "micah parsons"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 92
+    },
+    {
+      "id": "nfl-gb-matthew-golden",
+      "sport": "football",
+      "player": {
+        "name": "Matthew Golden",
+        "normalizedName": "matthew golden"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nfl-hou-cj-stroud",
+      "sport": "football",
+      "player": {
+        "name": "C.J. Stroud",
+        "normalizedName": "cj stroud"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "nfl-ind-jonathan-taylor",
+      "sport": "football",
+      "player": {
+        "name": "Jonathan Taylor",
+        "normalizedName": "jonathan taylor"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nfl-ind-tyler-warren",
+      "sport": "football",
+      "player": {
+        "name": "Tyler Warren",
+        "normalizedName": "tyler warren"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 90
+    },
+    {
+      "id": "nfl-ind-anthony-richardson",
+      "sport": "football",
+      "player": {
+        "name": "Anthony Richardson",
+        "normalizedName": "anthony richardson"
+      },
+      "score": 69,
+      "tier": "watch",
+      "confidence": 94
+    },
+    {
+      "id": "nfl-jax-travis-hunter",
+      "sport": "football",
+      "player": {
+        "name": "Travis Hunter",
+        "normalizedName": "travis hunter"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-jax-trevor-lawrence",
+      "sport": "football",
+      "player": {
+        "name": "Trevor Lawrence",
+        "normalizedName": "trevor lawrence"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "nfl-jax-brian-thomas-jr",
+      "sport": "football",
+      "player": {
+        "name": "Brian Thomas Jr.",
+        "normalizedName": "brian thomas jr"
+      },
+      "score": 72,
+      "tier": "watch",
+      "confidence": 83
+    },
+    {
+      "id": "nfl-kc-patrick-mahomes",
+      "sport": "football",
+      "player": {
+        "name": "Patrick Mahomes",
+        "normalizedName": "patrick mahomes"
+      },
+      "score": 100,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-kc-travis-kelce",
+      "sport": "football",
+      "player": {
+        "name": "Travis Kelce",
+        "normalizedName": "travis kelce"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-kc-kenneth-walker-iii",
+      "sport": "football",
+      "player": {
+        "name": "Kenneth Walker III",
+        "normalizedName": "kenneth walker iii"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 81
+    },
+    {
+      "id": "nfl-lv-ashton-jeanty",
+      "sport": "football",
+      "player": {
+        "name": "Ashton Jeanty",
+        "normalizedName": "ashton jeanty"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nfl-lv-brock-bowers",
+      "sport": "football",
+      "player": {
+        "name": "Brock Bowers",
+        "normalizedName": "brock bowers"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nfl-lv-fernando-mendoza",
+      "sport": "football",
+      "player": {
+        "name": "Fernando Mendoza",
+        "normalizedName": "fernando mendoza"
+      },
+      "score": 83,
+      "tier": "emerging",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-lac-justin-herbert",
+      "sport": "football",
+      "player": {
+        "name": "Justin Herbert",
+        "normalizedName": "justin herbert"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-lac-ladd-mcconkey",
+      "sport": "football",
+      "player": {
+        "name": "Ladd McConkey",
+        "normalizedName": "ladd mcconkey"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "nfl-lac-omarion-hampton",
+      "sport": "football",
+      "player": {
+        "name": "Omarion Hampton",
+        "normalizedName": "omarion hampton"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 90
+    },
+    {
+      "id": "nfl-lar-puka-nacua",
+      "sport": "football",
+      "player": {
+        "name": "Puka Nacua",
+        "normalizedName": "puka nacua"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-lar-matthew-stafford",
+      "sport": "football",
+      "player": {
+        "name": "Matthew Stafford",
+        "normalizedName": "matthew stafford"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "nfl-lar-ty-simpson",
+      "sport": "football",
+      "player": {
+        "name": "Ty Simpson",
+        "normalizedName": "ty simpson"
+      },
+      "score": 70,
+      "tier": "watch",
+      "confidence": 93
+    },
+    {
+      "id": "nfl-mia-de-von-achane",
+      "sport": "football",
+      "player": {
+        "name": "De’Von Achane",
+        "normalizedName": "de von achane"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nfl-mia-malik-willis",
+      "sport": "football",
+      "player": {
+        "name": "Malik Willis",
+        "normalizedName": "malik willis"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 82
+    },
+    {
+      "id": "nfl-min-justin-jefferson",
+      "sport": "football",
+      "player": {
+        "name": "Justin Jefferson",
+        "normalizedName": "justin jefferson"
+      },
+      "score": 96,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-min-jj-mccarthy",
+      "sport": "football",
+      "player": {
+        "name": "J.J. McCarthy",
+        "normalizedName": "jj mccarthy"
+      },
+      "score": 72,
+      "tier": "watch",
+      "confidence": 94
+    },
+    {
+      "id": "nfl-min-kyler-murray",
+      "sport": "football",
+      "player": {
+        "name": "Kyler Murray",
+        "normalizedName": "kyler murray"
+      },
+      "score": 67,
+      "tier": "watch",
+      "confidence": 89
+    },
+    {
+      "id": "nfl-ne-drake-maye",
+      "sport": "football",
+      "player": {
+        "name": "Drake Maye",
+        "normalizedName": "drake maye"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-ne-treveyon-henderson",
+      "sport": "football",
+      "player": {
+        "name": "TreVeyon Henderson",
+        "normalizedName": "treveyon henderson"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nfl-no-tyler-shough",
+      "sport": "football",
+      "player": {
+        "name": "Tyler Shough",
+        "normalizedName": "tyler shough"
+      },
+      "score": 83,
+      "tier": "emerging",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-no-jordyn-tyson",
+      "sport": "football",
+      "player": {
+        "name": "Jordyn Tyson",
+        "normalizedName": "jordyn tyson"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 92
+    },
+    {
+      "id": "nfl-nyg-jaxson-dart",
+      "sport": "football",
+      "player": {
+        "name": "Jaxson Dart",
+        "normalizedName": "jaxson dart"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-nyg-malik-nabers",
+      "sport": "football",
+      "player": {
+        "name": "Malik Nabers",
+        "normalizedName": "malik nabers"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nfl-nyg-abdul-carter",
+      "sport": "football",
+      "player": {
+        "name": "Abdul Carter",
+        "normalizedName": "abdul carter"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nfl-nyj-garrett-wilson",
+      "sport": "football",
+      "player": {
+        "name": "Garrett Wilson",
+        "normalizedName": "garrett wilson"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "nfl-nyj-kenyon-sadiq",
+      "sport": "football",
+      "player": {
+        "name": "Kenyon Sadiq",
+        "normalizedName": "kenyon sadiq"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 81
+    },
+    {
+      "id": "nfl-nyj-breece-hall",
+      "sport": "football",
+      "player": {
+        "name": "Breece Hall",
+        "normalizedName": "breece hall"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 78
+    },
+    {
+      "id": "nfl-phi-saquon-barkley",
+      "sport": "football",
+      "player": {
+        "name": "Saquon Barkley",
+        "normalizedName": "saquon barkley"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-phi-jalen-hurts",
+      "sport": "football",
+      "player": {
+        "name": "Jalen Hurts",
+        "normalizedName": "jalen hurts"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-phi-makai-lemon",
+      "sport": "football",
+      "player": {
+        "name": "Makai Lemon",
+        "normalizedName": "makai lemon"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 89
+    },
+    {
+      "id": "nfl-pit-aaron-rodgers",
+      "sport": "football",
+      "player": {
+        "name": "Aaron Rodgers",
+        "normalizedName": "aaron rodgers"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nfl-pit-dk-metcalf",
+      "sport": "football",
+      "player": {
+        "name": "DK Metcalf",
+        "normalizedName": "dk metcalf"
+      },
+      "score": 67,
+      "tier": "watch",
+      "confidence": 80
+    },
+    {
+      "id": "nfl-sf-christian-mccaffrey",
+      "sport": "football",
+      "player": {
+        "name": "Christian McCaffrey",
+        "normalizedName": "christian mccaffrey"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-sf-mike-evans",
+      "sport": "football",
+      "player": {
+        "name": "Mike Evans",
+        "normalizedName": "mike evans"
+      },
+      "score": 92,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "nfl-sf-brock-purdy",
+      "sport": "football",
+      "player": {
+        "name": "Brock Purdy",
+        "normalizedName": "brock purdy"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "nfl-sea-jaxon-smith-njigba",
+      "sport": "football",
+      "player": {
+        "name": "Jaxon Smith-Njigba",
+        "normalizedName": "jaxon smith njigba"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-sea-jadarian-price",
+      "sport": "football",
+      "player": {
+        "name": "Jadarian Price",
+        "normalizedName": "jadarian price"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nfl-sea-sam-darnold",
+      "sport": "football",
+      "player": {
+        "name": "Sam Darnold",
+        "normalizedName": "sam darnold"
+      },
+      "score": 69,
+      "tier": "watch",
+      "confidence": 90
+    },
+    {
+      "id": "nfl-tb-baker-mayfield",
+      "sport": "football",
+      "player": {
+        "name": "Baker Mayfield",
+        "normalizedName": "baker mayfield"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "nfl-tb-emeka-egbuka",
+      "sport": "football",
+      "player": {
+        "name": "Emeka Egbuka",
+        "normalizedName": "emeka egbuka"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 95
+    },
+    {
+      "id": "nfl-ten-cam-ward",
+      "sport": "football",
+      "player": {
+        "name": "Cam Ward",
+        "normalizedName": "cam ward"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nfl-ten-carnell-tate",
+      "sport": "football",
+      "player": {
+        "name": "Carnell Tate",
+        "normalizedName": "carnell tate"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 93
+    },
+    {
+      "id": "nfl-was-jayden-daniels",
+      "sport": "football",
+      "player": {
+        "name": "Jayden Daniels",
+        "normalizedName": "jayden daniels"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nba-atlanta-hawks-jalen-johnson",
+      "sport": "basketball",
+      "player": {
+        "name": "Jalen Johnson",
+        "normalizedName": "jalen johnson"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "nba-atlanta-hawks-kingston-flemings",
+      "sport": "basketball",
+      "player": {
+        "name": "Kingston Flemings",
+        "normalizedName": "kingston flemings"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 78
+    },
+    {
+      "id": "nba-atlanta-hawks-jonathan-kuminga",
+      "sport": "basketball",
+      "player": {
+        "name": "Jonathan Kuminga",
+        "normalizedName": "jonathan kuminga"
+      },
+      "score": 62,
+      "tier": "watch",
+      "confidence": 60
+    },
+    {
+      "id": "nba-boston-celtics-jayson-tatum",
+      "sport": "basketball",
+      "player": {
+        "name": "Jayson Tatum",
+        "normalizedName": "jayson tatum"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 95
+    },
+    {
+      "id": "nba-boston-celtics-paul-george",
+      "sport": "basketball",
+      "player": {
+        "name": "Paul George",
+        "normalizedName": "paul george"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 73
+    },
+    {
+      "id": "nba-brooklyn-nets-mikel-brown-jr",
+      "sport": "basketball",
+      "player": {
+        "name": "Mikel Brown Jr.",
+        "normalizedName": "mikel brown jr"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 81
+    },
+    {
+      "id": "nba-brooklyn-nets-egor-demin",
+      "sport": "basketball",
+      "player": {
+        "name": "Egor Demin",
+        "normalizedName": "egor demin"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 70
+    },
+    {
+      "id": "nba-charlotte-hornets-kon-knueppel",
+      "sport": "basketball",
+      "player": {
+        "name": "Kon Knueppel",
+        "normalizedName": "kon knueppel"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nba-charlotte-hornets-brandon-miller",
+      "sport": "basketball",
+      "player": {
+        "name": "Brandon Miller",
+        "normalizedName": "brandon miller"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 79
+    },
+    {
+      "id": "nba-charlotte-hornets-hannes-steinbach",
+      "sport": "basketball",
+      "player": {
+        "name": "Hannes Steinbach",
+        "normalizedName": "hannes steinbach"
+      },
+      "score": 65,
+      "tier": "watch",
+      "confidence": 61
+    },
+    {
+      "id": "nba-chicago-bulls-caleb-wilson",
+      "sport": "basketball",
+      "player": {
+        "name": "Caleb Wilson",
+        "normalizedName": "caleb wilson"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 89
+    },
+    {
+      "id": "nba-chicago-bulls-matas-buzelis",
+      "sport": "basketball",
+      "player": {
+        "name": "Matas Buzelis",
+        "normalizedName": "matas buzelis"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "nba-chicago-bulls-noa-essengue",
+      "sport": "basketball",
+      "player": {
+        "name": "Noa Essengue",
+        "normalizedName": "noa essengue"
+      },
+      "score": 63,
+      "tier": "watch",
+      "confidence": 58
+    },
+    {
+      "id": "nba-cleveland-cavaliers-donovan-mitchell",
+      "sport": "basketball",
+      "player": {
+        "name": "Donovan Mitchell",
+        "normalizedName": "donovan mitchell"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nba-cleveland-cavaliers-evan-mobley",
+      "sport": "basketball",
+      "player": {
+        "name": "Evan Mobley",
+        "normalizedName": "evan mobley"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 80
+    },
+    {
+      "id": "nba-cleveland-cavaliers-james-harden",
+      "sport": "basketball",
+      "player": {
+        "name": "James Harden",
+        "normalizedName": "james harden"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 78
+    },
+    {
+      "id": "nba-dallas-mavericks-cooper-flagg",
+      "sport": "basketball",
+      "player": {
+        "name": "Cooper Flagg",
+        "normalizedName": "cooper flagg"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 100
+    },
+    {
+      "id": "nba-dallas-mavericks-kyrie-irving",
+      "sport": "basketball",
+      "player": {
+        "name": "Kyrie Irving",
+        "normalizedName": "kyrie irving"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "nba-dallas-mavericks-zaccharie-risacher",
+      "sport": "basketball",
+      "player": {
+        "name": "Zaccharie Risacher",
+        "normalizedName": "zaccharie risacher"
+      },
+      "score": 63,
+      "tier": "watch",
+      "confidence": 62
+    },
+    {
+      "id": "nba-denver-nuggets-nikola-jokic",
+      "sport": "basketball",
+      "player": {
+        "name": "Nikola Jokic",
+        "normalizedName": "nikola jokic"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "nba-denver-nuggets-jamal-murray",
+      "sport": "basketball",
+      "player": {
+        "name": "Jamal Murray",
+        "normalizedName": "jamal murray"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 76
+    },
+    {
+      "id": "nba-detroit-pistons-cade-cunningham",
+      "sport": "basketball",
+      "player": {
+        "name": "Cade Cunningham",
+        "normalizedName": "cade cunningham"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "nba-detroit-pistons-jalen-duren",
+      "sport": "basketball",
+      "player": {
+        "name": "Jalen Duren",
+        "normalizedName": "jalen duren"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nba-detroit-pistons-ausar-thompson",
+      "sport": "basketball",
+      "player": {
+        "name": "Ausar Thompson",
+        "normalizedName": "ausar thompson"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "nba-golden-state-warriors-stephen-curry",
+      "sport": "basketball",
+      "player": {
+        "name": "Stephen Curry",
+        "normalizedName": "stephen curry"
+      },
+      "score": 99,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nba-golden-state-warriors-yaxel-lendeborg",
+      "sport": "basketball",
+      "player": {
+        "name": "Yaxel Lendeborg",
+        "normalizedName": "yaxel lendeborg"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 71
+    },
+    {
+      "id": "nba-houston-rockets-kevin-durant",
+      "sport": "basketball",
+      "player": {
+        "name": "Kevin Durant",
+        "normalizedName": "kevin durant"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "nba-houston-rockets-amen-thompson",
+      "sport": "basketball",
+      "player": {
+        "name": "Amen Thompson",
+        "normalizedName": "amen thompson"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "nba-houston-rockets-alperen-sengun",
+      "sport": "basketball",
+      "player": {
+        "name": "Alperen Sengun",
+        "normalizedName": "alperen sengun"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 76
+    },
+    {
+      "id": "nba-indiana-pacers-tyrese-haliburton",
+      "sport": "basketball",
+      "player": {
+        "name": "Tyrese Haliburton",
+        "normalizedName": "tyrese haliburton"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 86
+    },
+    {
+      "id": "nba-la-clippers-kawhi-leonard",
+      "sport": "basketball",
+      "player": {
+        "name": "Kawhi Leonard",
+        "normalizedName": "kawhi leonard"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 80
+    },
+    {
+      "id": "nba-la-clippers-keaton-wagler",
+      "sport": "basketball",
+      "player": {
+        "name": "Keaton Wagler",
+        "normalizedName": "keaton wagler"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 85
+    },
+    {
+      "id": "nba-la-clippers-bennedict-mathurin",
+      "sport": "basketball",
+      "player": {
+        "name": "Bennedict Mathurin",
+        "normalizedName": "bennedict mathurin"
+      },
+      "score": 64,
+      "tier": "watch",
+      "confidence": 63
+    },
+    {
+      "id": "nba-los-angeles-lakers-luka-doncic",
+      "sport": "basketball",
+      "player": {
+        "name": "Luka Doncic",
+        "normalizedName": "luka doncic"
+      },
+      "score": 99,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nba-los-angeles-lakers-austin-reaves",
+      "sport": "basketball",
+      "player": {
+        "name": "Austin Reaves",
+        "normalizedName": "austin reaves"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 77
+    },
+    {
+      "id": "nba-memphis-grizzlies-cameron-boozer",
+      "sport": "basketball",
+      "player": {
+        "name": "Cameron Boozer",
+        "normalizedName": "cameron boozer"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 92
+    },
+    {
+      "id": "nba-memphis-grizzlies-cedric-coward",
+      "sport": "basketball",
+      "player": {
+        "name": "Cedric Coward",
+        "normalizedName": "cedric coward"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nba-memphis-grizzlies-karim-lopez",
+      "sport": "basketball",
+      "player": {
+        "name": "Karim Lopez",
+        "normalizedName": "karim lopez"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 66
+    },
+    {
+      "id": "nba-miami-heat-giannis-antetokounmpo",
+      "sport": "basketball",
+      "player": {
+        "name": "Giannis Antetokounmpo",
+        "normalizedName": "giannis antetokounmpo"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nba-milwaukee-bucks-tyler-herro",
+      "sport": "basketball",
+      "player": {
+        "name": "Tyler Herro",
+        "normalizedName": "tyler herro"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 74
+    },
+    {
+      "id": "nba-milwaukee-bucks-brayden-burries",
+      "sport": "basketball",
+      "player": {
+        "name": "Brayden Burries",
+        "normalizedName": "brayden burries"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nba-milwaukee-bucks-nate-ament",
+      "sport": "basketball",
+      "player": {
+        "name": "Nate Ament",
+        "normalizedName": "nate ament"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 76
+    },
+    {
+      "id": "nba-minnesota-timberwolves-anthony-edwards",
+      "sport": "basketball",
+      "player": {
+        "name": "Anthony Edwards",
+        "normalizedName": "anthony edwards"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nba-minnesota-timberwolves-lamelo-ball",
+      "sport": "basketball",
+      "player": {
+        "name": "LaMelo Ball",
+        "normalizedName": "lamelo ball"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "nba-new-orleans-pelicans-zion-williamson",
+      "sport": "basketball",
+      "player": {
+        "name": "Zion Williamson",
+        "normalizedName": "zion williamson"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 78
+    },
+    {
+      "id": "nba-new-orleans-pelicans-jeremiah-fears",
+      "sport": "basketball",
+      "player": {
+        "name": "Jeremiah Fears",
+        "normalizedName": "jeremiah fears"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nba-new-orleans-pelicans-derik-queen",
+      "sport": "basketball",
+      "player": {
+        "name": "Derik Queen",
+        "normalizedName": "derik queen"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 75
+    },
+    {
+      "id": "nba-new-york-knicks-jalen-brunson",
+      "sport": "basketball",
+      "player": {
+        "name": "Jalen Brunson",
+        "normalizedName": "jalen brunson"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nba-new-york-knicks-karl-anthony-towns",
+      "sport": "basketball",
+      "player": {
+        "name": "Karl-Anthony Towns",
+        "normalizedName": "karl anthony towns"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 82
+    },
+    {
+      "id": "nba-oklahoma-city-thunder-shai-gilgeous-alexander",
+      "sport": "basketball",
+      "player": {
+        "name": "Shai Gilgeous-Alexander",
+        "normalizedName": "shai gilgeous alexander"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nba-oklahoma-city-thunder-chet-holmgren",
+      "sport": "basketball",
+      "player": {
+        "name": "Chet Holmgren",
+        "normalizedName": "chet holmgren"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "nba-oklahoma-city-thunder-jalen-williams",
+      "sport": "basketball",
+      "player": {
+        "name": "Jalen Williams",
+        "normalizedName": "jalen williams"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 82
+    },
+    {
+      "id": "nba-orlando-magic-paolo-banchero",
+      "sport": "basketball",
+      "player": {
+        "name": "Paolo Banchero",
+        "normalizedName": "paolo banchero"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nba-orlando-magic-franz-wagner",
+      "sport": "basketball",
+      "player": {
+        "name": "Franz Wagner",
+        "normalizedName": "franz wagner"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 77
+    },
+    {
+      "id": "nba-philadelphia-76ers-lebron-james",
+      "sport": "basketball",
+      "player": {
+        "name": "LeBron James",
+        "normalizedName": "lebron james"
+      },
+      "score": 100,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nba-philadelphia-76ers-vj-edgecombe",
+      "sport": "basketball",
+      "player": {
+        "name": "VJ Edgecombe",
+        "normalizedName": "vj edgecombe"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nba-philadelphia-76ers-tyrese-maxey",
+      "sport": "basketball",
+      "player": {
+        "name": "Tyrese Maxey",
+        "normalizedName": "tyrese maxey"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nba-phoenix-suns-devin-booker",
+      "sport": "basketball",
+      "player": {
+        "name": "Devin Booker",
+        "normalizedName": "devin booker"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nba-phoenix-suns-khaman-maluach",
+      "sport": "basketball",
+      "player": {
+        "name": "Khaman Maluach",
+        "normalizedName": "khaman maluach"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 70
+    },
+    {
+      "id": "nba-phoenix-suns-jalen-green",
+      "sport": "basketball",
+      "player": {
+        "name": "Jalen Green",
+        "normalizedName": "jalen green"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 68
+    },
+    {
+      "id": "nba-portland-trail-blazers-ja-morant",
+      "sport": "basketball",
+      "player": {
+        "name": "Ja Morant",
+        "normalizedName": "ja morant"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nba-portland-trail-blazers-damian-lillard",
+      "sport": "basketball",
+      "player": {
+        "name": "Damian Lillard",
+        "normalizedName": "damian lillard"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 85
+    },
+    {
+      "id": "nba-portland-trail-blazers-yang-hansen",
+      "sport": "basketball",
+      "player": {
+        "name": "Yang Hansen",
+        "normalizedName": "yang hansen"
+      },
+      "score": 64,
+      "tier": "watch",
+      "confidence": 62
+    },
+    {
+      "id": "nba-sacramento-kings-darius-acuff-jr",
+      "sport": "basketball",
+      "player": {
+        "name": "Darius Acuff Jr.",
+        "normalizedName": "darius acuff jr"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 82
+    },
+    {
+      "id": "nba-sacramento-kings-maxime-raynaud",
+      "sport": "basketball",
+      "player": {
+        "name": "Maxime Raynaud",
+        "normalizedName": "maxime raynaud"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 69
+    },
+    {
+      "id": "nba-san-antonio-spurs-victor-wembanyama",
+      "sport": "basketball",
+      "player": {
+        "name": "Victor Wembanyama",
+        "normalizedName": "victor wembanyama"
+      },
+      "score": 100,
+      "tier": "icon",
+      "confidence": 100
+    },
+    {
+      "id": "nba-san-antonio-spurs-dylan-harper",
+      "sport": "basketball",
+      "player": {
+        "name": "Dylan Harper",
+        "normalizedName": "dylan harper"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nba-san-antonio-spurs-stephon-castle",
+      "sport": "basketball",
+      "player": {
+        "name": "Stephon Castle",
+        "normalizedName": "stephon castle"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nba-toronto-raptors-scottie-barnes",
+      "sport": "basketball",
+      "player": {
+        "name": "Scottie Barnes",
+        "normalizedName": "scottie barnes"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 80
+    },
+    {
+      "id": "nba-toronto-raptors-collin-murray-boyles",
+      "sport": "basketball",
+      "player": {
+        "name": "Collin Murray-Boyles",
+        "normalizedName": "collin murray boyles"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 73
+    },
+    {
+      "id": "nba-toronto-raptors-allen-graves",
+      "sport": "basketball",
+      "player": {
+        "name": "Allen Graves",
+        "normalizedName": "allen graves"
+      },
+      "score": 61,
+      "tier": "watch",
+      "confidence": 56
+    },
+    {
+      "id": "nba-utah-jazz-darryn-peterson",
+      "sport": "basketball",
+      "player": {
+        "name": "Darryn Peterson",
+        "normalizedName": "darryn peterson"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nba-utah-jazz-ace-bailey",
+      "sport": "basketball",
+      "player": {
+        "name": "Ace Bailey",
+        "normalizedName": "ace bailey"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "nba-utah-jazz-keyonte-george",
+      "sport": "basketball",
+      "player": {
+        "name": "Keyonte George",
+        "normalizedName": "keyonte george"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "nba-washington-wizards-aj-dybantsa",
+      "sport": "basketball",
+      "player": {
+        "name": "AJ Dybantsa",
+        "normalizedName": "aj dybantsa"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 99
+    },
+    {
+      "id": "nba-washington-wizards-trae-young",
+      "sport": "basketball",
+      "player": {
+        "name": "Trae Young",
+        "normalizedName": "trae young"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 88
+    },
+    {
+      "id": "nba-washington-wizards-alex-sarr",
+      "sport": "basketball",
+      "player": {
+        "name": "Alex Sarr",
+        "normalizedName": "alex sarr"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 74
+    },
+    {
+      "id": "nhl-ana-leo-carlsson",
+      "sport": "hockey",
+      "player": {
+        "name": "Leo Carlsson",
+        "normalizedName": "leo carlsson"
+      },
+      "score": 86,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-ana-beckett-sennecke",
+      "sport": "hockey",
+      "player": {
+        "name": "Beckett Sennecke",
+        "normalizedName": "beckett sennecke"
+      },
+      "score": 83,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nhl-ana-cutter-gauthier",
+      "sport": "hockey",
+      "player": {
+        "name": "Cutter Gauthier",
+        "normalizedName": "cutter gauthier"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 86
+    },
+    {
+      "id": "nhl-bos-david-pastrnak",
+      "sport": "hockey",
+      "player": {
+        "name": "David Pastrnak",
+        "normalizedName": "david pastrnak"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nhl-bos-james-hagens",
+      "sport": "hockey",
+      "player": {
+        "name": "James Hagens",
+        "normalizedName": "james hagens"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 81
+    },
+    {
+      "id": "nhl-bos-jj-peterka",
+      "sport": "hockey",
+      "player": {
+        "name": "JJ Peterka",
+        "normalizedName": "jj peterka"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 76
+    },
+    {
+      "id": "nhl-buf-tage-thompson",
+      "sport": "hockey",
+      "player": {
+        "name": "Tage Thompson",
+        "normalizedName": "tage thompson"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 86
+    },
+    {
+      "id": "nhl-buf-zach-benson",
+      "sport": "hockey",
+      "player": {
+        "name": "Zach Benson",
+        "normalizedName": "zach benson"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 78
+    },
+    {
+      "id": "nhl-buf-daxon-rudolph",
+      "sport": "hockey",
+      "player": {
+        "name": "Daxon Rudolph",
+        "normalizedName": "daxon rudolph"
+      },
+      "score": 69,
+      "tier": "watch",
+      "confidence": 72
+    },
+    {
+      "id": "nhl-cgy-zayne-parekh",
+      "sport": "hockey",
+      "player": {
+        "name": "Zayne Parekh",
+        "normalizedName": "zayne parekh"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 82
+    },
+    {
+      "id": "nhl-cgy-dustin-wolf",
+      "sport": "hockey",
+      "player": {
+        "name": "Dustin Wolf",
+        "normalizedName": "dustin wolf"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 82
+    },
+    {
+      "id": "nhl-cgy-carson-carels",
+      "sport": "hockey",
+      "player": {
+        "name": "Carson Carels",
+        "normalizedName": "carson carels"
+      },
+      "score": 67,
+      "tier": "watch",
+      "confidence": 70
+    },
+    {
+      "id": "nhl-car-logan-stankoven",
+      "sport": "hockey",
+      "player": {
+        "name": "Logan Stankoven",
+        "normalizedName": "logan stankoven"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nhl-car-seth-jarvis",
+      "sport": "hockey",
+      "player": {
+        "name": "Seth Jarvis",
+        "normalizedName": "seth jarvis"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 85
+    },
+    {
+      "id": "nhl-car-jackson-blake",
+      "sport": "hockey",
+      "player": {
+        "name": "Jackson Blake",
+        "normalizedName": "jackson blake"
+      },
+      "score": 73,
+      "tier": "watch",
+      "confidence": 76
+    },
+    {
+      "id": "nhl-chi-connor-bedard",
+      "sport": "hockey",
+      "player": {
+        "name": "Connor Bedard",
+        "normalizedName": "connor bedard"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "nhl-chi-frank-nazar",
+      "sport": "hockey",
+      "player": {
+        "name": "Frank Nazar",
+        "normalizedName": "frank nazar"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nhl-chi-anton-frondell",
+      "sport": "hockey",
+      "player": {
+        "name": "Anton Frondell",
+        "normalizedName": "anton frondell"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nhl-col-cale-makar",
+      "sport": "hockey",
+      "player": {
+        "name": "Cale Makar",
+        "normalizedName": "cale makar"
+      },
+      "score": 95,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "nhl-col-nathan-mackinnon",
+      "sport": "hockey",
+      "player": {
+        "name": "Nathan MacKinnon",
+        "normalizedName": "nathan mackinnon"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "nhl-cbj-adam-fantilli",
+      "sport": "hockey",
+      "player": {
+        "name": "Adam Fantilli",
+        "normalizedName": "adam fantilli"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nhl-cbj-cayden-lindstrom",
+      "sport": "hockey",
+      "player": {
+        "name": "Cayden Lindstrom",
+        "normalizedName": "cayden lindstrom"
+      },
+      "score": 69,
+      "tier": "watch",
+      "confidence": 69
+    },
+    {
+      "id": "nhl-dal-wyatt-johnston",
+      "sport": "hockey",
+      "player": {
+        "name": "Wyatt Johnston",
+        "normalizedName": "wyatt johnston"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-dal-mikko-rantanen",
+      "sport": "hockey",
+      "player": {
+        "name": "Mikko Rantanen",
+        "normalizedName": "mikko rantanen"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nhl-dal-jason-robertson",
+      "sport": "hockey",
+      "player": {
+        "name": "Jason Robertson",
+        "normalizedName": "jason robertson"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nhl-det-lucas-raymond",
+      "sport": "hockey",
+      "player": {
+        "name": "Lucas Raymond",
+        "normalizedName": "lucas raymond"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nhl-det-moritz-seider",
+      "sport": "hockey",
+      "player": {
+        "name": "Moritz Seider",
+        "normalizedName": "moritz seider"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "nhl-edm-connor-mcdavid",
+      "sport": "hockey",
+      "player": {
+        "name": "Connor McDavid",
+        "normalizedName": "connor mcdavid"
+      },
+      "score": 99,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nhl-edm-leon-draisaitl",
+      "sport": "hockey",
+      "player": {
+        "name": "Leon Draisaitl",
+        "normalizedName": "leon draisaitl"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 97
+    },
+    {
+      "id": "nhl-fla-matthew-tkachuk",
+      "sport": "hockey",
+      "player": {
+        "name": "Matthew Tkachuk",
+        "normalizedName": "matthew tkachuk"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 92
+    },
+    {
+      "id": "nhl-fla-brady-tkachuk",
+      "sport": "hockey",
+      "player": {
+        "name": "Brady Tkachuk",
+        "normalizedName": "brady tkachuk"
+      },
+      "score": 84,
+      "tier": "high",
+      "confidence": 87
+    },
+    {
+      "id": "nhl-lak-quinton-byfield",
+      "sport": "hockey",
+      "player": {
+        "name": "Quinton Byfield",
+        "normalizedName": "quinton byfield"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nhl-lak-brandt-clarke",
+      "sport": "hockey",
+      "player": {
+        "name": "Brandt Clarke",
+        "normalizedName": "brandt clarke"
+      },
+      "score": 70,
+      "tier": "watch",
+      "confidence": 72
+    },
+    {
+      "id": "nhl-min-quinn-hughes",
+      "sport": "hockey",
+      "player": {
+        "name": "Quinn Hughes",
+        "normalizedName": "quinn hughes"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "nhl-min-kirill-kaprizov",
+      "sport": "hockey",
+      "player": {
+        "name": "Kirill Kaprizov",
+        "normalizedName": "kirill kaprizov"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nhl-min-matt-boldy",
+      "sport": "hockey",
+      "player": {
+        "name": "Matt Boldy",
+        "normalizedName": "matt boldy"
+      },
+      "score": 83,
+      "tier": "emerging",
+      "confidence": 89
+    },
+    {
+      "id": "nhl-mtl-lane-hutson",
+      "sport": "hockey",
+      "player": {
+        "name": "Lane Hutson",
+        "normalizedName": "lane hutson"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "nhl-mtl-ivan-demidov",
+      "sport": "hockey",
+      "player": {
+        "name": "Ivan Demidov",
+        "normalizedName": "ivan demidov"
+      },
+      "score": 88,
+      "tier": "high",
+      "confidence": 93
+    },
+    {
+      "id": "nhl-mtl-cole-caufield",
+      "sport": "hockey",
+      "player": {
+        "name": "Cole Caufield",
+        "normalizedName": "cole caufield"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-nsh-steven-stamkos",
+      "sport": "hockey",
+      "player": {
+        "name": "Steven Stamkos",
+        "normalizedName": "steven stamkos"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nhl-nsh-wyatt-cullen",
+      "sport": "hockey",
+      "player": {
+        "name": "Wyatt Cullen",
+        "normalizedName": "wyatt cullen"
+      },
+      "score": 66,
+      "tier": "watch",
+      "confidence": 66
+    },
+    {
+      "id": "nhl-njd-jack-hughes",
+      "sport": "hockey",
+      "player": {
+        "name": "Jack Hughes",
+        "normalizedName": "jack hughes"
+      },
+      "score": 89,
+      "tier": "high",
+      "confidence": 94
+    },
+    {
+      "id": "nhl-njd-luke-hughes",
+      "sport": "hockey",
+      "player": {
+        "name": "Luke Hughes",
+        "normalizedName": "luke hughes"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "nhl-nyi-matthew-schaefer",
+      "sport": "hockey",
+      "player": {
+        "name": "Matthew Schaefer",
+        "normalizedName": "matthew schaefer"
+      },
+      "score": 94,
+      "tier": "icon",
+      "confidence": 97
+    },
+    {
+      "id": "nhl-nyi-victor-eklund",
+      "sport": "hockey",
+      "player": {
+        "name": "Victor Eklund",
+        "normalizedName": "victor eklund"
+      },
+      "score": 72,
+      "tier": "watch",
+      "confidence": 73
+    },
+    {
+      "id": "nhl-nyr-gabe-perreault",
+      "sport": "hockey",
+      "player": {
+        "name": "Gabe Perreault",
+        "normalizedName": "gabe perreault"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nhl-nyr-igor-shesterkin",
+      "sport": "hockey",
+      "player": {
+        "name": "Igor Shesterkin",
+        "normalizedName": "igor shesterkin"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 83
+    },
+    {
+      "id": "nhl-nyr-alberts-smits",
+      "sport": "hockey",
+      "player": {
+        "name": "Alberts Smits",
+        "normalizedName": "alberts smits"
+      },
+      "score": 70,
+      "tier": "watch",
+      "confidence": 75
+    },
+    {
+      "id": "nhl-ott-tim-stutzle",
+      "sport": "hockey",
+      "player": {
+        "name": "Tim Stützle",
+        "normalizedName": "tim stutzle"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nhl-ott-jake-sanderson",
+      "sport": "hockey",
+      "player": {
+        "name": "Jake Sanderson",
+        "normalizedName": "jake sanderson"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nhl-ott-carter-yakemchuk",
+      "sport": "hockey",
+      "player": {
+        "name": "Carter Yakemchuk",
+        "normalizedName": "carter yakemchuk"
+      },
+      "score": 68,
+      "tier": "watch",
+      "confidence": 69
+    },
+    {
+      "id": "nhl-phi-matvei-michkov",
+      "sport": "hockey",
+      "player": {
+        "name": "Matvei Michkov",
+        "normalizedName": "matvei michkov"
+      },
+      "score": 87,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-phi-porter-martone",
+      "sport": "hockey",
+      "player": {
+        "name": "Porter Martone",
+        "normalizedName": "porter martone"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 86
+    },
+    {
+      "id": "nhl-phi-trevor-zegras",
+      "sport": "hockey",
+      "player": {
+        "name": "Trevor Zegras",
+        "normalizedName": "trevor zegras"
+      },
+      "score": 74,
+      "tier": "emerging",
+      "confidence": 76
+    },
+    {
+      "id": "nhl-pit-sidney-crosby",
+      "sport": "hockey",
+      "player": {
+        "name": "Sidney Crosby",
+        "normalizedName": "sidney crosby"
+      },
+      "score": 96,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nhl-pit-ben-kindel",
+      "sport": "hockey",
+      "player": {
+        "name": "Ben Kindel",
+        "normalizedName": "ben kindel"
+      },
+      "score": 79,
+      "tier": "emerging",
+      "confidence": 82
+    },
+    {
+      "id": "nhl-sjs-macklin-celebrini",
+      "sport": "hockey",
+      "player": {
+        "name": "Macklin Celebrini",
+        "normalizedName": "macklin celebrini"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 98
+    },
+    {
+      "id": "nhl-sjs-michael-misa",
+      "sport": "hockey",
+      "player": {
+        "name": "Michael Misa",
+        "normalizedName": "michael misa"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 90
+    },
+    {
+      "id": "nhl-sjs-ivar-stenberg",
+      "sport": "hockey",
+      "player": {
+        "name": "Ivar Stenberg",
+        "normalizedName": "ivar stenberg"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 85
+    },
+    {
+      "id": "nhl-sea-berkly-catton",
+      "sport": "hockey",
+      "player": {
+        "name": "Berkly Catton",
+        "normalizedName": "berkly catton"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 77
+    },
+    {
+      "id": "nhl-sea-shane-wright",
+      "sport": "hockey",
+      "player": {
+        "name": "Shane Wright",
+        "normalizedName": "shane wright"
+      },
+      "score": 72,
+      "tier": "watch",
+      "confidence": 76
+    },
+    {
+      "id": "nhl-sea-matty-beniers",
+      "sport": "hockey",
+      "player": {
+        "name": "Matty Beniers",
+        "normalizedName": "matty beniers"
+      },
+      "score": 69,
+      "tier": "watch",
+      "confidence": 75
+    },
+    {
+      "id": "nhl-stl-jimmy-snuggerud",
+      "sport": "hockey",
+      "player": {
+        "name": "Jimmy Snuggerud",
+        "normalizedName": "jimmy snuggerud"
+      },
+      "score": 82,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nhl-stl-dalibor-dvorsky",
+      "sport": "hockey",
+      "player": {
+        "name": "Dalibor Dvorsky",
+        "normalizedName": "dalibor dvorsky"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nhl-stl-mason-mctavish",
+      "sport": "hockey",
+      "player": {
+        "name": "Mason McTavish",
+        "normalizedName": "mason mctavish"
+      },
+      "score": 73,
+      "tier": "watch",
+      "confidence": 77
+    },
+    {
+      "id": "nhl-tbl-nikita-kucherov",
+      "sport": "hockey",
+      "player": {
+        "name": "Nikita Kucherov",
+        "normalizedName": "nikita kucherov"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "nhl-tbl-andrei-vasilevskiy",
+      "sport": "hockey",
+      "player": {
+        "name": "Andrei Vasilevskiy",
+        "normalizedName": "andrei vasilevskiy"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 88
+    },
+    {
+      "id": "nhl-tor-gavin-mckenna",
+      "sport": "hockey",
+      "player": {
+        "name": "Gavin McKenna",
+        "normalizedName": "gavin mckenna"
+      },
+      "score": 91,
+      "tier": "high",
+      "confidence": 95
+    },
+    {
+      "id": "nhl-tor-auston-matthews",
+      "sport": "hockey",
+      "player": {
+        "name": "Auston Matthews",
+        "normalizedName": "auston matthews"
+      },
+      "score": 90,
+      "tier": "high",
+      "confidence": 96
+    },
+    {
+      "id": "nhl-tor-matthew-knies",
+      "sport": "hockey",
+      "player": {
+        "name": "Matthew Knies",
+        "normalizedName": "matthew knies"
+      },
+      "score": 76,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nhl-uta-logan-cooley",
+      "sport": "hockey",
+      "player": {
+        "name": "Logan Cooley",
+        "normalizedName": "logan cooley"
+      },
+      "score": 81,
+      "tier": "emerging",
+      "confidence": 87
+    },
+    {
+      "id": "nhl-uta-caleb-desnoyers",
+      "sport": "hockey",
+      "player": {
+        "name": "Caleb Desnoyers",
+        "normalizedName": "caleb desnoyers"
+      },
+      "score": 78,
+      "tier": "emerging",
+      "confidence": 80
+    },
+    {
+      "id": "nhl-uta-tij-iginla",
+      "sport": "hockey",
+      "player": {
+        "name": "Tij Iginla",
+        "normalizedName": "tij iginla"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nhl-van-caleb-malhotra",
+      "sport": "hockey",
+      "player": {
+        "name": "Caleb Malhotra",
+        "normalizedName": "caleb malhotra"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 84
+    },
+    {
+      "id": "nhl-van-zeev-buium",
+      "sport": "hockey",
+      "player": {
+        "name": "Zeev Buium",
+        "normalizedName": "zeev buium"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 78
+    },
+    {
+      "id": "nhl-vgk-jack-eichel",
+      "sport": "hockey",
+      "player": {
+        "name": "Jack Eichel",
+        "normalizedName": "jack eichel"
+      },
+      "score": 85,
+      "tier": "high",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-vgk-mitch-marner",
+      "sport": "hockey",
+      "player": {
+        "name": "Mitch Marner",
+        "normalizedName": "mitch marner"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 85
+    },
+    {
+      "id": "nhl-wsh-alex-ovechkin",
+      "sport": "hockey",
+      "player": {
+        "name": "Alex Ovechkin",
+        "normalizedName": "alex ovechkin"
+      },
+      "score": 97,
+      "tier": "icon",
+      "confidence": 99
+    },
+    {
+      "id": "nhl-wsh-ryan-leonard",
+      "sport": "hockey",
+      "player": {
+        "name": "Ryan Leonard",
+        "normalizedName": "ryan leonard"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 85
+    },
+    {
+      "id": "nhl-wsh-cole-hutson",
+      "sport": "hockey",
+      "player": {
+        "name": "Cole Hutson",
+        "normalizedName": "cole hutson"
+      },
+      "score": 77,
+      "tier": "emerging",
+      "confidence": 79
+    },
+    {
+      "id": "nhl-wpg-connor-hellebuyck",
+      "sport": "hockey",
+      "player": {
+        "name": "Connor Hellebuyck",
+        "normalizedName": "connor hellebuyck"
+      },
+      "score": 80,
+      "tier": "emerging",
+      "confidence": 91
+    },
+    {
+      "id": "nhl-wpg-viggo-bjorck",
+      "sport": "hockey",
+      "player": {
+        "name": "Viggo Björck",
+        "normalizedName": "viggo bjorck"
+      },
+      "score": 71,
+      "tier": "watch",
+      "confidence": 73
+    }
+  ]
+}

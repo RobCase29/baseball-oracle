@@ -108,6 +108,15 @@ input {
   font-weight: 650;
 }
 
+.fo-topbar-link {
+  color: var(--fo-green-strong);
+  text-decoration: none;
+}
+
+.fo-topbar-link:hover {
+  color: #ffffff;
+}
+
 .fo-status-dot {
   display: inline-flex;
   align-items: center;

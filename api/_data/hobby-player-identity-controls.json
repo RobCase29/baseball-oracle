@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "hobby-player-identity-controls.v1",
+  "reviewedAt": "2026-07-25T00:18:04.000Z",
+  "reviewerScope": "Reviewed football identity controls for seven high-signal provider-to-GemRate name variants and one known same-sport namesake risk. Every provider identity and GemRate subject was validated as a unique exact record in the current local artifacts; these controls do not claim canonical league IDs.",
+  "aliases": [
+    {
+      "sport": "football",
+      "providerPlayerId": "1403",
+      "providerDisplayName": "C.J. Stroud",
+      "providerNormalizedName": "c j stroud",
+      "gemRateSourceKey": "athlete|football|CJ Stroud",
+      "gemRateDisplayName": "CJ Stroud",
+      "gemRateNormalizedName": "cj stroud",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed initial-spacing alias; provider HOU / age 24.8 and GemRate graded-year fields 2020–2023."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "1745",
+      "providerDisplayName": "Cam Skattebo",
+      "providerNormalizedName": "cam skattebo",
+      "gemRateSourceKey": "athlete|football|Cameron Skattebo",
+      "gemRateDisplayName": "Cameron Skattebo",
+      "gemRateNormalizedName": "cameron skattebo",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed short-name alias; provider NYG / age 24.5 and GemRate graded-year fields 2024–2024."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "1803",
+      "providerDisplayName": "Harold Fannin",
+      "providerNormalizedName": "harold fannin",
+      "gemRateSourceKey": "athlete|football|Harold Fannin Jr",
+      "gemRateDisplayName": "Harold Fannin Jr",
+      "gemRateNormalizedName": "harold fannin jr",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed suffix alias; provider CLE / age 22 and GemRate graded-year fields 2025–2025."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "1030",
+      "providerDisplayName": "Travis Etienne",
+      "providerNormalizedName": "travis etienne",
+      "gemRateSourceKey": "athlete|football|Travis Etienne Jr.",
+      "gemRateDisplayName": "Travis Etienne Jr.",
+      "gemRateNormalizedName": "travis etienne jr",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed suffix alias; provider NOS / age 27.5 and GemRate graded-year fields 2020–2021."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "304",
+      "providerDisplayName": "D.J. Moore",
+      "providerNormalizedName": "d j moore",
+      "gemRateSourceKey": "athlete|football|DJ Moore",
+      "gemRateDisplayName": "DJ Moore",
+      "gemRateNormalizedName": "dj moore",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed initial-spacing alias; provider BUF / age 29.3 and GemRate graded-year fields 2017–2018."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "536",
+      "providerDisplayName": "Michael Pittman",
+      "providerNormalizedName": "michael pittman",
+      "gemRateSourceKey": "athlete|football|Michael Pittman Jr.",
+      "gemRateDisplayName": "Michael Pittman Jr.",
+      "gemRateNormalizedName": "michael pittman jr",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed suffix alias; provider PIT / age 28.8 and GemRate graded-year fields 2016–2020."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "1555",
+      "providerDisplayName": "J.J. McCarthy",
+      "providerNormalizedName": "j j mccarthy",
+      "gemRateSourceKey": "athlete|football|JJ McCarthy",
+      "gemRateDisplayName": "JJ McCarthy",
+      "gemRateNormalizedName": "jj mccarthy",
+      "status": "approved",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Reviewed initial-spacing alias; provider MIN / age 23.5 and GemRate graded-year fields 2021–2024."
+    }
+  ],
+  "blocks": [
+    {
+      "sport": "football",
+      "providerPlayerId": "365",
+      "providerDisplayName": "Josh Allen",
+      "providerNormalizedName": "josh allen",
+      "gemRateSourceKey": "athlete|football|Josh Allen",
+      "gemRateDisplayName": "Josh Allen",
+      "gemRateNormalizedName": "josh allen",
+      "status": "blocked",
+      "reasonCode": "same_sport_namesake_aggregation_risk",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Blocked because the subject-level football name cannot isolate the BUF quarterback from a known same-sport namesake aggregation risk."
+    },
+    {
+      "sport": "football",
+      "providerPlayerId": "1812",
+      "providerDisplayName": "Kyle Williams",
+      "providerNormalizedName": "kyle williams",
+      "gemRateSourceKey": "athlete|football|Kyle Williams",
+      "gemRateDisplayName": "Kyle Williams",
+      "gemRateNormalizedName": "kyle williams",
+      "status": "blocked",
+      "reasonCode": "same_sport_namesake_aggregation_risk",
+      "reviewedAt": "2026-07-25T00:18:04.000Z",
+      "note": "Blocked because the 2006 football card history demonstrably belongs to older same-name NFL players and cannot isolate the current NEP rookie."
+    }
+  ]
+}

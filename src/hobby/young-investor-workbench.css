@@ -1,0 +1,98 @@
+.yw-controls {
+  grid-template-columns: minmax(300px, 1fr) 190px 210px auto;
+}
+
+.yw-control-context {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
+.yw-control-context strong {
+  color: var(--mx-text);
+  font-size: 0.8rem;
+  font-weight: 720;
+}
+
+.yw-control-context small {
+  overflow: hidden;
+  color: var(--mx-muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yw-result-bar p {
+  color: #a5b0a9;
+}
+
+.yw-table-frame table {
+  min-width: 1280px;
+}
+
+.yw-rank strong {
+  color: var(--mx-lime);
+}
+
+.yw-age strong {
+  color: #dbe2dd;
+  font-size: 0.88rem;
+}
+
+.yw-stage strong,
+.yw-stage span {
+  display: block;
+}
+
+.yw-stage strong {
+  color: #c6cec8;
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.yw-stage span {
+  margin-top: 3px;
+  color: #68766e;
+  font-size: 0.61rem;
+}
+
+.yw-detail {
+  background:
+    linear-gradient(90deg, rgba(120, 221, 185, 0.045), transparent 38%),
+    #0c1511;
+}
+
+.yw-age-note {
+  margin-top: 10px !important;
+  color: #aeb9b2 !important;
+  font-size: 0.67rem !important;
+}
+
+@media (max-width: 980px) {
+  .yw-controls {
+    grid-template-columns: minmax(260px, 1fr) 1fr 1fr;
+  }
+
+  .yw-controls .iw-reset {
+    grid-column: 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .yw-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .yw-control-context {
+    grid-column: 1 / -1;
+  }
+
+  .yw-controls .iw-reset {
+    grid-column: auto;
+  }
+
+  .yw-control-context small {
+    white-space: normal;
+  }
+}

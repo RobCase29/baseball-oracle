@@ -8,7 +8,7 @@ import { AppSidebar } from './AppSidebar'
 afterEach(cleanup)
 
 describe('AppSidebar sport navigation', () => {
-  it('keeps the Baseball workspace controls and links to the isolated Football page', () => {
+  it('keeps the Baseball controls and links to the isolated Football and hobby pages', () => {
     const onChangeView = vi.fn()
 
     render(
@@ -21,10 +21,18 @@ describe('AppSidebar sport navigation', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Baseball Thesis' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Model review' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Football' })).toHaveAttribute('href', '/football')
+    expect(screen.getByRole('link', { name: 'Binder Index' })).toHaveAttribute(
+      'href',
+      '/hobby?lens=desk',
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Model review' }))
     expect(onChangeView).toHaveBeenCalledWith('Model lab')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Baseball Thesis' }))
+    expect(onChangeView).toHaveBeenCalledWith('Binder')
   })
 })

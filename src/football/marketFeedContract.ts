@@ -79,6 +79,24 @@ export function isFootballMarketFormatId(value: string): value is FootballMarket
   return FORMAT_ID_SET.has(value)
 }
 
+export function isFootballMarketFeedResponse(
+  value: unknown,
+): value is FootballMarketFeedResponse {
+  if (!value || typeof value !== 'object') return false
+  const response = value as Partial<FootballMarketFeedResponse>
+  const request = response.request as
+    | Partial<FootballMarketFeedResponse['request']>
+    | undefined
+  return response.schemaVersion === 'football-market-feed.v1' &&
+    typeof response.generatedAt === 'string' &&
+    Boolean(request) &&
+    (request?.universe === 'college' || request?.universe === 'nfl') &&
+    typeof request?.formatId === 'string' &&
+    isFootballMarketFormatId(request.formatId) &&
+    Array.isArray(response.providers) &&
+    Array.isArray(response.rankings)
+}
+
 export function footballMarketFormatFamily(formatId: FootballMarketFormatId): {
   lineup: 'one_qb' | 'sf'
   tightEndPremium: 'no_tep' | 'tep' | 'tepp' | 'teppp'

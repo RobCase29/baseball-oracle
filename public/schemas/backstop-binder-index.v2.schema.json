@@ -1,0 +1,1777 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/backstop-binder-index.v2.schema.json",
+  "title": "Backstop Binder Index v2",
+  "description": "Research-only unified baseball, football, and basketball graduation-readiness index for the Backstop Binder Index Master Build board. Sport-specific player outlooks share one absolute market target. The index is not a probability, expected-return estimate, investment recommendation, or exact-card recommendation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "modelVersion",
+    "snapshot",
+    "items",
+    "scope",
+    "summary",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "backstop-binder-index.v2"
+    },
+    "contractVersion": {
+      "const": "backstop-binder-index-contract/v2"
+    },
+    "modelVersion": {
+      "const": "binder-graduation-readiness/master-build-v2.1.0"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "snapshot": {
+            "properties": {
+              "freshness": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "stale",
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "freshness"
+            ]
+          }
+        },
+        "required": [
+          "snapshot"
+        ]
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "maxItems": 0
+          },
+          "summary": {
+            "properties": {
+              "rankedCount": {
+                "const": 0
+              },
+              "graduatedCount": {
+                "const": 0
+              },
+              "onDeckCount": {
+                "const": 0
+              },
+              "approachingCount": {
+                "const": 0
+              },
+              "developingCount": {
+                "const": 0
+              },
+              "longRangeCount": {
+                "const": 0
+              },
+              "withheldCount": {
+                "const": 0
+              }
+            }
+          },
+          "page": {
+            "properties": {
+              "total": {
+                "const": 0
+              },
+              "totalPages": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "sport": {
+                "const": "football"
+              }
+            },
+            "required": [
+              "sport"
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "properties": {
+                "player": {
+                  "properties": {
+                    "sport": {
+                      "const": "football"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "sport": {
+                "const": "basketball"
+              }
+            },
+            "required": [
+              "sport"
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "properties": {
+                "player": {
+                  "properties": {
+                    "sport": {
+                      "const": "basketball"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "sport": {
+                "const": "baseball"
+              }
+            },
+            "required": [
+              "sport"
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "properties": {
+                "player": {
+                  "properties": {
+                    "sport": {
+                      "const": "baseball"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sport": {
+      "enum": [
+        "baseball",
+        "football",
+        "basketball"
+      ]
+    },
+    "band": {
+      "enum": [
+        "graduated",
+        "on_deck",
+        "approaching",
+        "developing",
+        "long_range",
+        "withheld"
+      ]
+    },
+    "freshnessStatus": {
+      "enum": [
+        "current",
+        "stale",
+        "unknown"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "nullableScore": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/score"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullableRank": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dateOrDateTime": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "generatedAt",
+        "dataThrough",
+        "historyStart",
+        "historyMonths",
+        "freshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^backstop-binder-index/v2:[a-f0-9]{64}$"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyStart": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyMonths": {
+          "const": 18
+        },
+        "freshness": {
+          "$ref": "#/$defs/freshness"
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reasonCodes"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "player",
+        "graduation",
+        "playerSignal",
+        "market",
+        "identity",
+        "sources"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "backstop-binder-graduation-item/v2"
+        },
+        "player": {
+          "$ref": "#/$defs/player"
+        },
+        "graduation": {
+          "$ref": "#/$defs/graduation"
+        },
+        "playerSignal": {
+          "$ref": "#/$defs/playerSignal"
+        },
+        "market": {
+          "$ref": "#/$defs/market"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/sourceEvidence"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "gemrate"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "player": {
+                "properties": {
+                  "sport": {
+                    "const": "football"
+                  }
+                },
+                "required": [
+                  "sport"
+                ]
+              }
+            },
+            "required": [
+              "player"
+            ]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "properties": {
+                  "provider": {
+                    "const": "keeptradecut"
+                  }
+                }
+              },
+              "sources": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "const": "keeptradecut"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "player": {
+                "properties": {
+                  "sport": {
+                    "const": "basketball"
+                  }
+                },
+                "required": [
+                  "sport"
+                ]
+              }
+            },
+            "required": [
+              "player"
+            ]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "properties": {
+                  "provider": {
+                    "const": "hashtag_basketball"
+                  }
+                }
+              },
+              "sources": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "const": "hashtag_basketball"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "player": {
+                "properties": {
+                  "sport": {
+                    "const": "baseball"
+                  }
+                },
+                "required": [
+                  "sport"
+                ]
+              }
+            },
+            "required": [
+              "player"
+            ]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "properties": {
+                  "provider": {
+                    "const": "career_oracle"
+                  }
+                }
+              },
+              "sources": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "const": "career_oracle"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "graduation": {
+                "properties": {
+                  "status": {
+                    "const": "graduated"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "graduation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "market": {
+                "properties": {
+                  "boardPosture": {
+                    "const": "build_candidate"
+                  },
+                  "buildRoute": {
+                    "enum": [
+                      "established_durability",
+                      "escape_velocity"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "graduation": {
+                "properties": {
+                  "status": {
+                    "const": "ranked"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "graduation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "market": {
+                "properties": {
+                  "buildRoute": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "normalizedName",
+        "sport",
+        "age",
+        "positions",
+        "primaryPosition",
+        "team",
+        "developmentStage"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normalizedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sport": {
+          "$ref": "#/$defs/sport"
+        },
+        "age": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 15,
+              "maximum": 60
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "positions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "primaryPosition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "team": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "developmentStage": {
+          "enum": [
+            "new",
+            "developing",
+            "emerging",
+            "established",
+            "prospect",
+            "rookie",
+            "early_career"
+          ]
+        }
+      }
+    },
+    "graduation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "index",
+        "globalRank",
+        "band",
+        "horizonMonths",
+        "probability",
+        "probabilityStatus",
+        "target",
+        "projectedRoute",
+        "primaryBlocker",
+        "marketPathReadiness",
+        "trajectorySupport",
+        "trajectory",
+        "routeReadiness",
+        "distance",
+        "evidence",
+        "buildGateProgress"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "graduated",
+            "ranked",
+            "withheld"
+          ]
+        },
+        "index": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "globalRank": {
+          "$ref": "#/$defs/nullableRank"
+        },
+        "band": {
+          "$ref": "#/$defs/band"
+        },
+        "horizonMonths": {
+          "const": 24
+        },
+        "probability": {
+          "type": "null"
+        },
+        "probabilityStatus": {
+          "const": "withheld_no_longitudinal_build_transitions"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "projectedRoute": {
+          "enum": [
+            "durable_scale",
+            "escape_velocity",
+            "graduated",
+            "withheld"
+          ]
+        },
+        "primaryBlocker": {
+          "$ref": "#/$defs/blocker"
+        },
+        "marketPathReadiness": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "trajectorySupport": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "trajectory": {
+          "enum": [
+            "rising",
+            "steady",
+            "fading"
+          ]
+        },
+        "routeReadiness": {
+          "$ref": "#/$defs/routeReadiness"
+        },
+        "distance": {
+          "$ref": "#/$defs/distance"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "buildGateProgress": {
+          "$ref": "#/$defs/buildGateProgress"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "graduated"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "const": 100
+              },
+              "globalRank": {
+                "type": "null"
+              },
+              "band": {
+                "const": "graduated"
+              },
+              "projectedRoute": {
+                "const": "graduated"
+              },
+              "primaryBlocker": {
+                "const": "already_on_build_board"
+              },
+              "marketPathReadiness": {
+                "const": 100
+              },
+              "trajectorySupport": {
+                "$ref": "#/$defs/score"
+              },
+              "routeReadiness": {
+                "properties": {
+                  "established": {
+                    "const": 100
+                  },
+                  "escapeVelocity": {
+                    "const": 100
+                  },
+                  "commonGates": {
+                    "const": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ranked"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 99.9
+              },
+              "globalRank": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "band": {
+                "enum": [
+                  "on_deck",
+                  "approaching",
+                  "developing",
+                  "long_range"
+                ]
+              },
+              "projectedRoute": {
+                "enum": [
+                  "durable_scale",
+                  "escape_velocity"
+                ]
+              },
+              "primaryBlocker": {
+                "enum": [
+                  "ttm_scale",
+                  "current_run_rate",
+                  "master_score",
+                  "global_top_one_percent",
+                  "persistence",
+                  "shock_resistance",
+                  "downside_protection",
+                  "six_month_growth",
+                  "three_month_growth"
+                ]
+              },
+              "marketPathReadiness": {
+                "$ref": "#/$defs/score"
+              },
+              "trajectorySupport": {
+                "$ref": "#/$defs/score"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "withheld"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "null"
+              },
+              "globalRank": {
+                "type": "null"
+              },
+              "band": {
+                "const": "withheld"
+              },
+              "projectedRoute": {
+                "const": "withheld"
+              },
+              "primaryBlocker": {
+                "const": "evidence_not_publishable"
+              },
+              "marketPathReadiness": {
+                "type": "null"
+              },
+              "trajectorySupport": {
+                "type": "null"
+              },
+              "routeReadiness": {
+                "properties": {
+                  "established": {
+                    "const": 0
+                  },
+                  "escapeVelocity": {
+                    "const": 0
+                  },
+                  "commonGates": {
+                    "const": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "on_deck"
+              }
+            },
+            "required": [
+              "band"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "number",
+                "minimum": 85,
+                "maximum": 99.9
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "approaching"
+              }
+            },
+            "required": [
+              "band"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "number",
+                "minimum": 70,
+                "exclusiveMaximum": 85
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "developing"
+              }
+            },
+            "required": [
+              "band"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "number",
+                "minimum": 50,
+                "exclusiveMaximum": 70
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "long_range"
+              }
+            },
+            "required": [
+              "band"
+            ]
+          },
+          "then": {
+            "properties": {
+              "index": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": 50
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "designation",
+        "schemaVersion",
+        "contractVersion",
+        "persistenceRule"
+      ],
+      "properties": {
+        "designation": {
+          "const": "Master Build"
+        },
+        "schemaVersion": {
+          "const": "hobby-oracle-master-ranking.v2"
+        },
+        "contractVersion": {
+          "const": "hobby-oracle-master-ranking-contract/v2"
+        },
+        "persistenceRule": {
+          "const": "enter_build_and_remain_build_in_two_of_three_monthly_snapshots"
+        }
+      }
+    },
+    "blocker": {
+      "enum": [
+        "already_on_build_board",
+        "ttm_scale",
+        "current_run_rate",
+        "master_score",
+        "global_top_one_percent",
+        "persistence",
+        "shock_resistance",
+        "downside_protection",
+        "six_month_growth",
+        "three_month_growth",
+        "evidence_not_publishable"
+      ]
+    },
+    "routeReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "established",
+        "escapeVelocity",
+        "commonGates"
+      ],
+      "properties": {
+        "established": {
+          "$ref": "#/$defs/score"
+        },
+        "escapeVelocity": {
+          "$ref": "#/$defs/score"
+        },
+        "commonGates": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "distance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ttmSalesUsd",
+        "currentRunRateUsd",
+        "masterScorePoints",
+        "globalTopOneTtmUsd",
+        "persistencePoints",
+        "shockResistancePoints",
+        "downsideProtectionPoints",
+        "sixMonthGrowthMultiple",
+        "threeMonthGrowthMultiple"
+      ],
+      "properties": {
+        "ttmSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currentRunRateUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "masterScorePoints": {
+          "type": "number",
+          "minimum": 0
+        },
+        "globalTopOneTtmUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "persistencePoints": {
+          "type": "number",
+          "minimum": 0
+        },
+        "shockResistancePoints": {
+          "type": "number",
+          "minimum": 0
+        },
+        "downsideProtectionPoints": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sixMonthGrowthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "threeMonthGrowthMultiple": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grade",
+        "sourceCurrent",
+        "completeHistory",
+        "identityBridgeValid",
+        "manualIdentityReviewed"
+      ],
+      "properties": {
+        "grade": {
+          "enum": [
+            "A",
+            "B",
+            "withheld"
+          ]
+        },
+        "sourceCurrent": {
+          "type": "boolean"
+        },
+        "completeHistory": {
+          "type": "boolean"
+        },
+        "identityBridgeValid": {
+          "type": "boolean"
+        },
+        "manualIdentityReviewed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "buildGateProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "required",
+        "reasonCodes"
+      ],
+      "properties": {
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "required": {
+          "const": 8
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "playerSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "outlook",
+        "marketDurability",
+        "evidenceYears",
+        "evidenceStage",
+        "inputIntegrity",
+        "basis",
+        "modelLabel",
+        "ageTreatment"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "outlook": {
+          "$ref": "#/$defs/score"
+        },
+        "marketDurability": {
+          "$ref": "#/$defs/score"
+        },
+        "evidenceYears": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60
+        },
+        "evidenceStage": {
+          "enum": [
+            "new",
+            "developing",
+            "emerging",
+            "established",
+            "prospect",
+            "rookie",
+            "early_career"
+          ]
+        },
+        "inputIntegrity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "basis": {
+          "enum": [
+            "dynasty_market_consensus",
+            "career_index_route_outcome"
+          ]
+        },
+        "modelLabel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ageTreatment": {
+          "enum": [
+            "filter_only",
+            "development_runway_embedded_in_outlook"
+          ]
+        }
+      }
+    },
+    "market": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "masterRank",
+        "masterScore",
+        "boardPosture",
+        "buildRoute",
+        "ttmSalesUsd",
+        "currentRunRateUsd",
+        "globalObservedPercentile",
+        "durability",
+        "persistence",
+        "shockResistance",
+        "downsideProtection"
+      ],
+      "properties": {
+        "masterRank": {
+          "$ref": "#/$defs/nullableRank"
+        },
+        "masterScore": {
+          "$ref": "#/$defs/score"
+        },
+        "boardPosture": {
+          "enum": [
+            "build_candidate",
+            "hold_candidate",
+            "watch",
+            "risk_review",
+            "pass",
+            "unrated",
+            "needs_refresh"
+          ]
+        },
+        "buildRoute": {
+          "anyOf": [
+            {
+              "enum": [
+                "established_durability",
+                "escape_velocity"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ttmSalesUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currentRunRateUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "globalObservedPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "durability": {
+          "$ref": "#/$defs/score"
+        },
+        "persistence": {
+          "$ref": "#/$defs/score"
+        },
+        "shockResistance": {
+          "$ref": "#/$defs/score"
+        },
+        "downsideProtection": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "manualReviewStatus",
+        "provider",
+        "providerPlayerId",
+        "gemRateSourceKey"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "reviewed_exact",
+            "reviewed_alias",
+            "unique_normalized_name",
+            "verified_external_id"
+          ]
+        },
+        "manualReviewStatus": {
+          "enum": [
+            "approved",
+            "unreviewed"
+          ]
+        },
+        "provider": {
+          "enum": [
+            "keeptradecut",
+            "hashtag_basketball",
+            "career_oracle"
+          ]
+        },
+        "providerPlayerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gemRateSourceKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "url",
+        "asOf",
+        "fetchedAt",
+        "freshness",
+        "permissionBasis",
+        "measure"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "gemrate",
+            "keeptradecut",
+            "hashtag_basketball",
+            "career_oracle"
+          ]
+        },
+        "label": {
+          "enum": [
+            "GemRate",
+            "KeepTradeCut",
+            "Hashtag Basketball",
+            "Career Oracle"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "asOf": {
+          "$ref": "#/$defs/dateOrDateTime"
+        },
+        "fetchedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "$ref": "#/$defs/freshnessStatus"
+        },
+        "permissionBasis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "id": {
+                "const": "gemrate"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "label": {
+                "const": "GemRate"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "id": {
+                "const": "keeptradecut"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "label": {
+                "const": "KeepTradeCut"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "id": {
+                "const": "hashtag_basketball"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "label": {
+                "const": "Hashtag Basketball"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "id": {
+                "const": "career_oracle"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "label": {
+                "const": "Career Oracle"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sport",
+        "maxAge",
+        "position",
+        "band"
+      ],
+      "properties": {
+        "sport": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sport"
+            },
+            {
+              "const": "all"
+            }
+          ]
+        },
+        "maxAge": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 60
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "band": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/band"
+            },
+            {
+              "const": "all"
+            }
+          ]
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rankedCount",
+        "graduatedCount",
+        "onDeckCount",
+        "approachingCount",
+        "developingCount",
+        "longRangeCount",
+        "withheldCount"
+      ],
+      "properties": {
+        "rankedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "graduatedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "onDeckCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "approachingCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "developingCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "longRangeCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "withheldCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalPages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "probabilityAvailable",
+        "probabilityReason",
+        "rankingPolicy",
+        "agePolicy",
+        "targetBoard",
+        "targetBuildCount",
+        "rankingUniverseCount",
+        "globalTopOneTtmFloorUsd",
+        "formula",
+        "calibrationPlan",
+        "playerModelPolicy",
+        "sports",
+        "coverageBySport"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "probabilityAvailable": {
+          "const": false
+        },
+        "probabilityReason": {
+          "const": "no_longitudinal_master_build_transitions_or_prospective_holdout"
+        },
+        "rankingPolicy": {
+          "const": "one_global_rank_before_sport_age_position_or_search_filters"
+        },
+        "agePolicy": {
+          "const": "age_is_a_filter_football_basketball_dynasty_outlook_prices_runway_baseball_outlook_embeds_development_runway"
+        },
+        "targetBoard": {
+          "const": "hobby-oracle-master-ranking.v2"
+        },
+        "targetBuildCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rankingUniverseCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "globalTopOneTtmFloorUsd": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "formula": {
+          "$ref": "#/$defs/formula"
+        },
+        "calibrationPlan": {
+          "$ref": "#/$defs/calibrationPlan"
+        },
+        "playerModelPolicy": {
+          "const": "sport_specific_player_outlook_models_share_one_absolute_master_build_market_target"
+        },
+        "sports": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "baseball"
+            },
+            {
+              "const": "football"
+            },
+            {
+              "const": "basketball"
+            }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "coverageBySport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseball",
+            "football",
+            "basketball"
+          ],
+          "properties": {
+            "baseball": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "football": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "basketball": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "formula": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "establishedRoute",
+        "escapeVelocityRoute",
+        "commonGates",
+        "marketPathReadiness",
+        "graduationIndex"
+      ],
+      "properties": {
+        "establishedRoute": {
+          "const": "weighted geometric proximity to $20M TTM, $15M current run rate, and Master Score 75"
+        },
+        "escapeVelocityRoute": {
+          "const": "weighted geometric proximity to $15M TTM, $20M current run rate, Master Score 70, 2.5x six-month growth, and 2.0x three-month growth"
+        },
+        "commonGates": {
+          "const": "geometric proximity to observed P99 TTM demand, persistence 90, shock resistance 90, and downside protection 90"
+        },
+        "marketPathReadiness": {
+          "const": "65%/35% geometric blend of the better absolute route and common-gate readiness"
+        },
+        "graduationIndex": {
+          "const": "60% weak link plus 40% geometric mean of sport-specific player outlook and market-path readiness"
+        }
+      }
+    },
+    "calibrationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetHorizonMonths",
+        "durableGraduationDefinition",
+        "minimumObservedTransitionsBeforeProbability",
+        "currentObservedTransitions"
+      ],
+      "properties": {
+        "targetHorizonMonths": {
+          "const": 24
+        },
+        "durableGraduationDefinition": {
+          "const": "enter_build_and_remain_build_in_two_of_three_monthly_snapshots"
+        },
+        "minimumObservedTransitionsBeforeProbability": {
+          "const": 100
+        },
+        "currentObservedTransitions": {
+          "const": 0
+        }
+      }
+    }
+  }
+}

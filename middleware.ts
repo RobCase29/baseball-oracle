@@ -7,6 +7,8 @@ function publicPath(pathname: string): boolean {
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     pathname === '/favicon.svg' ||
+    pathname === '/hobby/og.png' ||
+    pathname === '/hobby/binder-index-og.png' ||
     pathname.startsWith('/assets/') ||
     pathname.startsWith('/src/') ||
     pathname.startsWith('/@vite/') ||
@@ -46,8 +48,16 @@ function serverReadPath(pathname: string): boolean {
   return pathname === '/api/health' ||
     pathname === '/api/model-status' ||
     pathname === '/api/players' ||
+    pathname === '/api/v1/backstop-binder-index' ||
+    pathname === '/api/v1/binder-scores' ||
     pathname === '/api/v1/dynasty-scores' ||
-    pathname === '/api/v1/player-signals'
+    pathname === '/api/v1/hobby-oracle' ||
+    pathname === '/api/v1/hobby-player-rankings' ||
+    pathname === '/api/v1/magnificent-x' ||
+    pathname === '/api/v1/player-signals' ||
+    pathname === '/api/v2/backstop-binder-index' ||
+    pathname === '/api/v2/hobby-oracle' ||
+    pathname === '/api/v2/hobby-player-rankings'
 }
 
 function validServerAuthorization(request: Request, pathname: string): boolean {

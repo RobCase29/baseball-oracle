@@ -263,6 +263,41 @@ Raw provider JSON and scouting prose are never returned by the public API.
   separate, accumulating MLB confirmation evidence.
 - **Player dossier:** index explanation, current strengths and risks, current
   stats, an MLB career arc where supported, and honest missing-evidence states.
+- **Build a Binder:** baseball career evidence plus a bounded, athlete-level
+  GemRate demand proxy for long-term collection research.
+- **Backstop Binder Index Build Board (`/hobby`):** one observed-universe order across
+  sports and Pokémon using absolute dollar magnitude plus durable 18-month
+  demand. Build has no sport quota and requires either a strict durable-scale
+  or escape-velocity path under the
+  [Master Ranking v2 methodology](docs/HOBBY_ORACLE_MASTER_RANKING_V2.md).
+  Exact-card action and expected return remain withheld. The UI reads
+  `/api/v2/hobby-oracle`; the original Magnificent X v1 contract remains frozen.
+- **Backstop Binder Index Graduation Board
+  (`/hobby?lens=players&sport=all`):** one global baseball, football, and
+  basketball readiness order for active players who have not yet earned Master
+  Build. Baseball contributes Career Index, route-outcome, and development
+  runway evidence; football and basketball retain their dynasty-market
+  outlooks. Every sport then faces the same absolute Master Build market gates.
+  The deterministic 0–100 Graduation Index combines current player outlook with
+  distance to the exact Master Build gates. Age and sport are filters and never
+  recalculate rank. It is explicitly not a probability: the API publishes
+  `probability: null` until prospective transition history earns calibration.
+  The UI reads `/api/v2/backstop-binder-index`; the football-and-basketball v1
+  Graduation contract and older within-sport player-ranking contract remain
+  frozen.
+- **Printable Binder Index boards:** `/hobby?view=top100` is the actual top 100
+  Master Ranking positions ordered by Binder Index across the coherent GemRate
+  athlete and Pokémon universe—not the players closest to Build. The separate
+  `/hobby?view=under25` board ranks 25 baseball, football, and basketball
+  players age 25 or younger by Graduation Index and retains each player's
+  absolute global path rank. `/hobby?view=exit100` is a third board for
+  non-Build, non-Hold subjects whose markets retain meaningful active demand
+  despite a material six-month decline. Its weak-link Exit Window score
+  balances resale heat with decline pressure and remains a subject-level
+  liquidation-research queue, not a sell instruction. All three use
+  letter-portrait print layouts with repeating table headers. Printing is
+  enabled only when the applicable source snapshot is current and every
+  position is present.
 - **Model review:** a plain-language verdict, target-by-target evidence, testing
   rules, and the path to a champion model.
 
@@ -284,6 +319,11 @@ default rank. The domain contracts live in `src/domain/forecast.ts`.
 - [Model readiness and baseline](docs/MODEL_READINESS.md)
 - [MiLB Alpha model card](docs/MILB_ALPHA.md)
 - [Player Signals API v1](docs/PLAYER_SIGNALS_API_V1.md)
+- [Magnificent X provisional market signal](docs/MAGNIFICENT_X_V1.md)
+- [Hobby Oracle Master Ranking v2](docs/HOBBY_ORACLE_MASTER_RANKING_V2.md)
+- [Hobby Oracle Player Rankings v2](docs/HOBBY_PLAYER_RANKINGS_V2.md)
+- [Backstop Binder Index v1](docs/BACKSTOP_BINDER_INDEX_V1.md)
+- [Backstop Binder Index v2](docs/BACKSTOP_BINDER_INDEX_V2.md)
 - [Career Oracle research contract](docs/CAREER_ORACLE_V1.md)
 - [Oracle Career Index v1 contract](docs/CAREER_INDEX_V1.md)
 - [Player Map partner feed](docs/PLAYER_MAP_FEED.md)

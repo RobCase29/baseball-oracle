@@ -25,7 +25,23 @@
     "src/domain/playerSignals.ts",
     "src/domain/communitySignals.ts",
     "src/domain/cardMarket.ts",
+    "src/domain/binderGraduationIndex.ts",
+    "src/domain/binderGraduationIndexV2.ts",
+    "src/domain/binderScore.ts",
+    "src/domain/magnificentX.ts",
+    "src/domain/hobbyMasterRanking.ts",
+    "src/domain/hobbyBreakoutSignal.ts",
+    "src/domain/hobbyCompoundingSignal.ts",
+    "src/domain/hobbySalesTrend.ts",
+    "src/domain/hobbyLiquidationSignal.ts",
+    "src/domain/hobbyPlayerRanking.ts",
+    "src/domain/hobbyPlayerRankingV1.ts",
+    "src/domain/hobbyDecisionDesk.ts",
+    "src/domain/itFactor.ts",
+    "src/domain/playerMobilityContext.ts",
+    "src/domain/subjectSearch.ts",
     "src/domain/playerHandling.ts",
     "src/football/marketFeedContract.ts"
-  ]
+  ],
+  "exclude": ["**/* 2.ts", "**/* 2.tsx"]
 }

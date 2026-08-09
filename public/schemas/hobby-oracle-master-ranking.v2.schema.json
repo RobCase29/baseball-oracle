@@ -1,0 +1,1613 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baseball-oracle.vercel.app/schemas/hobby-oracle-master-ranking.v2.schema.json",
+  "title": "Hobby Oracle Master Ranking v2",
+  "description": "Research-only observed-universe ranking based on absolute subject-level demand and durability. Exact-card and expected-return claims remain withheld.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "snapshot",
+    "items",
+    "cohorts",
+    "page",
+    "meta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hobby-oracle-master-ranking.v2"
+    },
+    "contractVersion": {
+      "const": "hobby-oracle-master-ranking-contract/v2"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/snapshot"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "cohorts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cohort"
+      }
+    },
+    "page": {
+      "$ref": "#/$defs/page"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reasonCodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "domain": {
+      "enum": [
+        "baseball",
+        "basketball",
+        "football",
+        "soccer",
+        "hockey",
+        "golf",
+        "combat",
+        "other_sport",
+        "mixed_sport",
+        "culture",
+        "pokemon"
+      ]
+    },
+    "taxonomyStatus": {
+      "enum": [
+        "coherent_provider_cohort",
+        "small_provider_cohort",
+        "mixed_provider_cohort",
+        "outside_sports_scope"
+      ]
+    },
+    "identityStatus": {
+      "enum": [
+        "source_name_only",
+        "ambiguous_normalized_name",
+        "canonical_identity_missing"
+      ]
+    },
+    "freshnessStatus": {
+      "enum": [
+        "current",
+        "stale",
+        "unknown"
+      ]
+    },
+    "posture": {
+      "enum": [
+        "build_candidate",
+        "hold_candidate",
+        "watch",
+        "risk_review",
+        "pass",
+        "unrated",
+        "needs_refresh"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "historyStart",
+        "historyMonths",
+        "dataThrough",
+        "publishedAt",
+        "acquiredAt",
+        "freshness"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^hobby-oracle-master-ranking/v2:[a-f0-9]{64}$"
+        },
+        "historyStart": {
+          "type": "string",
+          "format": "date"
+        },
+        "historyMonths": {
+          "const": 18
+        },
+        "dataThrough": {
+          "type": "string",
+          "format": "date"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "cadence",
+            "nextExpectedBy",
+            "reasonCodes"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "cadence": {
+              "const": "monthly"
+            },
+            "nextExpectedBy": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reasonCodes": {
+              "$ref": "#/$defs/reasonCodes"
+            }
+          }
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "domain",
+        "sourceCategory",
+        "name",
+        "identityStatus",
+        "firstGradedYear",
+        "mostGradedYear",
+        "context",
+        "mobility"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "athlete",
+            "pokemon_character"
+          ]
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "sourceCategory": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identityStatus": {
+          "$ref": "#/$defs/identityStatus"
+        },
+        "firstGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        },
+        "mostGradedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1800,
+          "maximum": 2026
+        },
+        "context": {
+          "$ref": "#/$defs/subjectContext"
+        },
+        "mobility": {
+          "$ref": "#/$defs/playerMobilityContext"
+        }
+      }
+    },
+    "seasonReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seasonEndYear",
+        "label"
+      ],
+      "properties": {
+        "seasonEndYear": {
+          "type": "integer",
+          "minimum": 1900,
+          "maximum": 2200
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "playerMobilityContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "asOf",
+        "league",
+        "currentTeam",
+        "teamTenureStart",
+        "term",
+        "nextDecision",
+        "mobilityWindow",
+        "reasonCodes",
+        "lastTeamChange",
+        "provenance",
+        "semantics"
+      ],
+      "properties": {
+        "availability": {
+          "enum": [
+            "observed",
+            "unavailable",
+            "withheld_identity",
+            "not_applicable"
+          ]
+        },
+        "asOf": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "league": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "MLB",
+            "NFL",
+            "NBA",
+            "NHL",
+            null
+          ]
+        },
+        "currentTeam": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "name"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "teamTenureStart": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "term": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "kind",
+                "currentSeasonEndYear",
+                "currentSeasonLabel",
+                "reportedThrough",
+                "guaranteedThrough",
+                "maximumTeamControlThrough",
+                "remainingSeasonsIncludingCurrent",
+                "options"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "under_contract",
+                    "team_control",
+                    "restricted_free_agent",
+                    "unrestricted_free_agent",
+                    "unsigned",
+                    "unknown"
+                  ]
+                },
+                "kind": {
+                  "enum": [
+                    "standard",
+                    "extension",
+                    "rookie_scale",
+                    "entry_level",
+                    "pre_arbitration",
+                    "arbitration",
+                    "franchise_tag",
+                    "two_way",
+                    "other"
+                  ]
+                },
+                "currentSeasonEndYear": {
+                  "type": "integer",
+                  "minimum": 1900,
+                  "maximum": 2200
+                },
+                "currentSeasonLabel": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reportedThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "guaranteedThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "maximumTeamControlThrough": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "remainingSeasonsIncludingCurrent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "season",
+                      "type",
+                      "status"
+                    ],
+                    "properties": {
+                      "season": {
+                        "$ref": "#/$defs/seasonReference"
+                      },
+                      "type": {
+                        "enum": [
+                          "club",
+                          "player",
+                          "mutual",
+                          "vesting",
+                          "opt_out"
+                        ]
+                      },
+                      "status": {
+                        "const": "pending"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "nextDecision": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "season",
+                "label"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "unrestricted_free_agency",
+                    "restricted_free_agency",
+                    "club_option",
+                    "player_option",
+                    "mutual_option",
+                    "vesting_option",
+                    "opt_out",
+                    "non_guarantee",
+                    "arbitration",
+                    "extension_eligibility",
+                    "unknown"
+                  ]
+                },
+                "season": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/seasonReference"
+                    }
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "mobilityWindow": {
+          "enum": [
+            "open_now",
+            "after_current_season",
+            "within_two_seasons",
+            "three_plus_seasons",
+            "unavailable"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "lastTeamChange": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "effectiveAt",
+                "kind",
+                "fromTeam",
+                "toTeam"
+              ],
+              "properties": {
+                "effectiveAt": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "kind": {
+                  "enum": [
+                    "trade",
+                    "free_agent_signing",
+                    "waiver",
+                    "other"
+                  ]
+                },
+                "fromTeam": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "toTeam": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "name"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceId",
+            "sourcePlayerId",
+            "sourceUrl",
+            "accessedAt",
+            "identityStatus"
+          ],
+          "properties": {
+            "sourceId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sourcePlayerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sourceUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            },
+            "accessedAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            },
+            "identityStatus": {
+              "enum": [
+                "verified_external_id",
+                "reviewed_bridge",
+                "unique_source_name_bridge",
+                "withheld",
+                "not_applicable"
+              ]
+            }
+          }
+        },
+        "semantics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contextOnly",
+            "directionalClaim",
+            "interpretation"
+          ],
+          "properties": {
+            "contextOnly": {
+              "const": true
+            },
+            "directionalClaim": {
+              "const": false
+            },
+            "interpretation": {
+              "const": "opportunity_or_disruption"
+            }
+          }
+        }
+      }
+    },
+    "subjectContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "age",
+        "ageAsOf",
+        "introducedYear",
+        "approximateYearsSinceIntroduction",
+        "introducedGeneration",
+        "nationalDexNumber",
+        "sourceId",
+        "evidence"
+      ],
+      "properties": {
+        "age": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 10,
+          "maximum": 100
+        },
+        "ageAsOf": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "introducedYear": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1996,
+          "maximum": 2026
+        },
+        "approximateYearsSinceIntroduction": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "introducedGeneration": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 9
+        },
+        "nationalDexNumber": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1025
+        },
+        "sourceId": {
+          "enum": [
+            "backstop_player_rankings",
+            "career_oracle",
+            "keeptradecut",
+            "hashtag_basketball",
+            "pokeapi",
+            null
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "verified_player_bridge",
+            "reviewed_player_bridge",
+            "unique_player_bridge",
+            "canonical_species_match",
+            "merged_species_label",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "salesTrend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelVersion",
+        "available",
+        "state",
+        "label",
+        "direction",
+        "sixMonthChangePct",
+        "recentThreeMonthChangePct",
+        "domainMedianSixMonthChangePct",
+        "relativeToDomain",
+        "evidence",
+        "reasonCodes"
+      ],
+      "properties": {
+        "modelVersion": {
+          "const": "hobby-sales-trend/completed-sales-yoy-v1.0.0"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "surging",
+            "rising",
+            "steady",
+            "falling",
+            "steep_decline",
+            "cooling",
+            "rebounding",
+            "early_rise",
+            "early_decline",
+            "withheld"
+          ]
+        },
+        "label": {
+          "enum": [
+            "Surging",
+            "Rising",
+            "Steady",
+            "Falling",
+            "Steep decline",
+            "Cooling",
+            "Rebounding",
+            "Early rise",
+            "Early decline",
+            "Refresh needed"
+          ]
+        },
+        "direction": {
+          "enum": [
+            "up",
+            "flat",
+            "down",
+            "mixed",
+            "unavailable"
+          ]
+        },
+        "sixMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "recentThreeMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "domainMedianSixMonthChangePct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "relativeToDomain": {
+          "enum": [
+            "ahead",
+            "inline",
+            "lagging",
+            "unavailable"
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "confirmed",
+            "mixed_window",
+            "thin_base",
+            "withheld"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      }
+    },
+    "breakoutSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelVersion",
+        "eligible",
+        "surfaced",
+        "rank",
+        "score",
+        "tier",
+        "evidence",
+        "demandScale",
+        "currentSixMonthSalesUsd",
+        "priorYearSixMonthSalesUsd",
+        "currentThreeMonthSalesUsd",
+        "precedingThreeMonthSalesUsd",
+        "sixMonthDemandAddedUsd",
+        "recentThreeMonthDemandAddedUsd",
+        "confirmingMonths",
+        "currentSixMonthEffectiveMonths",
+        "currentThreeMonthEffectiveMonths",
+        "latestTwelveMonthEffectiveMonths",
+        "currentSixMonthPeakShare",
+        "currentThreeMonthShareOfCurrentSix",
+        "adjustedSixMonthMultiple",
+        "relativeSixMonthMultiple",
+        "adjustedRecentThreeMonthMultiple",
+        "relativeRecentThreeMonthMultiple",
+        "sequentialThreeMonthMultiple",
+        "latestMonthCooling",
+        "components",
+        "checks",
+        "reasonCodes",
+        "warningCodes",
+        "interpretation"
+      ],
+      "properties": {
+        "modelVersion": {
+          "const": "hobby-breakout-radar/domain-relative-demand-v1.0.0"
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "surfaced": {
+          "type": "boolean"
+        },
+        "rank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "tier": {
+          "enum": [
+            "breakout",
+            "strong",
+            "emerging",
+            "below_surface"
+          ]
+        },
+        "evidence": {
+          "enum": [
+            "confirmed",
+            "volume_confirmed_cold_start",
+            "withheld"
+          ]
+        },
+        "demandScale": {
+          "enum": [
+            "small",
+            "mid",
+            "outside"
+          ]
+        },
+        "currentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "priorYearSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "currentThreeMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "precedingThreeMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "sixMonthDemandAddedUsd": {
+          "type": "integer"
+        },
+        "recentThreeMonthDemandAddedUsd": {
+          "type": "integer"
+        },
+        "confirmingMonths": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "currentSixMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "currentThreeMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "latestTwelveMonthEffectiveMonths": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "currentSixMonthPeakShare": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "currentThreeMonthShareOfCurrentSix": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "adjustedSixMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relativeSixMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "adjustedRecentThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relativeRecentThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sequentialThreeMonthMultiple": {
+          "type": "number",
+          "minimum": 0
+        },
+        "latestMonthCooling": {
+          "type": "boolean"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currentDemandVelocity",
+            "absoluteDemandExpansion",
+            "relativeSixMonthExpansion",
+            "relativeRecentThreeMonthExpansion",
+            "sequentialAcceleration",
+            "breadth",
+            "dispersion"
+          ],
+          "properties": {
+            "currentDemandVelocity": {
+              "$ref": "#/$defs/score"
+            },
+            "absoluteDemandExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "relativeSixMonthExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "relativeRecentThreeMonthExpansion": {
+              "$ref": "#/$defs/score"
+            },
+            "sequentialAcceleration": {
+              "$ref": "#/$defs/score"
+            },
+            "breadth": {
+              "$ref": "#/$defs/score"
+            },
+            "dispersion": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "minProperties": 20,
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "warningCodes": {
+          "type": "array",
+          "items": {
+            "const": "latest_month_cooling"
+          }
+        },
+        "interpretation": {
+          "const": "subject_level_completed_sales_demand_not_binder_score_card_price_or_investment_advice"
+        }
+      }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "demandMagnitudeScore",
+        "durabilityScore",
+        "downsideProtectionScore",
+        "latestTwelveMonthSalesUsd",
+        "currentSixMonthSalesUsd",
+        "annualizedCurrentSixMonthSalesUsd",
+        "priorYearSixMonthSalesUsd",
+        "globalObservedPercentile",
+        "withinCohortPercentile",
+        "components",
+        "diagnostics",
+        "sensitivity"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "demandMagnitudeScore": {
+          "$ref": "#/$defs/score"
+        },
+        "durabilityScore": {
+          "$ref": "#/$defs/score"
+        },
+        "downsideProtectionScore": {
+          "$ref": "#/$defs/score"
+        },
+        "latestTwelveMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "currentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "annualizedCurrentSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "priorYearSixMonthSalesUsd": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "globalObservedPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "withinCohortPercentile": {
+          "$ref": "#/$defs/score"
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trailingTwelveMonthMagnitude",
+            "currentRunRateMagnitude",
+            "persistence",
+            "shockResistance",
+            "downsideProtection"
+          ],
+          "properties": {
+            "trailingTwelveMonthMagnitude": {
+              "$ref": "#/$defs/score"
+            },
+            "currentRunRateMagnitude": {
+              "$ref": "#/$defs/score"
+            },
+            "persistence": {
+              "$ref": "#/$defs/score"
+            },
+            "shockResistance": {
+              "$ref": "#/$defs/score"
+            },
+            "downsideProtection": {
+              "$ref": "#/$defs/score"
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedMonths",
+            "positiveMonthRatio",
+            "lowerQuartileToMedianRatio",
+            "latestTwelveMonthHhi",
+            "effectiveSalesMonths",
+            "yearOverYearSixMonthLogGrowth",
+            "recentThreeMonthYearOverYearLogGrowth"
+          ],
+          "properties": {
+            "observedMonths": {
+              "const": 18
+            },
+            "positiveMonthRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "lowerQuartileToMedianRatio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "latestTwelveMonthHhi": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "effectiveSalesMonths": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 12
+            },
+            "yearOverYearSixMonthLogGrowth": {
+              "type": "number"
+            },
+            "recentThreeMonthYearOverYearLogGrowth": {
+              "type": "number"
+            }
+          }
+        },
+        "sensitivity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "demandHeavy",
+            "balanced",
+            "durabilityHeavy",
+            "worstScenarioScore",
+            "momentumAddsScore"
+          ],
+          "properties": {
+            "demandHeavy": {
+              "$ref": "#/$defs/score"
+            },
+            "balanced": {
+              "$ref": "#/$defs/score"
+            },
+            "durabilityHeavy": {
+              "$ref": "#/$defs/score"
+            },
+            "worstScenarioScore": {
+              "$ref": "#/$defs/score"
+            },
+            "momentumAddsScore": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "buildChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparisonEligible",
+        "sourceCurrent",
+        "completeEighteenMonthHistory",
+        "globalTopOnePercent",
+        "persistenceAtLeast90",
+        "shockResistanceAtLeast90",
+        "downsideProtectionAtLeast90",
+        "establishedRoute",
+        "escapeVelocityRoute",
+        "eitherBuildRoute"
+      ],
+      "properties": {
+        "comparisonEligible": {
+          "type": "boolean"
+        },
+        "sourceCurrent": {
+          "type": "boolean"
+        },
+        "completeEighteenMonthHistory": {
+          "type": "boolean"
+        },
+        "globalTopOnePercent": {
+          "type": "boolean"
+        },
+        "persistenceAtLeast90": {
+          "type": "boolean"
+        },
+        "shockResistanceAtLeast90": {
+          "type": "boolean"
+        },
+        "downsideProtectionAtLeast90": {
+          "type": "boolean"
+        },
+        "establishedRoute": {
+          "type": "boolean"
+        },
+        "escapeVelocityRoute": {
+          "type": "boolean"
+        },
+        "eitherBuildRoute": {
+          "type": "boolean"
+        }
+      }
+    },
+    "buildQualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "designation",
+        "route",
+        "passed",
+        "required",
+        "checks",
+        "reasonCodes"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "designation": {
+          "enum": [
+            "Build",
+            "withheld"
+          ]
+        },
+        "route": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "established_durability",
+            "escape_velocity",
+            null
+          ]
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "required": {
+          "const": 8
+        },
+        "checks": {
+          "$ref": "#/$defs/buildChecks"
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "eligible": {
+                "const": true
+              }
+            },
+            "required": [
+              "eligible"
+            ]
+          },
+          "then": {
+            "properties": {
+              "designation": {
+                "const": "Build"
+              },
+              "passed": {
+                "const": 8
+              },
+              "reasonCodes": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "designation": {
+                "const": "withheld"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "contractVersion",
+        "modelVersion",
+        "posture",
+        "marketSignal",
+        "salesTrend",
+        "buildQualification",
+        "flags"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hobby-oracle-master-ranking.v2"
+        },
+        "contractVersion": {
+          "const": "hobby-oracle-master-ranking-contract/v2"
+        },
+        "modelVersion": {
+          "const": "hobby-oracle-absolute-demand-durability/18m-v2.0.0"
+        },
+        "posture": {
+          "$ref": "#/$defs/posture"
+        },
+        "marketSignal": {
+          "$ref": "#/$defs/signal"
+        },
+        "salesTrend": {
+          "$ref": "#/$defs/salesTrend"
+        },
+        "breakoutSignal": {
+          "$ref": "#/$defs/breakoutSignal"
+        },
+        "buildQualification": {
+          "$ref": "#/$defs/buildQualification"
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "identityStatus",
+            "taxonomyStatus",
+            "freshnessStatus",
+            "cohortSize",
+            "observedHistoryMonths",
+            "subjectLevelOnly",
+            "exactCardActionable"
+          ],
+          "properties": {
+            "identityStatus": {
+              "$ref": "#/$defs/identityStatus"
+            },
+            "taxonomyStatus": {
+              "$ref": "#/$defs/taxonomyStatus"
+            },
+            "freshnessStatus": {
+              "$ref": "#/$defs/freshnessStatus"
+            },
+            "cohortSize": {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            "observedHistoryMonths": {
+              "const": 18
+            },
+            "subjectLevelOnly": {
+              "const": true
+            },
+            "exactCardActionable": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordVersion",
+        "subject",
+        "masterRank",
+        "withinCohortRank",
+        "assessment"
+      ],
+      "properties": {
+        "recordVersion": {
+          "const": "hobby-oracle-master-ranking-item/v2"
+        },
+        "subject": {
+          "$ref": "#/$defs/subject"
+        },
+        "masterRank": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "withinCohortRank": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "assessment": {
+          "$ref": "#/$defs/assessment"
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "taxonomyStatus",
+        "subjectCount",
+        "rankedCount",
+        "buildCount"
+      ],
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "taxonomyStatus": {
+          "$ref": "#/$defs/taxonomyStatus"
+        },
+        "subjectCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "rankedCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "buildCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page",
+        "limit",
+        "total",
+        "totalPages"
+      ],
+      "properties": {
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "total": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "totalPages": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchOnly",
+        "investmentAdvice",
+        "rankingPolicy",
+        "rankingUniverse",
+        "rankingUniverseCount",
+        "buildCount",
+        "marketSource",
+        "marketMeasure",
+        "exactCardRecommendationsAvailable",
+        "globalComparisonStatus",
+        "globalComparisonLimitations",
+        "buildPolicy",
+        "mobilityContext",
+        "permissionAttestation"
+      ],
+      "properties": {
+        "researchOnly": {
+          "const": true
+        },
+        "investmentAdvice": {
+          "const": false
+        },
+        "rankingPolicy": {
+          "const": "single_observed_universe_absolute_demand_and_durability_order"
+        },
+        "rankingUniverse": {
+          "const": "coherent_unambiguous_gemrate_subject_rows"
+        },
+        "rankingUniverseCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "buildCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "marketSource": {
+          "const": "GemRate Athlete + Pokémon Sales Trends"
+        },
+        "marketMeasure": {
+          "const": "completed_ebay_singles_sales_volume_usd"
+        },
+        "exactCardRecommendationsAvailable": {
+          "const": false
+        },
+        "globalComparisonStatus": {
+          "const": "observed_snapshot_comparable_not_canonical_hobby_census"
+        },
+        "globalComparisonLimitations": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "buildPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fixedDollarAnchors",
+            "establishedTtmFloorUsd",
+            "establishedRunRateFloorUsd",
+            "escapeTtmFloorUsd",
+            "escapeRunRateFloorUsd",
+            "positiveMomentumAddsScore"
+          ],
+          "properties": {
+            "fixedDollarAnchors": {
+              "const": true
+            },
+            "establishedTtmFloorUsd": {
+              "const": 20000000
+            },
+            "establishedRunRateFloorUsd": {
+              "const": 15000000
+            },
+            "escapeTtmFloorUsd": {
+              "const": 15000000
+            },
+            "escapeRunRateFloorUsd": {
+              "const": 20000000
+            },
+            "positiveMomentumAddsScore": {
+              "const": false
+            }
+          }
+        },
+        "mobilityContext": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contextOnly",
+            "directionalClaim",
+            "observedRows",
+            "dataThrough",
+            "permissionScope"
+          ],
+          "properties": {
+            "contextOnly": {
+              "const": true
+            },
+            "directionalClaim": {
+              "const": false
+            },
+            "observedRows": {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            "dataThrough": {
+              "type": "string",
+              "format": "date"
+            },
+            "permissionScope": {
+              "const": "docs/permissions/PLAYER_CONTRACT_SOURCE_SCOPE.md"
+            }
+          }
+        },
+        "permissionAttestation": {
+          "const": "docs/permissions/GEMRATE_ATTESTATION.md"
+        }
+      }
+    }
+  }
+}

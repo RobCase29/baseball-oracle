@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         baseball: resolve(import.meta.dirname, 'index.html'),
         football: resolve(import.meta.dirname, 'football/index.html'),
+        hobby: resolve(import.meta.dirname, 'hobby/index.html'),
       },
     },
   },
@@ -23,6 +24,13 @@ export default defineConfig({
       '/api/v1/player-signals': publicApiTarget,
       '/api/model-status': publicApiTarget,
       '/api/football': publicApiTarget,
+      '/api/v1/backstop-binder-index': publicApiTarget,
+      '/api/v2/backstop-binder-index': publicApiTarget,
+      '/api/v1/magnificent-x': publicApiTarget,
+      '/api/v1/hobby-oracle': publicApiTarget,
+      '/api/v1/hobby-player-rankings': publicApiTarget,
+      '/api/v2/hobby-oracle': publicApiTarget,
+      '/api/v2/hobby-player-rankings': publicApiTarget,
     },
   },
 })

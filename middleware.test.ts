@@ -52,10 +52,18 @@ describe('Oracle routing authentication', () => {
     }))
     const login = await oracleAccess(new Request('https://oracle.example/login'))
     const asset = await oracleAccess(new Request('https://oracle.example/assets/app.js'))
+    const hobbyPreview = await oracleAccess(new Request(
+      'https://oracle.example/hobby/og.png',
+    ))
+    const binderPreview = await oracleAccess(new Request(
+      'https://oracle.example/hobby/binder-index-og.png',
+    ))
 
     expect(authenticated.headers.get('x-middleware-next')).toBe('1')
     expect(login.headers.get('x-middleware-next')).toBe('1')
     expect(asset.headers.get('x-middleware-next')).toBe('1')
+    expect(hobbyPreview.headers.get('x-middleware-next')).toBe('1')
+    expect(binderPreview.headers.get('x-middleware-next')).toBe('1')
   })
 
   it('continues for bearer-authenticated cron and admin ingestion requests', async () => {
@@ -77,14 +85,29 @@ describe('Oracle routing authentication', () => {
       '/api/health',
       '/api/model-status',
       '/api/players?view=map',
+      '/api/v1/backstop-binder-index?maxAge=26',
       '/api/v1/dynasty-scores?ids=1',
+      '/api/v1/hobby-oracle?domain=football',
+      '/api/v1/hobby-player-rankings?sport=football',
+      '/api/v1/magnificent-x?domain=pokemon',
       '/api/v1/player-signals?stage=Minors',
+      '/api/v2/hobby-oracle?domain=football',
+      '/api/v2/hobby-player-rankings?sport=football',
     ]) {
       const response = await oracleAccess(new Request(`https://oracle.example${path}`, {
         headers: { authorization: 'Bearer middleware-test-read-key' },
       }))
       expect(response.headers.get('x-middleware-next')).toBe('1')
     }
+  })
+
+  it('continues for bearer-authenticated v2 Binder Index requests', async () => {
+    const response = await oracleAccess(new Request(
+      'https://oracle.example/api/v2/backstop-binder-index?sport=baseball&maxAge=25',
+      { headers: { authorization: 'Bearer middleware-test-read-key' } },
+    ))
+
+    expect(response.headers.get('x-middleware-next')).toBe('1')
   })
 
   it('does not let the server read key authorize admin endpoints', async () => {

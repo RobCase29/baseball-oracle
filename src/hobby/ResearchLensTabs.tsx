@@ -1,0 +1,219 @@
+import type { MagnificentXResearchPosture } from '../domain/hobbyMasterRanking'
+import type { BinderGraduationSport } from '../domain/binderGraduationIndexV2'
+import { Layers3, Sparkles, Zap } from 'lucide-react'
+
+export type HobbyResearchLens = 'desk' | 'market' | 'players' | 'it'
+export type HobbyMarketScreen = 'standard' | 'breakout'
+export type PlayerRankingSport = BinderGraduationSport | 'all'
+
+interface ResearchLensTabsProps {
+  lens: HobbyResearchLens
+  marketScreen: HobbyMarketScreen
+  posture: MagnificentXResearchPosture | 'all'
+  playerSport: PlayerRankingSport
+  showRefresh: boolean
+  onDecisionDeskSelect: () => void
+  onMarketSelect: () => void
+  onBreakoutSelect: () => void
+  onPlayerRankingsSelect: () => void
+  onItFactorSelect: () => void
+  onPlayerSportSelect: (value: PlayerRankingSport) => void
+  onPostureSelect: (value: MagnificentXResearchPosture | 'all') => void
+}
+
+const postureOptions: ReadonlyArray<{
+  value: MagnificentXResearchPosture | 'all'
+  shortLabel: string
+  label: string
+}> = [
+  {
+    value: 'build_candidate',
+    shortLabel: 'Build',
+    label: 'Build Board qualifiers',
+  },
+  {
+    value: 'hold_candidate',
+    shortLabel: 'Near Build',
+    label: 'Near-Build candidates',
+  },
+  { value: 'watch', shortLabel: 'Watch', label: 'Watch' },
+  { value: 'risk_review', shortLabel: 'Risk', label: 'Risk review' },
+  { value: 'pass', shortLabel: 'Pass', label: 'Pass' },
+  { value: 'unrated', shortLabel: 'Unrated', label: 'Unrated' },
+  { value: 'all', shortLabel: 'All', label: 'All evidence' },
+]
+
+export function ResearchLensTabs({
+  lens,
+  marketScreen,
+  posture,
+  playerSport,
+  showRefresh,
+  onDecisionDeskSelect,
+  onMarketSelect,
+  onBreakoutSelect,
+  onPlayerRankingsSelect,
+  onItFactorSelect,
+  onPlayerSportSelect,
+  onPostureSelect,
+}: ResearchLensTabsProps) {
+  return (
+    <div
+      className="iw-research-nav"
+      aria-label="Backstop Binder Index views"
+    >
+      <div
+        className="iw-mode-tabs"
+        role="group"
+        aria-label="Binder Index board"
+      >
+        <button
+          type="button"
+          aria-pressed={lens === 'desk'}
+          aria-label="Decision Desk. Transparent intersections across every research signal."
+          onClick={onDecisionDeskSelect}
+        >
+          <span className="iw-mode-title">
+            <Layers3 size={13} aria-hidden="true" />
+            Decision Desk
+          </span>
+          <br />
+          <small className="iw-mode-description">
+            Where signals intersect
+          </small>
+        </button>
+        <button
+          type="button"
+          aria-pressed={lens === 'market'}
+          aria-label="Build Board. Subjects that cleared the standard."
+          onClick={onMarketSelect}
+        >
+          <span className="iw-mode-title">Build Board</span>
+          <br />
+          <small className="iw-mode-description">
+            Cleared the standard
+          </small>
+        </button>
+        <button
+          type="button"
+          aria-pressed={lens === 'players'}
+          aria-label="Graduation Board. Players projected to earn Build."
+          onClick={onPlayerRankingsSelect}
+        >
+          <span className="iw-mode-title">Graduation Board</span>
+          <br />
+          <small className="iw-mode-description">
+            Projected path to Build
+          </small>
+        </button>
+        <button
+          type="button"
+          aria-pressed={lens === 'it'}
+          aria-label="IT Board. Curated hobby star-power narratives."
+          onClick={onItFactorSelect}
+        >
+          <span className="iw-mode-title">
+            <Sparkles size={13} aria-hidden="true" />
+            IT Board
+          </span>
+          <br />
+          <small className="iw-mode-description">
+            Narrative star power
+          </small>
+        </button>
+      </div>
+
+      {lens === 'market' ? (
+        <>
+          <div className="iw-breakout-preset">
+            <button
+              type="button"
+              aria-pressed={marketScreen === 'breakout'}
+              aria-label="Breakout Radar. Small- and mid-demand subjects adding real sales dollars."
+              onClick={onBreakoutSelect}
+            >
+              <Zap size={16} aria-hidden="true" />
+              <span>
+                <strong>Breakout Radar</strong>
+                <small>
+                  Small- and mid-demand subjects adding real sales dollars
+                </small>
+              </span>
+            </button>
+            {marketScreen === 'breakout' ? (
+              <span>
+                Demand acceleration—not a Build label or card-price forecast.
+              </span>
+            ) : null}
+          </div>
+          <div
+            className="iw-posture-tabs"
+            role="group"
+            aria-label={
+              marketScreen === 'breakout'
+                ? 'Breakout Radar board status'
+                : 'Build Board status'
+            }
+          >
+            {postureOptions.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                aria-pressed={posture === option.value}
+                aria-label={option.label}
+                title={option.label}
+                onClick={() => onPostureSelect(option.value)}
+              >
+                {option.shortLabel}
+              </button>
+            ))}
+            {showRefresh ? (
+              <span className="iw-tab-status" role="status">
+                Build Board suspended · refresh queue shown
+              </span>
+            ) : null}
+          </div>
+        </>
+      ) : lens === 'players' ? (
+        <div
+          className="iw-sport-tabs"
+          role="group"
+          aria-label="Graduation Board sport"
+        >
+          <button
+            type="button"
+            aria-pressed={playerSport === 'all'}
+            aria-label="Show the global baseball, football, and basketball graduation ranking"
+            onClick={() => onPlayerSportSelect('all')}
+          >
+            All sports
+          </button>
+          <button
+            type="button"
+            aria-pressed={playerSport === 'baseball'}
+            aria-label="Show baseball graduation candidates"
+            onClick={() => onPlayerSportSelect('baseball')}
+          >
+            Baseball
+          </button>
+          <button
+            type="button"
+            aria-pressed={playerSport === 'football'}
+            aria-label="Show football graduation candidates"
+            onClick={() => onPlayerSportSelect('football')}
+          >
+            Football
+          </button>
+          <button
+            type="button"
+            aria-pressed={playerSport === 'basketball'}
+            aria-label="Show basketball graduation candidates"
+            onClick={() => onPlayerSportSelect('basketball')}
+          >
+            Basketball
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
