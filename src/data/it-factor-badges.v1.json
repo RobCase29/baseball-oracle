@@ -1,6 +1,6 @@
 {
   "schemaVersion": "backstop-it-factor-badges.v1",
-  "snapshotAsOf": "2026-07-26",
+  "snapshotAsOf": "2026-08-09",
   "entries": [
     {
       "id": "mlb-ari-corbin-carroll",
@@ -155,17 +155,6 @@
       "score": 89,
       "tier": "high",
       "confidence": 88
-    },
-    {
-      "id": "mlb-bos-marcelo-mayer",
-      "sport": "baseball",
-      "player": {
-        "name": "Marcelo Mayer",
-        "normalizedName": "marcelo mayer"
-      },
-      "score": 75,
-      "tier": "emerging",
-      "confidence": 78
     },
     {
       "id": "mlb-chc-pete-crow-armstrong",
@@ -419,6 +408,17 @@
       "score": 96,
       "tier": "icon",
       "confidence": 98
+    },
+    {
+      "id": "mlb-laa-arjun-nimmala",
+      "sport": "baseball",
+      "player": {
+        "name": "Arjun Nimmala",
+        "normalizedName": "arjun nimmala"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 75
     },
     {
       "id": "mlb-laa-tyler-bremner",
@@ -881,17 +881,6 @@
       "score": 85,
       "tier": "high",
       "confidence": 86
-    },
-    {
-      "id": "mlb-tor-arjun-nimmala",
-      "sport": "baseball",
-      "player": {
-        "name": "Arjun Nimmala",
-        "normalizedName": "arjun nimmala"
-      },
-      "score": 75,
-      "tier": "emerging",
-      "confidence": 75
     },
     {
       "id": "mlb-wsh-james-wood",

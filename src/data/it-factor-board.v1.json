@@ -2,11 +2,11 @@
   "schemaVersion": "backstop-it-factor-board.v1",
   "methodVersion": "it-factor/editorial-v1.0.0",
   "snapshot": {
-    "asOf": "2026-07-26",
-    "generatedAt": "2026-07-26T18:00:00.000Z",
+    "asOf": "2026-08-09",
+    "generatedAt": "2026-08-09T07:07:15.000Z",
     "marketDataThrough": "2026-06-30",
     "marketRowsSha256": "9584f55d14a1abb63014ff95dd6f2c7cc145731e1a54cd57cfe7fdb4c75f22c7",
-    "nextReviewBy": "2026-10-26",
+    "nextReviewBy": "2026-11-09",
     "status": "current"
   },
   "rubric": {
@@ -36,6 +36,15 @@
       "publishedAt": "2026-07-12",
       "accessedAt": "2026-07-24",
       "kind": "hobby_market"
+    },
+    {
+      "id": "mlb-statsapi-transactions-2026-08-03",
+      "label": "Official MLB transactions through the 2026 Trade Deadline",
+      "publisher": "MLB StatsAPI",
+      "url": "https://statsapi.mlb.com/api/v1/transactions?startDate=08/01/2026&endDate=08/03/2026&sportId=1",
+      "publishedAt": "2026-08-03",
+      "accessedAt": "2026-08-09",
+      "kind": "official"
     },
     {
       "id": "mlb-fangraphs-top-100-2026-07-23",
@@ -205,7 +214,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/gunnar-henderson-683002",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -214,7 +223,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jackson-holliday-702616",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -223,16 +232,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/roman-anthony-701350",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
-      "kind": "official"
-    },
-    {
-      "id": "mlb-player-691785",
-      "label": "Marcelo Mayer official player page",
-      "publisher": "MLB.com",
-      "url": "https://www.mlb.com/player/marcelo-mayer-691785",
-      "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -241,7 +241,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/aaron-judge-592450",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -250,7 +250,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/ben-rice-700250",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -259,7 +259,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/cam-schlittler-693645",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -268,7 +268,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/junior-caminero-691406",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -277,7 +277,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/vladimir-guerrero-jr-665489",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -286,7 +286,16 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/trey-yesavage-702056",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
+      "kind": "official"
+    },
+    {
+      "id": "mlb-player-805796",
+      "label": "Arjun Nimmala official player page",
+      "publisher": "MLB.com",
+      "url": "https://www.mlb.com/player/arjun-nimmala-805796",
+      "publishedAt": null,
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -295,7 +304,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/munetaka-murakami-808959",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -304,7 +313,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/braden-montgomery-695731",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -313,7 +322,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/travis-bazzana-683953",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -322,7 +331,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/chase-delauter-800050",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -331,7 +340,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/kevin-mcgonigle-805808",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -340,7 +349,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/bobby-witt-jr-677951",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -349,7 +358,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jac-caglianone-695506",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -358,7 +367,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/yordan-alvarez-670541",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -367,7 +376,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/cam-smith-701358",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -376,7 +385,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/mike-trout-545361",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -385,7 +394,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/nick-kurtz-701762",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -394,7 +403,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jacob-wilson-805779",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -403,7 +412,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/julio-rodriguez-677594",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -412,7 +421,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/colt-emerson-806068",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -421,7 +430,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/wyatt-langford-694671",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -430,7 +439,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/ronald-acuna-jr-660670",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -439,7 +448,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/drake-baldwin-686948",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -448,7 +457,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/juan-soto-665742",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -457,7 +466,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/nolan-mclean-690997",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -466,7 +475,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/carson-benge-701807",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -475,7 +484,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/bryce-harper-547180",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -484,7 +493,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/andrew-painter-691725",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -493,7 +502,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/james-wood-695578",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -502,7 +511,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/dylan-crews-686611",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -511,7 +520,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/pete-crow-armstrong-691718",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -520,7 +529,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/matt-shaw-807713",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -529,7 +538,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/elly-de-la-cruz-682829",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -538,7 +547,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/chase-burns-695505",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -547,7 +556,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/sal-stewart-701398",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -556,7 +565,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jackson-chourio-694192",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -565,7 +574,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jacob-misiorowski-694819",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -574,7 +583,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/paul-skenes-694973",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -583,7 +592,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/konnor-griffin-804606",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -592,7 +601,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jj-wetherholt-802139",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -601,7 +610,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jordan-walker-691023",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -610,7 +619,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/corbin-carroll-682998",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -619,7 +628,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/ryan-waldschmidt-814439",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -628,7 +637,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/shohei-ohtani-660271",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -637,7 +646,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/yoshinobu-yamamoto-808967",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -646,7 +655,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/roki-sasaki-808963",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -655,7 +664,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/fernando-tatis-jr-665487",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -664,7 +673,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/jackson-merrill-701538",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -673,7 +682,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/bryce-eldridge-805811",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -682,7 +691,7 @@
       "publisher": "MLB.com",
       "url": "https://www.mlb.com/player/rafael-devers-646240",
       "publishedAt": null,
-      "accessedAt": "2026-07-26",
+      "accessedAt": "2026-08-09",
       "kind": "official"
     },
     {
@@ -1451,7 +1460,7 @@
         "sportRank": 69,
         "sportPercentile": 96.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-ari-ryan-waldschmidt",
@@ -1497,7 +1506,7 @@
         "sportRank": 304,
         "sportPercentile": 85.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-ari-druw-jones",
@@ -1544,7 +1553,7 @@
         "sportRank": 172,
         "sportPercentile": 91.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-ath-leo-de-vries",
@@ -1591,7 +1600,7 @@
         "sportRank": 87,
         "sportPercentile": 95.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-ath-nick-kurtz",
@@ -1638,7 +1647,7 @@
         "sportRank": 9,
         "sportPercentile": 99.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-ath-jacob-wilson",
@@ -1684,7 +1693,7 @@
         "sportRank": 52,
         "sportPercentile": 97.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-atl-ronald-acuna-jr",
@@ -1731,7 +1740,7 @@
         "sportRank": 24,
         "sportPercentile": 98.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-atl-drake-baldwin",
@@ -1777,7 +1786,7 @@
         "sportRank": 92,
         "sportPercentile": 95.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-atl-eric-hartman",
@@ -1824,7 +1833,7 @@
         "sportRank": 283,
         "sportPercentile": 86.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-bal-gunnar-henderson",
@@ -1870,7 +1879,7 @@
         "sportRank": 53,
         "sportPercentile": 97.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-bal-jackson-holliday",
@@ -1916,7 +1925,7 @@
         "sportRank": 63,
         "sportPercentile": 97
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-bal-eric-booth-jr",
@@ -1963,7 +1972,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-bos-roman-anthony",
@@ -2010,7 +2019,7 @@
         "sportRank": 18,
         "sportPercentile": 99.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-bos-franklin-arias",
@@ -2057,53 +2066,7 @@
         "sportRank": 149,
         "sportPercentile": 92.8
       },
-      "lastReviewedAt": "2026-07-26"
-    },
-    {
-      "id": "mlb-bos-marcelo-mayer",
-      "player": {
-        "name": "Marcelo Mayer",
-        "normalizedName": "marcelo mayer",
-        "position": "2B/3B",
-        "status": "young_star"
-      },
-      "sport": "baseball",
-      "league": "MLB",
-      "team": {
-        "code": "BOS",
-        "name": "Boston Red Sox"
-      },
-      "score": 75,
-      "tier": "emerging",
-      "confidence": 78,
-      "trajectory": "fragile",
-      "rationale": "Former top-five-pick and top-prospect equity still sells, but repeated injuries keep Mayer from rebuilding a strong star lock.",
-      "signals": [
-        "No. 4 pick",
-        "residual prospect equity",
-        "Boston market",
-        "injury risk"
-      ],
-      "recheckTriggers": [
-        "Health, role, promotion, or availability materially changes.",
-        "Hobby-sales velocity or consensus standing reverses direction."
-      ],
-      "sourceIds": [
-        "gemrate-hobby-2026-06",
-        "mlb-player-691785"
-      ],
-      "market": {
-        "evidence": "confirmed",
-        "sourceKey": "athlete|baseball|Marcelo Mayer",
-        "sourceName": "Marcelo Mayer",
-        "identityStatus": "exact",
-        "trailingTwelveMonthSalesUsd": 1020460,
-        "recentSixMonthSalesUsd": 676024,
-        "priorSixMonthSalesUsd": 344436,
-        "sportRank": 126,
-        "sportPercentile": 93.9
-      },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-chc-pete-crow-armstrong",
@@ -2150,7 +2113,7 @@
         "sportRank": 32,
         "sportPercentile": 98.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-chc-josiah-hartshorn",
@@ -2197,7 +2160,7 @@
         "sportRank": 454,
         "sportPercentile": 78
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-chc-matt-shaw",
@@ -2243,7 +2206,7 @@
         "sportRank": 154,
         "sportPercentile": 92.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cws-munetaka-murakami",
@@ -2291,7 +2254,7 @@
         "sportRank": 33,
         "sportPercentile": 98.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cws-roch-cholowsky",
@@ -2338,7 +2301,7 @@
         "sportRank": 575,
         "sportPercentile": 72.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cws-braden-montgomery",
@@ -2385,7 +2348,7 @@
         "sportRank": 182,
         "sportPercentile": 91.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cin-elly-de-la-cruz",
@@ -2432,7 +2395,7 @@
         "sportRank": 20,
         "sportPercentile": 99.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cin-sal-stewart",
@@ -2479,7 +2442,7 @@
         "sportRank": 119,
         "sportPercentile": 94.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cin-chase-burns",
@@ -2525,7 +2488,7 @@
         "sportRank": 109,
         "sportPercentile": 94.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cle-travis-bazzana",
@@ -2572,7 +2535,7 @@
         "sportRank": 86,
         "sportPercentile": 95.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cle-chase-delauter",
@@ -2618,7 +2581,7 @@
         "sportRank": 121,
         "sportPercentile": 94.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-cle-angel-genao",
@@ -2665,7 +2628,7 @@
         "sportRank": 901,
         "sportPercentile": 56.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-col-ethan-holliday",
@@ -2712,7 +2675,7 @@
         "sportRank": 157,
         "sportPercentile": 92.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-col-charlie-condon",
@@ -2759,7 +2722,7 @@
         "sportRank": 122,
         "sportPercentile": 94.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-det-kevin-mcgonigle",
@@ -2807,7 +2770,7 @@
         "sportRank": 29,
         "sportPercentile": 98.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-det-max-clark",
@@ -2854,7 +2817,7 @@
         "sportRank": 124,
         "sportPercentile": 94
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-det-bryce-rainer",
@@ -2901,7 +2864,7 @@
         "sportRank": 186,
         "sportPercentile": 91
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-hou-yordan-alvarez",
@@ -2947,7 +2910,7 @@
         "sportRank": 90,
         "sportPercentile": 95.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-hou-cam-smith",
@@ -2993,7 +2956,7 @@
         "sportRank": 105,
         "sportPercentile": 94.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-hou-kevin-alvarez",
@@ -3040,7 +3003,7 @@
         "sportRank": 271,
         "sportPercentile": 86.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-kc-bobby-witt-jr",
@@ -3087,7 +3050,7 @@
         "sportRank": 13,
         "sportPercentile": 99.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-kc-jac-caglianone",
@@ -3134,7 +3097,7 @@
         "sportRank": 44,
         "sportPercentile": 97.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-laa-mike-trout",
@@ -3180,7 +3143,56 @@
         "sportRank": 11,
         "sportPercentile": 99.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
+    },
+    {
+      "id": "mlb-laa-arjun-nimmala",
+      "player": {
+        "name": "Arjun Nimmala",
+        "normalizedName": "arjun nimmala",
+        "position": "SS",
+        "status": "prospect"
+      },
+      "sport": "baseball",
+      "league": "MLB",
+      "team": {
+        "code": "LAA",
+        "name": "Los Angeles Angels"
+      },
+      "score": 75,
+      "tier": "emerging",
+      "confidence": 75,
+      "trajectory": "fragile",
+      "rationale": "Nimmala brings premium-position youth and projected power to the Angels after a Trade Deadline move, but health risk, modest sales, and a new-team reset leave only a partial hobby lock.",
+      "signals": [
+        "premium position",
+        "youth for level",
+        "projected power",
+        "new-team reset"
+      ],
+      "recheckTriggers": [
+        "Health, role, promotion, or availability materially changes.",
+        "Hobby-sales velocity or consensus standing reverses direction."
+      ],
+      "sourceIds": [
+        "gemrate-hobby-2026-06",
+        "mlb-fangraphs-top-100-2026-07-23",
+        "mlb-pipeline-top-100-2026-07-26",
+        "mlb-player-805796",
+        "mlb-statsapi-transactions-2026-08-03"
+      ],
+      "market": {
+        "evidence": "confirmed",
+        "sourceKey": "athlete|baseball|Arjun Nimmala",
+        "sourceName": "Arjun Nimmala",
+        "identityStatus": "exact",
+        "trailingTwelveMonthSalesUsd": 259786,
+        "recentSixMonthSalesUsd": 142396,
+        "priorSixMonthSalesUsd": 117390,
+        "sportRank": 361,
+        "sportPercentile": 82.5
+      },
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-laa-tyler-bremner",
@@ -3227,7 +3239,7 @@
         "sportRank": 367,
         "sportPercentile": 82.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-lad-shohei-ohtani",
@@ -3275,7 +3287,7 @@
         "sportRank": 1,
         "sportPercentile": 100
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-lad-yoshinobu-yamamoto",
@@ -3323,7 +3335,7 @@
         "sportRank": 10,
         "sportPercentile": 99.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-lad-roki-sasaki",
@@ -3369,7 +3381,7 @@
         "sportRank": 22,
         "sportPercentile": 99
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-mia-thomas-white",
@@ -3416,7 +3428,7 @@
         "sportRank": 175,
         "sportPercentile": 91.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-mia-aiva-arquette",
@@ -3463,7 +3475,7 @@
         "sportRank": 409,
         "sportPercentile": 80.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-mil-jacob-misiorowski",
@@ -3511,7 +3523,7 @@
         "sportRank": 31,
         "sportPercentile": 98.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-mil-jesus-made",
@@ -3558,7 +3570,7 @@
         "sportRank": 45,
         "sportPercentile": 97.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-mil-jackson-chourio",
@@ -3604,7 +3616,7 @@
         "sportRank": 47,
         "sportPercentile": 97.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-min-walker-jenkins",
@@ -3651,7 +3663,7 @@
         "sportRank": 139,
         "sportPercentile": 93.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-min-vahn-lackey",
@@ -3698,7 +3710,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nym-juan-soto",
@@ -3746,7 +3758,7 @@
         "sportRank": 28,
         "sportPercentile": 98.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nym-nolan-mclean",
@@ -3792,7 +3804,7 @@
         "sportRank": 99,
         "sportPercentile": 95.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nym-carson-benge",
@@ -3838,7 +3850,7 @@
         "sportRank": 127,
         "sportPercentile": 93.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nyy-aaron-judge",
@@ -3886,7 +3898,7 @@
         "sportRank": 3,
         "sportPercentile": 99.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nyy-ben-rice",
@@ -3934,7 +3946,7 @@
         "sportRank": 43,
         "sportPercentile": 98
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-nyy-cam-schlittler",
@@ -3982,7 +3994,7 @@
         "sportRank": 57,
         "sportPercentile": 97.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-phi-bryce-harper",
@@ -4030,7 +4042,7 @@
         "sportRank": 38,
         "sportPercentile": 98.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-phi-aidan-miller",
@@ -4077,7 +4089,7 @@
         "sportRank": 207,
         "sportPercentile": 90
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-phi-andrew-painter",
@@ -4123,7 +4135,7 @@
         "sportRank": 334,
         "sportPercentile": 83.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-pit-paul-skenes",
@@ -4170,7 +4182,7 @@
         "sportRank": 5,
         "sportPercentile": 99.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-pit-konnor-griffin",
@@ -4217,7 +4229,7 @@
         "sportRank": 12,
         "sportPercentile": 99.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-pit-seth-hernandez",
@@ -4264,7 +4276,7 @@
         "sportRank": 100,
         "sportPercentile": 95.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sd-fernando-tatis-jr",
@@ -4311,7 +4323,7 @@
         "sportRank": 81,
         "sportPercentile": 96.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sd-jackson-merrill",
@@ -4357,7 +4369,7 @@
         "sportRank": 73,
         "sportPercentile": 96.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sd-ethan-salas",
@@ -4404,7 +4416,7 @@
         "sportRank": 319,
         "sportPercentile": 84.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sf-bryce-eldridge",
@@ -4451,7 +4463,7 @@
         "sportRank": 112,
         "sportPercentile": 94.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sf-josuar-gonzalez",
@@ -4498,7 +4510,7 @@
         "sportRank": 160,
         "sportPercentile": 92.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sf-rafael-devers",
@@ -4545,7 +4557,7 @@
         "sportRank": 203,
         "sportPercentile": 90.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sea-kade-anderson",
@@ -4592,7 +4604,7 @@
         "sportRank": 134,
         "sportPercentile": 93.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sea-julio-rodriguez",
@@ -4638,7 +4650,7 @@
         "sportRank": 37,
         "sportPercentile": 98.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-sea-colt-emerson",
@@ -4684,7 +4696,7 @@
         "sportRank": 106,
         "sportPercentile": 94.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-stl-jj-wetherholt",
@@ -4732,7 +4744,7 @@
         "sportRank": 49,
         "sportPercentile": 97.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-stl-jordan-walker",
@@ -4779,7 +4791,7 @@
         "sportRank": 123,
         "sportPercentile": 94.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-stl-rainiel-rodriguez",
@@ -4826,7 +4838,7 @@
         "sportRank": 168,
         "sportPercentile": 91.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tb-junior-caminero",
@@ -4873,7 +4885,7 @@
         "sportRank": 34,
         "sportPercentile": 98.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tb-theo-gillen",
@@ -4920,7 +4932,7 @@
         "sportRank": 314,
         "sportPercentile": 84.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tb-grady-emerson",
@@ -4967,7 +4979,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tex-sebastian-walcott",
@@ -5014,7 +5026,7 @@
         "sportRank": 184,
         "sportPercentile": 91.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tex-wyatt-langford",
@@ -5060,7 +5072,7 @@
         "sportRank": 65,
         "sportPercentile": 96.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tor-vladimir-guerrero-jr",
@@ -5108,7 +5120,7 @@
         "sportRank": 51,
         "sportPercentile": 97.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-tor-trey-yesavage",
@@ -5154,54 +5166,7 @@
         "sportRank": 77,
         "sportPercentile": 96.3
       },
-      "lastReviewedAt": "2026-07-26"
-    },
-    {
-      "id": "mlb-tor-arjun-nimmala",
-      "player": {
-        "name": "Arjun Nimmala",
-        "normalizedName": "arjun nimmala",
-        "position": "SS",
-        "status": "prospect"
-      },
-      "sport": "baseball",
-      "league": "MLB",
-      "team": {
-        "code": "TOR",
-        "name": "Toronto Blue Jays"
-      },
-      "score": 75,
-      "tier": "emerging",
-      "confidence": 75,
-      "trajectory": "fragile",
-      "rationale": "Nimmala remains very young at Double-A with opposite-field power and aligned mid-40s consensus, but health risk and modest sales leave only a partial hobby lock.",
-      "signals": [
-        "premium position",
-        "youth for level",
-        "projected power",
-        "health risk"
-      ],
-      "recheckTriggers": [
-        "Health, role, promotion, or availability materially changes.",
-        "Hobby-sales velocity or consensus standing reverses direction."
-      ],
-      "sourceIds": [
-        "gemrate-hobby-2026-06",
-        "mlb-fangraphs-top-100-2026-07-23",
-        "mlb-pipeline-top-100-2026-07-26"
-      ],
-      "market": {
-        "evidence": "confirmed",
-        "sourceKey": "athlete|baseball|Arjun Nimmala",
-        "sourceName": "Arjun Nimmala",
-        "identityStatus": "exact",
-        "trailingTwelveMonthSalesUsd": 259786,
-        "recentSixMonthSalesUsd": 142396,
-        "priorSixMonthSalesUsd": 117390,
-        "sportRank": 361,
-        "sportPercentile": 82.5
-      },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-wsh-james-wood",
@@ -5248,7 +5213,7 @@
         "sportRank": 30,
         "sportPercentile": 98.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-wsh-eli-willits",
@@ -5295,7 +5260,7 @@
         "sportRank": 113,
         "sportPercentile": 94.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "mlb-wsh-dylan-crews",
@@ -5341,7 +5306,7 @@
         "sportRank": 82,
         "sportPercentile": 96.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ari-jeremiyah-love",
@@ -5390,7 +5355,7 @@
         "sportRank": 153,
         "sportPercentile": 86
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ari-marvin-harrison-jr",
@@ -5438,7 +5403,7 @@
         "sportRank": 50,
         "sportPercentile": 95.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-atl-bijan-robinson",
@@ -5486,7 +5451,7 @@
         "sportRank": 39,
         "sportPercentile": 96.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-atl-michael-penix-jr",
@@ -5534,7 +5499,7 @@
         "sportRank": 17,
         "sportPercentile": 98.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-atl-tua-tagovailoa",
@@ -5582,7 +5547,7 @@
         "sportRank": 79,
         "sportPercentile": 92.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-bal-lamar-jackson",
@@ -5630,7 +5595,7 @@
         "sportRank": 11,
         "sportPercentile": 99.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-bal-derrick-henry",
@@ -5678,7 +5643,7 @@
         "sportRank": 42,
         "sportPercentile": 96.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-buf-josh-allen",
@@ -5726,7 +5691,7 @@
         "sportRank": 6,
         "sportPercentile": 99.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-car-tetairoa-mcmillan",
@@ -5774,7 +5739,7 @@
         "sportRank": 48,
         "sportPercentile": 95.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-car-bryce-young",
@@ -5822,7 +5787,7 @@
         "sportRank": 52,
         "sportPercentile": 95.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-chi-caleb-williams",
@@ -5870,7 +5835,7 @@
         "sportRank": 4,
         "sportPercentile": 99.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-chi-colston-loveland",
@@ -5918,7 +5883,7 @@
         "sportRank": 54,
         "sportPercentile": 95.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-cin-joe-burrow",
@@ -5966,7 +5931,7 @@
         "sportRank": 9,
         "sportPercentile": 99.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-cin-ja-marr-chase",
@@ -6014,7 +5979,7 @@
         "sportRank": 31,
         "sportPercentile": 97.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-cle-kc-concepcion",
@@ -6062,7 +6027,7 @@
         "sportRank": 511,
         "sportPercentile": 52.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-cle-shedeur-sanders",
@@ -6110,7 +6075,7 @@
         "sportRank": 19,
         "sportPercentile": 98.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-dal-ceedee-lamb",
@@ -6158,7 +6123,7 @@
         "sportRank": 45,
         "sportPercentile": 95.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-dal-dak-prescott",
@@ -6206,7 +6171,7 @@
         "sportRank": 61,
         "sportPercentile": 94.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-dal-caleb-downs",
@@ -6254,7 +6219,7 @@
         "sportRank": 211,
         "sportPercentile": 80.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-den-bo-nix",
@@ -6302,7 +6267,7 @@
         "sportRank": 8,
         "sportPercentile": 99.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-den-jaylen-waddle",
@@ -6350,7 +6315,7 @@
         "sportRank": 111,
         "sportPercentile": 89.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-det-jahmyr-gibbs",
@@ -6398,7 +6363,7 @@
         "sportRank": 37,
         "sportPercentile": 96.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-det-amon-ra-st-brown",
@@ -6446,7 +6411,7 @@
         "sportRank": 65,
         "sportPercentile": 94.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-gb-jordan-love",
@@ -6494,7 +6459,7 @@
         "sportRank": 23,
         "sportPercentile": 98
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-gb-micah-parsons",
@@ -6542,7 +6507,7 @@
         "sportRank": 107,
         "sportPercentile": 90.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-gb-matthew-golden",
@@ -6590,7 +6555,7 @@
         "sportRank": 60,
         "sportPercentile": 94.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-hou-cj-stroud",
@@ -6638,7 +6603,7 @@
         "sportRank": 18,
         "sportPercentile": 98.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ind-jonathan-taylor",
@@ -6686,7 +6651,7 @@
         "sportRank": 64,
         "sportPercentile": 94.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ind-tyler-warren",
@@ -6734,7 +6699,7 @@
         "sportRank": 80,
         "sportPercentile": 92.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ind-anthony-richardson",
@@ -6782,7 +6747,7 @@
         "sportRank": 105,
         "sportPercentile": 90.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-jax-travis-hunter",
@@ -6830,7 +6795,7 @@
         "sportRank": 30,
         "sportPercentile": 97.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-jax-trevor-lawrence",
@@ -6878,7 +6843,7 @@
         "sportRank": 28,
         "sportPercentile": 97.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-jax-brian-thomas-jr",
@@ -6926,7 +6891,7 @@
         "sportRank": 58,
         "sportPercentile": 94.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-kc-patrick-mahomes",
@@ -6974,7 +6939,7 @@
         "sportRank": 3,
         "sportPercentile": 99.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-kc-travis-kelce",
@@ -7022,7 +6987,7 @@
         "sportRank": 46,
         "sportPercentile": 95.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-kc-kenneth-walker-iii",
@@ -7070,7 +7035,7 @@
         "sportRank": 127,
         "sportPercentile": 88.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lv-ashton-jeanty",
@@ -7118,7 +7083,7 @@
         "sportRank": 25,
         "sportPercentile": 97.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lv-brock-bowers",
@@ -7166,7 +7131,7 @@
         "sportRank": 29,
         "sportPercentile": 97.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lv-fernando-mendoza",
@@ -7214,7 +7179,7 @@
         "sportRank": 47,
         "sportPercentile": 95.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lac-justin-herbert",
@@ -7262,7 +7227,7 @@
         "sportRank": 12,
         "sportPercentile": 99
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lac-ladd-mcconkey",
@@ -7310,7 +7275,7 @@
         "sportRank": 75,
         "sportPercentile": 93.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lac-omarion-hampton",
@@ -7358,7 +7323,7 @@
         "sportRank": 63,
         "sportPercentile": 94.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lar-puka-nacua",
@@ -7406,7 +7371,7 @@
         "sportRank": 34,
         "sportPercentile": 97
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lar-matthew-stafford",
@@ -7454,7 +7419,7 @@
         "sportRank": 44,
         "sportPercentile": 96
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-lar-ty-simpson",
@@ -7502,7 +7467,7 @@
         "sportRank": 174,
         "sportPercentile": 84
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-mia-de-von-achane",
@@ -7549,7 +7514,7 @@
         "sportRank": 91,
         "sportPercentile": 91.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-mia-malik-willis",
@@ -7597,7 +7562,7 @@
         "sportRank": 78,
         "sportPercentile": 92.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-min-justin-jefferson",
@@ -7645,7 +7610,7 @@
         "sportRank": 24,
         "sportPercentile": 97.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-min-jj-mccarthy",
@@ -7693,7 +7658,7 @@
         "sportRank": 10,
         "sportPercentile": 99.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-min-kyler-murray",
@@ -7741,7 +7706,7 @@
         "sportRank": 81,
         "sportPercentile": 92.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ne-drake-maye",
@@ -7789,7 +7754,7 @@
         "sportRank": 2,
         "sportPercentile": 99.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ne-treveyon-henderson",
@@ -7837,7 +7802,7 @@
         "sportRank": 68,
         "sportPercentile": 93.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-no-tyler-shough",
@@ -7885,7 +7850,7 @@
         "sportRank": 20,
         "sportPercentile": 98.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-no-jordyn-tyson",
@@ -7933,7 +7898,7 @@
         "sportRank": 381,
         "sportPercentile": 64.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyg-jaxson-dart",
@@ -7981,7 +7946,7 @@
         "sportRank": 7,
         "sportPercentile": 99.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyg-malik-nabers",
@@ -8029,7 +7994,7 @@
         "sportRank": 35,
         "sportPercentile": 96.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyg-abdul-carter",
@@ -8077,7 +8042,7 @@
         "sportRank": 104,
         "sportPercentile": 90.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyj-garrett-wilson",
@@ -8125,7 +8090,7 @@
         "sportRank": 112,
         "sportPercentile": 89.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyj-kenyon-sadiq",
@@ -8173,7 +8138,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-nyj-breece-hall",
@@ -8220,7 +8185,7 @@
         "sportRank": 138,
         "sportPercentile": 87.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-phi-saquon-barkley",
@@ -8268,7 +8233,7 @@
         "sportRank": 26,
         "sportPercentile": 97.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-phi-jalen-hurts",
@@ -8316,7 +8281,7 @@
         "sportRank": 15,
         "sportPercentile": 98.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-phi-makai-lemon",
@@ -8364,7 +8329,7 @@
         "sportRank": 357,
         "sportPercentile": 67.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-pit-aaron-rodgers",
@@ -8412,7 +8377,7 @@
         "sportRank": 36,
         "sportPercentile": 96.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-pit-dk-metcalf",
@@ -8460,7 +8425,7 @@
         "sportRank": 140,
         "sportPercentile": 87.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sf-christian-mccaffrey",
@@ -8508,7 +8473,7 @@
         "sportRank": 56,
         "sportPercentile": 94.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sf-mike-evans",
@@ -8556,7 +8521,7 @@
         "sportRank": 96,
         "sportPercentile": 91.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sf-brock-purdy",
@@ -8604,7 +8569,7 @@
         "sportRank": 22,
         "sportPercentile": 98.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sea-jaxon-smith-njigba",
@@ -8652,7 +8617,7 @@
         "sportRank": 27,
         "sportPercentile": 97.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sea-jadarian-price",
@@ -8700,7 +8665,7 @@
         "sportRank": 362,
         "sportPercentile": 66.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-sea-sam-darnold",
@@ -8748,7 +8713,7 @@
         "sportRank": 51,
         "sportPercentile": 95.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-tb-baker-mayfield",
@@ -8796,7 +8761,7 @@
         "sportRank": 55,
         "sportPercentile": 95
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-tb-emeka-egbuka",
@@ -8844,7 +8809,7 @@
         "sportRank": 71,
         "sportPercentile": 93.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ten-cam-ward",
@@ -8892,7 +8857,7 @@
         "sportRank": 13,
         "sportPercentile": 98.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-ten-carnell-tate",
@@ -8940,7 +8905,7 @@
         "sportRank": 232,
         "sportPercentile": 78.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nfl-was-jayden-daniels",
@@ -8988,7 +8953,7 @@
         "sportRank": 5,
         "sportPercentile": 99.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-atlanta-hawks-jalen-johnson",
@@ -9035,7 +9000,7 @@
         "sportRank": 67,
         "sportPercentile": 92.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-atlanta-hawks-kingston-flemings",
@@ -9082,7 +9047,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-atlanta-hawks-jonathan-kuminga",
@@ -9128,7 +9093,7 @@
         "sportRank": 164,
         "sportPercentile": 80.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-boston-celtics-jayson-tatum",
@@ -9176,7 +9141,7 @@
         "sportRank": 22,
         "sportPercentile": 97.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-boston-celtics-paul-george",
@@ -9222,7 +9187,7 @@
         "sportRank": 155,
         "sportPercentile": 81.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-brooklyn-nets-mikel-brown-jr",
@@ -9269,7 +9234,7 @@
         "sportRank": 325,
         "sportPercentile": 61.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-brooklyn-nets-egor-demin",
@@ -9316,7 +9281,7 @@
         "sportRank": 112,
         "sportPercentile": 86.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-charlotte-hornets-kon-knueppel",
@@ -9364,7 +9329,7 @@
         "sportRank": 10,
         "sportPercentile": 98.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-charlotte-hornets-brandon-miller",
@@ -9410,7 +9375,7 @@
         "sportRank": 56,
         "sportPercentile": 93.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-charlotte-hornets-hannes-steinbach",
@@ -9457,7 +9422,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-chicago-bulls-caleb-wilson",
@@ -9504,7 +9469,7 @@
         "sportRank": 128,
         "sportPercentile": 84.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-chicago-bulls-matas-buzelis",
@@ -9550,7 +9515,7 @@
         "sportRank": 26,
         "sportPercentile": 97
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-chicago-bulls-noa-essengue",
@@ -9597,7 +9562,7 @@
         "sportRank": 199,
         "sportPercentile": 76.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-cleveland-cavaliers-donovan-mitchell",
@@ -9645,7 +9610,7 @@
         "sportRank": 51,
         "sportPercentile": 94
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-cleveland-cavaliers-evan-mobley",
@@ -9692,7 +9657,7 @@
         "sportRank": 121,
         "sportPercentile": 85.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-cleveland-cavaliers-james-harden",
@@ -9738,7 +9703,7 @@
         "sportRank": 68,
         "sportPercentile": 92
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-dallas-mavericks-cooper-flagg",
@@ -9786,7 +9751,7 @@
         "sportRank": 5,
         "sportPercentile": 99.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-dallas-mavericks-kyrie-irving",
@@ -9832,7 +9797,7 @@
         "sportRank": 54,
         "sportPercentile": 93.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-dallas-mavericks-zaccharie-risacher",
@@ -9879,7 +9844,7 @@
         "sportRank": 87,
         "sportPercentile": 89.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-denver-nuggets-nikola-jokic",
@@ -9927,7 +9892,7 @@
         "sportRank": 16,
         "sportPercentile": 98.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-denver-nuggets-jamal-murray",
@@ -9975,7 +9940,7 @@
         "sportRank": 132,
         "sportPercentile": 84.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-detroit-pistons-cade-cunningham",
@@ -10024,7 +9989,7 @@
         "sportRank": 20,
         "sportPercentile": 97.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-detroit-pistons-jalen-duren",
@@ -10071,7 +10036,7 @@
         "sportRank": 113,
         "sportPercentile": 86.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-detroit-pistons-ausar-thompson",
@@ -10117,7 +10082,7 @@
         "sportRank": 60,
         "sportPercentile": 93
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-golden-state-warriors-stephen-curry",
@@ -10165,7 +10130,7 @@
         "sportRank": 6,
         "sportPercentile": 99.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-golden-state-warriors-yaxel-lendeborg",
@@ -10212,7 +10177,7 @@
         "sportRank": 662,
         "sportPercentile": 21
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-houston-rockets-kevin-durant",
@@ -10260,7 +10225,7 @@
         "sportRank": 21,
         "sportPercentile": 97.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-houston-rockets-amen-thompson",
@@ -10307,7 +10272,7 @@
         "sportRank": 29,
         "sportPercentile": 96.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-houston-rockets-alperen-sengun",
@@ -10353,7 +10318,7 @@
         "sportRank": 78,
         "sportPercentile": 90.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-indiana-pacers-tyrese-haliburton",
@@ -10400,7 +10365,7 @@
         "sportRank": 44,
         "sportPercentile": 94.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-la-clippers-kawhi-leonard",
@@ -10447,7 +10412,7 @@
         "sportRank": 95,
         "sportPercentile": 88.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-la-clippers-keaton-wagler",
@@ -10494,7 +10459,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-la-clippers-bennedict-mathurin",
@@ -10541,7 +10506,7 @@
         "sportRank": 171,
         "sportPercentile": 79.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-los-angeles-lakers-luka-doncic",
@@ -10590,7 +10555,7 @@
         "sportRank": 8,
         "sportPercentile": 99.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-los-angeles-lakers-austin-reaves",
@@ -10637,7 +10602,7 @@
         "sportRank": 86,
         "sportPercentile": 89.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-memphis-grizzlies-cameron-boozer",
@@ -10684,7 +10649,7 @@
         "sportRank": 178,
         "sportPercentile": 78.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-memphis-grizzlies-cedric-coward",
@@ -10733,7 +10698,7 @@
         "sportRank": 83,
         "sportPercentile": 90.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-memphis-grizzlies-karim-lopez",
@@ -10779,7 +10744,7 @@
         "sportRank": 666,
         "sportPercentile": 20.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-miami-heat-giannis-antetokounmpo",
@@ -10827,7 +10792,7 @@
         "sportRank": 17,
         "sportPercentile": 98.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-milwaukee-bucks-tyler-herro",
@@ -10873,7 +10838,7 @@
         "sportRank": 154,
         "sportPercentile": 81.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-milwaukee-bucks-brayden-burries",
@@ -10920,7 +10885,7 @@
         "sportRank": 415,
         "sportPercentile": 50.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-milwaukee-bucks-nate-ament",
@@ -10967,7 +10932,7 @@
         "sportRank": 268,
         "sportPercentile": 68.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-minnesota-timberwolves-anthony-edwards",
@@ -11016,7 +10981,7 @@
         "sportRank": 11,
         "sportPercentile": 98.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-minnesota-timberwolves-lamelo-ball",
@@ -11063,7 +11028,7 @@
         "sportRank": 42,
         "sportPercentile": 95.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-new-orleans-pelicans-zion-williamson",
@@ -11109,7 +11074,7 @@
         "sportRank": 50,
         "sportPercentile": 94.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-new-orleans-pelicans-jeremiah-fears",
@@ -11156,7 +11121,7 @@
         "sportRank": 101,
         "sportPercentile": 88.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-new-orleans-pelicans-derik-queen",
@@ -11203,7 +11168,7 @@
         "sportRank": 72,
         "sportPercentile": 91.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-new-york-knicks-jalen-brunson",
@@ -11250,7 +11215,7 @@
         "sportRank": 13,
         "sportPercentile": 98.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-new-york-knicks-karl-anthony-towns",
@@ -11296,7 +11261,7 @@
         "sportRank": 58,
         "sportPercentile": 93.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-oklahoma-city-thunder-shai-gilgeous-alexander",
@@ -11345,7 +11310,7 @@
         "sportRank": 9,
         "sportPercentile": 99
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-oklahoma-city-thunder-chet-holmgren",
@@ -11392,7 +11357,7 @@
         "sportRank": 43,
         "sportPercentile": 95
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-oklahoma-city-thunder-jalen-williams",
@@ -11438,7 +11403,7 @@
         "sportRank": 61,
         "sportPercentile": 92.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-orlando-magic-paolo-banchero",
@@ -11485,7 +11450,7 @@
         "sportRank": 28,
         "sportPercentile": 96.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-orlando-magic-franz-wagner",
@@ -11532,7 +11497,7 @@
         "sportRank": 131,
         "sportPercentile": 84.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-philadelphia-76ers-lebron-james",
@@ -11579,7 +11544,7 @@
         "sportRank": 3,
         "sportPercentile": 99.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-philadelphia-76ers-vj-edgecombe",
@@ -11626,7 +11591,7 @@
         "sportRank": 27,
         "sportPercentile": 96.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-philadelphia-76ers-tyrese-maxey",
@@ -11673,7 +11638,7 @@
         "sportRank": 34,
         "sportPercentile": 96.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-phoenix-suns-devin-booker",
@@ -11720,7 +11685,7 @@
         "sportRank": 69,
         "sportPercentile": 91.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-phoenix-suns-khaman-maluach",
@@ -11767,7 +11732,7 @@
         "sportRank": 166,
         "sportPercentile": 80.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-phoenix-suns-jalen-green",
@@ -11813,7 +11778,7 @@
         "sportRank": 138,
         "sportPercentile": 83.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-portland-trail-blazers-ja-morant",
@@ -11859,7 +11824,7 @@
         "sportRank": 32,
         "sportPercentile": 96.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-portland-trail-blazers-damian-lillard",
@@ -11905,7 +11870,7 @@
         "sportRank": 65,
         "sportPercentile": 92.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-portland-trail-blazers-yang-hansen",
@@ -11951,7 +11916,7 @@
         "sportRank": 123,
         "sportPercentile": 85.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-sacramento-kings-darius-acuff-jr",
@@ -11997,7 +11962,7 @@
         "sportRank": 255,
         "sportPercentile": 69.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-sacramento-kings-maxime-raynaud",
@@ -12044,7 +12009,7 @@
         "sportRank": 158,
         "sportPercentile": 81.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-san-antonio-spurs-victor-wembanyama",
@@ -12093,7 +12058,7 @@
         "sportRank": 2,
         "sportPercentile": 99.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-san-antonio-spurs-dylan-harper",
@@ -12141,7 +12106,7 @@
         "sportRank": 12,
         "sportPercentile": 98.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-san-antonio-spurs-stephon-castle",
@@ -12188,7 +12153,7 @@
         "sportRank": 18,
         "sportPercentile": 98
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-toronto-raptors-scottie-barnes",
@@ -12235,7 +12200,7 @@
         "sportRank": 127,
         "sportPercentile": 84.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-toronto-raptors-collin-murray-boyles",
@@ -12282,7 +12247,7 @@
         "sportRank": 141,
         "sportPercentile": 83.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-toronto-raptors-allen-graves",
@@ -12329,7 +12294,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-utah-jazz-darryn-peterson",
@@ -12376,7 +12341,7 @@
         "sportRank": 99,
         "sportPercentile": 88.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-utah-jazz-ace-bailey",
@@ -12423,7 +12388,7 @@
         "sportRank": 33,
         "sportPercentile": 96.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-utah-jazz-keyonte-george",
@@ -12470,7 +12435,7 @@
         "sportRank": 47,
         "sportPercentile": 94.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-washington-wizards-aj-dybantsa",
@@ -12517,7 +12482,7 @@
         "sportRank": 59,
         "sportPercentile": 93.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-washington-wizards-trae-young",
@@ -12563,7 +12528,7 @@
         "sportRank": 57,
         "sportPercentile": 93.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nba-washington-wizards-alex-sarr",
@@ -12609,7 +12574,7 @@
         "sportRank": 298,
         "sportPercentile": 64.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ana-leo-carlsson",
@@ -12656,7 +12621,7 @@
         "sportRank": 21,
         "sportPercentile": 95.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ana-beckett-sennecke",
@@ -12703,7 +12668,7 @@
         "sportRank": 50,
         "sportPercentile": 88.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ana-cutter-gauthier",
@@ -12750,7 +12715,7 @@
         "sportRank": 23,
         "sportPercentile": 94.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-bos-david-pastrnak",
@@ -12796,7 +12761,7 @@
         "sportRank": 38,
         "sportPercentile": 91.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-bos-james-hagens",
@@ -12843,7 +12808,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-bos-jj-peterka",
@@ -12890,7 +12855,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-buf-tage-thompson",
@@ -12936,7 +12901,7 @@
         "sportRank": 78,
         "sportPercentile": 81.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-buf-zach-benson",
@@ -12983,7 +12948,7 @@
         "sportRank": 119,
         "sportPercentile": 72.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-buf-daxon-rudolph",
@@ -13029,7 +12994,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-cgy-zayne-parekh",
@@ -13076,7 +13041,7 @@
         "sportRank": 111,
         "sportPercentile": 74.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-cgy-dustin-wolf",
@@ -13123,7 +13088,7 @@
         "sportRank": 99,
         "sportPercentile": 76.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-cgy-carson-carels",
@@ -13169,7 +13134,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-car-logan-stankoven",
@@ -13217,7 +13182,7 @@
         "sportRank": 61,
         "sportPercentile": 85.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-car-seth-jarvis",
@@ -13265,7 +13230,7 @@
         "sportRank": 87,
         "sportPercentile": 79.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-car-jackson-blake",
@@ -13312,7 +13277,7 @@
         "sportRank": 117,
         "sportPercentile": 72.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-chi-connor-bedard",
@@ -13359,7 +13324,7 @@
         "sportRank": 3,
         "sportPercentile": 99.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-chi-frank-nazar",
@@ -13406,7 +13371,7 @@
         "sportRank": 22,
         "sportPercentile": 95.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-chi-anton-frondell",
@@ -13453,7 +13418,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-col-cale-makar",
@@ -13499,7 +13464,7 @@
         "sportRank": 15,
         "sportPercentile": 96.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-col-nathan-mackinnon",
@@ -13545,7 +13510,7 @@
         "sportRank": 17,
         "sportPercentile": 96.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-cbj-adam-fantilli",
@@ -13592,7 +13557,7 @@
         "sportRank": 45,
         "sportPercentile": 89.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-cbj-cayden-lindstrom",
@@ -13639,7 +13604,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-dal-wyatt-johnston",
@@ -13686,7 +13651,7 @@
         "sportRank": 46,
         "sportPercentile": 89.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-dal-mikko-rantanen",
@@ -13732,7 +13697,7 @@
         "sportRank": 109,
         "sportPercentile": 74.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-dal-jason-robertson",
@@ -13778,7 +13743,7 @@
         "sportRank": 75,
         "sportPercentile": 82.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-det-lucas-raymond",
@@ -13825,7 +13790,7 @@
         "sportRank": 90,
         "sportPercentile": 79.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-det-moritz-seider",
@@ -13872,7 +13837,7 @@
         "sportRank": 86,
         "sportPercentile": 80
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-edm-connor-mcdavid",
@@ -13918,7 +13883,7 @@
         "sportRank": 4,
         "sportPercentile": 99.3
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-edm-leon-draisaitl",
@@ -13964,7 +13929,7 @@
         "sportRank": 33,
         "sportPercentile": 92.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-fla-matthew-tkachuk",
@@ -14010,7 +13975,7 @@
         "sportRank": 59,
         "sportPercentile": 86.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-fla-brady-tkachuk",
@@ -14057,7 +14022,7 @@
         "sportRank": 101,
         "sportPercentile": 76.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-lak-quinton-byfield",
@@ -14104,7 +14069,7 @@
         "sportRank": 193,
         "sportPercentile": 54.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-lak-brandt-clarke",
@@ -14151,7 +14116,7 @@
         "sportRank": 283,
         "sportPercentile": 33.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-min-quinn-hughes",
@@ -14198,7 +14163,7 @@
         "sportRank": 25,
         "sportPercentile": 94.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-min-kirill-kaprizov",
@@ -14244,7 +14209,7 @@
         "sportRank": 19,
         "sportPercentile": 95.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-min-matt-boldy",
@@ -14291,7 +14256,7 @@
         "sportRank": 32,
         "sportPercentile": 92.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-mtl-lane-hutson",
@@ -14338,7 +14303,7 @@
         "sportRank": 10,
         "sportPercentile": 97.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-mtl-ivan-demidov",
@@ -14386,7 +14351,7 @@
         "sportRank": 13,
         "sportPercentile": 97.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-mtl-cole-caufield",
@@ -14433,7 +14398,7 @@
         "sportRank": 28,
         "sportPercentile": 93.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nsh-steven-stamkos",
@@ -14479,7 +14444,7 @@
         "sportRank": 73,
         "sportPercentile": 83.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nsh-wyatt-cullen",
@@ -14525,7 +14490,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-njd-jack-hughes",
@@ -14572,7 +14537,7 @@
         "sportRank": 7,
         "sportPercentile": 98.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-njd-luke-hughes",
@@ -14619,7 +14584,7 @@
         "sportRank": 65,
         "sportPercentile": 84.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nyi-matthew-schaefer",
@@ -14667,7 +14632,7 @@
         "sportRank": 6,
         "sportPercentile": 98.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nyi-victor-eklund",
@@ -14714,7 +14679,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nyr-gabe-perreault",
@@ -14761,7 +14726,7 @@
         "sportRank": 113,
         "sportPercentile": 73.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nyr-igor-shesterkin",
@@ -14807,7 +14772,7 @@
         "sportRank": 105,
         "sportPercentile": 75.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-nyr-alberts-smits",
@@ -14853,7 +14818,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ott-tim-stutzle",
@@ -14901,7 +14866,7 @@
         "sportRank": 102,
         "sportPercentile": 76.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ott-jake-sanderson",
@@ -14948,7 +14913,7 @@
         "sportRank": 211,
         "sportPercentile": 50.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-ott-carter-yakemchuk",
@@ -14995,7 +14960,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-phi-matvei-michkov",
@@ -15042,7 +15007,7 @@
         "sportRank": 16,
         "sportPercentile": 96.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-phi-porter-martone",
@@ -15090,7 +15055,7 @@
         "sportRank": 167,
         "sportPercentile": 60.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-phi-trevor-zegras",
@@ -15137,7 +15102,7 @@
         "sportRank": 93,
         "sportPercentile": 78.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-pit-sidney-crosby",
@@ -15183,7 +15148,7 @@
         "sportRank": 5,
         "sportPercentile": 99.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-pit-ben-kindel",
@@ -15230,7 +15195,7 @@
         "sportRank": 100,
         "sportPercentile": 76.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sjs-macklin-celebrini",
@@ -15277,7 +15242,7 @@
         "sportRank": 2,
         "sportPercentile": 99.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sjs-michael-misa",
@@ -15324,7 +15289,7 @@
         "sportRank": 34,
         "sportPercentile": 92.2
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sjs-ivar-stenberg",
@@ -15373,7 +15338,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sea-berkly-catton",
@@ -15419,7 +15384,7 @@
         "sportRank": 423,
         "sportPercentile": 0.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sea-shane-wright",
@@ -15465,7 +15430,7 @@
         "sportRank": 188,
         "sportPercentile": 56
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-sea-matty-beniers",
@@ -15511,7 +15476,7 @@
         "sportRank": 118,
         "sportPercentile": 72.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-stl-jimmy-snuggerud",
@@ -15560,7 +15525,7 @@
         "sportRank": 80,
         "sportPercentile": 81.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-stl-dalibor-dvorsky",
@@ -15606,7 +15571,7 @@
         "sportRank": 143,
         "sportPercentile": 66.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-stl-mason-mctavish",
@@ -15654,7 +15619,7 @@
         "sportRank": 202,
         "sportPercentile": 52.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-tbl-nikita-kucherov",
@@ -15701,7 +15666,7 @@
         "sportRank": 53,
         "sportPercentile": 87.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-tbl-andrei-vasilevskiy",
@@ -15747,7 +15712,7 @@
         "sportRank": 82,
         "sportPercentile": 80.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-tor-gavin-mckenna",
@@ -15796,7 +15761,7 @@
         "sportRank": 41,
         "sportPercentile": 90.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-tor-auston-matthews",
@@ -15842,7 +15807,7 @@
         "sportRank": 20,
         "sportPercentile": 95.5
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-tor-matthew-knies",
@@ -15889,7 +15854,7 @@
         "sportRank": 40,
         "sportPercentile": 90.8
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-uta-logan-cooley",
@@ -15936,7 +15901,7 @@
         "sportRank": 29,
         "sportPercentile": 93.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-uta-caleb-desnoyers",
@@ -15983,7 +15948,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-uta-tij-iginla",
@@ -16030,7 +15995,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-van-caleb-malhotra",
@@ -16076,7 +16041,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-van-zeev-buium",
@@ -16124,7 +16089,7 @@
         "sportRank": 168,
         "sportPercentile": 60.7
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-vgk-jack-eichel",
@@ -16171,7 +16136,7 @@
         "sportRank": 44,
         "sportPercentile": 89.9
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-vgk-mitch-marner",
@@ -16219,7 +16184,7 @@
         "sportRank": 96,
         "sportPercentile": 77.6
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-wsh-alex-ovechkin",
@@ -16266,7 +16231,7 @@
         "sportRank": 12,
         "sportPercentile": 97.4
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-wsh-ryan-leonard",
@@ -16314,7 +16279,7 @@
         "sportRank": 69,
         "sportPercentile": 84
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-wsh-cole-hutson",
@@ -16361,7 +16326,7 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-wpg-connor-hellebuyck",
@@ -16408,7 +16373,7 @@
         "sportRank": 56,
         "sportPercentile": 87.1
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     },
     {
       "id": "nhl-wpg-viggo-bjorck",
@@ -16454,16 +16419,16 @@
         "sportRank": null,
         "sportPercentile": null
       },
-      "lastReviewedAt": "2026-07-26"
+      "lastReviewedAt": "2026-08-09"
     }
   ],
   "coverage": {
     "teamCount": 124,
-    "entryCount": 319,
+    "entryCount": 318,
     "bySport": {
       "baseball": {
         "teamCount": 30,
-        "entryCount": 84
+        "entryCount": 83
       },
       "football": {
         "teamCount": 32,

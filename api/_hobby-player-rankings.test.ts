@@ -7,7 +7,7 @@ import {
   parseHobbyPlayerSignalExchange,
 } from './_hobby-player-rankings.js'
 
-const currentAt = new Date('2026-08-02T11:00:00.000Z')
+const currentAt = new Date('2026-08-09T11:00:00.000Z')
 
 describe('Hobby player ranking catalog', () => {
   it('reconciles Checklist v2 through reviewed identity controls and chronology quarantine', () => {
@@ -21,18 +21,18 @@ describe('Hobby player ranking catalog', () => {
     )
 
     expect(exchange.rows).toHaveLength(864)
-    expect(catalog.items).toHaveLength(581)
+    expect(catalog.items).toHaveLength(582)
     expect(catalog.items.filter(
       (item) => item.sport === 'football',
-    )).toHaveLength(294)
+    )).toHaveLength(295)
     expect(catalog.items.filter(
       (item) => item.sport === 'basketball',
     )).toHaveLength(287)
     expect(catalog.quarantine).toEqual({
-      total: 283,
+      total: 282,
       ambiguousProviderIdentity: 0,
       ambiguousMarketIdentity: 2,
-      missingMarketMatch: 267,
+      missingMarketMatch: 266,
       incompleteProviderRanks: 7,
       invalidAge: 1,
       identityControlBlocked: 2,
@@ -84,11 +84,11 @@ describe('Hobby player ranking catalog', () => {
     })
     expect(catalog.items.filter(
       (item) => item.sport === 'football' && item.age === null,
-    )).toHaveLength(2)
+    )).toHaveLength(0)
     expect(catalog.coverageBySport.football).toEqual({
       sourceRows: 464,
-      rankedRows: 294,
-      coveragePercent: 63.36,
+      rankedRows: 295,
+      coveragePercent: 63.58,
     })
   })
 

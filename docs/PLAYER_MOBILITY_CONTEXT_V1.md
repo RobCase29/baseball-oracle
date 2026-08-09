@@ -26,12 +26,12 @@ The normalized artifact is
 source identity. Missing rows become `unavailable`, ambiguous identities become
 `withheld_identity`, and non-athlete subjects become `not_applicable`.
 
-The July 26, 2026 artifact contains 602 identity-reviewed current-player
+The August 9, 2026 artifact contains 605 identity-reviewed current-player
 matches:
 
-- MLB: 385
+- MLB: 386
 - NFL: 85
-- NBA: 74
+- NBA: 76
 - NHL: 58
 
 Mookie Betts retains the initial official-source review as a supplemental
@@ -41,7 +41,7 @@ through 2032, and 2033 UFA. The user-facing read is
 18-month market history, so the product presents it as historical context and
 makes no causal claim about current demand.
 
-The coverage receipt reports 5,334 Spotrac source rows. A unique same-sport
+The coverage receipt reports 5,388 Spotrac source rows. A unique same-sport
 name is only a candidate: publication also requires a verified/reviewed
 current-player bridge, a reviewed name-and-team bridge from the IT Board, or
 an existing independently reviewed supplement. This additional gate withheld

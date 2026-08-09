@@ -1,11 +1,11 @@
 {
   "schemaVersion": "backstop-hobby-decision-desk.v2",
   "snapshot": {
-    "generatedAt": "2026-08-02T10:46:52.000Z",
+    "generatedAt": "2026-08-09T07:07:20.000Z",
     "marketDataThrough": "2026-06-30",
     "marketRowsSha256": "9584f55d14a1abb63014ff95dd6f2c7cc145731e1a54cd57cfe7fdb4c75f22c7",
-    "itReviewedAsOf": "2026-07-26",
-    "itNextReviewBy": "2026-10-26",
+    "itReviewedAsOf": "2026-08-09",
+    "itNextReviewBy": "2026-11-09",
     "pathDataThrough": "2026-06-30",
     "compoundingModelVersion": "hobby-compounding-signal/observed-tail-v1.0.0"
   },
@@ -1944,12 +1944,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #2",
-              "detail": "93.7 readiness · ttm scale next",
+              "detail": "93.3 readiness · ttm scale next",
               "score": 2
             },
             "evidence": [
               "On Deck path",
-              "93.7 readiness",
+              "93.3 readiness",
               "ttm scale next"
             ]
           },
@@ -2019,12 +2019,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #5",
-              "detail": "90.0 readiness · ttm scale next",
+              "detail": "89.6 readiness · ttm scale next",
               "score": 5
             },
             "evidence": [
               "On Deck path",
-              "90.0 readiness",
+              "89.6 readiness",
               "ttm scale next"
             ]
           },
@@ -2069,12 +2069,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "On Deck #7",
-              "detail": "85.9 readiness · ttm scale next",
+              "detail": "86.0 readiness · ttm scale next",
               "score": 7
             },
             "evidence": [
               "On Deck path",
-              "85.9 readiness",
+              "86.0 readiness",
               "ttm scale next"
             ]
           },
@@ -2144,12 +2144,12 @@
             "nativeSignal": {
               "label": "Graduation Board",
               "value": "Approaching #10",
-              "detail": "81.0 readiness · ttm scale next",
+              "detail": "80.9 readiness · ttm scale next",
               "score": 10
             },
             "evidence": [
               "Approaching path",
-              "81.0 readiness",
+              "80.9 readiness",
               "ttm scale next"
             ]
           },

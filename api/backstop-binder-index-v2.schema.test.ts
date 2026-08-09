@@ -28,7 +28,7 @@ const addFormats = require('ajv-formats') as (
 const ajv = new Ajv2020({ allErrors: true, strict: true, strictTypes: false })
 addFormats(ajv)
 const validate = ajv.compile(schema)
-const currentAt = new Date('2026-08-02T11:00:00.000Z')
+const currentAt = new Date('2026-08-09T11:00:00.000Z')
 const catalog = buildBinderGraduationV2Catalog(
   buildBaseballGraduationUniverseFromRows([], currentAt),
   currentAt,

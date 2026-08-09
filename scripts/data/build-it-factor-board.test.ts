@@ -86,7 +86,7 @@ describe('generated IT Factor board', () => {
   it('covers every MLB, NFL, NBA, and NHL team with one to three flags', () => {
     const snapshot = board()
     expect(snapshot.coverage.teamCount).toBe(124)
-    expect(snapshot.coverage.entryCount).toBe(319)
+    expect(snapshot.coverage.entryCount).toBe(318)
 
     for (const sport of IT_FACTOR_SPORTS) {
       const entries = snapshot.entries.filter((entry) => (
@@ -141,7 +141,7 @@ describe('generated IT Factor board', () => {
       entry.market.sourceKey !== null
     ))
 
-    expect(observed).toHaveLength(295)
+    expect(observed).toHaveLength(294)
     expect(observed.every((entry) => (
       masterIds.has(entry.market.sourceKey!)
     ))).toBe(true)
@@ -194,11 +194,11 @@ describe('generated IT Factor board', () => {
   it('publishes the frozen research and licensed-market dates', () => {
     const snapshot = board()
     expect(snapshot.snapshot).toMatchObject({
-      asOf: '2026-07-26',
+      asOf: '2026-08-09',
       marketDataThrough: '2026-06-30',
       marketRowsSha256:
         '9584f55d14a1abb63014ff95dd6f2c7cc145731e1a54cd57cfe7fdb4c75f22c7',
-      nextReviewBy: '2026-10-26',
+      nextReviewBy: '2026-11-09',
       status: 'current',
     })
     expect(snapshot.entries.every((entry) => (

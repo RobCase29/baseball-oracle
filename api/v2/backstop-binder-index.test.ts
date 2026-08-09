@@ -11,7 +11,7 @@ interface CapturedResponse {
   body: string
 }
 
-const currentAt = new Date('2026-08-02T11:00:00.000Z')
+const currentAt = new Date('2026-08-09T11:00:00.000Z')
 const universe = buildBaseballGraduationUniverseFromRows([], currentAt)
 
 async function invoke(

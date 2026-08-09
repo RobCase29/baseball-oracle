@@ -59,10 +59,10 @@ const decisionDeskOutputPath = resolve(
   'src/data/hobby-decision-desk.v2.json',
 )
 
-const AS_OF = '2026-07-26'
-const GENERATED_AT = '2026-07-26T18:00:00.000Z'
-const DECISION_DESK_GENERATED_AT = '2026-08-02T10:46:52.000Z'
-const NEXT_REVIEW_BY = '2026-10-26'
+const AS_OF = '2026-08-09'
+const GENERATED_AT = '2026-08-09T07:07:15.000Z'
+const DECISION_DESK_GENERATED_AT = '2026-08-09T07:07:20.000Z'
+const NEXT_REVIEW_BY = '2026-11-09'
 const GEMRATE_SOURCE_ID = 'gemrate-hobby-2026-06'
 
 export interface GemRateRow {

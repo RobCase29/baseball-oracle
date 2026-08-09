@@ -1,22 +1,28 @@
 # IT Factor Board
 
-Snapshot date: 2026-07-26
+Snapshot date: 2026-08-09
 Method version: `it-factor/editorial-v1.0.0`
 
 ## Current baseline
 
 | Sport | Teams | Flags |
 | --- | ---: | ---: |
-| MLB | 30 | 84 |
+| MLB | 30 | 83 |
 | NFL | 32 | 76 |
 | NBA | 30 | 77 |
 | NHL | 32 | 82 |
-| **Total** | **124** | **319** |
+| **Total** | **124** | **318** |
 
-The snapshot cites 153 unique league, team, consensus, scouting, news, and
-licensed-market sources. GemRate identity matching found 295 of the 319
-players (278 exact and 17 normalized); 24 are explicitly marked
+The snapshot cites 154 unique league, team, consensus, scouting, news, and
+licensed-market sources. GemRate identity matching found 294 of the 318
+players (277 exact and 17 normalized); 24 are explicitly marked
 `not_observed`, never treated as zero sales.
+
+The August 9 event-driven review incorporates the official 2026 Trade
+Deadline transaction log. Arjun Nimmala is now listed with the Angels.
+Marcelo Mayer moved from Boston to San Francisco but falls outside the
+Giants' enforced three-player cap behind Bryce Eldridge, Josuar Gonzalez,
+and Rafael Devers.
 
 ## What the flag means
 

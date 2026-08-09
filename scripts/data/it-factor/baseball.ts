@@ -29,18 +29,20 @@ const BRADEN_DEBUT = 'mlb-braden-montgomery-debut-2026-06-10'
 const MISIOROWSKI_VELOCITY = 'mlb-misiorowski-velocity-2026'
 const YAMAMOTO_ALL_STAR = 'mlb-yamamoto-all-star-2026-07-05'
 const YAMAMOTO_PROFILE = 'mlb-yamamoto-world-series-mvp-2026-02-14'
+const TRADE_DEADLINE_TRANSACTIONS =
+  'mlb-statsapi-transactions-2026-08-03'
 
 const MLB_PLAYER_PAGES = [
   [683002, 'Gunnar Henderson'],
   [702616, 'Jackson Holliday'],
   [701350, 'Roman Anthony'],
-  [691785, 'Marcelo Mayer'],
   [592450, 'Aaron Judge'],
   [700250, 'Ben Rice'],
   [693645, 'Cam Schlittler'],
   [691406, 'Junior Caminero'],
   [665489, 'Vladimir Guerrero Jr.'],
   [702056, 'Trey Yesavage'],
+  [805796, 'Arjun Nimmala'],
   [808959, 'Munetaka Murakami'],
   [695731, 'Braden Montgomery'],
   [683953, 'Travis Bazzana'],
@@ -98,12 +100,21 @@ const playerPageSources: ItFactorSource[] = MLB_PLAYER_PAGES.map(
     publisher: 'MLB.com',
     url: `https://www.mlb.com/player/${normalizeItFactorName(playerName).replaceAll(' ', '-')}-${mlbamId}`,
     publishedAt: null,
-    accessedAt: '2026-07-26',
+    accessedAt: '2026-08-09',
     kind: 'official',
   }),
 )
 
 const researchSources: ItFactorSource[] = [
+  {
+    id: TRADE_DEADLINE_TRANSACTIONS,
+    label: 'Official MLB transactions through the 2026 Trade Deadline',
+    publisher: 'MLB StatsAPI',
+    url: 'https://statsapi.mlb.com/api/v1/transactions?startDate=08/01/2026&endDate=08/03/2026&sportId=1',
+    publishedAt: '2026-08-03',
+    accessedAt: '2026-08-09',
+    kind: 'official',
+  },
   {
     id: FG_TOP_100,
     label: '2026 pre-trade-deadline Top 100 prospects update',
@@ -382,11 +393,6 @@ export const baseballItFactorCuration: ItFactorLeagueCuration = {
       'Arias is a 20-year-old shortstop ranked No. 2 by FanGraphs and No. 7 by Pipeline, with unusually strong hobby demand for a non-graduate.',
       ['multi-source top 10', 'premium position', 'youth for level', 'hobby confirmed'],
       [FG_TOP_100, PIPELINE_TOP_100]),
-    b('BOS', 'Marcelo Mayer', '2B/3B', 'young_star', 75, 78, 'fragile',
-      'Former top-five-pick and top-prospect equity still sells, but repeated injuries keep Mayer from rebuilding a strong star lock.',
-      ['No. 4 pick', 'residual prospect equity', 'Boston market', 'injury risk'],
-      [playerPage(691785)]),
-
     // New York Yankees
     b('NYY', 'Aaron Judge', 'RF', 'established_star', 98, 99, 'holding',
       'Judge is a permanent Yankees and record-chase brand whose top-three baseball market is insulated from ordinary performance cycles.',
@@ -424,11 +430,6 @@ export const baseballItFactorCuration: ItFactorLeagueCuration = {
       'A rapid ascent, 2025 postseason mythology, and early 2026 dominance give Yesavage unusually strong visibility for a rookie pitcher.',
       ['rapid ascent', 'postseason moments', 'strikeout tools', 'rookie-card demand'],
       [playerPage(702056)]),
-    b('TOR', 'Arjun Nimmala', 'SS', 'prospect', 75, 75, 'fragile',
-      'Nimmala remains very young at Double-A with opposite-field power and aligned mid-40s consensus, but health risk and modest sales leave only a partial hobby lock.',
-      ['premium position', 'youth for level', 'projected power', 'health risk'],
-      [FG_TOP_100, PIPELINE_TOP_100]),
-
     // Chicago White Sox
     b('CWS', 'Munetaka Murakami', '1B', 'rookie', 91, 96, 'rising',
       'The NPB 56-homer and WBC superstar story was validated by 20 first-half MLB homers, an All-Star nod, Derby exposure, and strong demand.',
@@ -514,6 +515,15 @@ export const baseballItFactorCuration: ItFactorLeagueCuration = {
       'The 2025 No. 2 pick remains the Angels top arm, but pitcher discount, modest consensus, and declining sales keep him on watch.',
       ['No. 2 pick', 'top organizational arm', 'pitcher volatility', 'cooling demand'],
       [FG_TOP_100, PIPELINE_TOP_100]),
+    b('LAA', 'Arjun Nimmala', 'SS', 'prospect', 75, 75, 'fragile',
+      'Nimmala brings premium-position youth and projected power to the Angels after a Trade Deadline move, but health risk, modest sales, and a new-team reset leave only a partial hobby lock.',
+      ['premium position', 'youth for level', 'projected power', 'new-team reset'],
+      [
+        FG_TOP_100,
+        PIPELINE_TOP_100,
+        playerPage(805796),
+        TRADE_DEADLINE_TRANSACTIONS,
+      ]),
 
     // Athletics
     b('ATH', 'Nick Kurtz', '1B', 'young_star', 91, 95, 'rising',
